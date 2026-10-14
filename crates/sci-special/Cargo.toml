@@ -1,0 +1,23 @@
+[package]
+name = "sci-special"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Special functions for scientific computing"
+documentation = "https://docs.rs/sci-special"
+homepage = "https://github.com/p-sira/sci"
+repository = "https://github.com/p-sira/sci"
+categories = ["mathematics", "science"]
+keywords = ["special-functions", "mathematics", "numerics", "scientific-computing", "approximation"]
+include = ["src/**", "LICENSE"]
+
+[dependencies]
+sci-core.workspace = true
+sci-complex.workspace = true
+ellip.workspace = true
+nalgebra.workspace = true
+num-complex.workspace = true
+special.workspace = true
+xsf.workspace = true

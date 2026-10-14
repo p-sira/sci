@@ -1,0 +1,17 @@
+[package]
+name = "sci-constants"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Mathematical and physical constants"
+documentation = "https://docs.rs/sci-constants"
+homepage = "https://github.com/p-sira/sci"
+repository = "https://github.com/p-sira/sci"
+categories = ["mathematics", "science"]
+keywords = ["physical-constants", "mathematics", "numerics", "scientific-computing", "units"]
+include = ["src/**", "LICENSE"]
+
+[dependencies]
+sci-core.workspace = true

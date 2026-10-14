@@ -1,0 +1,22 @@
+[package]
+name = "sci-optimize"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Numerical optimization algorithms"
+documentation = "https://docs.rs/sci-optimize"
+homepage = "https://github.com/p-sira/sci"
+repository = "https://github.com/p-sira/sci"
+categories = ["algorithms", "mathematics", "science"]
+keywords = ["optimization", "minimization", "numerics", "scientific-computing", "calculus"]
+include = ["src/**", "LICENSE"]
+
+[dependencies]
+sci-core.workspace = true
+basin.workspace = true
+
+[dev-dependencies]
+sci-differentiate.workspace = true
+sci-linalg.workspace = true

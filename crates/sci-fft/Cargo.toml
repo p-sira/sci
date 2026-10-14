@@ -1,0 +1,23 @@
+[package]
+name = "sci-fft"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Fast Fourier and discrete cosine transforms"
+documentation = "https://docs.rs/sci-fft"
+homepage = "https://github.com/p-sira/sci"
+repository = "https://github.com/p-sira/sci"
+categories = ["algorithms", "mathematics", "science"]
+keywords = ["fft", "fourier-transform", "signal-processing", "numerics", "dct"]
+include = ["src/**", "LICENSE"]
+
+[dependencies]
+sci-core.workspace = true
+sci-complex.workspace = true
+num-complex.workspace = true
+rustfft.workspace = true
+realfft.workspace = true
+rustdct.workspace = true
+xsf.workspace = true

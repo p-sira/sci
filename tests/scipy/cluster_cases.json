@@ -1,0 +1,2111 @@
+[
+  {
+    "api": "single",
+    "y": [
+      1.25,
+      3.2,
+      4.1,
+      2.8,
+      3.7,
+      2.5
+    ],
+    "method": "average",
+    "id": "single_0"
+  },
+  {
+    "api": "single",
+    "y": [
+      2.0
+    ],
+    "method": "average",
+    "id": "single_1"
+  },
+  {
+    "api": "single",
+    "y": [
+      0.0
+    ],
+    "method": "average",
+    "id": "single_2"
+  },
+  {
+    "api": "single",
+    "y": [
+      1.0,
+      4.0,
+      3.0
+    ],
+    "method": "average",
+    "id": "single_3"
+  },
+  {
+    "api": "complete",
+    "y": [
+      1.25,
+      3.2,
+      4.1,
+      2.8,
+      3.7,
+      2.5
+    ],
+    "method": "average",
+    "id": "complete_0"
+  },
+  {
+    "api": "complete",
+    "y": [
+      2.0
+    ],
+    "method": "average",
+    "id": "complete_1"
+  },
+  {
+    "api": "complete",
+    "y": [
+      0.0
+    ],
+    "method": "average",
+    "id": "complete_2"
+  },
+  {
+    "api": "complete",
+    "y": [
+      1.0,
+      4.0,
+      3.0
+    ],
+    "method": "average",
+    "id": "complete_3"
+  },
+  {
+    "api": "average",
+    "y": [
+      1.25,
+      3.2,
+      4.1,
+      2.8,
+      3.7,
+      2.5
+    ],
+    "method": "average",
+    "id": "average_0"
+  },
+  {
+    "api": "average",
+    "y": [
+      2.0
+    ],
+    "method": "average",
+    "id": "average_1"
+  },
+  {
+    "api": "average",
+    "y": [
+      0.0
+    ],
+    "method": "average",
+    "id": "average_2"
+  },
+  {
+    "api": "average",
+    "y": [
+      1.0,
+      4.0,
+      3.0
+    ],
+    "method": "average",
+    "id": "average_3"
+  },
+  {
+    "api": "weighted",
+    "y": [
+      1.25,
+      3.2,
+      4.1,
+      2.8,
+      3.7,
+      2.5
+    ],
+    "method": "average",
+    "id": "weighted_0"
+  },
+  {
+    "api": "weighted",
+    "y": [
+      2.0
+    ],
+    "method": "average",
+    "id": "weighted_1"
+  },
+  {
+    "api": "weighted",
+    "y": [
+      0.0
+    ],
+    "method": "average",
+    "id": "weighted_2"
+  },
+  {
+    "api": "weighted",
+    "y": [
+      1.0,
+      4.0,
+      3.0
+    ],
+    "method": "average",
+    "id": "weighted_3"
+  },
+  {
+    "api": "centroid",
+    "y": [
+      1.25,
+      3.2,
+      4.1,
+      2.8,
+      3.7,
+      2.5
+    ],
+    "method": "average",
+    "id": "centroid_0"
+  },
+  {
+    "api": "centroid",
+    "y": [
+      2.0
+    ],
+    "method": "average",
+    "id": "centroid_1"
+  },
+  {
+    "api": "centroid",
+    "y": [
+      0.0
+    ],
+    "method": "average",
+    "id": "centroid_2"
+  },
+  {
+    "api": "centroid",
+    "y": [
+      1.0,
+      4.0,
+      3.0
+    ],
+    "method": "average",
+    "id": "centroid_3"
+  },
+  {
+    "api": "median",
+    "y": [
+      1.25,
+      3.2,
+      4.1,
+      2.8,
+      3.7,
+      2.5
+    ],
+    "method": "average",
+    "id": "median_0"
+  },
+  {
+    "api": "median",
+    "y": [
+      2.0
+    ],
+    "method": "average",
+    "id": "median_1"
+  },
+  {
+    "api": "median",
+    "y": [
+      0.0
+    ],
+    "method": "average",
+    "id": "median_2"
+  },
+  {
+    "api": "median",
+    "y": [
+      1.0,
+      4.0,
+      3.0
+    ],
+    "method": "average",
+    "id": "median_3"
+  },
+  {
+    "api": "ward",
+    "y": [
+      1.25,
+      3.2,
+      4.1,
+      2.8,
+      3.7,
+      2.5
+    ],
+    "method": "average",
+    "id": "ward_0"
+  },
+  {
+    "api": "ward",
+    "y": [
+      2.0
+    ],
+    "method": "average",
+    "id": "ward_1"
+  },
+  {
+    "api": "ward",
+    "y": [
+      0.0
+    ],
+    "method": "average",
+    "id": "ward_2"
+  },
+  {
+    "api": "ward",
+    "y": [
+      1.0,
+      4.0,
+      3.0
+    ],
+    "method": "average",
+    "id": "ward_3"
+  },
+  {
+    "api": "linkage",
+    "y": [
+      1.25,
+      3.2,
+      4.1,
+      2.8,
+      3.7,
+      2.5
+    ],
+    "method": "average",
+    "id": "linkage_0"
+  },
+  {
+    "api": "linkage",
+    "y": [
+      2.0
+    ],
+    "method": "average",
+    "id": "linkage_1"
+  },
+  {
+    "api": "linkage",
+    "y": [
+      0.0
+    ],
+    "method": "average",
+    "id": "linkage_2"
+  },
+  {
+    "api": "linkage",
+    "y": [
+      1.0,
+      4.0,
+      3.0
+    ],
+    "method": "average",
+    "id": "linkage_3"
+  },
+  {
+    "api": "num_obs_linkage",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "num_obs_linkage_0",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "num_obs_linkage",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "num_obs_linkage_1",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "num_obs_linkage",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "num_obs_linkage_2",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "is_valid_linkage",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "is_valid_linkage_0",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "is_valid_linkage",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "is_valid_linkage_1",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "is_valid_linkage",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "is_valid_linkage_2",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "is_monotonic",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "is_monotonic_0",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "is_monotonic",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "is_monotonic_1",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "is_monotonic",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "is_monotonic_2",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "leaves_list",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "leaves_list_0",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "leaves_list",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "leaves_list_1",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "leaves_list",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "leaves_list_2",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "maxdists",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "maxdists_0",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "maxdists",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "maxdists_1",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "maxdists",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "maxdists_2",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "to_mlab_linkage",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "to_mlab_linkage_0",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "to_mlab_linkage",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "to_mlab_linkage_1",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "to_mlab_linkage",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "to_mlab_linkage_2",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "to_tree",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "to_tree_0",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "to_tree",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "to_tree_1",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "to_tree",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "to_tree_2",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "cophenet",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "cophenet_0",
+    "depth": 2,
+    "column": 3,
+    "y": [
+      1.25,
+      3.2,
+      4.1,
+      2.8,
+      3.7,
+      2.5
+    ]
+  },
+  {
+    "api": "cophenet",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "cophenet_1",
+    "depth": 2,
+    "column": 3,
+    "y": [
+      3.0,
+      4.0,
+      1.0
+    ]
+  },
+  {
+    "api": "cophenet",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "cophenet_2",
+    "depth": 2,
+    "column": 3,
+    "y": [
+      0.0
+    ]
+  },
+  {
+    "api": "correspond",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "correspond_0",
+    "depth": 2,
+    "column": 3,
+    "y": [
+      1.25,
+      3.2,
+      4.1,
+      2.8,
+      3.7,
+      2.5
+    ]
+  },
+  {
+    "api": "correspond",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "correspond_1",
+    "depth": 2,
+    "column": 3,
+    "y": [
+      3.0,
+      4.0,
+      1.0
+    ]
+  },
+  {
+    "api": "correspond",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "correspond_2",
+    "depth": 2,
+    "column": 3,
+    "y": [
+      0.0
+    ]
+  },
+  {
+    "api": "inconsistent",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "inconsistent_0",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "inconsistent",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "inconsistent_1",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "inconsistent",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "inconsistent_2",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "is_valid_im",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "is_valid_im_0",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "is_valid_im",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "is_valid_im_1",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "is_valid_im",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "is_valid_im_2",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "maxRstat",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "maxRstat_0",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "maxRstat",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "maxRstat_1",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "maxRstat",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "maxRstat_2",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "maxinconsts",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "maxinconsts_0",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "maxinconsts",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "maxinconsts_1",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "maxinconsts",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "maxinconsts_2",
+    "depth": 2,
+    "column": 3
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "fcluster_0",
+    "depth": 2,
+    "column": 3,
+    "threshold": 2.5,
+    "criterion": "distance"
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "fcluster_1",
+    "depth": 2,
+    "column": 3,
+    "threshold": 2.5,
+    "criterion": "distance"
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "fcluster_2",
+    "depth": 2,
+    "column": 3,
+    "threshold": 2.5,
+    "criterion": "distance"
+  },
+  {
+    "api": "leaders",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "leaders_0",
+    "depth": 2,
+    "column": 3,
+    "labels": [
+      7,
+      7,
+      8,
+      8
+    ]
+  },
+  {
+    "api": "leaders",
+    "z": [
+      [
+        0,
+        1,
+        3,
+        2
+      ],
+      [
+        2,
+        3,
+        1,
+        3
+      ]
+    ],
+    "id": "leaders_1",
+    "depth": 2,
+    "column": 3,
+    "labels": [
+      7,
+      7,
+      7
+    ]
+  },
+  {
+    "api": "leaders",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "leaders_2",
+    "depth": 2,
+    "column": 3,
+    "labels": [
+      7,
+      7
+    ]
+  },
+  {
+    "api": "cut_tree",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "cut_tree_0",
+    "depth": 2,
+    "column": 3,
+    "counts": [
+      4,
+      2,
+      1
+    ]
+  },
+  {
+    "api": "cut_tree",
+    "z": [
+      [
+        0,
+        1,
+        1,
+        2
+      ],
+      [
+        2,
+        3,
+        3,
+        3
+      ]
+    ],
+    "id": "cut_tree_1",
+    "depth": 2,
+    "column": 3,
+    "counts": [
+      3,
+      2,
+      1
+    ]
+  },
+  {
+    "api": "cut_tree",
+    "z": [
+      [
+        0,
+        1,
+        0,
+        2
+      ]
+    ],
+    "id": "cut_tree_2",
+    "depth": 2,
+    "column": 3,
+    "counts": [
+      2,
+      1
+    ]
+  },
+  {
+    "api": "from_mlab_linkage",
+    "z": [
+      [
+        1,
+        2,
+        1.25
+      ],
+      [
+        3,
+        4,
+        2.5
+      ],
+      [
+        5,
+        6,
+        5.0
+      ]
+    ],
+    "id": "from_mlab_linkage_0"
+  },
+  {
+    "api": "from_mlab_linkage",
+    "z": [
+      [
+        1,
+        2,
+        3
+      ],
+      [
+        3,
+        4,
+        1
+      ]
+    ],
+    "id": "from_mlab_linkage_1"
+  },
+  {
+    "api": "is_isomorphic",
+    "a": [
+      0,
+      0,
+      1
+    ],
+    "b": [
+      9,
+      9,
+      4
+    ],
+    "id": "is_isomorphic_0"
+  },
+  {
+    "api": "is_isomorphic",
+    "a": [
+      0,
+      0,
+      1
+    ],
+    "b": [
+      9,
+      4,
+      4
+    ],
+    "id": "is_isomorphic_1"
+  },
+  {
+    "api": "is_isomorphic",
+    "a": [],
+    "b": [],
+    "id": "is_isomorphic_2"
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "criterion": "inconsistent",
+    "threshold": 1,
+    "depth": 2,
+    "id": "fcluster_inconsistent_1"
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "criterion": "inconsistent",
+    "threshold": 2,
+    "depth": 2,
+    "id": "fcluster_inconsistent_2"
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "criterion": "inconsistent",
+    "threshold": 4,
+    "depth": 2,
+    "id": "fcluster_inconsistent_4"
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "criterion": "maxclust",
+    "threshold": 1,
+    "depth": 2,
+    "id": "fcluster_maxclust_1"
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "criterion": "maxclust",
+    "threshold": 2,
+    "depth": 2,
+    "id": "fcluster_maxclust_2"
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "criterion": "maxclust",
+    "threshold": 4,
+    "depth": 2,
+    "id": "fcluster_maxclust_4"
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "criterion": "monocrit",
+    "threshold": 1,
+    "depth": 2,
+    "id": "fcluster_monocrit_1"
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "criterion": "monocrit",
+    "threshold": 2,
+    "depth": 2,
+    "id": "fcluster_monocrit_2"
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "criterion": "monocrit",
+    "threshold": 4,
+    "depth": 2,
+    "id": "fcluster_monocrit_4"
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "criterion": "maxclust_monocrit",
+    "threshold": 1,
+    "depth": 2,
+    "id": "fcluster_maxclust_monocrit_1"
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "criterion": "maxclust_monocrit",
+    "threshold": 2,
+    "depth": 2,
+    "id": "fcluster_maxclust_monocrit_2"
+  },
+  {
+    "api": "fcluster",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "criterion": "maxclust_monocrit",
+    "threshold": 4,
+    "depth": 2,
+    "id": "fcluster_maxclust_monocrit_4"
+  },
+  {
+    "api": "inconsistent",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "depth": 0,
+    "id": "inconsistent_depth_0"
+  },
+  {
+    "api": "inconsistent",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "depth": 1,
+    "id": "inconsistent_depth_1"
+  },
+  {
+    "api": "inconsistent",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "depth": 3,
+    "id": "inconsistent_depth_3"
+  },
+  {
+    "api": "inconsistent",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "depth": 500,
+    "id": "inconsistent_depth_500"
+  },
+  {
+    "api": "maxRstat",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "column": 0,
+    "depth": 3,
+    "id": "maxRstat_column_0"
+  },
+  {
+    "api": "maxRstat",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "column": 1,
+    "depth": 3,
+    "id": "maxRstat_column_1"
+  },
+  {
+    "api": "maxRstat",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "column": 2,
+    "depth": 3,
+    "id": "maxRstat_column_2"
+  },
+  {
+    "api": "maxRstat",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "column": 3,
+    "depth": 3,
+    "id": "maxRstat_column_3"
+  },
+  {
+    "api": "fclusterdata",
+    "x": [
+      [
+        0
+      ],
+      [
+        1.25
+      ],
+      [
+        4.5
+      ],
+      [
+        7
+      ]
+    ],
+    "threshold": 3,
+    "method": "single",
+    "criterion": "distance",
+    "id": "fclusterdata_0"
+  },
+  {
+    "api": "fclusterdata",
+    "x": [
+      [
+        0,
+        0
+      ],
+      [
+        2,
+        1
+      ],
+      [
+        5,
+        7
+      ]
+    ],
+    "threshold": 3,
+    "method": "single",
+    "criterion": "distance",
+    "id": "fclusterdata_1"
+  },
+  {
+    "api": "cut_tree",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "heights": [
+      0,
+      1.25001,
+      2.5,
+      6
+    ],
+    "id": "cut_tree_heights_0"
+  },
+  {
+    "api": "cut_tree",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "heights": [
+      -1,
+      5,
+      5.01
+    ],
+    "id": "cut_tree_heights_1"
+  },
+  {
+    "api": "cut_tree",
+    "z": [
+      [
+        0,
+        1,
+        1.25,
+        2
+      ],
+      [
+        2,
+        3,
+        2.5,
+        2
+      ],
+      [
+        4,
+        5,
+        5.0,
+        4
+      ]
+    ],
+    "id": "cut_tree_all"
+  },
+  {
+    "api": "is_valid_linkage",
+    "z": [],
+    "id": "is_valid_linkage_bad_5"
+  },
+  {
+    "api": "is_valid_im",
+    "r": [
+      [
+        1,
+        -1,
+        1,
+        0
+      ]
+    ],
+    "id": "is_valid_im_bad_0"
+  },
+  {
+    "api": "is_valid_im",
+    "r": [
+      [
+        1,
+        1,
+        -1,
+        0
+      ]
+    ],
+    "id": "is_valid_im_bad_1"
+  },
+  {
+    "api": "is_valid_im",
+    "r": [],
+    "id": "is_valid_im_bad_2"
+  },
+  {
+    "api": "is_valid_im",
+    "r": [
+      [
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "id": "is_valid_im_bad_3"
+  }
+]

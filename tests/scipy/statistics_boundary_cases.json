@@ -1,0 +1,24 @@
+{
+  "distributions": [
+    {"name": "Poisson", "parameters": [0.0]},
+    {"name": "NegativeBinomial", "parameters": [2.5, 1.0]},
+    {"name": "Bernoulli", "parameters": [0.0]},
+    {"name": "Bernoulli", "parameters": [1.0]},
+    {"name": "Binomial", "parameters": [0.0, 0.5]},
+    {"name": "Binomial", "parameters": [3.0, 0.0]},
+    {"name": "Binomial", "parameters": [3.0, 1.0]},
+    {"name": "Geometric", "parameters": [1.0]},
+    {"name": "DiscreteUniform", "parameters": [-2.0, 3.0]},
+    {"name": "Beta", "parameters": [0.5, 0.5]},
+    {"name": "Gamma", "parameters": [0.5, 2.0]},
+    {"name": "InverseGamma", "parameters": [2.0, 1.0]}
+  ],
+  "observations": ["-inf", -3.0, -2.0, -0.5, 0.0, 0.5, 1.0, 2.0, 3.0, "inf"],
+  "probabilities": [0.0, 0.01, 0.5, 0.99, 1.0],
+  "posterior": {
+    "lengths": [2, 3, 1000, 1001],
+    "pattern": [-2.0, -1.0, 0.0, 1.0, 2.0],
+    "probabilities": [0.01, 0.5, 0.99],
+    "confidence": 0.9
+  }
+}

@@ -1,0 +1,21 @@
+[package]
+name = "sci-differentiate"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Numerical differentiation and derivatives"
+documentation = "https://docs.rs/sci-differentiate"
+homepage = "https://github.com/p-sira/sci"
+repository = "https://github.com/p-sira/sci"
+categories = ["mathematics", "science"]
+keywords = ["differentiation", "derivatives", "calculus", "numerics", "scientific-computing"]
+include = ["src/**", "LICENSE"]
+
+[dependencies]
+sci-core.workspace = true
+
+[dev-dependencies]
+sci-linalg.workspace = true
+sci-optimize.workspace = true

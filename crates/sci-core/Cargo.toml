@@ -1,0 +1,14 @@
+[package]
+name = "sci-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Shared types and errors for scientific computing"
+documentation = "https://docs.rs/sci-core"
+homepage = "https://github.com/p-sira/sci"
+repository = "https://github.com/p-sira/sci"
+categories = ["mathematics", "science"]
+keywords = ["numerics", "scientific-computing", "mathematics", "data-types", "errors"]
+include = ["src/**", "LICENSE"]

@@ -1,0 +1,22 @@
+[package]
+name = "sci-complex"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Complex-number utilities for scientific computing"
+documentation = "https://docs.rs/sci-complex"
+homepage = "https://github.com/p-sira/sci"
+repository = "https://github.com/p-sira/sci"
+categories = ["mathematics", "science"]
+keywords = ["complex-numbers", "numerics", "mathematics", "scientific-computing", "complex-analysis"]
+include = ["src/**", "LICENSE"]
+
+[dependencies]
+sci-core.workspace = true
+num-complex.workspace = true
+
+[dev-dependencies]
+sci-fft.workspace = true
+sci-special.workspace = true

@@ -1,0 +1,20 @@
+api,result
+value,299792458.0
+value,9.1093837139e-31
+unit,J Hz^-1
+unit,
+precision,3.0737534919376406e-10
+precision,0.0
+find,alpha particle-electron mass ratio;deuteron-electron mass ratio;electron mass;electron mass energy equivalent;electron mass energy equivalent in MeV;electron mass in u;helion-electron mass ratio;muon-electron mass ratio;neutron-electron mass ratio;proton-electron mass ratio;tau-electron mass ratio;triton-electron mass ratio
+find,speed of light in vacuum
+find,
+convert_temperature,273.15
+convert_temperature,0.0
+convert_temperature,0.0
+convert_temperature,32.0
+lambda2nu,299792458.0
+lambda2nu,inf
+lambda2nu,-149896229.0
+nu2lambda,1.0
+nu2lambda,inf
+nu2lambda,-149896229.0

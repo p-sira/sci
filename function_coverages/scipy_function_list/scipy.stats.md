@@ -1,0 +1,4442 @@
+# scipy.stats
+
+[Back to SciPy function index](../SCIPY_FUNCTIONS.md)
+
+## Namespaces
+
+- [`scipy.stats`](#scipy-stats)
+- [`scipy.stats.biasedurn`](#scipy-stats-biasedurn) (additional / compatibility)
+- [`scipy.stats.contingency`](#scipy-stats-contingency)
+- [`scipy.stats.distributions`](#scipy-stats-distributions) (additional / compatibility)
+- [`scipy.stats.kde`](#scipy-stats-kde) (additional / compatibility)
+- [`scipy.stats.morestats`](#scipy-stats-morestats) (additional / compatibility)
+- [`scipy.stats.mstats`](#scipy-stats-mstats)
+- [`scipy.stats.mstats_basic`](#scipy-stats-mstats_basic) (additional / compatibility)
+- [`scipy.stats.mstats_extras`](#scipy-stats-mstats_extras) (additional / compatibility)
+- [`scipy.stats.mvn`](#scipy-stats-mvn) (additional / compatibility)
+- [`scipy.stats.qmc`](#scipy-stats-qmc)
+- [`scipy.stats.sampling`](#scipy-stats-sampling)
+- [`scipy.stats.stats`](#scipy-stats-stats) (additional / compatibility)
+
+## Public API namespaces
+
+### scipy.stats
+
+[Module reference](https://docs.scipy.org/doc/scipy/reference/stats.html#module-scipy.stats)
+
+Function entries: **137**. Callable objects: **149**. Classes: **18**.
+
+#### Functions
+
+- [`abs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.abs.html#scipy.stats.abs)
+- [`alexandergovern`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.alexandergovern.html#scipy.stats.alexandergovern)
+- [`anderson`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.anderson.html#scipy.stats.anderson)
+- [`anderson_ksamp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.anderson_ksamp.html#scipy.stats.anderson_ksamp)
+- [`ansari`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ansari.html#scipy.stats.ansari)
+- [`barnard_exact`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.barnard_exact.html#scipy.stats.barnard_exact)
+- [`bartlett`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.bartlett.html#scipy.stats.bartlett)
+- [`bayes_mvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.bayes_mvs.html#scipy.stats.bayes_mvs)
+- [`binned_statistic`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.binned_statistic.html#scipy.stats.binned_statistic)
+- [`binned_statistic_2d`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.binned_statistic_2d.html#scipy.stats.binned_statistic_2d)
+- [`binned_statistic_dd`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.binned_statistic_dd.html#scipy.stats.binned_statistic_dd)
+- [`binomtest`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.binomtest.html#scipy.stats.binomtest)
+- [`bootstrap`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.bootstrap.html#scipy.stats.bootstrap)
+- [`boschloo_exact`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.boschloo_exact.html#scipy.stats.boschloo_exact)
+- [`boxcox`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.boxcox.html#scipy.stats.boxcox)
+- [`boxcox_llf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.boxcox_llf.html#scipy.stats.boxcox_llf)
+- [`boxcox_normmax`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.boxcox_normmax.html#scipy.stats.boxcox_normmax)
+- [`boxcox_normplot`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.boxcox_normplot.html#scipy.stats.boxcox_normplot)
+- [`brunnermunzel`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.brunnermunzel.html#scipy.stats.brunnermunzel)
+- [`bws_test`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.bws_test.html#scipy.stats.bws_test)
+- [`chatterjeexi`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chatterjeexi.html#scipy.stats.chatterjeexi)
+- [`chi2_contingency`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chi2_contingency.html#scipy.stats.chi2_contingency)
+- [`chisquare`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chisquare.html#scipy.stats.chisquare)
+- [`circmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.circmean.html#scipy.stats.circmean)
+- [`circstd`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.circstd.html#scipy.stats.circstd)
+- [`circvar`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.circvar.html#scipy.stats.circvar)
+- [`combine_pvalues`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.combine_pvalues.html#scipy.stats.combine_pvalues)
+- [`cramervonmises`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.cramervonmises.html#scipy.stats.cramervonmises)
+- [`cramervonmises_2samp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.cramervonmises_2samp.html#scipy.stats.cramervonmises_2samp)
+- [`cumfreq`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.cumfreq.html#scipy.stats.cumfreq)
+- [`describe`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.describe.html#scipy.stats.describe)
+- [`differential_entropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.differential_entropy.html#scipy.stats.differential_entropy)
+- [`directional_stats`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.directional_stats.html#scipy.stats.directional_stats)
+- [`dunnett`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.dunnett.html#scipy.stats.dunnett)
+- [`ecdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ecdf.html#scipy.stats.ecdf)
+- [`energy_distance`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.energy_distance.html#scipy.stats.energy_distance)
+- [`entropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.entropy.html#scipy.stats.entropy)
+- [`epps_singleton_2samp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.epps_singleton_2samp.html#scipy.stats.epps_singleton_2samp)
+- [`estimated_cdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.estimated_cdf.html#scipy.stats.estimated_cdf)
+- [`exp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.exp.html#scipy.stats.exp)
+- [`expectile`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.expectile.html#scipy.stats.expectile)
+- [`f_oneway`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.f_oneway.html#scipy.stats.f_oneway)
+- [`false_discovery_control`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.false_discovery_control.html#scipy.stats.false_discovery_control)
+- [`fisher_exact`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.fisher_exact.html#scipy.stats.fisher_exact)
+- [`fit`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.fit.html#scipy.stats.fit)
+- [`fligner`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.fligner.html#scipy.stats.fligner)
+- [`friedmanchisquare`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.friedmanchisquare.html#scipy.stats.friedmanchisquare)
+- [`gmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gmean.html#scipy.stats.gmean)
+- [`goodness_of_fit`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.goodness_of_fit.html#scipy.stats.goodness_of_fit)
+- [`gstd`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gstd.html#scipy.stats.gstd)
+- [`gzscore`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gzscore.html#scipy.stats.gzscore)
+- [`hmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.hmean.html#scipy.stats.hmean)
+- [`iqr`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.iqr.html#scipy.stats.iqr)
+- [`jarque_bera`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.jarque_bera.html#scipy.stats.jarque_bera)
+- [`kendalltau`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kendalltau.html#scipy.stats.kendalltau)
+- [`kruskal`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kruskal.html#scipy.stats.kruskal)
+- [`ks_1samp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ks_1samp.html#scipy.stats.ks_1samp)
+- [`ks_2samp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ks_2samp.html#scipy.stats.ks_2samp)
+- [`kstat`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kstat.html#scipy.stats.kstat)
+- [`kstatvar`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kstatvar.html#scipy.stats.kstatvar)
+- [`kstest`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kstest.html#scipy.stats.kstest)
+- [`kurtosis`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kurtosis.html#scipy.stats.kurtosis)
+- [`kurtosistest`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kurtosistest.html#scipy.stats.kurtosistest)
+- [`levene`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.levene.html#scipy.stats.levene)
+- [`linregress`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.linregress.html#scipy.stats.linregress)
+- [`lmoment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.lmoment.html#scipy.stats.lmoment)
+- [`log`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.log.html#scipy.stats.log)
+- [`logrank`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.logrank.html#scipy.stats.logrank)
+- [`make_distribution`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.make_distribution.html#scipy.stats.make_distribution)
+- [`mannwhitneyu`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mannwhitneyu.html#scipy.stats.mannwhitneyu)
+- [`median_abs_deviation`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.median_abs_deviation.html#scipy.stats.median_abs_deviation)
+- [`median_test`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.median_test.html#scipy.stats.median_test)
+- [`mode`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mode.html#scipy.stats.mode)
+- [`moment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.moment.html#scipy.stats.moment)
+- [`monte_carlo_test`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.monte_carlo_test.html#scipy.stats.monte_carlo_test)
+- [`mood`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mood.html#scipy.stats.mood)
+- [`multiscale_graphcorr`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multiscale_graphcorr.html#scipy.stats.multiscale_graphcorr)
+- [`mvsdist`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mvsdist.html#scipy.stats.mvsdist)
+- [`normaltest`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.normaltest.html#scipy.stats.normaltest)
+- [`obrientransform`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.obrientransform.html#scipy.stats.obrientransform)
+- [`order_statistic`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.order_statistic.html#scipy.stats.order_statistic)
+- [`page_trend_test`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.page_trend_test.html#scipy.stats.page_trend_test)
+- [`pearsonr`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.pearsonr.html#scipy.stats.pearsonr)
+- [`percentileofscore`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.percentileofscore.html#scipy.stats.percentileofscore)
+- [`permutation_test`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.permutation_test.html#scipy.stats.permutation_test)
+- [`pmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.pmean.html#scipy.stats.pmean)
+- [`pointbiserialr`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.pointbiserialr.html#scipy.stats.pointbiserialr)
+- [`poisson_means_test`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.poisson_means_test.html#scipy.stats.poisson_means_test)
+- [`power`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.power.html#scipy.stats.power)
+- [`power_divergence`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.power_divergence.html#scipy.stats.power_divergence)
+- [`ppcc_max`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ppcc_max.html#scipy.stats.ppcc_max)
+- [`ppcc_plot`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ppcc_plot.html#scipy.stats.ppcc_plot)
+- [`probplot`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.probplot.html#scipy.stats.probplot)
+- [`quantile`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.quantile.html#scipy.stats.quantile)
+- [`quantile_test`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.quantile_test.html#scipy.stats.quantile_test)
+- [`rankdata`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rankdata.html#scipy.stats.rankdata)
+- [`ranksums`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ranksums.html#scipy.stats.ranksums)
+- [`relfreq`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.relfreq.html#scipy.stats.relfreq)
+- [`scoreatpercentile`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.scoreatpercentile.html#scipy.stats.scoreatpercentile)
+- [`sem`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sem.html#scipy.stats.sem)
+- [`shapiro`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.shapiro.html#scipy.stats.shapiro)
+- [`siegelslopes`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.siegelslopes.html#scipy.stats.siegelslopes)
+- [`sigmaclip`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sigmaclip.html#scipy.stats.sigmaclip)
+- [`skew`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.skew.html#scipy.stats.skew)
+- [`skewtest`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.skewtest.html#scipy.stats.skewtest)
+- [`sobol_indices`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sobol_indices.html#scipy.stats.sobol_indices)
+- [`somersd`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.somersd.html#scipy.stats.somersd)
+- [`spearmanr`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.spearmanr.html#scipy.stats.spearmanr)
+- [`spearmanrho`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.spearmanrho.html#scipy.stats.spearmanrho)
+- [`theilslopes`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.theilslopes.html#scipy.stats.theilslopes)
+- [`tiecorrect`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tiecorrect.html#scipy.stats.tiecorrect)
+- [`tmax`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tmax.html#scipy.stats.tmax)
+- [`tmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tmean.html#scipy.stats.tmean)
+- [`tmin`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tmin.html#scipy.stats.tmin)
+- [`trim1`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.trim1.html#scipy.stats.trim1)
+- [`trim_mean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.trim_mean.html#scipy.stats.trim_mean)
+- [`trimboth`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.trimboth.html#scipy.stats.trimboth)
+- [`truncate`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncate.html#scipy.stats.truncate)
+- [`tsem`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tsem.html#scipy.stats.tsem)
+- [`tstd`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tstd.html#scipy.stats.tstd)
+- [`ttest_1samp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_1samp.html#scipy.stats.ttest_1samp)
+- [`ttest_ind`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_ind.html#scipy.stats.ttest_ind)
+- [`ttest_ind_from_stats`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_ind_from_stats.html#scipy.stats.ttest_ind_from_stats)
+- [`ttest_rel`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_rel.html#scipy.stats.ttest_rel)
+- [`tukey_hsd`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tukey_hsd.html#scipy.stats.tukey_hsd)
+- [`tvar`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tvar.html#scipy.stats.tvar)
+- [`variation`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.variation.html#scipy.stats.variation)
+- [`wasserstein_distance`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wasserstein_distance.html#scipy.stats.wasserstein_distance)
+- [`wasserstein_distance_nd`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wasserstein_distance_nd.html#scipy.stats.wasserstein_distance_nd)
+- [`weightedtau`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.weightedtau.html#scipy.stats.weightedtau)
+- [`wilcoxon`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wilcoxon.html#scipy.stats.wilcoxon)
+- [`yeojohnson`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.yeojohnson.html#scipy.stats.yeojohnson)
+- [`yeojohnson_llf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.yeojohnson_llf.html#scipy.stats.yeojohnson_llf)
+- [`yeojohnson_normmax`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.yeojohnson_normmax.html#scipy.stats.yeojohnson_normmax)
+- [`yeojohnson_normplot`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.yeojohnson_normplot.html#scipy.stats.yeojohnson_normplot)
+- [`zmap`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.zmap.html#scipy.stats.zmap)
+- [`zscore`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.zscore.html#scipy.stats.zscore)
+
+#### Callable objects and distribution APIs
+
+- [`alpha`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.alpha.html#scipy.stats.alpha)
+  - `alpha.cdf`
+  - `alpha.entropy`
+  - `alpha.expect`
+  - `alpha.fit`
+  - `alpha.fit_loc_scale`
+  - `alpha.freeze`
+  - `alpha.generic_moment`
+  - `alpha.interval`
+  - `alpha.isf`
+  - `alpha.logcdf`
+  - `alpha.logpdf`
+  - `alpha.logsf`
+  - `alpha.mean`
+  - `alpha.median`
+  - `alpha.moment`
+  - `alpha.nnlf`
+  - `alpha.pdf`
+  - `alpha.ppf`
+  - `alpha.rvs`
+  - `alpha.sf`
+  - `alpha.stats`
+  - `alpha.std`
+  - `alpha.support`
+  - `alpha.var`
+  - `alpha.vecentropy`
+- [`anglit`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.anglit.html#scipy.stats.anglit)
+  - `anglit.cdf`
+  - `anglit.entropy`
+  - `anglit.expect`
+  - `anglit.fit`
+  - `anglit.fit_loc_scale`
+  - `anglit.freeze`
+  - `anglit.generic_moment`
+  - `anglit.interval`
+  - `anglit.isf`
+  - `anglit.logcdf`
+  - `anglit.logpdf`
+  - `anglit.logsf`
+  - `anglit.mean`
+  - `anglit.median`
+  - `anglit.moment`
+  - `anglit.nnlf`
+  - `anglit.pdf`
+  - `anglit.ppf`
+  - `anglit.rvs`
+  - `anglit.sf`
+  - `anglit.stats`
+  - `anglit.std`
+  - `anglit.support`
+  - `anglit.var`
+  - `anglit.vecentropy`
+- [`arcsine`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.arcsine.html#scipy.stats.arcsine)
+  - `arcsine.cdf`
+  - `arcsine.entropy`
+  - `arcsine.expect`
+  - `arcsine.fit`
+  - `arcsine.fit_loc_scale`
+  - `arcsine.freeze`
+  - `arcsine.generic_moment`
+  - `arcsine.interval`
+  - `arcsine.isf`
+  - `arcsine.logcdf`
+  - `arcsine.logpdf`
+  - `arcsine.logsf`
+  - `arcsine.mean`
+  - `arcsine.median`
+  - `arcsine.moment`
+  - `arcsine.nnlf`
+  - `arcsine.pdf`
+  - `arcsine.ppf`
+  - `arcsine.rvs`
+  - `arcsine.sf`
+  - `arcsine.stats`
+  - `arcsine.std`
+  - `arcsine.support`
+  - `arcsine.var`
+  - `arcsine.vecentropy`
+- [`argus`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.argus.html#scipy.stats.argus)
+  - `argus.cdf`
+  - `argus.entropy`
+  - `argus.expect`
+  - `argus.fit`
+  - `argus.fit_loc_scale`
+  - `argus.freeze`
+  - `argus.generic_moment`
+  - `argus.interval`
+  - `argus.isf`
+  - `argus.logcdf`
+  - `argus.logpdf`
+  - `argus.logsf`
+  - `argus.mean`
+  - `argus.median`
+  - `argus.moment`
+  - `argus.nnlf`
+  - `argus.pdf`
+  - `argus.ppf`
+  - `argus.rvs`
+  - `argus.sf`
+  - `argus.stats`
+  - `argus.std`
+  - `argus.support`
+  - `argus.var`
+  - `argus.vecentropy`
+- [`bernoulli`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.bernoulli.html#scipy.stats.bernoulli)
+  - `bernoulli.cdf`
+  - `bernoulli.entropy`
+  - `bernoulli.expect`
+  - `bernoulli.freeze`
+  - `bernoulli.generic_moment`
+  - `bernoulli.interval`
+  - `bernoulli.isf`
+  - `bernoulli.logcdf`
+  - `bernoulli.logpmf`
+  - `bernoulli.logsf`
+  - `bernoulli.mean`
+  - `bernoulli.median`
+  - `bernoulli.moment`
+  - `bernoulli.nnlf`
+  - `bernoulli.pmf`
+  - `bernoulli.ppf`
+  - `bernoulli.rvs`
+  - `bernoulli.sf`
+  - `bernoulli.stats`
+  - `bernoulli.std`
+  - `bernoulli.support`
+  - `bernoulli.var`
+  - `bernoulli.vecentropy`
+- [`beta`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.beta.html#scipy.stats.beta)
+  - `beta.cdf`
+  - `beta.entropy`
+  - `beta.expect`
+  - `beta.fit`
+  - `beta.fit_loc_scale`
+  - `beta.freeze`
+  - `beta.generic_moment`
+  - `beta.interval`
+  - `beta.isf`
+  - `beta.logcdf`
+  - `beta.logpdf`
+  - `beta.logsf`
+  - `beta.mean`
+  - `beta.median`
+  - `beta.moment`
+  - `beta.nnlf`
+  - `beta.pdf`
+  - `beta.ppf`
+  - `beta.rvs`
+  - `beta.sf`
+  - `beta.stats`
+  - `beta.std`
+  - `beta.support`
+  - `beta.var`
+  - `beta.vecentropy`
+- [`betabinom`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.betabinom.html#scipy.stats.betabinom)
+  - `betabinom.cdf`
+  - `betabinom.entropy`
+  - `betabinom.expect`
+  - `betabinom.freeze`
+  - `betabinom.generic_moment`
+  - `betabinom.interval`
+  - `betabinom.isf`
+  - `betabinom.logcdf`
+  - `betabinom.logpmf`
+  - `betabinom.logsf`
+  - `betabinom.mean`
+  - `betabinom.median`
+  - `betabinom.moment`
+  - `betabinom.nnlf`
+  - `betabinom.pmf`
+  - `betabinom.ppf`
+  - `betabinom.rvs`
+  - `betabinom.sf`
+  - `betabinom.stats`
+  - `betabinom.std`
+  - `betabinom.support`
+  - `betabinom.var`
+  - `betabinom.vecentropy`
+- [`betanbinom`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.betanbinom.html#scipy.stats.betanbinom)
+  - `betanbinom.cdf`
+  - `betanbinom.entropy`
+  - `betanbinom.expect`
+  - `betanbinom.freeze`
+  - `betanbinom.generic_moment`
+  - `betanbinom.interval`
+  - `betanbinom.isf`
+  - `betanbinom.logcdf`
+  - `betanbinom.logpmf`
+  - `betanbinom.logsf`
+  - `betanbinom.mean`
+  - `betanbinom.median`
+  - `betanbinom.moment`
+  - `betanbinom.nnlf`
+  - `betanbinom.pmf`
+  - `betanbinom.ppf`
+  - `betanbinom.rvs`
+  - `betanbinom.sf`
+  - `betanbinom.stats`
+  - `betanbinom.std`
+  - `betanbinom.support`
+  - `betanbinom.var`
+  - `betanbinom.vecentropy`
+- [`betaprime`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.betaprime.html#scipy.stats.betaprime)
+  - `betaprime.cdf`
+  - `betaprime.entropy`
+  - `betaprime.expect`
+  - `betaprime.fit`
+  - `betaprime.fit_loc_scale`
+  - `betaprime.freeze`
+  - `betaprime.generic_moment`
+  - `betaprime.interval`
+  - `betaprime.isf`
+  - `betaprime.logcdf`
+  - `betaprime.logpdf`
+  - `betaprime.logsf`
+  - `betaprime.mean`
+  - `betaprime.median`
+  - `betaprime.moment`
+  - `betaprime.nnlf`
+  - `betaprime.pdf`
+  - `betaprime.ppf`
+  - `betaprime.rvs`
+  - `betaprime.sf`
+  - `betaprime.stats`
+  - `betaprime.std`
+  - `betaprime.support`
+  - `betaprime.var`
+  - `betaprime.vecentropy`
+- [`binom`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.binom.html#scipy.stats.binom)
+  - `binom.cdf`
+  - `binom.entropy`
+  - `binom.expect`
+  - `binom.freeze`
+  - `binom.generic_moment`
+  - `binom.interval`
+  - `binom.isf`
+  - `binom.logcdf`
+  - `binom.logpmf`
+  - `binom.logsf`
+  - `binom.mean`
+  - `binom.median`
+  - `binom.moment`
+  - `binom.nnlf`
+  - `binom.pmf`
+  - `binom.ppf`
+  - `binom.rvs`
+  - `binom.sf`
+  - `binom.stats`
+  - `binom.std`
+  - `binom.support`
+  - `binom.var`
+  - `binom.vecentropy`
+- [`boltzmann`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.boltzmann.html#scipy.stats.boltzmann)
+  - `boltzmann.cdf`
+  - `boltzmann.entropy`
+  - `boltzmann.expect`
+  - `boltzmann.freeze`
+  - `boltzmann.generic_moment`
+  - `boltzmann.interval`
+  - `boltzmann.isf`
+  - `boltzmann.logcdf`
+  - `boltzmann.logpmf`
+  - `boltzmann.logsf`
+  - `boltzmann.mean`
+  - `boltzmann.median`
+  - `boltzmann.moment`
+  - `boltzmann.nnlf`
+  - `boltzmann.pmf`
+  - `boltzmann.ppf`
+  - `boltzmann.rvs`
+  - `boltzmann.sf`
+  - `boltzmann.stats`
+  - `boltzmann.std`
+  - `boltzmann.support`
+  - `boltzmann.var`
+  - `boltzmann.vecentropy`
+- [`bradford`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.bradford.html#scipy.stats.bradford)
+  - `bradford.cdf`
+  - `bradford.entropy`
+  - `bradford.expect`
+  - `bradford.fit`
+  - `bradford.fit_loc_scale`
+  - `bradford.freeze`
+  - `bradford.generic_moment`
+  - `bradford.interval`
+  - `bradford.isf`
+  - `bradford.logcdf`
+  - `bradford.logpdf`
+  - `bradford.logsf`
+  - `bradford.mean`
+  - `bradford.median`
+  - `bradford.moment`
+  - `bradford.nnlf`
+  - `bradford.pdf`
+  - `bradford.ppf`
+  - `bradford.rvs`
+  - `bradford.sf`
+  - `bradford.stats`
+  - `bradford.std`
+  - `bradford.support`
+  - `bradford.var`
+  - `bradford.vecentropy`
+- [`burr`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.burr.html#scipy.stats.burr)
+  - `burr.cdf`
+  - `burr.entropy`
+  - `burr.expect`
+  - `burr.fit`
+  - `burr.fit_loc_scale`
+  - `burr.freeze`
+  - `burr.generic_moment`
+  - `burr.interval`
+  - `burr.isf`
+  - `burr.logcdf`
+  - `burr.logpdf`
+  - `burr.logsf`
+  - `burr.mean`
+  - `burr.median`
+  - `burr.moment`
+  - `burr.nnlf`
+  - `burr.pdf`
+  - `burr.ppf`
+  - `burr.rvs`
+  - `burr.sf`
+  - `burr.stats`
+  - `burr.std`
+  - `burr.support`
+  - `burr.var`
+  - `burr.vecentropy`
+- [`burr12`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.burr12.html#scipy.stats.burr12)
+  - `burr12.cdf`
+  - `burr12.entropy`
+  - `burr12.expect`
+  - `burr12.fit`
+  - `burr12.fit_loc_scale`
+  - `burr12.freeze`
+  - `burr12.generic_moment`
+  - `burr12.interval`
+  - `burr12.isf`
+  - `burr12.logcdf`
+  - `burr12.logpdf`
+  - `burr12.logsf`
+  - `burr12.mean`
+  - `burr12.median`
+  - `burr12.moment`
+  - `burr12.nnlf`
+  - `burr12.pdf`
+  - `burr12.ppf`
+  - `burr12.rvs`
+  - `burr12.sf`
+  - `burr12.stats`
+  - `burr12.std`
+  - `burr12.support`
+  - `burr12.var`
+  - `burr12.vecentropy`
+- [`cauchy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.cauchy.html#scipy.stats.cauchy)
+  - `cauchy.cdf`
+  - `cauchy.entropy`
+  - `cauchy.expect`
+  - `cauchy.fit`
+  - `cauchy.fit_loc_scale`
+  - `cauchy.freeze`
+  - `cauchy.generic_moment`
+  - `cauchy.interval`
+  - `cauchy.isf`
+  - `cauchy.logcdf`
+  - `cauchy.logpdf`
+  - `cauchy.logsf`
+  - `cauchy.mean`
+  - `cauchy.median`
+  - `cauchy.moment`
+  - `cauchy.nnlf`
+  - `cauchy.pdf`
+  - `cauchy.ppf`
+  - `cauchy.rvs`
+  - `cauchy.sf`
+  - `cauchy.stats`
+  - `cauchy.std`
+  - `cauchy.support`
+  - `cauchy.var`
+  - `cauchy.vecentropy`
+- [`chi`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chi.html#scipy.stats.chi)
+  - `chi.cdf`
+  - `chi.entropy`
+  - `chi.expect`
+  - `chi.fit`
+  - `chi.fit_loc_scale`
+  - `chi.freeze`
+  - `chi.generic_moment`
+  - `chi.interval`
+  - `chi.isf`
+  - `chi.logcdf`
+  - `chi.logpdf`
+  - `chi.logsf`
+  - `chi.mean`
+  - `chi.median`
+  - `chi.moment`
+  - `chi.nnlf`
+  - `chi.pdf`
+  - `chi.ppf`
+  - `chi.rvs`
+  - `chi.sf`
+  - `chi.stats`
+  - `chi.std`
+  - `chi.support`
+  - `chi.var`
+  - `chi.vecentropy`
+- [`chi2`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.chi2.html#scipy.stats.chi2)
+  - `chi2.cdf`
+  - `chi2.entropy`
+  - `chi2.expect`
+  - `chi2.fit`
+  - `chi2.fit_loc_scale`
+  - `chi2.freeze`
+  - `chi2.generic_moment`
+  - `chi2.interval`
+  - `chi2.isf`
+  - `chi2.logcdf`
+  - `chi2.logpdf`
+  - `chi2.logsf`
+  - `chi2.mean`
+  - `chi2.median`
+  - `chi2.moment`
+  - `chi2.nnlf`
+  - `chi2.pdf`
+  - `chi2.ppf`
+  - `chi2.rvs`
+  - `chi2.sf`
+  - `chi2.stats`
+  - `chi2.std`
+  - `chi2.support`
+  - `chi2.var`
+  - `chi2.vecentropy`
+- [`cosine`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.cosine.html#scipy.stats.cosine)
+  - `cosine.cdf`
+  - `cosine.entropy`
+  - `cosine.expect`
+  - `cosine.fit`
+  - `cosine.fit_loc_scale`
+  - `cosine.freeze`
+  - `cosine.generic_moment`
+  - `cosine.interval`
+  - `cosine.isf`
+  - `cosine.logcdf`
+  - `cosine.logpdf`
+  - `cosine.logsf`
+  - `cosine.mean`
+  - `cosine.median`
+  - `cosine.moment`
+  - `cosine.nnlf`
+  - `cosine.pdf`
+  - `cosine.ppf`
+  - `cosine.rvs`
+  - `cosine.sf`
+  - `cosine.stats`
+  - `cosine.std`
+  - `cosine.support`
+  - `cosine.var`
+  - `cosine.vecentropy`
+- [`crystalball`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.crystalball.html#scipy.stats.crystalball)
+  - `crystalball.cdf`
+  - `crystalball.entropy`
+  - `crystalball.expect`
+  - `crystalball.fit`
+  - `crystalball.fit_loc_scale`
+  - `crystalball.freeze`
+  - `crystalball.generic_moment`
+  - `crystalball.interval`
+  - `crystalball.isf`
+  - `crystalball.logcdf`
+  - `crystalball.logpdf`
+  - `crystalball.logsf`
+  - `crystalball.mean`
+  - `crystalball.median`
+  - `crystalball.moment`
+  - `crystalball.nnlf`
+  - `crystalball.pdf`
+  - `crystalball.ppf`
+  - `crystalball.rvs`
+  - `crystalball.sf`
+  - `crystalball.stats`
+  - `crystalball.std`
+  - `crystalball.support`
+  - `crystalball.var`
+  - `crystalball.vecentropy`
+- [`dgamma`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.dgamma.html#scipy.stats.dgamma)
+  - `dgamma.cdf`
+  - `dgamma.entropy`
+  - `dgamma.expect`
+  - `dgamma.fit`
+  - `dgamma.fit_loc_scale`
+  - `dgamma.freeze`
+  - `dgamma.generic_moment`
+  - `dgamma.interval`
+  - `dgamma.isf`
+  - `dgamma.logcdf`
+  - `dgamma.logpdf`
+  - `dgamma.logsf`
+  - `dgamma.mean`
+  - `dgamma.median`
+  - `dgamma.moment`
+  - `dgamma.nnlf`
+  - `dgamma.pdf`
+  - `dgamma.ppf`
+  - `dgamma.rvs`
+  - `dgamma.sf`
+  - `dgamma.stats`
+  - `dgamma.std`
+  - `dgamma.support`
+  - `dgamma.var`
+  - `dgamma.vecentropy`
+- [`dirichlet`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.dirichlet.html#scipy.stats.dirichlet)
+  - `dirichlet.cov`
+  - `dirichlet.entropy`
+  - `dirichlet.logpdf`
+  - `dirichlet.mean`
+  - `dirichlet.pdf`
+  - `dirichlet.rvs`
+  - `dirichlet.var`
+- [`dirichlet_multinomial`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.dirichlet_multinomial.html#scipy.stats.dirichlet_multinomial)
+  - `dirichlet_multinomial.cov`
+  - `dirichlet_multinomial.logpmf`
+  - `dirichlet_multinomial.mean`
+  - `dirichlet_multinomial.pmf`
+  - `dirichlet_multinomial.var`
+- [`dlaplace`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.dlaplace.html#scipy.stats.dlaplace)
+  - `dlaplace.cdf`
+  - `dlaplace.entropy`
+  - `dlaplace.expect`
+  - `dlaplace.freeze`
+  - `dlaplace.generic_moment`
+  - `dlaplace.interval`
+  - `dlaplace.isf`
+  - `dlaplace.logcdf`
+  - `dlaplace.logpmf`
+  - `dlaplace.logsf`
+  - `dlaplace.mean`
+  - `dlaplace.median`
+  - `dlaplace.moment`
+  - `dlaplace.nnlf`
+  - `dlaplace.pmf`
+  - `dlaplace.ppf`
+  - `dlaplace.rvs`
+  - `dlaplace.sf`
+  - `dlaplace.stats`
+  - `dlaplace.std`
+  - `dlaplace.support`
+  - `dlaplace.var`
+  - `dlaplace.vecentropy`
+- [`dpareto_lognorm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.dpareto_lognorm.html#scipy.stats.dpareto_lognorm)
+  - `dpareto_lognorm.cdf`
+  - `dpareto_lognorm.entropy`
+  - `dpareto_lognorm.expect`
+  - `dpareto_lognorm.fit`
+  - `dpareto_lognorm.fit_loc_scale`
+  - `dpareto_lognorm.freeze`
+  - `dpareto_lognorm.generic_moment`
+  - `dpareto_lognorm.interval`
+  - `dpareto_lognorm.isf`
+  - `dpareto_lognorm.logcdf`
+  - `dpareto_lognorm.logpdf`
+  - `dpareto_lognorm.logsf`
+  - `dpareto_lognorm.mean`
+  - `dpareto_lognorm.median`
+  - `dpareto_lognorm.moment`
+  - `dpareto_lognorm.nnlf`
+  - `dpareto_lognorm.pdf`
+  - `dpareto_lognorm.ppf`
+  - `dpareto_lognorm.rvs`
+  - `dpareto_lognorm.sf`
+  - `dpareto_lognorm.stats`
+  - `dpareto_lognorm.std`
+  - `dpareto_lognorm.support`
+  - `dpareto_lognorm.var`
+  - `dpareto_lognorm.vecentropy`
+- [`dweibull`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.dweibull.html#scipy.stats.dweibull)
+  - `dweibull.cdf`
+  - `dweibull.entropy`
+  - `dweibull.expect`
+  - `dweibull.fit`
+  - `dweibull.fit_loc_scale`
+  - `dweibull.freeze`
+  - `dweibull.generic_moment`
+  - `dweibull.interval`
+  - `dweibull.isf`
+  - `dweibull.logcdf`
+  - `dweibull.logpdf`
+  - `dweibull.logsf`
+  - `dweibull.mean`
+  - `dweibull.median`
+  - `dweibull.moment`
+  - `dweibull.nnlf`
+  - `dweibull.pdf`
+  - `dweibull.ppf`
+  - `dweibull.rvs`
+  - `dweibull.sf`
+  - `dweibull.stats`
+  - `dweibull.std`
+  - `dweibull.support`
+  - `dweibull.var`
+  - `dweibull.vecentropy`
+- [`erlang`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.erlang.html#scipy.stats.erlang)
+  - `erlang.cdf`
+  - `erlang.entropy`
+  - `erlang.expect`
+  - `erlang.fit`
+  - `erlang.fit_loc_scale`
+  - `erlang.freeze`
+  - `erlang.generic_moment`
+  - `erlang.interval`
+  - `erlang.isf`
+  - `erlang.logcdf`
+  - `erlang.logpdf`
+  - `erlang.logsf`
+  - `erlang.mean`
+  - `erlang.median`
+  - `erlang.moment`
+  - `erlang.nnlf`
+  - `erlang.pdf`
+  - `erlang.ppf`
+  - `erlang.rvs`
+  - `erlang.sf`
+  - `erlang.stats`
+  - `erlang.std`
+  - `erlang.support`
+  - `erlang.var`
+  - `erlang.vecentropy`
+- [`expon`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.expon.html#scipy.stats.expon)
+  - `expon.cdf`
+  - `expon.entropy`
+  - `expon.expect`
+  - `expon.fit`
+  - `expon.fit_loc_scale`
+  - `expon.freeze`
+  - `expon.generic_moment`
+  - `expon.interval`
+  - `expon.isf`
+  - `expon.logcdf`
+  - `expon.logpdf`
+  - `expon.logsf`
+  - `expon.mean`
+  - `expon.median`
+  - `expon.moment`
+  - `expon.nnlf`
+  - `expon.pdf`
+  - `expon.ppf`
+  - `expon.rvs`
+  - `expon.sf`
+  - `expon.stats`
+  - `expon.std`
+  - `expon.support`
+  - `expon.var`
+  - `expon.vecentropy`
+- [`exponnorm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.exponnorm.html#scipy.stats.exponnorm)
+  - `exponnorm.cdf`
+  - `exponnorm.entropy`
+  - `exponnorm.expect`
+  - `exponnorm.fit`
+  - `exponnorm.fit_loc_scale`
+  - `exponnorm.freeze`
+  - `exponnorm.generic_moment`
+  - `exponnorm.interval`
+  - `exponnorm.isf`
+  - `exponnorm.logcdf`
+  - `exponnorm.logpdf`
+  - `exponnorm.logsf`
+  - `exponnorm.mean`
+  - `exponnorm.median`
+  - `exponnorm.moment`
+  - `exponnorm.nnlf`
+  - `exponnorm.pdf`
+  - `exponnorm.ppf`
+  - `exponnorm.rvs`
+  - `exponnorm.sf`
+  - `exponnorm.stats`
+  - `exponnorm.std`
+  - `exponnorm.support`
+  - `exponnorm.var`
+  - `exponnorm.vecentropy`
+- [`exponpow`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.exponpow.html#scipy.stats.exponpow)
+  - `exponpow.cdf`
+  - `exponpow.entropy`
+  - `exponpow.expect`
+  - `exponpow.fit`
+  - `exponpow.fit_loc_scale`
+  - `exponpow.freeze`
+  - `exponpow.generic_moment`
+  - `exponpow.interval`
+  - `exponpow.isf`
+  - `exponpow.logcdf`
+  - `exponpow.logpdf`
+  - `exponpow.logsf`
+  - `exponpow.mean`
+  - `exponpow.median`
+  - `exponpow.moment`
+  - `exponpow.nnlf`
+  - `exponpow.pdf`
+  - `exponpow.ppf`
+  - `exponpow.rvs`
+  - `exponpow.sf`
+  - `exponpow.stats`
+  - `exponpow.std`
+  - `exponpow.support`
+  - `exponpow.var`
+  - `exponpow.vecentropy`
+- [`exponweib`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.exponweib.html#scipy.stats.exponweib)
+  - `exponweib.cdf`
+  - `exponweib.entropy`
+  - `exponweib.expect`
+  - `exponweib.fit`
+  - `exponweib.fit_loc_scale`
+  - `exponweib.freeze`
+  - `exponweib.generic_moment`
+  - `exponweib.interval`
+  - `exponweib.isf`
+  - `exponweib.logcdf`
+  - `exponweib.logpdf`
+  - `exponweib.logsf`
+  - `exponweib.mean`
+  - `exponweib.median`
+  - `exponweib.moment`
+  - `exponweib.nnlf`
+  - `exponweib.pdf`
+  - `exponweib.ppf`
+  - `exponweib.rvs`
+  - `exponweib.sf`
+  - `exponweib.stats`
+  - `exponweib.std`
+  - `exponweib.support`
+  - `exponweib.var`
+  - `exponweib.vecentropy`
+- [`f`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.f.html#scipy.stats.f)
+  - `f.cdf`
+  - `f.entropy`
+  - `f.expect`
+  - `f.fit`
+  - `f.fit_loc_scale`
+  - `f.freeze`
+  - `f.generic_moment`
+  - `f.interval`
+  - `f.isf`
+  - `f.logcdf`
+  - `f.logpdf`
+  - `f.logsf`
+  - `f.mean`
+  - `f.median`
+  - `f.moment`
+  - `f.nnlf`
+  - `f.pdf`
+  - `f.ppf`
+  - `f.rvs`
+  - `f.sf`
+  - `f.stats`
+  - `f.std`
+  - `f.support`
+  - `f.var`
+  - `f.vecentropy`
+- [`fatiguelife`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.fatiguelife.html#scipy.stats.fatiguelife)
+  - `fatiguelife.cdf`
+  - `fatiguelife.entropy`
+  - `fatiguelife.expect`
+  - `fatiguelife.fit`
+  - `fatiguelife.fit_loc_scale`
+  - `fatiguelife.freeze`
+  - `fatiguelife.generic_moment`
+  - `fatiguelife.interval`
+  - `fatiguelife.isf`
+  - `fatiguelife.logcdf`
+  - `fatiguelife.logpdf`
+  - `fatiguelife.logsf`
+  - `fatiguelife.mean`
+  - `fatiguelife.median`
+  - `fatiguelife.moment`
+  - `fatiguelife.nnlf`
+  - `fatiguelife.pdf`
+  - `fatiguelife.ppf`
+  - `fatiguelife.rvs`
+  - `fatiguelife.sf`
+  - `fatiguelife.stats`
+  - `fatiguelife.std`
+  - `fatiguelife.support`
+  - `fatiguelife.var`
+  - `fatiguelife.vecentropy`
+- [`fisk`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.fisk.html#scipy.stats.fisk)
+  - `fisk.cdf`
+  - `fisk.entropy`
+  - `fisk.expect`
+  - `fisk.fit`
+  - `fisk.fit_loc_scale`
+  - `fisk.freeze`
+  - `fisk.generic_moment`
+  - `fisk.interval`
+  - `fisk.isf`
+  - `fisk.logcdf`
+  - `fisk.logpdf`
+  - `fisk.logsf`
+  - `fisk.mean`
+  - `fisk.median`
+  - `fisk.moment`
+  - `fisk.nnlf`
+  - `fisk.pdf`
+  - `fisk.ppf`
+  - `fisk.rvs`
+  - `fisk.sf`
+  - `fisk.stats`
+  - `fisk.std`
+  - `fisk.support`
+  - `fisk.var`
+  - `fisk.vecentropy`
+- [`foldcauchy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.foldcauchy.html#scipy.stats.foldcauchy)
+  - `foldcauchy.cdf`
+  - `foldcauchy.entropy`
+  - `foldcauchy.expect`
+  - `foldcauchy.fit`
+  - `foldcauchy.fit_loc_scale`
+  - `foldcauchy.freeze`
+  - `foldcauchy.generic_moment`
+  - `foldcauchy.interval`
+  - `foldcauchy.isf`
+  - `foldcauchy.logcdf`
+  - `foldcauchy.logpdf`
+  - `foldcauchy.logsf`
+  - `foldcauchy.mean`
+  - `foldcauchy.median`
+  - `foldcauchy.moment`
+  - `foldcauchy.nnlf`
+  - `foldcauchy.pdf`
+  - `foldcauchy.ppf`
+  - `foldcauchy.rvs`
+  - `foldcauchy.sf`
+  - `foldcauchy.stats`
+  - `foldcauchy.std`
+  - `foldcauchy.support`
+  - `foldcauchy.var`
+  - `foldcauchy.vecentropy`
+- [`foldnorm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.foldnorm.html#scipy.stats.foldnorm)
+  - `foldnorm.cdf`
+  - `foldnorm.entropy`
+  - `foldnorm.expect`
+  - `foldnorm.fit`
+  - `foldnorm.fit_loc_scale`
+  - `foldnorm.freeze`
+  - `foldnorm.generic_moment`
+  - `foldnorm.interval`
+  - `foldnorm.isf`
+  - `foldnorm.logcdf`
+  - `foldnorm.logpdf`
+  - `foldnorm.logsf`
+  - `foldnorm.mean`
+  - `foldnorm.median`
+  - `foldnorm.moment`
+  - `foldnorm.nnlf`
+  - `foldnorm.pdf`
+  - `foldnorm.ppf`
+  - `foldnorm.rvs`
+  - `foldnorm.sf`
+  - `foldnorm.stats`
+  - `foldnorm.std`
+  - `foldnorm.support`
+  - `foldnorm.var`
+  - `foldnorm.vecentropy`
+- [`gamma`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gamma.html#scipy.stats.gamma)
+  - `gamma.cdf`
+  - `gamma.entropy`
+  - `gamma.expect`
+  - `gamma.fit`
+  - `gamma.fit_loc_scale`
+  - `gamma.freeze`
+  - `gamma.generic_moment`
+  - `gamma.interval`
+  - `gamma.isf`
+  - `gamma.logcdf`
+  - `gamma.logpdf`
+  - `gamma.logsf`
+  - `gamma.mean`
+  - `gamma.median`
+  - `gamma.moment`
+  - `gamma.nnlf`
+  - `gamma.pdf`
+  - `gamma.ppf`
+  - `gamma.rvs`
+  - `gamma.sf`
+  - `gamma.stats`
+  - `gamma.std`
+  - `gamma.support`
+  - `gamma.var`
+  - `gamma.vecentropy`
+- [`gausshyper`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gausshyper.html#scipy.stats.gausshyper)
+  - `gausshyper.cdf`
+  - `gausshyper.entropy`
+  - `gausshyper.expect`
+  - `gausshyper.fit`
+  - `gausshyper.fit_loc_scale`
+  - `gausshyper.freeze`
+  - `gausshyper.generic_moment`
+  - `gausshyper.interval`
+  - `gausshyper.isf`
+  - `gausshyper.logcdf`
+  - `gausshyper.logpdf`
+  - `gausshyper.logsf`
+  - `gausshyper.mean`
+  - `gausshyper.median`
+  - `gausshyper.moment`
+  - `gausshyper.nnlf`
+  - `gausshyper.pdf`
+  - `gausshyper.ppf`
+  - `gausshyper.rvs`
+  - `gausshyper.sf`
+  - `gausshyper.stats`
+  - `gausshyper.std`
+  - `gausshyper.support`
+  - `gausshyper.var`
+  - `gausshyper.vecentropy`
+- [`genexpon`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.genexpon.html#scipy.stats.genexpon)
+  - `genexpon.cdf`
+  - `genexpon.entropy`
+  - `genexpon.expect`
+  - `genexpon.fit`
+  - `genexpon.fit_loc_scale`
+  - `genexpon.freeze`
+  - `genexpon.generic_moment`
+  - `genexpon.interval`
+  - `genexpon.isf`
+  - `genexpon.logcdf`
+  - `genexpon.logpdf`
+  - `genexpon.logsf`
+  - `genexpon.mean`
+  - `genexpon.median`
+  - `genexpon.moment`
+  - `genexpon.nnlf`
+  - `genexpon.pdf`
+  - `genexpon.ppf`
+  - `genexpon.rvs`
+  - `genexpon.sf`
+  - `genexpon.stats`
+  - `genexpon.std`
+  - `genexpon.support`
+  - `genexpon.var`
+  - `genexpon.vecentropy`
+- [`genextreme`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.genextreme.html#scipy.stats.genextreme)
+  - `genextreme.cdf`
+  - `genextreme.entropy`
+  - `genextreme.expect`
+  - `genextreme.fit`
+  - `genextreme.fit_loc_scale`
+  - `genextreme.freeze`
+  - `genextreme.generic_moment`
+  - `genextreme.interval`
+  - `genextreme.isf`
+  - `genextreme.logcdf`
+  - `genextreme.logpdf`
+  - `genextreme.logsf`
+  - `genextreme.mean`
+  - `genextreme.median`
+  - `genextreme.moment`
+  - `genextreme.nnlf`
+  - `genextreme.pdf`
+  - `genextreme.ppf`
+  - `genextreme.rvs`
+  - `genextreme.sf`
+  - `genextreme.stats`
+  - `genextreme.std`
+  - `genextreme.support`
+  - `genextreme.var`
+  - `genextreme.vecentropy`
+- [`gengamma`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gengamma.html#scipy.stats.gengamma)
+  - `gengamma.cdf`
+  - `gengamma.entropy`
+  - `gengamma.expect`
+  - `gengamma.fit`
+  - `gengamma.fit_loc_scale`
+  - `gengamma.freeze`
+  - `gengamma.generic_moment`
+  - `gengamma.interval`
+  - `gengamma.isf`
+  - `gengamma.logcdf`
+  - `gengamma.logpdf`
+  - `gengamma.logsf`
+  - `gengamma.mean`
+  - `gengamma.median`
+  - `gengamma.moment`
+  - `gengamma.nnlf`
+  - `gengamma.pdf`
+  - `gengamma.ppf`
+  - `gengamma.rvs`
+  - `gengamma.sf`
+  - `gengamma.stats`
+  - `gengamma.std`
+  - `gengamma.support`
+  - `gengamma.var`
+  - `gengamma.vecentropy`
+- [`genhalflogistic`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.genhalflogistic.html#scipy.stats.genhalflogistic)
+  - `genhalflogistic.cdf`
+  - `genhalflogistic.entropy`
+  - `genhalflogistic.expect`
+  - `genhalflogistic.fit`
+  - `genhalflogistic.fit_loc_scale`
+  - `genhalflogistic.freeze`
+  - `genhalflogistic.generic_moment`
+  - `genhalflogistic.interval`
+  - `genhalflogistic.isf`
+  - `genhalflogistic.logcdf`
+  - `genhalflogistic.logpdf`
+  - `genhalflogistic.logsf`
+  - `genhalflogistic.mean`
+  - `genhalflogistic.median`
+  - `genhalflogistic.moment`
+  - `genhalflogistic.nnlf`
+  - `genhalflogistic.pdf`
+  - `genhalflogistic.ppf`
+  - `genhalflogistic.rvs`
+  - `genhalflogistic.sf`
+  - `genhalflogistic.stats`
+  - `genhalflogistic.std`
+  - `genhalflogistic.support`
+  - `genhalflogistic.var`
+  - `genhalflogistic.vecentropy`
+- [`genhyperbolic`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.genhyperbolic.html#scipy.stats.genhyperbolic)
+  - `genhyperbolic.cdf`
+  - `genhyperbolic.entropy`
+  - `genhyperbolic.expect`
+  - `genhyperbolic.fit`
+  - `genhyperbolic.fit_loc_scale`
+  - `genhyperbolic.freeze`
+  - `genhyperbolic.generic_moment`
+  - `genhyperbolic.interval`
+  - `genhyperbolic.isf`
+  - `genhyperbolic.logcdf`
+  - `genhyperbolic.logpdf`
+  - `genhyperbolic.logsf`
+  - `genhyperbolic.mean`
+  - `genhyperbolic.median`
+  - `genhyperbolic.moment`
+  - `genhyperbolic.nnlf`
+  - `genhyperbolic.pdf`
+  - `genhyperbolic.ppf`
+  - `genhyperbolic.rvs`
+  - `genhyperbolic.sf`
+  - `genhyperbolic.stats`
+  - `genhyperbolic.std`
+  - `genhyperbolic.support`
+  - `genhyperbolic.var`
+  - `genhyperbolic.vecentropy`
+- [`geninvgauss`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.geninvgauss.html#scipy.stats.geninvgauss)
+  - `geninvgauss.cdf`
+  - `geninvgauss.entropy`
+  - `geninvgauss.expect`
+  - `geninvgauss.fit`
+  - `geninvgauss.fit_loc_scale`
+  - `geninvgauss.freeze`
+  - `geninvgauss.generic_moment`
+  - `geninvgauss.interval`
+  - `geninvgauss.isf`
+  - `geninvgauss.logcdf`
+  - `geninvgauss.logpdf`
+  - `geninvgauss.logsf`
+  - `geninvgauss.mean`
+  - `geninvgauss.median`
+  - `geninvgauss.moment`
+  - `geninvgauss.nnlf`
+  - `geninvgauss.pdf`
+  - `geninvgauss.ppf`
+  - `geninvgauss.rvs`
+  - `geninvgauss.sf`
+  - `geninvgauss.stats`
+  - `geninvgauss.std`
+  - `geninvgauss.support`
+  - `geninvgauss.var`
+  - `geninvgauss.vecentropy`
+- [`genlogistic`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.genlogistic.html#scipy.stats.genlogistic)
+  - `genlogistic.cdf`
+  - `genlogistic.entropy`
+  - `genlogistic.expect`
+  - `genlogistic.fit`
+  - `genlogistic.fit_loc_scale`
+  - `genlogistic.freeze`
+  - `genlogistic.generic_moment`
+  - `genlogistic.interval`
+  - `genlogistic.isf`
+  - `genlogistic.logcdf`
+  - `genlogistic.logpdf`
+  - `genlogistic.logsf`
+  - `genlogistic.mean`
+  - `genlogistic.median`
+  - `genlogistic.moment`
+  - `genlogistic.nnlf`
+  - `genlogistic.pdf`
+  - `genlogistic.ppf`
+  - `genlogistic.rvs`
+  - `genlogistic.sf`
+  - `genlogistic.stats`
+  - `genlogistic.std`
+  - `genlogistic.support`
+  - `genlogistic.var`
+  - `genlogistic.vecentropy`
+- [`gennorm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gennorm.html#scipy.stats.gennorm)
+  - `gennorm.cdf`
+  - `gennorm.entropy`
+  - `gennorm.expect`
+  - `gennorm.fit`
+  - `gennorm.fit_loc_scale`
+  - `gennorm.freeze`
+  - `gennorm.generic_moment`
+  - `gennorm.interval`
+  - `gennorm.isf`
+  - `gennorm.logcdf`
+  - `gennorm.logpdf`
+  - `gennorm.logsf`
+  - `gennorm.mean`
+  - `gennorm.median`
+  - `gennorm.moment`
+  - `gennorm.nnlf`
+  - `gennorm.pdf`
+  - `gennorm.ppf`
+  - `gennorm.rvs`
+  - `gennorm.sf`
+  - `gennorm.stats`
+  - `gennorm.std`
+  - `gennorm.support`
+  - `gennorm.var`
+  - `gennorm.vecentropy`
+- [`genpareto`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.genpareto.html#scipy.stats.genpareto)
+  - `genpareto.cdf`
+  - `genpareto.entropy`
+  - `genpareto.expect`
+  - `genpareto.fit`
+  - `genpareto.fit_loc_scale`
+  - `genpareto.freeze`
+  - `genpareto.generic_moment`
+  - `genpareto.interval`
+  - `genpareto.isf`
+  - `genpareto.logcdf`
+  - `genpareto.logpdf`
+  - `genpareto.logsf`
+  - `genpareto.mean`
+  - `genpareto.median`
+  - `genpareto.moment`
+  - `genpareto.nnlf`
+  - `genpareto.pdf`
+  - `genpareto.ppf`
+  - `genpareto.rvs`
+  - `genpareto.sf`
+  - `genpareto.stats`
+  - `genpareto.std`
+  - `genpareto.support`
+  - `genpareto.var`
+  - `genpareto.vecentropy`
+- [`geom`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.geom.html#scipy.stats.geom)
+  - `geom.cdf`
+  - `geom.entropy`
+  - `geom.expect`
+  - `geom.freeze`
+  - `geom.generic_moment`
+  - `geom.interval`
+  - `geom.isf`
+  - `geom.logcdf`
+  - `geom.logpmf`
+  - `geom.logsf`
+  - `geom.mean`
+  - `geom.median`
+  - `geom.moment`
+  - `geom.nnlf`
+  - `geom.pmf`
+  - `geom.ppf`
+  - `geom.rvs`
+  - `geom.sf`
+  - `geom.stats`
+  - `geom.std`
+  - `geom.support`
+  - `geom.var`
+  - `geom.vecentropy`
+- [`gibrat`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gibrat.html#scipy.stats.gibrat)
+  - `gibrat.cdf`
+  - `gibrat.entropy`
+  - `gibrat.expect`
+  - `gibrat.fit`
+  - `gibrat.fit_loc_scale`
+  - `gibrat.freeze`
+  - `gibrat.generic_moment`
+  - `gibrat.interval`
+  - `gibrat.isf`
+  - `gibrat.logcdf`
+  - `gibrat.logpdf`
+  - `gibrat.logsf`
+  - `gibrat.mean`
+  - `gibrat.median`
+  - `gibrat.moment`
+  - `gibrat.nnlf`
+  - `gibrat.pdf`
+  - `gibrat.ppf`
+  - `gibrat.rvs`
+  - `gibrat.sf`
+  - `gibrat.stats`
+  - `gibrat.std`
+  - `gibrat.support`
+  - `gibrat.var`
+  - `gibrat.vecentropy`
+- [`gompertz`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gompertz.html#scipy.stats.gompertz)
+  - `gompertz.cdf`
+  - `gompertz.entropy`
+  - `gompertz.expect`
+  - `gompertz.fit`
+  - `gompertz.fit_loc_scale`
+  - `gompertz.freeze`
+  - `gompertz.generic_moment`
+  - `gompertz.interval`
+  - `gompertz.isf`
+  - `gompertz.logcdf`
+  - `gompertz.logpdf`
+  - `gompertz.logsf`
+  - `gompertz.mean`
+  - `gompertz.median`
+  - `gompertz.moment`
+  - `gompertz.nnlf`
+  - `gompertz.pdf`
+  - `gompertz.ppf`
+  - `gompertz.rvs`
+  - `gompertz.sf`
+  - `gompertz.stats`
+  - `gompertz.std`
+  - `gompertz.support`
+  - `gompertz.var`
+  - `gompertz.vecentropy`
+- [`gumbel_l`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gumbel_l.html#scipy.stats.gumbel_l)
+  - `gumbel_l.cdf`
+  - `gumbel_l.entropy`
+  - `gumbel_l.expect`
+  - `gumbel_l.fit`
+  - `gumbel_l.fit_loc_scale`
+  - `gumbel_l.freeze`
+  - `gumbel_l.generic_moment`
+  - `gumbel_l.interval`
+  - `gumbel_l.isf`
+  - `gumbel_l.logcdf`
+  - `gumbel_l.logpdf`
+  - `gumbel_l.logsf`
+  - `gumbel_l.mean`
+  - `gumbel_l.median`
+  - `gumbel_l.moment`
+  - `gumbel_l.nnlf`
+  - `gumbel_l.pdf`
+  - `gumbel_l.ppf`
+  - `gumbel_l.rvs`
+  - `gumbel_l.sf`
+  - `gumbel_l.stats`
+  - `gumbel_l.std`
+  - `gumbel_l.support`
+  - `gumbel_l.var`
+  - `gumbel_l.vecentropy`
+- [`gumbel_r`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gumbel_r.html#scipy.stats.gumbel_r)
+  - `gumbel_r.cdf`
+  - `gumbel_r.entropy`
+  - `gumbel_r.expect`
+  - `gumbel_r.fit`
+  - `gumbel_r.fit_loc_scale`
+  - `gumbel_r.freeze`
+  - `gumbel_r.generic_moment`
+  - `gumbel_r.interval`
+  - `gumbel_r.isf`
+  - `gumbel_r.logcdf`
+  - `gumbel_r.logpdf`
+  - `gumbel_r.logsf`
+  - `gumbel_r.mean`
+  - `gumbel_r.median`
+  - `gumbel_r.moment`
+  - `gumbel_r.nnlf`
+  - `gumbel_r.pdf`
+  - `gumbel_r.ppf`
+  - `gumbel_r.rvs`
+  - `gumbel_r.sf`
+  - `gumbel_r.stats`
+  - `gumbel_r.std`
+  - `gumbel_r.support`
+  - `gumbel_r.var`
+  - `gumbel_r.vecentropy`
+- [`halfcauchy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.halfcauchy.html#scipy.stats.halfcauchy)
+  - `halfcauchy.cdf`
+  - `halfcauchy.entropy`
+  - `halfcauchy.expect`
+  - `halfcauchy.fit`
+  - `halfcauchy.fit_loc_scale`
+  - `halfcauchy.freeze`
+  - `halfcauchy.generic_moment`
+  - `halfcauchy.interval`
+  - `halfcauchy.isf`
+  - `halfcauchy.logcdf`
+  - `halfcauchy.logpdf`
+  - `halfcauchy.logsf`
+  - `halfcauchy.mean`
+  - `halfcauchy.median`
+  - `halfcauchy.moment`
+  - `halfcauchy.nnlf`
+  - `halfcauchy.pdf`
+  - `halfcauchy.ppf`
+  - `halfcauchy.rvs`
+  - `halfcauchy.sf`
+  - `halfcauchy.stats`
+  - `halfcauchy.std`
+  - `halfcauchy.support`
+  - `halfcauchy.var`
+  - `halfcauchy.vecentropy`
+- [`halfgennorm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.halfgennorm.html#scipy.stats.halfgennorm)
+  - `halfgennorm.cdf`
+  - `halfgennorm.entropy`
+  - `halfgennorm.expect`
+  - `halfgennorm.fit`
+  - `halfgennorm.fit_loc_scale`
+  - `halfgennorm.freeze`
+  - `halfgennorm.generic_moment`
+  - `halfgennorm.interval`
+  - `halfgennorm.isf`
+  - `halfgennorm.logcdf`
+  - `halfgennorm.logpdf`
+  - `halfgennorm.logsf`
+  - `halfgennorm.mean`
+  - `halfgennorm.median`
+  - `halfgennorm.moment`
+  - `halfgennorm.nnlf`
+  - `halfgennorm.pdf`
+  - `halfgennorm.ppf`
+  - `halfgennorm.rvs`
+  - `halfgennorm.sf`
+  - `halfgennorm.stats`
+  - `halfgennorm.std`
+  - `halfgennorm.support`
+  - `halfgennorm.var`
+  - `halfgennorm.vecentropy`
+- [`halflogistic`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.halflogistic.html#scipy.stats.halflogistic)
+  - `halflogistic.cdf`
+  - `halflogistic.entropy`
+  - `halflogistic.expect`
+  - `halflogistic.fit`
+  - `halflogistic.fit_loc_scale`
+  - `halflogistic.freeze`
+  - `halflogistic.generic_moment`
+  - `halflogistic.interval`
+  - `halflogistic.isf`
+  - `halflogistic.logcdf`
+  - `halflogistic.logpdf`
+  - `halflogistic.logsf`
+  - `halflogistic.mean`
+  - `halflogistic.median`
+  - `halflogistic.moment`
+  - `halflogistic.nnlf`
+  - `halflogistic.pdf`
+  - `halflogistic.ppf`
+  - `halflogistic.rvs`
+  - `halflogistic.sf`
+  - `halflogistic.stats`
+  - `halflogistic.std`
+  - `halflogistic.support`
+  - `halflogistic.var`
+  - `halflogistic.vecentropy`
+- [`halfnorm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.halfnorm.html#scipy.stats.halfnorm)
+  - `halfnorm.cdf`
+  - `halfnorm.entropy`
+  - `halfnorm.expect`
+  - `halfnorm.fit`
+  - `halfnorm.fit_loc_scale`
+  - `halfnorm.freeze`
+  - `halfnorm.generic_moment`
+  - `halfnorm.interval`
+  - `halfnorm.isf`
+  - `halfnorm.logcdf`
+  - `halfnorm.logpdf`
+  - `halfnorm.logsf`
+  - `halfnorm.mean`
+  - `halfnorm.median`
+  - `halfnorm.moment`
+  - `halfnorm.nnlf`
+  - `halfnorm.pdf`
+  - `halfnorm.ppf`
+  - `halfnorm.rvs`
+  - `halfnorm.sf`
+  - `halfnorm.stats`
+  - `halfnorm.std`
+  - `halfnorm.support`
+  - `halfnorm.var`
+  - `halfnorm.vecentropy`
+- [`hypergeom`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.hypergeom.html#scipy.stats.hypergeom)
+  - `hypergeom.cdf`
+  - `hypergeom.entropy`
+  - `hypergeom.expect`
+  - `hypergeom.freeze`
+  - `hypergeom.generic_moment`
+  - `hypergeom.interval`
+  - `hypergeom.isf`
+  - `hypergeom.logcdf`
+  - `hypergeom.logpmf`
+  - `hypergeom.logsf`
+  - `hypergeom.mean`
+  - `hypergeom.median`
+  - `hypergeom.moment`
+  - `hypergeom.nnlf`
+  - `hypergeom.pmf`
+  - `hypergeom.ppf`
+  - `hypergeom.rvs`
+  - `hypergeom.sf`
+  - `hypergeom.stats`
+  - `hypergeom.std`
+  - `hypergeom.support`
+  - `hypergeom.var`
+  - `hypergeom.vecentropy`
+- [`hypsecant`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.hypsecant.html#scipy.stats.hypsecant)
+  - `hypsecant.cdf`
+  - `hypsecant.entropy`
+  - `hypsecant.expect`
+  - `hypsecant.fit`
+  - `hypsecant.fit_loc_scale`
+  - `hypsecant.freeze`
+  - `hypsecant.generic_moment`
+  - `hypsecant.interval`
+  - `hypsecant.isf`
+  - `hypsecant.logcdf`
+  - `hypsecant.logpdf`
+  - `hypsecant.logsf`
+  - `hypsecant.mean`
+  - `hypsecant.median`
+  - `hypsecant.moment`
+  - `hypsecant.nnlf`
+  - `hypsecant.pdf`
+  - `hypsecant.ppf`
+  - `hypsecant.rvs`
+  - `hypsecant.sf`
+  - `hypsecant.stats`
+  - `hypsecant.std`
+  - `hypsecant.support`
+  - `hypsecant.var`
+  - `hypsecant.vecentropy`
+- [`invgamma`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.invgamma.html#scipy.stats.invgamma)
+  - `invgamma.cdf`
+  - `invgamma.entropy`
+  - `invgamma.expect`
+  - `invgamma.fit`
+  - `invgamma.fit_loc_scale`
+  - `invgamma.freeze`
+  - `invgamma.generic_moment`
+  - `invgamma.interval`
+  - `invgamma.isf`
+  - `invgamma.logcdf`
+  - `invgamma.logpdf`
+  - `invgamma.logsf`
+  - `invgamma.mean`
+  - `invgamma.median`
+  - `invgamma.moment`
+  - `invgamma.nnlf`
+  - `invgamma.pdf`
+  - `invgamma.ppf`
+  - `invgamma.rvs`
+  - `invgamma.sf`
+  - `invgamma.stats`
+  - `invgamma.std`
+  - `invgamma.support`
+  - `invgamma.var`
+  - `invgamma.vecentropy`
+- [`invgauss`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.invgauss.html#scipy.stats.invgauss)
+  - `invgauss.cdf`
+  - `invgauss.entropy`
+  - `invgauss.expect`
+  - `invgauss.fit`
+  - `invgauss.fit_loc_scale`
+  - `invgauss.freeze`
+  - `invgauss.generic_moment`
+  - `invgauss.interval`
+  - `invgauss.isf`
+  - `invgauss.logcdf`
+  - `invgauss.logpdf`
+  - `invgauss.logsf`
+  - `invgauss.mean`
+  - `invgauss.median`
+  - `invgauss.moment`
+  - `invgauss.nnlf`
+  - `invgauss.pdf`
+  - `invgauss.ppf`
+  - `invgauss.rvs`
+  - `invgauss.sf`
+  - `invgauss.stats`
+  - `invgauss.std`
+  - `invgauss.support`
+  - `invgauss.var`
+  - `invgauss.vecentropy`
+- [`invweibull`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.invweibull.html#scipy.stats.invweibull)
+  - `invweibull.cdf`
+  - `invweibull.entropy`
+  - `invweibull.expect`
+  - `invweibull.fit`
+  - `invweibull.fit_loc_scale`
+  - `invweibull.freeze`
+  - `invweibull.generic_moment`
+  - `invweibull.interval`
+  - `invweibull.isf`
+  - `invweibull.logcdf`
+  - `invweibull.logpdf`
+  - `invweibull.logsf`
+  - `invweibull.mean`
+  - `invweibull.median`
+  - `invweibull.moment`
+  - `invweibull.nnlf`
+  - `invweibull.pdf`
+  - `invweibull.ppf`
+  - `invweibull.rvs`
+  - `invweibull.sf`
+  - `invweibull.stats`
+  - `invweibull.std`
+  - `invweibull.support`
+  - `invweibull.var`
+  - `invweibull.vecentropy`
+- [`invwishart`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.invwishart.html#scipy.stats.invwishart)
+  - `invwishart.entropy`
+  - `invwishart.logpdf`
+  - `invwishart.mean`
+  - `invwishart.mode`
+  - `invwishart.pdf`
+  - `invwishart.rvs`
+  - `invwishart.var`
+- [`irwinhall`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.irwinhall.html#scipy.stats.irwinhall)
+  - `irwinhall.cdf`
+  - `irwinhall.entropy`
+  - `irwinhall.expect`
+  - `irwinhall.fit`
+  - `irwinhall.fit_loc_scale`
+  - `irwinhall.freeze`
+  - `irwinhall.generic_moment`
+  - `irwinhall.interval`
+  - `irwinhall.isf`
+  - `irwinhall.logcdf`
+  - `irwinhall.logpdf`
+  - `irwinhall.logsf`
+  - `irwinhall.mean`
+  - `irwinhall.median`
+  - `irwinhall.moment`
+  - `irwinhall.nnlf`
+  - `irwinhall.pdf`
+  - `irwinhall.ppf`
+  - `irwinhall.rvs`
+  - `irwinhall.sf`
+  - `irwinhall.stats`
+  - `irwinhall.std`
+  - `irwinhall.support`
+  - `irwinhall.var`
+  - `irwinhall.vecentropy`
+- [`jf_skew_t`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.jf_skew_t.html#scipy.stats.jf_skew_t)
+  - `jf_skew_t.cdf`
+  - `jf_skew_t.entropy`
+  - `jf_skew_t.expect`
+  - `jf_skew_t.fit`
+  - `jf_skew_t.fit_loc_scale`
+  - `jf_skew_t.freeze`
+  - `jf_skew_t.generic_moment`
+  - `jf_skew_t.interval`
+  - `jf_skew_t.isf`
+  - `jf_skew_t.logcdf`
+  - `jf_skew_t.logpdf`
+  - `jf_skew_t.logsf`
+  - `jf_skew_t.mean`
+  - `jf_skew_t.median`
+  - `jf_skew_t.moment`
+  - `jf_skew_t.nnlf`
+  - `jf_skew_t.pdf`
+  - `jf_skew_t.ppf`
+  - `jf_skew_t.rvs`
+  - `jf_skew_t.sf`
+  - `jf_skew_t.stats`
+  - `jf_skew_t.std`
+  - `jf_skew_t.support`
+  - `jf_skew_t.var`
+  - `jf_skew_t.vecentropy`
+- [`johnsonsb`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.johnsonsb.html#scipy.stats.johnsonsb)
+  - `johnsonsb.cdf`
+  - `johnsonsb.entropy`
+  - `johnsonsb.expect`
+  - `johnsonsb.fit`
+  - `johnsonsb.fit_loc_scale`
+  - `johnsonsb.freeze`
+  - `johnsonsb.generic_moment`
+  - `johnsonsb.interval`
+  - `johnsonsb.isf`
+  - `johnsonsb.logcdf`
+  - `johnsonsb.logpdf`
+  - `johnsonsb.logsf`
+  - `johnsonsb.mean`
+  - `johnsonsb.median`
+  - `johnsonsb.moment`
+  - `johnsonsb.nnlf`
+  - `johnsonsb.pdf`
+  - `johnsonsb.ppf`
+  - `johnsonsb.rvs`
+  - `johnsonsb.sf`
+  - `johnsonsb.stats`
+  - `johnsonsb.std`
+  - `johnsonsb.support`
+  - `johnsonsb.var`
+  - `johnsonsb.vecentropy`
+- [`johnsonsu`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.johnsonsu.html#scipy.stats.johnsonsu)
+  - `johnsonsu.cdf`
+  - `johnsonsu.entropy`
+  - `johnsonsu.expect`
+  - `johnsonsu.fit`
+  - `johnsonsu.fit_loc_scale`
+  - `johnsonsu.freeze`
+  - `johnsonsu.generic_moment`
+  - `johnsonsu.interval`
+  - `johnsonsu.isf`
+  - `johnsonsu.logcdf`
+  - `johnsonsu.logpdf`
+  - `johnsonsu.logsf`
+  - `johnsonsu.mean`
+  - `johnsonsu.median`
+  - `johnsonsu.moment`
+  - `johnsonsu.nnlf`
+  - `johnsonsu.pdf`
+  - `johnsonsu.ppf`
+  - `johnsonsu.rvs`
+  - `johnsonsu.sf`
+  - `johnsonsu.stats`
+  - `johnsonsu.std`
+  - `johnsonsu.support`
+  - `johnsonsu.var`
+  - `johnsonsu.vecentropy`
+- [`kappa3`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kappa3.html#scipy.stats.kappa3)
+  - `kappa3.cdf`
+  - `kappa3.entropy`
+  - `kappa3.expect`
+  - `kappa3.fit`
+  - `kappa3.fit_loc_scale`
+  - `kappa3.freeze`
+  - `kappa3.generic_moment`
+  - `kappa3.interval`
+  - `kappa3.isf`
+  - `kappa3.logcdf`
+  - `kappa3.logpdf`
+  - `kappa3.logsf`
+  - `kappa3.mean`
+  - `kappa3.median`
+  - `kappa3.moment`
+  - `kappa3.nnlf`
+  - `kappa3.pdf`
+  - `kappa3.ppf`
+  - `kappa3.rvs`
+  - `kappa3.sf`
+  - `kappa3.stats`
+  - `kappa3.std`
+  - `kappa3.support`
+  - `kappa3.var`
+  - `kappa3.vecentropy`
+- [`kappa4`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kappa4.html#scipy.stats.kappa4)
+  - `kappa4.cdf`
+  - `kappa4.entropy`
+  - `kappa4.expect`
+  - `kappa4.fit`
+  - `kappa4.fit_loc_scale`
+  - `kappa4.freeze`
+  - `kappa4.generic_moment`
+  - `kappa4.interval`
+  - `kappa4.isf`
+  - `kappa4.logcdf`
+  - `kappa4.logpdf`
+  - `kappa4.logsf`
+  - `kappa4.mean`
+  - `kappa4.median`
+  - `kappa4.moment`
+  - `kappa4.nnlf`
+  - `kappa4.pdf`
+  - `kappa4.ppf`
+  - `kappa4.rvs`
+  - `kappa4.sf`
+  - `kappa4.stats`
+  - `kappa4.std`
+  - `kappa4.support`
+  - `kappa4.var`
+  - `kappa4.vecentropy`
+- [`ksone`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ksone.html#scipy.stats.ksone)
+  - `ksone.cdf`
+  - `ksone.entropy`
+  - `ksone.expect`
+  - `ksone.fit`
+  - `ksone.fit_loc_scale`
+  - `ksone.freeze`
+  - `ksone.generic_moment`
+  - `ksone.interval`
+  - `ksone.isf`
+  - `ksone.logcdf`
+  - `ksone.logpdf`
+  - `ksone.logsf`
+  - `ksone.mean`
+  - `ksone.median`
+  - `ksone.moment`
+  - `ksone.nnlf`
+  - `ksone.pdf`
+  - `ksone.ppf`
+  - `ksone.rvs`
+  - `ksone.sf`
+  - `ksone.stats`
+  - `ksone.std`
+  - `ksone.support`
+  - `ksone.var`
+  - `ksone.vecentropy`
+- [`kstwo`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kstwo.html#scipy.stats.kstwo)
+  - `kstwo.cdf`
+  - `kstwo.entropy`
+  - `kstwo.expect`
+  - `kstwo.fit`
+  - `kstwo.fit_loc_scale`
+  - `kstwo.freeze`
+  - `kstwo.generic_moment`
+  - `kstwo.interval`
+  - `kstwo.isf`
+  - `kstwo.logcdf`
+  - `kstwo.logpdf`
+  - `kstwo.logsf`
+  - `kstwo.mean`
+  - `kstwo.median`
+  - `kstwo.moment`
+  - `kstwo.nnlf`
+  - `kstwo.pdf`
+  - `kstwo.ppf`
+  - `kstwo.rvs`
+  - `kstwo.sf`
+  - `kstwo.stats`
+  - `kstwo.std`
+  - `kstwo.support`
+  - `kstwo.var`
+  - `kstwo.vecentropy`
+- [`kstwobign`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kstwobign.html#scipy.stats.kstwobign)
+  - `kstwobign.cdf`
+  - `kstwobign.entropy`
+  - `kstwobign.expect`
+  - `kstwobign.fit`
+  - `kstwobign.fit_loc_scale`
+  - `kstwobign.freeze`
+  - `kstwobign.generic_moment`
+  - `kstwobign.interval`
+  - `kstwobign.isf`
+  - `kstwobign.logcdf`
+  - `kstwobign.logpdf`
+  - `kstwobign.logsf`
+  - `kstwobign.mean`
+  - `kstwobign.median`
+  - `kstwobign.moment`
+  - `kstwobign.nnlf`
+  - `kstwobign.pdf`
+  - `kstwobign.ppf`
+  - `kstwobign.rvs`
+  - `kstwobign.sf`
+  - `kstwobign.stats`
+  - `kstwobign.std`
+  - `kstwobign.support`
+  - `kstwobign.var`
+  - `kstwobign.vecentropy`
+- [`landau`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.landau.html#scipy.stats.landau)
+  - `landau.cdf`
+  - `landau.entropy`
+  - `landau.expect`
+  - `landau.fit`
+  - `landau.fit_loc_scale`
+  - `landau.freeze`
+  - `landau.generic_moment`
+  - `landau.interval`
+  - `landau.isf`
+  - `landau.logcdf`
+  - `landau.logpdf`
+  - `landau.logsf`
+  - `landau.mean`
+  - `landau.median`
+  - `landau.moment`
+  - `landau.nnlf`
+  - `landau.pdf`
+  - `landau.ppf`
+  - `landau.rvs`
+  - `landau.sf`
+  - `landau.stats`
+  - `landau.std`
+  - `landau.support`
+  - `landau.var`
+  - `landau.vecentropy`
+- [`laplace`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.laplace.html#scipy.stats.laplace)
+  - `laplace.cdf`
+  - `laplace.entropy`
+  - `laplace.expect`
+  - `laplace.fit`
+  - `laplace.fit_loc_scale`
+  - `laplace.freeze`
+  - `laplace.generic_moment`
+  - `laplace.interval`
+  - `laplace.isf`
+  - `laplace.logcdf`
+  - `laplace.logpdf`
+  - `laplace.logsf`
+  - `laplace.mean`
+  - `laplace.median`
+  - `laplace.moment`
+  - `laplace.nnlf`
+  - `laplace.pdf`
+  - `laplace.ppf`
+  - `laplace.rvs`
+  - `laplace.sf`
+  - `laplace.stats`
+  - `laplace.std`
+  - `laplace.support`
+  - `laplace.var`
+  - `laplace.vecentropy`
+- [`laplace_asymmetric`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.laplace_asymmetric.html#scipy.stats.laplace_asymmetric)
+  - `laplace_asymmetric.cdf`
+  - `laplace_asymmetric.entropy`
+  - `laplace_asymmetric.expect`
+  - `laplace_asymmetric.fit`
+  - `laplace_asymmetric.fit_loc_scale`
+  - `laplace_asymmetric.freeze`
+  - `laplace_asymmetric.generic_moment`
+  - `laplace_asymmetric.interval`
+  - `laplace_asymmetric.isf`
+  - `laplace_asymmetric.logcdf`
+  - `laplace_asymmetric.logpdf`
+  - `laplace_asymmetric.logsf`
+  - `laplace_asymmetric.mean`
+  - `laplace_asymmetric.median`
+  - `laplace_asymmetric.moment`
+  - `laplace_asymmetric.nnlf`
+  - `laplace_asymmetric.pdf`
+  - `laplace_asymmetric.ppf`
+  - `laplace_asymmetric.rvs`
+  - `laplace_asymmetric.sf`
+  - `laplace_asymmetric.stats`
+  - `laplace_asymmetric.std`
+  - `laplace_asymmetric.support`
+  - `laplace_asymmetric.var`
+  - `laplace_asymmetric.vecentropy`
+- [`levy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.levy.html#scipy.stats.levy)
+  - `levy.cdf`
+  - `levy.entropy`
+  - `levy.expect`
+  - `levy.fit`
+  - `levy.fit_loc_scale`
+  - `levy.freeze`
+  - `levy.generic_moment`
+  - `levy.interval`
+  - `levy.isf`
+  - `levy.logcdf`
+  - `levy.logpdf`
+  - `levy.logsf`
+  - `levy.mean`
+  - `levy.median`
+  - `levy.moment`
+  - `levy.nnlf`
+  - `levy.pdf`
+  - `levy.ppf`
+  - `levy.rvs`
+  - `levy.sf`
+  - `levy.stats`
+  - `levy.std`
+  - `levy.support`
+  - `levy.var`
+  - `levy.vecentropy`
+- [`levy_l`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.levy_l.html#scipy.stats.levy_l)
+  - `levy_l.cdf`
+  - `levy_l.entropy`
+  - `levy_l.expect`
+  - `levy_l.fit`
+  - `levy_l.fit_loc_scale`
+  - `levy_l.freeze`
+  - `levy_l.generic_moment`
+  - `levy_l.interval`
+  - `levy_l.isf`
+  - `levy_l.logcdf`
+  - `levy_l.logpdf`
+  - `levy_l.logsf`
+  - `levy_l.mean`
+  - `levy_l.median`
+  - `levy_l.moment`
+  - `levy_l.nnlf`
+  - `levy_l.pdf`
+  - `levy_l.ppf`
+  - `levy_l.rvs`
+  - `levy_l.sf`
+  - `levy_l.stats`
+  - `levy_l.std`
+  - `levy_l.support`
+  - `levy_l.var`
+  - `levy_l.vecentropy`
+- [`levy_stable`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.levy_stable.html#scipy.stats.levy_stable)
+  - `levy_stable.cdf`
+  - `levy_stable.entropy`
+  - `levy_stable.expect`
+  - `levy_stable.fit`
+  - `levy_stable.fit_loc_scale`
+  - `levy_stable.freeze`
+  - `levy_stable.generic_moment`
+  - `levy_stable.interval`
+  - `levy_stable.isf`
+  - `levy_stable.logcdf`
+  - `levy_stable.logpdf`
+  - `levy_stable.logsf`
+  - `levy_stable.mean`
+  - `levy_stable.median`
+  - `levy_stable.moment`
+  - `levy_stable.nnlf`
+  - `levy_stable.pdf`
+  - `levy_stable.ppf`
+  - `levy_stable.rvs`
+  - `levy_stable.sf`
+  - `levy_stable.stats`
+  - `levy_stable.std`
+  - `levy_stable.support`
+  - `levy_stable.var`
+  - `levy_stable.vecentropy`
+- [`loggamma`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.loggamma.html#scipy.stats.loggamma)
+  - `loggamma.cdf`
+  - `loggamma.entropy`
+  - `loggamma.expect`
+  - `loggamma.fit`
+  - `loggamma.fit_loc_scale`
+  - `loggamma.freeze`
+  - `loggamma.generic_moment`
+  - `loggamma.interval`
+  - `loggamma.isf`
+  - `loggamma.logcdf`
+  - `loggamma.logpdf`
+  - `loggamma.logsf`
+  - `loggamma.mean`
+  - `loggamma.median`
+  - `loggamma.moment`
+  - `loggamma.nnlf`
+  - `loggamma.pdf`
+  - `loggamma.ppf`
+  - `loggamma.rvs`
+  - `loggamma.sf`
+  - `loggamma.stats`
+  - `loggamma.std`
+  - `loggamma.support`
+  - `loggamma.var`
+  - `loggamma.vecentropy`
+- [`logistic`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.logistic.html#scipy.stats.logistic)
+  - `logistic.cdf`
+  - `logistic.entropy`
+  - `logistic.expect`
+  - `logistic.fit`
+  - `logistic.fit_loc_scale`
+  - `logistic.freeze`
+  - `logistic.generic_moment`
+  - `logistic.interval`
+  - `logistic.isf`
+  - `logistic.logcdf`
+  - `logistic.logpdf`
+  - `logistic.logsf`
+  - `logistic.mean`
+  - `logistic.median`
+  - `logistic.moment`
+  - `logistic.nnlf`
+  - `logistic.pdf`
+  - `logistic.ppf`
+  - `logistic.rvs`
+  - `logistic.sf`
+  - `logistic.stats`
+  - `logistic.std`
+  - `logistic.support`
+  - `logistic.var`
+  - `logistic.vecentropy`
+- [`loglaplace`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.loglaplace.html#scipy.stats.loglaplace)
+  - `loglaplace.cdf`
+  - `loglaplace.entropy`
+  - `loglaplace.expect`
+  - `loglaplace.fit`
+  - `loglaplace.fit_loc_scale`
+  - `loglaplace.freeze`
+  - `loglaplace.generic_moment`
+  - `loglaplace.interval`
+  - `loglaplace.isf`
+  - `loglaplace.logcdf`
+  - `loglaplace.logpdf`
+  - `loglaplace.logsf`
+  - `loglaplace.mean`
+  - `loglaplace.median`
+  - `loglaplace.moment`
+  - `loglaplace.nnlf`
+  - `loglaplace.pdf`
+  - `loglaplace.ppf`
+  - `loglaplace.rvs`
+  - `loglaplace.sf`
+  - `loglaplace.stats`
+  - `loglaplace.std`
+  - `loglaplace.support`
+  - `loglaplace.var`
+  - `loglaplace.vecentropy`
+- [`lognorm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.lognorm.html#scipy.stats.lognorm)
+  - `lognorm.cdf`
+  - `lognorm.entropy`
+  - `lognorm.expect`
+  - `lognorm.fit`
+  - `lognorm.fit_loc_scale`
+  - `lognorm.freeze`
+  - `lognorm.generic_moment`
+  - `lognorm.interval`
+  - `lognorm.isf`
+  - `lognorm.logcdf`
+  - `lognorm.logpdf`
+  - `lognorm.logsf`
+  - `lognorm.mean`
+  - `lognorm.median`
+  - `lognorm.moment`
+  - `lognorm.nnlf`
+  - `lognorm.pdf`
+  - `lognorm.ppf`
+  - `lognorm.rvs`
+  - `lognorm.sf`
+  - `lognorm.stats`
+  - `lognorm.std`
+  - `lognorm.support`
+  - `lognorm.var`
+  - `lognorm.vecentropy`
+- [`logser`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.logser.html#scipy.stats.logser)
+  - `logser.cdf`
+  - `logser.entropy`
+  - `logser.expect`
+  - `logser.freeze`
+  - `logser.generic_moment`
+  - `logser.interval`
+  - `logser.isf`
+  - `logser.logcdf`
+  - `logser.logpmf`
+  - `logser.logsf`
+  - `logser.mean`
+  - `logser.median`
+  - `logser.moment`
+  - `logser.nnlf`
+  - `logser.pmf`
+  - `logser.ppf`
+  - `logser.rvs`
+  - `logser.sf`
+  - `logser.stats`
+  - `logser.std`
+  - `logser.support`
+  - `logser.var`
+  - `logser.vecentropy`
+- [`loguniform`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.loguniform.html#scipy.stats.loguniform)
+  - `loguniform.cdf`
+  - `loguniform.entropy`
+  - `loguniform.expect`
+  - `loguniform.fit`
+  - `loguniform.fit_loc_scale`
+  - `loguniform.freeze`
+  - `loguniform.generic_moment`
+  - `loguniform.interval`
+  - `loguniform.isf`
+  - `loguniform.logcdf`
+  - `loguniform.logpdf`
+  - `loguniform.logsf`
+  - `loguniform.mean`
+  - `loguniform.median`
+  - `loguniform.moment`
+  - `loguniform.nnlf`
+  - `loguniform.pdf`
+  - `loguniform.ppf`
+  - `loguniform.rvs`
+  - `loguniform.sf`
+  - `loguniform.stats`
+  - `loguniform.std`
+  - `loguniform.support`
+  - `loguniform.var`
+  - `loguniform.vecentropy`
+- [`lomax`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.lomax.html#scipy.stats.lomax)
+  - `lomax.cdf`
+  - `lomax.entropy`
+  - `lomax.expect`
+  - `lomax.fit`
+  - `lomax.fit_loc_scale`
+  - `lomax.freeze`
+  - `lomax.generic_moment`
+  - `lomax.interval`
+  - `lomax.isf`
+  - `lomax.logcdf`
+  - `lomax.logpdf`
+  - `lomax.logsf`
+  - `lomax.mean`
+  - `lomax.median`
+  - `lomax.moment`
+  - `lomax.nnlf`
+  - `lomax.pdf`
+  - `lomax.ppf`
+  - `lomax.rvs`
+  - `lomax.sf`
+  - `lomax.stats`
+  - `lomax.std`
+  - `lomax.support`
+  - `lomax.var`
+  - `lomax.vecentropy`
+- [`matrix_normal`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.matrix_normal.html#scipy.stats.matrix_normal)
+  - `matrix_normal.entropy`
+  - `matrix_normal.logpdf`
+  - `matrix_normal.pdf`
+  - `matrix_normal.rvs`
+- [`matrix_t`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.matrix_t.html#scipy.stats.matrix_t)
+  - `matrix_t.logpdf`
+  - `matrix_t.pdf`
+  - `matrix_t.rvs`
+- [`maxwell`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.maxwell.html#scipy.stats.maxwell)
+  - `maxwell.cdf`
+  - `maxwell.entropy`
+  - `maxwell.expect`
+  - `maxwell.fit`
+  - `maxwell.fit_loc_scale`
+  - `maxwell.freeze`
+  - `maxwell.generic_moment`
+  - `maxwell.interval`
+  - `maxwell.isf`
+  - `maxwell.logcdf`
+  - `maxwell.logpdf`
+  - `maxwell.logsf`
+  - `maxwell.mean`
+  - `maxwell.median`
+  - `maxwell.moment`
+  - `maxwell.nnlf`
+  - `maxwell.pdf`
+  - `maxwell.ppf`
+  - `maxwell.rvs`
+  - `maxwell.sf`
+  - `maxwell.stats`
+  - `maxwell.std`
+  - `maxwell.support`
+  - `maxwell.var`
+  - `maxwell.vecentropy`
+- [`mielke`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mielke.html#scipy.stats.mielke)
+  - `mielke.cdf`
+  - `mielke.entropy`
+  - `mielke.expect`
+  - `mielke.fit`
+  - `mielke.fit_loc_scale`
+  - `mielke.freeze`
+  - `mielke.generic_moment`
+  - `mielke.interval`
+  - `mielke.isf`
+  - `mielke.logcdf`
+  - `mielke.logpdf`
+  - `mielke.logsf`
+  - `mielke.mean`
+  - `mielke.median`
+  - `mielke.moment`
+  - `mielke.nnlf`
+  - `mielke.pdf`
+  - `mielke.ppf`
+  - `mielke.rvs`
+  - `mielke.sf`
+  - `mielke.stats`
+  - `mielke.std`
+  - `mielke.support`
+  - `mielke.var`
+  - `mielke.vecentropy`
+- [`moyal`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.moyal.html#scipy.stats.moyal)
+  - `moyal.cdf`
+  - `moyal.entropy`
+  - `moyal.expect`
+  - `moyal.fit`
+  - `moyal.fit_loc_scale`
+  - `moyal.freeze`
+  - `moyal.generic_moment`
+  - `moyal.interval`
+  - `moyal.isf`
+  - `moyal.logcdf`
+  - `moyal.logpdf`
+  - `moyal.logsf`
+  - `moyal.mean`
+  - `moyal.median`
+  - `moyal.moment`
+  - `moyal.nnlf`
+  - `moyal.pdf`
+  - `moyal.ppf`
+  - `moyal.rvs`
+  - `moyal.sf`
+  - `moyal.stats`
+  - `moyal.std`
+  - `moyal.support`
+  - `moyal.var`
+  - `moyal.vecentropy`
+- [`multinomial`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multinomial.html#scipy.stats.multinomial)
+  - `multinomial.cov`
+  - `multinomial.entropy`
+  - `multinomial.logpmf`
+  - `multinomial.mean`
+  - `multinomial.pmf`
+  - `multinomial.rvs`
+- [`multivariate_hypergeom`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multivariate_hypergeom.html#scipy.stats.multivariate_hypergeom)
+  - `multivariate_hypergeom.cov`
+  - `multivariate_hypergeom.logpmf`
+  - `multivariate_hypergeom.mean`
+  - `multivariate_hypergeom.pmf`
+  - `multivariate_hypergeom.rvs`
+  - `multivariate_hypergeom.var`
+- [`multivariate_normal`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multivariate_normal.html#scipy.stats.multivariate_normal)
+  - `multivariate_normal.cdf`
+  - `multivariate_normal.entropy`
+  - `multivariate_normal.fit`
+  - `multivariate_normal.logcdf`
+  - `multivariate_normal.logpdf`
+  - `multivariate_normal.marginal`
+  - `multivariate_normal.pdf`
+  - `multivariate_normal.rvs`
+- [`multivariate_t`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.multivariate_t.html#scipy.stats.multivariate_t)
+  - `multivariate_t.cdf`
+  - `multivariate_t.entropy`
+  - `multivariate_t.logpdf`
+  - `multivariate_t.marginal`
+  - `multivariate_t.pdf`
+  - `multivariate_t.rvs`
+- [`nakagami`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.nakagami.html#scipy.stats.nakagami)
+  - `nakagami.cdf`
+  - `nakagami.entropy`
+  - `nakagami.expect`
+  - `nakagami.fit`
+  - `nakagami.fit_loc_scale`
+  - `nakagami.freeze`
+  - `nakagami.generic_moment`
+  - `nakagami.interval`
+  - `nakagami.isf`
+  - `nakagami.logcdf`
+  - `nakagami.logpdf`
+  - `nakagami.logsf`
+  - `nakagami.mean`
+  - `nakagami.median`
+  - `nakagami.moment`
+  - `nakagami.nnlf`
+  - `nakagami.pdf`
+  - `nakagami.ppf`
+  - `nakagami.rvs`
+  - `nakagami.sf`
+  - `nakagami.stats`
+  - `nakagami.std`
+  - `nakagami.support`
+  - `nakagami.var`
+  - `nakagami.vecentropy`
+- [`nbinom`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.nbinom.html#scipy.stats.nbinom)
+  - `nbinom.cdf`
+  - `nbinom.entropy`
+  - `nbinom.expect`
+  - `nbinom.freeze`
+  - `nbinom.generic_moment`
+  - `nbinom.interval`
+  - `nbinom.isf`
+  - `nbinom.logcdf`
+  - `nbinom.logpmf`
+  - `nbinom.logsf`
+  - `nbinom.mean`
+  - `nbinom.median`
+  - `nbinom.moment`
+  - `nbinom.nnlf`
+  - `nbinom.pmf`
+  - `nbinom.ppf`
+  - `nbinom.rvs`
+  - `nbinom.sf`
+  - `nbinom.stats`
+  - `nbinom.std`
+  - `nbinom.support`
+  - `nbinom.var`
+  - `nbinom.vecentropy`
+- [`ncf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ncf.html#scipy.stats.ncf)
+  - `ncf.cdf`
+  - `ncf.entropy`
+  - `ncf.expect`
+  - `ncf.fit`
+  - `ncf.fit_loc_scale`
+  - `ncf.freeze`
+  - `ncf.generic_moment`
+  - `ncf.interval`
+  - `ncf.isf`
+  - `ncf.logcdf`
+  - `ncf.logpdf`
+  - `ncf.logsf`
+  - `ncf.mean`
+  - `ncf.median`
+  - `ncf.moment`
+  - `ncf.nnlf`
+  - `ncf.pdf`
+  - `ncf.ppf`
+  - `ncf.rvs`
+  - `ncf.sf`
+  - `ncf.stats`
+  - `ncf.std`
+  - `ncf.support`
+  - `ncf.var`
+  - `ncf.vecentropy`
+- [`nchypergeom_fisher`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.nchypergeom_fisher.html#scipy.stats.nchypergeom_fisher)
+  - `nchypergeom_fisher.cdf`
+  - `nchypergeom_fisher.entropy`
+  - `nchypergeom_fisher.expect`
+  - `nchypergeom_fisher.freeze`
+  - `nchypergeom_fisher.generic_moment`
+  - `nchypergeom_fisher.interval`
+  - `nchypergeom_fisher.isf`
+  - `nchypergeom_fisher.logcdf`
+  - `nchypergeom_fisher.logpmf`
+  - `nchypergeom_fisher.logsf`
+  - `nchypergeom_fisher.mean`
+  - `nchypergeom_fisher.median`
+  - `nchypergeom_fisher.moment`
+  - `nchypergeom_fisher.nnlf`
+  - `nchypergeom_fisher.pmf`
+  - `nchypergeom_fisher.ppf`
+  - `nchypergeom_fisher.rvs`
+  - `nchypergeom_fisher.sf`
+  - `nchypergeom_fisher.stats`
+  - `nchypergeom_fisher.std`
+  - `nchypergeom_fisher.support`
+  - `nchypergeom_fisher.var`
+  - `nchypergeom_fisher.vecentropy`
+- [`nchypergeom_wallenius`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.nchypergeom_wallenius.html#scipy.stats.nchypergeom_wallenius)
+  - `nchypergeom_wallenius.cdf`
+  - `nchypergeom_wallenius.entropy`
+  - `nchypergeom_wallenius.expect`
+  - `nchypergeom_wallenius.freeze`
+  - `nchypergeom_wallenius.generic_moment`
+  - `nchypergeom_wallenius.interval`
+  - `nchypergeom_wallenius.isf`
+  - `nchypergeom_wallenius.logcdf`
+  - `nchypergeom_wallenius.logpmf`
+  - `nchypergeom_wallenius.logsf`
+  - `nchypergeom_wallenius.mean`
+  - `nchypergeom_wallenius.median`
+  - `nchypergeom_wallenius.moment`
+  - `nchypergeom_wallenius.nnlf`
+  - `nchypergeom_wallenius.pmf`
+  - `nchypergeom_wallenius.ppf`
+  - `nchypergeom_wallenius.rvs`
+  - `nchypergeom_wallenius.sf`
+  - `nchypergeom_wallenius.stats`
+  - `nchypergeom_wallenius.std`
+  - `nchypergeom_wallenius.support`
+  - `nchypergeom_wallenius.var`
+  - `nchypergeom_wallenius.vecentropy`
+- [`nct`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.nct.html#scipy.stats.nct)
+  - `nct.cdf`
+  - `nct.entropy`
+  - `nct.expect`
+  - `nct.fit`
+  - `nct.fit_loc_scale`
+  - `nct.freeze`
+  - `nct.generic_moment`
+  - `nct.interval`
+  - `nct.isf`
+  - `nct.logcdf`
+  - `nct.logpdf`
+  - `nct.logsf`
+  - `nct.mean`
+  - `nct.median`
+  - `nct.moment`
+  - `nct.nnlf`
+  - `nct.pdf`
+  - `nct.ppf`
+  - `nct.rvs`
+  - `nct.sf`
+  - `nct.stats`
+  - `nct.std`
+  - `nct.support`
+  - `nct.var`
+  - `nct.vecentropy`
+- [`ncx2`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ncx2.html#scipy.stats.ncx2)
+  - `ncx2.cdf`
+  - `ncx2.entropy`
+  - `ncx2.expect`
+  - `ncx2.fit`
+  - `ncx2.fit_loc_scale`
+  - `ncx2.freeze`
+  - `ncx2.generic_moment`
+  - `ncx2.interval`
+  - `ncx2.isf`
+  - `ncx2.logcdf`
+  - `ncx2.logpdf`
+  - `ncx2.logsf`
+  - `ncx2.mean`
+  - `ncx2.median`
+  - `ncx2.moment`
+  - `ncx2.nnlf`
+  - `ncx2.pdf`
+  - `ncx2.ppf`
+  - `ncx2.rvs`
+  - `ncx2.sf`
+  - `ncx2.stats`
+  - `ncx2.std`
+  - `ncx2.support`
+  - `ncx2.var`
+  - `ncx2.vecentropy`
+- [`nhypergeom`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.nhypergeom.html#scipy.stats.nhypergeom)
+  - `nhypergeom.cdf`
+  - `nhypergeom.entropy`
+  - `nhypergeom.expect`
+  - `nhypergeom.freeze`
+  - `nhypergeom.generic_moment`
+  - `nhypergeom.interval`
+  - `nhypergeom.isf`
+  - `nhypergeom.logcdf`
+  - `nhypergeom.logpmf`
+  - `nhypergeom.logsf`
+  - `nhypergeom.mean`
+  - `nhypergeom.median`
+  - `nhypergeom.moment`
+  - `nhypergeom.nnlf`
+  - `nhypergeom.pmf`
+  - `nhypergeom.ppf`
+  - `nhypergeom.rvs`
+  - `nhypergeom.sf`
+  - `nhypergeom.stats`
+  - `nhypergeom.std`
+  - `nhypergeom.support`
+  - `nhypergeom.var`
+  - `nhypergeom.vecentropy`
+- [`norm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.norm.html#scipy.stats.norm)
+  - `norm.cdf`
+  - `norm.entropy`
+  - `norm.expect`
+  - `norm.fit`
+  - `norm.fit_loc_scale`
+  - `norm.freeze`
+  - `norm.generic_moment`
+  - `norm.interval`
+  - `norm.isf`
+  - `norm.logcdf`
+  - `norm.logpdf`
+  - `norm.logsf`
+  - `norm.mean`
+  - `norm.median`
+  - `norm.moment`
+  - `norm.nnlf`
+  - `norm.pdf`
+  - `norm.ppf`
+  - `norm.rvs`
+  - `norm.sf`
+  - `norm.stats`
+  - `norm.std`
+  - `norm.support`
+  - `norm.var`
+  - `norm.vecentropy`
+- [`normal_inverse_gamma`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.normal_inverse_gamma.html#scipy.stats.normal_inverse_gamma)
+  - `normal_inverse_gamma.logpdf`
+  - `normal_inverse_gamma.mean`
+  - `normal_inverse_gamma.pdf`
+  - `normal_inverse_gamma.rvs`
+  - `normal_inverse_gamma.var`
+- [`norminvgauss`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.norminvgauss.html#scipy.stats.norminvgauss)
+  - `norminvgauss.cdf`
+  - `norminvgauss.entropy`
+  - `norminvgauss.expect`
+  - `norminvgauss.fit`
+  - `norminvgauss.fit_loc_scale`
+  - `norminvgauss.freeze`
+  - `norminvgauss.generic_moment`
+  - `norminvgauss.interval`
+  - `norminvgauss.isf`
+  - `norminvgauss.logcdf`
+  - `norminvgauss.logpdf`
+  - `norminvgauss.logsf`
+  - `norminvgauss.mean`
+  - `norminvgauss.median`
+  - `norminvgauss.moment`
+  - `norminvgauss.nnlf`
+  - `norminvgauss.pdf`
+  - `norminvgauss.ppf`
+  - `norminvgauss.rvs`
+  - `norminvgauss.sf`
+  - `norminvgauss.stats`
+  - `norminvgauss.std`
+  - `norminvgauss.support`
+  - `norminvgauss.var`
+  - `norminvgauss.vecentropy`
+- [`ortho_group`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ortho_group.html#scipy.stats.ortho_group)
+  - `ortho_group.rvs`
+- [`pareto`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.pareto.html#scipy.stats.pareto)
+  - `pareto.cdf`
+  - `pareto.entropy`
+  - `pareto.expect`
+  - `pareto.fit`
+  - `pareto.fit_loc_scale`
+  - `pareto.freeze`
+  - `pareto.generic_moment`
+  - `pareto.interval`
+  - `pareto.isf`
+  - `pareto.logcdf`
+  - `pareto.logpdf`
+  - `pareto.logsf`
+  - `pareto.mean`
+  - `pareto.median`
+  - `pareto.moment`
+  - `pareto.nnlf`
+  - `pareto.pdf`
+  - `pareto.ppf`
+  - `pareto.rvs`
+  - `pareto.sf`
+  - `pareto.stats`
+  - `pareto.std`
+  - `pareto.support`
+  - `pareto.var`
+  - `pareto.vecentropy`
+- [`pearson3`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.pearson3.html#scipy.stats.pearson3)
+  - `pearson3.cdf`
+  - `pearson3.entropy`
+  - `pearson3.expect`
+  - `pearson3.fit`
+  - `pearson3.fit_loc_scale`
+  - `pearson3.freeze`
+  - `pearson3.generic_moment`
+  - `pearson3.interval`
+  - `pearson3.isf`
+  - `pearson3.logcdf`
+  - `pearson3.logpdf`
+  - `pearson3.logsf`
+  - `pearson3.mean`
+  - `pearson3.median`
+  - `pearson3.moment`
+  - `pearson3.nnlf`
+  - `pearson3.pdf`
+  - `pearson3.ppf`
+  - `pearson3.rvs`
+  - `pearson3.sf`
+  - `pearson3.stats`
+  - `pearson3.std`
+  - `pearson3.support`
+  - `pearson3.var`
+  - `pearson3.vecentropy`
+- [`planck`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.planck.html#scipy.stats.planck)
+  - `planck.cdf`
+  - `planck.entropy`
+  - `planck.expect`
+  - `planck.freeze`
+  - `planck.generic_moment`
+  - `planck.interval`
+  - `planck.isf`
+  - `planck.logcdf`
+  - `planck.logpmf`
+  - `planck.logsf`
+  - `planck.mean`
+  - `planck.median`
+  - `planck.moment`
+  - `planck.nnlf`
+  - `planck.pmf`
+  - `planck.ppf`
+  - `planck.rvs`
+  - `planck.sf`
+  - `planck.stats`
+  - `planck.std`
+  - `planck.support`
+  - `planck.var`
+  - `planck.vecentropy`
+- [`poisson`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.poisson.html#scipy.stats.poisson)
+  - `poisson.cdf`
+  - `poisson.entropy`
+  - `poisson.expect`
+  - `poisson.freeze`
+  - `poisson.generic_moment`
+  - `poisson.interval`
+  - `poisson.isf`
+  - `poisson.logcdf`
+  - `poisson.logpmf`
+  - `poisson.logsf`
+  - `poisson.mean`
+  - `poisson.median`
+  - `poisson.moment`
+  - `poisson.nnlf`
+  - `poisson.pmf`
+  - `poisson.ppf`
+  - `poisson.rvs`
+  - `poisson.sf`
+  - `poisson.stats`
+  - `poisson.std`
+  - `poisson.support`
+  - `poisson.var`
+  - `poisson.vecentropy`
+- [`poisson_binom`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.poisson_binom.html#scipy.stats.poisson_binom)
+  - `poisson_binom.cdf`
+  - `poisson_binom.entropy`
+  - `poisson_binom.expect`
+  - `poisson_binom.freeze`
+  - `poisson_binom.generic_moment`
+  - `poisson_binom.interval`
+  - `poisson_binom.isf`
+  - `poisson_binom.logcdf`
+  - `poisson_binom.logpmf`
+  - `poisson_binom.logsf`
+  - `poisson_binom.mean`
+  - `poisson_binom.median`
+  - `poisson_binom.moment`
+  - `poisson_binom.nnlf`
+  - `poisson_binom.pmf`
+  - `poisson_binom.ppf`
+  - `poisson_binom.rvs`
+  - `poisson_binom.sf`
+  - `poisson_binom.stats`
+  - `poisson_binom.std`
+  - `poisson_binom.support`
+  - `poisson_binom.var`
+  - `poisson_binom.vecentropy`
+- [`powerlaw`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.powerlaw.html#scipy.stats.powerlaw)
+  - `powerlaw.cdf`
+  - `powerlaw.entropy`
+  - `powerlaw.expect`
+  - `powerlaw.fit`
+  - `powerlaw.fit_loc_scale`
+  - `powerlaw.freeze`
+  - `powerlaw.generic_moment`
+  - `powerlaw.interval`
+  - `powerlaw.isf`
+  - `powerlaw.logcdf`
+  - `powerlaw.logpdf`
+  - `powerlaw.logsf`
+  - `powerlaw.mean`
+  - `powerlaw.median`
+  - `powerlaw.moment`
+  - `powerlaw.nnlf`
+  - `powerlaw.pdf`
+  - `powerlaw.ppf`
+  - `powerlaw.rvs`
+  - `powerlaw.sf`
+  - `powerlaw.stats`
+  - `powerlaw.std`
+  - `powerlaw.support`
+  - `powerlaw.var`
+  - `powerlaw.vecentropy`
+- [`powerlognorm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.powerlognorm.html#scipy.stats.powerlognorm)
+  - `powerlognorm.cdf`
+  - `powerlognorm.entropy`
+  - `powerlognorm.expect`
+  - `powerlognorm.fit`
+  - `powerlognorm.fit_loc_scale`
+  - `powerlognorm.freeze`
+  - `powerlognorm.generic_moment`
+  - `powerlognorm.interval`
+  - `powerlognorm.isf`
+  - `powerlognorm.logcdf`
+  - `powerlognorm.logpdf`
+  - `powerlognorm.logsf`
+  - `powerlognorm.mean`
+  - `powerlognorm.median`
+  - `powerlognorm.moment`
+  - `powerlognorm.nnlf`
+  - `powerlognorm.pdf`
+  - `powerlognorm.ppf`
+  - `powerlognorm.rvs`
+  - `powerlognorm.sf`
+  - `powerlognorm.stats`
+  - `powerlognorm.std`
+  - `powerlognorm.support`
+  - `powerlognorm.var`
+  - `powerlognorm.vecentropy`
+- [`powernorm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.powernorm.html#scipy.stats.powernorm)
+  - `powernorm.cdf`
+  - `powernorm.entropy`
+  - `powernorm.expect`
+  - `powernorm.fit`
+  - `powernorm.fit_loc_scale`
+  - `powernorm.freeze`
+  - `powernorm.generic_moment`
+  - `powernorm.interval`
+  - `powernorm.isf`
+  - `powernorm.logcdf`
+  - `powernorm.logpdf`
+  - `powernorm.logsf`
+  - `powernorm.mean`
+  - `powernorm.median`
+  - `powernorm.moment`
+  - `powernorm.nnlf`
+  - `powernorm.pdf`
+  - `powernorm.ppf`
+  - `powernorm.rvs`
+  - `powernorm.sf`
+  - `powernorm.stats`
+  - `powernorm.std`
+  - `powernorm.support`
+  - `powernorm.var`
+  - `powernorm.vecentropy`
+- [`randint`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.randint.html#scipy.stats.randint)
+  - `randint.cdf`
+  - `randint.entropy`
+  - `randint.expect`
+  - `randint.freeze`
+  - `randint.generic_moment`
+  - `randint.interval`
+  - `randint.isf`
+  - `randint.logcdf`
+  - `randint.logpmf`
+  - `randint.logsf`
+  - `randint.mean`
+  - `randint.median`
+  - `randint.moment`
+  - `randint.nnlf`
+  - `randint.pmf`
+  - `randint.ppf`
+  - `randint.rvs`
+  - `randint.sf`
+  - `randint.stats`
+  - `randint.std`
+  - `randint.support`
+  - `randint.var`
+  - `randint.vecentropy`
+- [`random_correlation`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.random_correlation.html#scipy.stats.random_correlation)
+  - `random_correlation.rvs`
+- [`random_table`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.random_table.html#scipy.stats.random_table)
+  - `random_table.logpmf`
+  - `random_table.mean`
+  - `random_table.pmf`
+  - `random_table.rvs`
+- [`rayleigh`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rayleigh.html#scipy.stats.rayleigh)
+  - `rayleigh.cdf`
+  - `rayleigh.entropy`
+  - `rayleigh.expect`
+  - `rayleigh.fit`
+  - `rayleigh.fit_loc_scale`
+  - `rayleigh.freeze`
+  - `rayleigh.generic_moment`
+  - `rayleigh.interval`
+  - `rayleigh.isf`
+  - `rayleigh.logcdf`
+  - `rayleigh.logpdf`
+  - `rayleigh.logsf`
+  - `rayleigh.mean`
+  - `rayleigh.median`
+  - `rayleigh.moment`
+  - `rayleigh.nnlf`
+  - `rayleigh.pdf`
+  - `rayleigh.ppf`
+  - `rayleigh.rvs`
+  - `rayleigh.sf`
+  - `rayleigh.stats`
+  - `rayleigh.std`
+  - `rayleigh.support`
+  - `rayleigh.var`
+  - `rayleigh.vecentropy`
+- [`rdist`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rdist.html#scipy.stats.rdist)
+  - `rdist.cdf`
+  - `rdist.entropy`
+  - `rdist.expect`
+  - `rdist.fit`
+  - `rdist.fit_loc_scale`
+  - `rdist.freeze`
+  - `rdist.generic_moment`
+  - `rdist.interval`
+  - `rdist.isf`
+  - `rdist.logcdf`
+  - `rdist.logpdf`
+  - `rdist.logsf`
+  - `rdist.mean`
+  - `rdist.median`
+  - `rdist.moment`
+  - `rdist.nnlf`
+  - `rdist.pdf`
+  - `rdist.ppf`
+  - `rdist.rvs`
+  - `rdist.sf`
+  - `rdist.stats`
+  - `rdist.std`
+  - `rdist.support`
+  - `rdist.var`
+  - `rdist.vecentropy`
+- [`recipinvgauss`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.recipinvgauss.html#scipy.stats.recipinvgauss)
+  - `recipinvgauss.cdf`
+  - `recipinvgauss.entropy`
+  - `recipinvgauss.expect`
+  - `recipinvgauss.fit`
+  - `recipinvgauss.fit_loc_scale`
+  - `recipinvgauss.freeze`
+  - `recipinvgauss.generic_moment`
+  - `recipinvgauss.interval`
+  - `recipinvgauss.isf`
+  - `recipinvgauss.logcdf`
+  - `recipinvgauss.logpdf`
+  - `recipinvgauss.logsf`
+  - `recipinvgauss.mean`
+  - `recipinvgauss.median`
+  - `recipinvgauss.moment`
+  - `recipinvgauss.nnlf`
+  - `recipinvgauss.pdf`
+  - `recipinvgauss.ppf`
+  - `recipinvgauss.rvs`
+  - `recipinvgauss.sf`
+  - `recipinvgauss.stats`
+  - `recipinvgauss.std`
+  - `recipinvgauss.support`
+  - `recipinvgauss.var`
+  - `recipinvgauss.vecentropy`
+- `reciprocal`
+  - `reciprocal.cdf`
+  - `reciprocal.entropy`
+  - `reciprocal.expect`
+  - `reciprocal.fit`
+  - `reciprocal.fit_loc_scale`
+  - `reciprocal.freeze`
+  - `reciprocal.generic_moment`
+  - `reciprocal.interval`
+  - `reciprocal.isf`
+  - `reciprocal.logcdf`
+  - `reciprocal.logpdf`
+  - `reciprocal.logsf`
+  - `reciprocal.mean`
+  - `reciprocal.median`
+  - `reciprocal.moment`
+  - `reciprocal.nnlf`
+  - `reciprocal.pdf`
+  - `reciprocal.ppf`
+  - `reciprocal.rvs`
+  - `reciprocal.sf`
+  - `reciprocal.stats`
+  - `reciprocal.std`
+  - `reciprocal.support`
+  - `reciprocal.var`
+  - `reciprocal.vecentropy`
+- [`rel_breitwigner`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rel_breitwigner.html#scipy.stats.rel_breitwigner)
+  - `rel_breitwigner.cdf`
+  - `rel_breitwigner.entropy`
+  - `rel_breitwigner.expect`
+  - `rel_breitwigner.fit`
+  - `rel_breitwigner.fit_loc_scale`
+  - `rel_breitwigner.freeze`
+  - `rel_breitwigner.generic_moment`
+  - `rel_breitwigner.interval`
+  - `rel_breitwigner.isf`
+  - `rel_breitwigner.logcdf`
+  - `rel_breitwigner.logpdf`
+  - `rel_breitwigner.logsf`
+  - `rel_breitwigner.mean`
+  - `rel_breitwigner.median`
+  - `rel_breitwigner.moment`
+  - `rel_breitwigner.nnlf`
+  - `rel_breitwigner.pdf`
+  - `rel_breitwigner.ppf`
+  - `rel_breitwigner.rvs`
+  - `rel_breitwigner.sf`
+  - `rel_breitwigner.stats`
+  - `rel_breitwigner.std`
+  - `rel_breitwigner.support`
+  - `rel_breitwigner.var`
+  - `rel_breitwigner.vecentropy`
+- [`rice`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rice.html#scipy.stats.rice)
+  - `rice.cdf`
+  - `rice.entropy`
+  - `rice.expect`
+  - `rice.fit`
+  - `rice.fit_loc_scale`
+  - `rice.freeze`
+  - `rice.generic_moment`
+  - `rice.interval`
+  - `rice.isf`
+  - `rice.logcdf`
+  - `rice.logpdf`
+  - `rice.logsf`
+  - `rice.mean`
+  - `rice.median`
+  - `rice.moment`
+  - `rice.nnlf`
+  - `rice.pdf`
+  - `rice.ppf`
+  - `rice.rvs`
+  - `rice.sf`
+  - `rice.stats`
+  - `rice.std`
+  - `rice.support`
+  - `rice.var`
+  - `rice.vecentropy`
+- [`semicircular`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.semicircular.html#scipy.stats.semicircular)
+  - `semicircular.cdf`
+  - `semicircular.entropy`
+  - `semicircular.expect`
+  - `semicircular.fit`
+  - `semicircular.fit_loc_scale`
+  - `semicircular.freeze`
+  - `semicircular.generic_moment`
+  - `semicircular.interval`
+  - `semicircular.isf`
+  - `semicircular.logcdf`
+  - `semicircular.logpdf`
+  - `semicircular.logsf`
+  - `semicircular.mean`
+  - `semicircular.median`
+  - `semicircular.moment`
+  - `semicircular.nnlf`
+  - `semicircular.pdf`
+  - `semicircular.ppf`
+  - `semicircular.rvs`
+  - `semicircular.sf`
+  - `semicircular.stats`
+  - `semicircular.std`
+  - `semicircular.support`
+  - `semicircular.var`
+  - `semicircular.vecentropy`
+- [`skellam`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.skellam.html#scipy.stats.skellam)
+  - `skellam.cdf`
+  - `skellam.entropy`
+  - `skellam.expect`
+  - `skellam.freeze`
+  - `skellam.generic_moment`
+  - `skellam.interval`
+  - `skellam.isf`
+  - `skellam.logcdf`
+  - `skellam.logpmf`
+  - `skellam.logsf`
+  - `skellam.mean`
+  - `skellam.median`
+  - `skellam.moment`
+  - `skellam.nnlf`
+  - `skellam.pmf`
+  - `skellam.ppf`
+  - `skellam.rvs`
+  - `skellam.sf`
+  - `skellam.stats`
+  - `skellam.std`
+  - `skellam.support`
+  - `skellam.var`
+  - `skellam.vecentropy`
+- [`skewcauchy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.skewcauchy.html#scipy.stats.skewcauchy)
+  - `skewcauchy.cdf`
+  - `skewcauchy.entropy`
+  - `skewcauchy.expect`
+  - `skewcauchy.fit`
+  - `skewcauchy.fit_loc_scale`
+  - `skewcauchy.freeze`
+  - `skewcauchy.generic_moment`
+  - `skewcauchy.interval`
+  - `skewcauchy.isf`
+  - `skewcauchy.logcdf`
+  - `skewcauchy.logpdf`
+  - `skewcauchy.logsf`
+  - `skewcauchy.mean`
+  - `skewcauchy.median`
+  - `skewcauchy.moment`
+  - `skewcauchy.nnlf`
+  - `skewcauchy.pdf`
+  - `skewcauchy.ppf`
+  - `skewcauchy.rvs`
+  - `skewcauchy.sf`
+  - `skewcauchy.stats`
+  - `skewcauchy.std`
+  - `skewcauchy.support`
+  - `skewcauchy.var`
+  - `skewcauchy.vecentropy`
+- [`skewnorm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.skewnorm.html#scipy.stats.skewnorm)
+  - `skewnorm.cdf`
+  - `skewnorm.entropy`
+  - `skewnorm.expect`
+  - `skewnorm.fit`
+  - `skewnorm.fit_loc_scale`
+  - `skewnorm.freeze`
+  - `skewnorm.generic_moment`
+  - `skewnorm.interval`
+  - `skewnorm.isf`
+  - `skewnorm.logcdf`
+  - `skewnorm.logpdf`
+  - `skewnorm.logsf`
+  - `skewnorm.mean`
+  - `skewnorm.median`
+  - `skewnorm.moment`
+  - `skewnorm.nnlf`
+  - `skewnorm.pdf`
+  - `skewnorm.ppf`
+  - `skewnorm.rvs`
+  - `skewnorm.sf`
+  - `skewnorm.stats`
+  - `skewnorm.std`
+  - `skewnorm.support`
+  - `skewnorm.var`
+  - `skewnorm.vecentropy`
+- [`special_ortho_group`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.special_ortho_group.html#scipy.stats.special_ortho_group)
+  - `special_ortho_group.rvs`
+- [`studentized_range`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.studentized_range.html#scipy.stats.studentized_range)
+  - `studentized_range.cdf`
+  - `studentized_range.entropy`
+  - `studentized_range.expect`
+  - `studentized_range.fit`
+  - `studentized_range.fit_loc_scale`
+  - `studentized_range.freeze`
+  - `studentized_range.generic_moment`
+  - `studentized_range.interval`
+  - `studentized_range.isf`
+  - `studentized_range.logcdf`
+  - `studentized_range.logpdf`
+  - `studentized_range.logsf`
+  - `studentized_range.mean`
+  - `studentized_range.median`
+  - `studentized_range.moment`
+  - `studentized_range.nnlf`
+  - `studentized_range.pdf`
+  - `studentized_range.ppf`
+  - `studentized_range.rvs`
+  - `studentized_range.sf`
+  - `studentized_range.stats`
+  - `studentized_range.std`
+  - `studentized_range.support`
+  - `studentized_range.var`
+  - `studentized_range.vecentropy`
+- [`t`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.t.html#scipy.stats.t)
+  - `t.cdf`
+  - `t.entropy`
+  - `t.expect`
+  - `t.fit`
+  - `t.fit_loc_scale`
+  - `t.freeze`
+  - `t.generic_moment`
+  - `t.interval`
+  - `t.isf`
+  - `t.logcdf`
+  - `t.logpdf`
+  - `t.logsf`
+  - `t.mean`
+  - `t.median`
+  - `t.moment`
+  - `t.nnlf`
+  - `t.pdf`
+  - `t.ppf`
+  - `t.rvs`
+  - `t.sf`
+  - `t.stats`
+  - `t.std`
+  - `t.support`
+  - `t.var`
+  - `t.vecentropy`
+- [`trapezoid`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.trapezoid.html#scipy.stats.trapezoid)
+  - `trapezoid.cdf`
+  - `trapezoid.entropy`
+  - `trapezoid.expect`
+  - `trapezoid.fit`
+  - `trapezoid.fit_loc_scale`
+  - `trapezoid.freeze`
+  - `trapezoid.generic_moment`
+  - `trapezoid.interval`
+  - `trapezoid.isf`
+  - `trapezoid.logcdf`
+  - `trapezoid.logpdf`
+  - `trapezoid.logsf`
+  - `trapezoid.mean`
+  - `trapezoid.median`
+  - `trapezoid.moment`
+  - `trapezoid.nnlf`
+  - `trapezoid.pdf`
+  - `trapezoid.ppf`
+  - `trapezoid.rvs`
+  - `trapezoid.sf`
+  - `trapezoid.stats`
+  - `trapezoid.std`
+  - `trapezoid.support`
+  - `trapezoid.var`
+  - `trapezoid.vecentropy`
+- [`triang`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.triang.html#scipy.stats.triang)
+  - `triang.cdf`
+  - `triang.entropy`
+  - `triang.expect`
+  - `triang.fit`
+  - `triang.fit_loc_scale`
+  - `triang.freeze`
+  - `triang.generic_moment`
+  - `triang.interval`
+  - `triang.isf`
+  - `triang.logcdf`
+  - `triang.logpdf`
+  - `triang.logsf`
+  - `triang.mean`
+  - `triang.median`
+  - `triang.moment`
+  - `triang.nnlf`
+  - `triang.pdf`
+  - `triang.ppf`
+  - `triang.rvs`
+  - `triang.sf`
+  - `triang.stats`
+  - `triang.std`
+  - `triang.support`
+  - `triang.var`
+  - `triang.vecentropy`
+- [`truncexpon`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncexpon.html#scipy.stats.truncexpon)
+  - `truncexpon.cdf`
+  - `truncexpon.entropy`
+  - `truncexpon.expect`
+  - `truncexpon.fit`
+  - `truncexpon.fit_loc_scale`
+  - `truncexpon.freeze`
+  - `truncexpon.generic_moment`
+  - `truncexpon.interval`
+  - `truncexpon.isf`
+  - `truncexpon.logcdf`
+  - `truncexpon.logpdf`
+  - `truncexpon.logsf`
+  - `truncexpon.mean`
+  - `truncexpon.median`
+  - `truncexpon.moment`
+  - `truncexpon.nnlf`
+  - `truncexpon.pdf`
+  - `truncexpon.ppf`
+  - `truncexpon.rvs`
+  - `truncexpon.sf`
+  - `truncexpon.stats`
+  - `truncexpon.std`
+  - `truncexpon.support`
+  - `truncexpon.var`
+  - `truncexpon.vecentropy`
+- [`truncnorm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncnorm.html#scipy.stats.truncnorm)
+  - `truncnorm.cdf`
+  - `truncnorm.entropy`
+  - `truncnorm.expect`
+  - `truncnorm.fit`
+  - `truncnorm.fit_loc_scale`
+  - `truncnorm.freeze`
+  - `truncnorm.generic_moment`
+  - `truncnorm.interval`
+  - `truncnorm.isf`
+  - `truncnorm.logcdf`
+  - `truncnorm.logpdf`
+  - `truncnorm.logsf`
+  - `truncnorm.mean`
+  - `truncnorm.median`
+  - `truncnorm.moment`
+  - `truncnorm.nnlf`
+  - `truncnorm.pdf`
+  - `truncnorm.ppf`
+  - `truncnorm.rvs`
+  - `truncnorm.sf`
+  - `truncnorm.stats`
+  - `truncnorm.std`
+  - `truncnorm.support`
+  - `truncnorm.var`
+  - `truncnorm.vecentropy`
+- [`truncpareto`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncpareto.html#scipy.stats.truncpareto)
+  - `truncpareto.cdf`
+  - `truncpareto.entropy`
+  - `truncpareto.expect`
+  - `truncpareto.fit`
+  - `truncpareto.fit_loc_scale`
+  - `truncpareto.freeze`
+  - `truncpareto.generic_moment`
+  - `truncpareto.interval`
+  - `truncpareto.isf`
+  - `truncpareto.logcdf`
+  - `truncpareto.logpdf`
+  - `truncpareto.logsf`
+  - `truncpareto.mean`
+  - `truncpareto.median`
+  - `truncpareto.moment`
+  - `truncpareto.nnlf`
+  - `truncpareto.pdf`
+  - `truncpareto.ppf`
+  - `truncpareto.rvs`
+  - `truncpareto.sf`
+  - `truncpareto.stats`
+  - `truncpareto.std`
+  - `truncpareto.support`
+  - `truncpareto.var`
+  - `truncpareto.vecentropy`
+- [`truncweibull_min`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncweibull_min.html#scipy.stats.truncweibull_min)
+  - `truncweibull_min.cdf`
+  - `truncweibull_min.entropy`
+  - `truncweibull_min.expect`
+  - `truncweibull_min.fit`
+  - `truncweibull_min.fit_loc_scale`
+  - `truncweibull_min.freeze`
+  - `truncweibull_min.generic_moment`
+  - `truncweibull_min.interval`
+  - `truncweibull_min.isf`
+  - `truncweibull_min.logcdf`
+  - `truncweibull_min.logpdf`
+  - `truncweibull_min.logsf`
+  - `truncweibull_min.mean`
+  - `truncweibull_min.median`
+  - `truncweibull_min.moment`
+  - `truncweibull_min.nnlf`
+  - `truncweibull_min.pdf`
+  - `truncweibull_min.ppf`
+  - `truncweibull_min.rvs`
+  - `truncweibull_min.sf`
+  - `truncweibull_min.stats`
+  - `truncweibull_min.std`
+  - `truncweibull_min.support`
+  - `truncweibull_min.var`
+  - `truncweibull_min.vecentropy`
+- [`tukeylambda`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tukeylambda.html#scipy.stats.tukeylambda)
+  - `tukeylambda.cdf`
+  - `tukeylambda.entropy`
+  - `tukeylambda.expect`
+  - `tukeylambda.fit`
+  - `tukeylambda.fit_loc_scale`
+  - `tukeylambda.freeze`
+  - `tukeylambda.generic_moment`
+  - `tukeylambda.interval`
+  - `tukeylambda.isf`
+  - `tukeylambda.logcdf`
+  - `tukeylambda.logpdf`
+  - `tukeylambda.logsf`
+  - `tukeylambda.mean`
+  - `tukeylambda.median`
+  - `tukeylambda.moment`
+  - `tukeylambda.nnlf`
+  - `tukeylambda.pdf`
+  - `tukeylambda.ppf`
+  - `tukeylambda.rvs`
+  - `tukeylambda.sf`
+  - `tukeylambda.stats`
+  - `tukeylambda.std`
+  - `tukeylambda.support`
+  - `tukeylambda.var`
+  - `tukeylambda.vecentropy`
+- [`uniform`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.uniform.html#scipy.stats.uniform)
+  - `uniform.cdf`
+  - `uniform.entropy`
+  - `uniform.expect`
+  - `uniform.fit`
+  - `uniform.fit_loc_scale`
+  - `uniform.freeze`
+  - `uniform.generic_moment`
+  - `uniform.interval`
+  - `uniform.isf`
+  - `uniform.logcdf`
+  - `uniform.logpdf`
+  - `uniform.logsf`
+  - `uniform.mean`
+  - `uniform.median`
+  - `uniform.moment`
+  - `uniform.nnlf`
+  - `uniform.pdf`
+  - `uniform.ppf`
+  - `uniform.rvs`
+  - `uniform.sf`
+  - `uniform.stats`
+  - `uniform.std`
+  - `uniform.support`
+  - `uniform.var`
+  - `uniform.vecentropy`
+- [`uniform_direction`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.uniform_direction.html#scipy.stats.uniform_direction)
+  - `uniform_direction.rvs`
+- [`unitary_group`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.unitary_group.html#scipy.stats.unitary_group)
+  - `unitary_group.rvs`
+- [`vonmises`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.vonmises.html#scipy.stats.vonmises)
+  - `vonmises.cdf`
+  - `vonmises.entropy`
+  - `vonmises.expect`
+  - `vonmises.fit`
+  - `vonmises.fit_loc_scale`
+  - `vonmises.freeze`
+  - `vonmises.generic_moment`
+  - `vonmises.interval`
+  - `vonmises.isf`
+  - `vonmises.logcdf`
+  - `vonmises.logpdf`
+  - `vonmises.logsf`
+  - `vonmises.mean`
+  - `vonmises.median`
+  - `vonmises.moment`
+  - `vonmises.nnlf`
+  - `vonmises.pdf`
+  - `vonmises.ppf`
+  - `vonmises.rvs`
+  - `vonmises.sf`
+  - `vonmises.stats`
+  - `vonmises.std`
+  - `vonmises.support`
+  - `vonmises.var`
+  - `vonmises.vecentropy`
+- [`vonmises_fisher`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.vonmises_fisher.html#scipy.stats.vonmises_fisher)
+  - `vonmises_fisher.entropy`
+  - `vonmises_fisher.fit`
+  - `vonmises_fisher.logpdf`
+  - `vonmises_fisher.pdf`
+  - `vonmises_fisher.rvs`
+- [`vonmises_line`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.vonmises_line.html#scipy.stats.vonmises_line)
+  - `vonmises_line.cdf`
+  - `vonmises_line.entropy`
+  - `vonmises_line.expect`
+  - `vonmises_line.fit`
+  - `vonmises_line.fit_loc_scale`
+  - `vonmises_line.freeze`
+  - `vonmises_line.generic_moment`
+  - `vonmises_line.interval`
+  - `vonmises_line.isf`
+  - `vonmises_line.logcdf`
+  - `vonmises_line.logpdf`
+  - `vonmises_line.logsf`
+  - `vonmises_line.mean`
+  - `vonmises_line.median`
+  - `vonmises_line.moment`
+  - `vonmises_line.nnlf`
+  - `vonmises_line.pdf`
+  - `vonmises_line.ppf`
+  - `vonmises_line.rvs`
+  - `vonmises_line.sf`
+  - `vonmises_line.stats`
+  - `vonmises_line.std`
+  - `vonmises_line.support`
+  - `vonmises_line.var`
+  - `vonmises_line.vecentropy`
+- [`wald`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wald.html#scipy.stats.wald)
+  - `wald.cdf`
+  - `wald.entropy`
+  - `wald.expect`
+  - `wald.fit`
+  - `wald.fit_loc_scale`
+  - `wald.freeze`
+  - `wald.generic_moment`
+  - `wald.interval`
+  - `wald.isf`
+  - `wald.logcdf`
+  - `wald.logpdf`
+  - `wald.logsf`
+  - `wald.mean`
+  - `wald.median`
+  - `wald.moment`
+  - `wald.nnlf`
+  - `wald.pdf`
+  - `wald.ppf`
+  - `wald.rvs`
+  - `wald.sf`
+  - `wald.stats`
+  - `wald.std`
+  - `wald.support`
+  - `wald.var`
+  - `wald.vecentropy`
+- [`weibull_max`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.weibull_max.html#scipy.stats.weibull_max)
+  - `weibull_max.cdf`
+  - `weibull_max.entropy`
+  - `weibull_max.expect`
+  - `weibull_max.fit`
+  - `weibull_max.fit_loc_scale`
+  - `weibull_max.freeze`
+  - `weibull_max.generic_moment`
+  - `weibull_max.interval`
+  - `weibull_max.isf`
+  - `weibull_max.logcdf`
+  - `weibull_max.logpdf`
+  - `weibull_max.logsf`
+  - `weibull_max.mean`
+  - `weibull_max.median`
+  - `weibull_max.moment`
+  - `weibull_max.nnlf`
+  - `weibull_max.pdf`
+  - `weibull_max.ppf`
+  - `weibull_max.rvs`
+  - `weibull_max.sf`
+  - `weibull_max.stats`
+  - `weibull_max.std`
+  - `weibull_max.support`
+  - `weibull_max.var`
+  - `weibull_max.vecentropy`
+- [`weibull_min`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.weibull_min.html#scipy.stats.weibull_min)
+  - `weibull_min.cdf`
+  - `weibull_min.entropy`
+  - `weibull_min.expect`
+  - `weibull_min.fit`
+  - `weibull_min.fit_loc_scale`
+  - `weibull_min.freeze`
+  - `weibull_min.generic_moment`
+  - `weibull_min.interval`
+  - `weibull_min.isf`
+  - `weibull_min.logcdf`
+  - `weibull_min.logpdf`
+  - `weibull_min.logsf`
+  - `weibull_min.mean`
+  - `weibull_min.median`
+  - `weibull_min.moment`
+  - `weibull_min.nnlf`
+  - `weibull_min.pdf`
+  - `weibull_min.ppf`
+  - `weibull_min.rvs`
+  - `weibull_min.sf`
+  - `weibull_min.stats`
+  - `weibull_min.std`
+  - `weibull_min.support`
+  - `weibull_min.var`
+  - `weibull_min.vecentropy`
+- [`wishart`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wishart.html#scipy.stats.wishart)
+  - `wishart.entropy`
+  - `wishart.logpdf`
+  - `wishart.mean`
+  - `wishart.mode`
+  - `wishart.pdf`
+  - `wishart.rvs`
+  - `wishart.var`
+- [`wrapcauchy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.wrapcauchy.html#scipy.stats.wrapcauchy)
+  - `wrapcauchy.cdf`
+  - `wrapcauchy.entropy`
+  - `wrapcauchy.expect`
+  - `wrapcauchy.fit`
+  - `wrapcauchy.fit_loc_scale`
+  - `wrapcauchy.freeze`
+  - `wrapcauchy.generic_moment`
+  - `wrapcauchy.interval`
+  - `wrapcauchy.isf`
+  - `wrapcauchy.logcdf`
+  - `wrapcauchy.logpdf`
+  - `wrapcauchy.logsf`
+  - `wrapcauchy.mean`
+  - `wrapcauchy.median`
+  - `wrapcauchy.moment`
+  - `wrapcauchy.nnlf`
+  - `wrapcauchy.pdf`
+  - `wrapcauchy.ppf`
+  - `wrapcauchy.rvs`
+  - `wrapcauchy.sf`
+  - `wrapcauchy.stats`
+  - `wrapcauchy.std`
+  - `wrapcauchy.support`
+  - `wrapcauchy.var`
+  - `wrapcauchy.vecentropy`
+- [`yulesimon`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.yulesimon.html#scipy.stats.yulesimon)
+  - `yulesimon.cdf`
+  - `yulesimon.entropy`
+  - `yulesimon.expect`
+  - `yulesimon.freeze`
+  - `yulesimon.generic_moment`
+  - `yulesimon.interval`
+  - `yulesimon.isf`
+  - `yulesimon.logcdf`
+  - `yulesimon.logpmf`
+  - `yulesimon.logsf`
+  - `yulesimon.mean`
+  - `yulesimon.median`
+  - `yulesimon.moment`
+  - `yulesimon.nnlf`
+  - `yulesimon.pmf`
+  - `yulesimon.ppf`
+  - `yulesimon.rvs`
+  - `yulesimon.sf`
+  - `yulesimon.stats`
+  - `yulesimon.std`
+  - `yulesimon.support`
+  - `yulesimon.var`
+  - `yulesimon.vecentropy`
+- [`zipf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.zipf.html#scipy.stats.zipf)
+  - `zipf.cdf`
+  - `zipf.entropy`
+  - `zipf.expect`
+  - `zipf.freeze`
+  - `zipf.generic_moment`
+  - `zipf.interval`
+  - `zipf.isf`
+  - `zipf.logcdf`
+  - `zipf.logpmf`
+  - `zipf.logsf`
+  - `zipf.mean`
+  - `zipf.median`
+  - `zipf.moment`
+  - `zipf.nnlf`
+  - `zipf.pmf`
+  - `zipf.ppf`
+  - `zipf.rvs`
+  - `zipf.sf`
+  - `zipf.stats`
+  - `zipf.std`
+  - `zipf.support`
+  - `zipf.var`
+  - `zipf.vecentropy`
+- [`zipfian`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.zipfian.html#scipy.stats.zipfian)
+  - `zipfian.cdf`
+  - `zipfian.entropy`
+  - `zipfian.expect`
+  - `zipfian.freeze`
+  - `zipfian.generic_moment`
+  - `zipfian.interval`
+  - `zipfian.isf`
+  - `zipfian.logcdf`
+  - `zipfian.logpmf`
+  - `zipfian.logsf`
+  - `zipfian.mean`
+  - `zipfian.median`
+  - `zipfian.moment`
+  - `zipfian.nnlf`
+  - `zipfian.pmf`
+  - `zipfian.ppf`
+  - `zipfian.rvs`
+  - `zipfian.sf`
+  - `zipfian.stats`
+  - `zipfian.std`
+  - `zipfian.support`
+  - `zipfian.var`
+  - `zipfian.vecentropy`
+
+#### Classes and their public methods
+
+- [`Binomial`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.html#scipy.stats.binomial)
+  - [`Binomial.ccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.ccdf.html#scipy.stats.binomial.ccdf)
+  - [`Binomial.cdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.cdf.html#scipy.stats.binomial.cdf)
+  - [`Binomial.entropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.entropy.html#scipy.stats.binomial.entropy)
+  - [`Binomial.iccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.iccdf.html#scipy.stats.binomial.iccdf)
+  - [`Binomial.icdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.icdf.html#scipy.stats.binomial.icdf)
+  - [`Binomial.ilogccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.ilogccdf.html#scipy.stats.binomial.ilogccdf)
+  - [`Binomial.ilogcdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.ilogcdf.html#scipy.stats.binomial.ilogcdf)
+  - [`Binomial.kurtosis`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.kurtosis.html#scipy.stats.binomial.kurtosis)
+  - [`Binomial.lmoment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.lmoment.html#scipy.stats.binomial.lmoment)
+  - [`Binomial.logccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.logccdf.html#scipy.stats.binomial.logccdf)
+  - [`Binomial.logcdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.logcdf.html#scipy.stats.binomial.logcdf)
+  - [`Binomial.logentropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.logentropy.html#scipy.stats.binomial.logentropy)
+  - [`Binomial.logpdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.logpdf.html#scipy.stats.binomial.logpdf)
+  - [`Binomial.logpmf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.logpmf.html#scipy.stats.binomial.logpmf)
+  - [`Binomial.mean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.mean.html#scipy.stats.binomial.mean)
+  - [`Binomial.median`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.median.html#scipy.stats.binomial.median)
+  - [`Binomial.mode`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.mode.html#scipy.stats.binomial.mode)
+  - [`Binomial.moment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.moment.html#scipy.stats.binomial.moment)
+  - [`Binomial.pdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.pdf.html#scipy.stats.binomial.pdf)
+  - [`Binomial.plot`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.plot.html#scipy.stats.binomial.plot)
+  - [`Binomial.pmf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.pmf.html#scipy.stats.binomial.pmf)
+  - [`Binomial.reset_cache`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.reset_cache.html#scipy.stats.binomial.reset_cache)
+  - [`Binomial.sample`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.sample.html#scipy.stats.binomial.sample)
+  - [`Binomial.skewness`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.skewness.html#scipy.stats.binomial.skewness)
+  - [`Binomial.standard_deviation`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.standard_deviation.html#scipy.stats.binomial.standard_deviation)
+  - [`Binomial.support`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.support.html#scipy.stats.binomial.support)
+  - [`Binomial.variance`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Binomial.variance.html#scipy.stats.binomial.variance)
+- [`BootstrapMethod`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.BootstrapMethod.html#scipy.stats.bootstrapmethod)
+- [`CensoredData`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.CensoredData.html#scipy.stats.censoreddata)
+  - [`CensoredData.interval_censored`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.CensoredData.interval_censored.html#scipy.stats.censoreddata.interval_censored)
+  - [`CensoredData.left_censored`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.CensoredData.left_censored.html#scipy.stats.censoreddata.left_censored)
+  - [`CensoredData.num_censored`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.CensoredData.num_censored.html#scipy.stats.censoreddata.num_censored)
+  - [`CensoredData.right_censored`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.CensoredData.right_censored.html#scipy.stats.censoreddata.right_censored)
+- [`ConstantInputWarning`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ConstantInputWarning.html#scipy.stats.constantinputwarning)
+  - [`ConstantInputWarning.add_note`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ConstantInputWarning.html#scipy.stats.constantinputwarning.add_note)
+  - [`ConstantInputWarning.with_traceback`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ConstantInputWarning.html#scipy.stats.constantinputwarning.with_traceback)
+- [`Covariance`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Covariance.html#scipy.stats.covariance)
+  - [`Covariance.colorize`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Covariance.colorize.html#scipy.stats.covariance.colorize)
+  - [`Covariance.from_cholesky`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Covariance.from_cholesky.html#scipy.stats.covariance.from_cholesky)
+  - [`Covariance.from_diagonal`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Covariance.from_diagonal.html#scipy.stats.covariance.from_diagonal)
+  - [`Covariance.from_eigendecomposition`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Covariance.from_eigendecomposition.html#scipy.stats.covariance.from_eigendecomposition)
+  - [`Covariance.from_precision`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Covariance.from_precision.html#scipy.stats.covariance.from_precision)
+  - [`Covariance.whiten`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Covariance.whiten.html#scipy.stats.covariance.whiten)
+- [`DegenerateDataWarning`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.DegenerateDataWarning.html#scipy.stats.degeneratedatawarning)
+  - [`DegenerateDataWarning.add_note`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.DegenerateDataWarning.html#scipy.stats.degeneratedatawarning.add_note)
+  - [`DegenerateDataWarning.with_traceback`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.DegenerateDataWarning.html#scipy.stats.degeneratedatawarning.with_traceback)
+- [`FitError`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.FitError.html#scipy.stats.fiterror)
+  - [`FitError.add_note`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.FitError.html#scipy.stats.fiterror.add_note)
+  - [`FitError.with_traceback`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.FitError.html#scipy.stats.fiterror.with_traceback)
+- [`Logistic`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.html#scipy.stats.logistic)
+  - [`Logistic.ccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.ccdf.html#scipy.stats.logistic.ccdf)
+  - [`Logistic.cdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.cdf.html#scipy.stats.logistic.cdf)
+  - [`Logistic.entropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.entropy.html#scipy.stats.logistic.entropy)
+  - [`Logistic.iccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.iccdf.html#scipy.stats.logistic.iccdf)
+  - [`Logistic.icdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.icdf.html#scipy.stats.logistic.icdf)
+  - [`Logistic.ilogccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.ilogccdf.html#scipy.stats.logistic.ilogccdf)
+  - [`Logistic.ilogcdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.ilogcdf.html#scipy.stats.logistic.ilogcdf)
+  - [`Logistic.kurtosis`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.kurtosis.html#scipy.stats.logistic.kurtosis)
+  - [`Logistic.lmoment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.lmoment.html#scipy.stats.logistic.lmoment)
+  - [`Logistic.logccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.logccdf.html#scipy.stats.logistic.logccdf)
+  - [`Logistic.logcdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.logcdf.html#scipy.stats.logistic.logcdf)
+  - [`Logistic.logentropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.logentropy.html#scipy.stats.logistic.logentropy)
+  - [`Logistic.logpdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.logpdf.html#scipy.stats.logistic.logpdf)
+  - [`Logistic.logpmf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.logpmf.html#scipy.stats.logistic.logpmf)
+  - [`Logistic.mean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.mean.html#scipy.stats.logistic.mean)
+  - [`Logistic.median`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.median.html#scipy.stats.logistic.median)
+  - [`Logistic.mode`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.mode.html#scipy.stats.logistic.mode)
+  - [`Logistic.moment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.moment.html#scipy.stats.logistic.moment)
+  - [`Logistic.pdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.pdf.html#scipy.stats.logistic.pdf)
+  - [`Logistic.plot`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.plot.html#scipy.stats.logistic.plot)
+  - [`Logistic.pmf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.pmf.html#scipy.stats.logistic.pmf)
+  - [`Logistic.reset_cache`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.reset_cache.html#scipy.stats.logistic.reset_cache)
+  - [`Logistic.sample`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.sample.html#scipy.stats.logistic.sample)
+  - [`Logistic.skewness`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.skewness.html#scipy.stats.logistic.skewness)
+  - [`Logistic.standard_deviation`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.standard_deviation.html#scipy.stats.logistic.standard_deviation)
+  - [`Logistic.support`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.support.html#scipy.stats.logistic.support)
+  - [`Logistic.variance`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Logistic.variance.html#scipy.stats.logistic.variance)
+- [`Mixture`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.html#scipy.stats.mixture)
+  - [`Mixture.ccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.ccdf.html#scipy.stats.mixture.ccdf)
+  - [`Mixture.cdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.cdf.html#scipy.stats.mixture.cdf)
+  - [`Mixture.entropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.entropy.html#scipy.stats.mixture.entropy)
+  - [`Mixture.iccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.iccdf.html#scipy.stats.mixture.iccdf)
+  - [`Mixture.icdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.icdf.html#scipy.stats.mixture.icdf)
+  - [`Mixture.ilogccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.ilogccdf.html#scipy.stats.mixture.ilogccdf)
+  - [`Mixture.ilogcdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.ilogcdf.html#scipy.stats.mixture.ilogcdf)
+  - [`Mixture.kurtosis`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.kurtosis.html#scipy.stats.mixture.kurtosis)
+  - [`Mixture.lmoment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.lmoment.html#scipy.stats.mixture.lmoment)
+  - [`Mixture.logccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.logccdf.html#scipy.stats.mixture.logccdf)
+  - [`Mixture.logcdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.logcdf.html#scipy.stats.mixture.logcdf)
+  - [`Mixture.logentropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.logentropy.html#scipy.stats.mixture.logentropy)
+  - [`Mixture.logpdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.logpdf.html#scipy.stats.mixture.logpdf)
+  - [`Mixture.logpmf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.logpmf.html#scipy.stats.mixture.logpmf)
+  - [`Mixture.mean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.mean.html#scipy.stats.mixture.mean)
+  - [`Mixture.median`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.median.html#scipy.stats.mixture.median)
+  - [`Mixture.mode`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.mode.html#scipy.stats.mixture.mode)
+  - [`Mixture.moment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.moment.html#scipy.stats.mixture.moment)
+  - [`Mixture.pdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.pdf.html#scipy.stats.mixture.pdf)
+  - [`Mixture.pmf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.pmf.html#scipy.stats.mixture.pmf)
+  - [`Mixture.sample`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.sample.html#scipy.stats.mixture.sample)
+  - [`Mixture.skewness`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.skewness.html#scipy.stats.mixture.skewness)
+  - [`Mixture.standard_deviation`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.standard_deviation.html#scipy.stats.mixture.standard_deviation)
+  - [`Mixture.support`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.support.html#scipy.stats.mixture.support)
+  - [`Mixture.variance`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Mixture.variance.html#scipy.stats.mixture.variance)
+- [`MonteCarloMethod`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.MonteCarloMethod.html#scipy.stats.montecarlomethod)
+- [`NearConstantInputWarning`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.NearConstantInputWarning.html#scipy.stats.nearconstantinputwarning)
+  - [`NearConstantInputWarning.add_note`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.NearConstantInputWarning.html#scipy.stats.nearconstantinputwarning.add_note)
+  - [`NearConstantInputWarning.with_traceback`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.NearConstantInputWarning.html#scipy.stats.nearconstantinputwarning.with_traceback)
+- [`Normal`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.html#scipy.stats.normal)
+  - [`Normal.ccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.ccdf.html#scipy.stats.normal.ccdf)
+  - [`Normal.cdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.cdf.html#scipy.stats.normal.cdf)
+  - [`Normal.entropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.entropy.html#scipy.stats.normal.entropy)
+  - [`Normal.iccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.iccdf.html#scipy.stats.normal.iccdf)
+  - [`Normal.icdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.icdf.html#scipy.stats.normal.icdf)
+  - [`Normal.ilogccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.ilogccdf.html#scipy.stats.normal.ilogccdf)
+  - [`Normal.ilogcdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.ilogcdf.html#scipy.stats.normal.ilogcdf)
+  - [`Normal.kurtosis`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.kurtosis.html#scipy.stats.normal.kurtosis)
+  - [`Normal.lmoment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.lmoment.html#scipy.stats.normal.lmoment)
+  - [`Normal.logccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.logccdf.html#scipy.stats.normal.logccdf)
+  - [`Normal.logcdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.logcdf.html#scipy.stats.normal.logcdf)
+  - [`Normal.logentropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.logentropy.html#scipy.stats.normal.logentropy)
+  - [`Normal.logpdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.logpdf.html#scipy.stats.normal.logpdf)
+  - [`Normal.logpmf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.logpmf.html#scipy.stats.normal.logpmf)
+  - [`Normal.mean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.mean.html#scipy.stats.normal.mean)
+  - [`Normal.median`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.median.html#scipy.stats.normal.median)
+  - [`Normal.mode`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.mode.html#scipy.stats.normal.mode)
+  - [`Normal.moment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.moment.html#scipy.stats.normal.moment)
+  - [`Normal.pdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.pdf.html#scipy.stats.normal.pdf)
+  - [`Normal.plot`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.plot.html#scipy.stats.normal.plot)
+  - [`Normal.pmf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.pmf.html#scipy.stats.normal.pmf)
+  - [`Normal.reset_cache`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.reset_cache.html#scipy.stats.normal.reset_cache)
+  - [`Normal.sample`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.sample.html#scipy.stats.normal.sample)
+  - [`Normal.skewness`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.skewness.html#scipy.stats.normal.skewness)
+  - [`Normal.standard_deviation`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.standard_deviation.html#scipy.stats.normal.standard_deviation)
+  - [`Normal.support`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.support.html#scipy.stats.normal.support)
+  - [`Normal.variance`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Normal.variance.html#scipy.stats.normal.variance)
+- [`PermutationMethod`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.PermutationMethod.html#scipy.stats.permutationmethod)
+- [`Uniform`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.html#scipy.stats.uniform)
+  - [`Uniform.ccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.ccdf.html#scipy.stats.uniform.ccdf)
+  - [`Uniform.cdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.cdf.html#scipy.stats.uniform.cdf)
+  - [`Uniform.entropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.entropy.html#scipy.stats.uniform.entropy)
+  - [`Uniform.iccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.iccdf.html#scipy.stats.uniform.iccdf)
+  - [`Uniform.icdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.icdf.html#scipy.stats.uniform.icdf)
+  - [`Uniform.ilogccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.ilogccdf.html#scipy.stats.uniform.ilogccdf)
+  - [`Uniform.ilogcdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.ilogcdf.html#scipy.stats.uniform.ilogcdf)
+  - [`Uniform.kurtosis`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.kurtosis.html#scipy.stats.uniform.kurtosis)
+  - [`Uniform.lmoment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.lmoment.html#scipy.stats.uniform.lmoment)
+  - [`Uniform.logccdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.logccdf.html#scipy.stats.uniform.logccdf)
+  - [`Uniform.logcdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.logcdf.html#scipy.stats.uniform.logcdf)
+  - [`Uniform.logentropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.logentropy.html#scipy.stats.uniform.logentropy)
+  - [`Uniform.logpdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.logpdf.html#scipy.stats.uniform.logpdf)
+  - [`Uniform.logpmf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.logpmf.html#scipy.stats.uniform.logpmf)
+  - [`Uniform.mean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.mean.html#scipy.stats.uniform.mean)
+  - [`Uniform.median`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.median.html#scipy.stats.uniform.median)
+  - [`Uniform.mode`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.mode.html#scipy.stats.uniform.mode)
+  - [`Uniform.moment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.moment.html#scipy.stats.uniform.moment)
+  - [`Uniform.pdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.pdf.html#scipy.stats.uniform.pdf)
+  - [`Uniform.plot`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.plot.html#scipy.stats.uniform.plot)
+  - [`Uniform.pmf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.pmf.html#scipy.stats.uniform.pmf)
+  - [`Uniform.reset_cache`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.reset_cache.html#scipy.stats.uniform.reset_cache)
+  - [`Uniform.sample`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.sample.html#scipy.stats.uniform.sample)
+  - [`Uniform.skewness`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.skewness.html#scipy.stats.uniform.skewness)
+  - [`Uniform.standard_deviation`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.standard_deviation.html#scipy.stats.uniform.standard_deviation)
+  - [`Uniform.support`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.support.html#scipy.stats.uniform.support)
+  - [`Uniform.variance`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.Uniform.variance.html#scipy.stats.uniform.variance)
+- [`gaussian_kde`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.html#scipy.stats.gaussian_kde)
+  - [`gaussian_kde.covariance_factor`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.covariance_factor.html#scipy.stats.gaussian_kde.covariance_factor)
+  - [`gaussian_kde.evaluate`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.evaluate.html#scipy.stats.gaussian_kde.evaluate)
+  - [`gaussian_kde.integrate_box`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.integrate_box.html#scipy.stats.gaussian_kde.integrate_box)
+  - [`gaussian_kde.integrate_box_1d`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.integrate_box_1d.html#scipy.stats.gaussian_kde.integrate_box_1d)
+  - [`gaussian_kde.integrate_gaussian`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.integrate_gaussian.html#scipy.stats.gaussian_kde.integrate_gaussian)
+  - [`gaussian_kde.integrate_kde`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.integrate_kde.html#scipy.stats.gaussian_kde.integrate_kde)
+  - [`gaussian_kde.logpdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.logpdf.html#scipy.stats.gaussian_kde.logpdf)
+  - [`gaussian_kde.marginal`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.marginal.html#scipy.stats.gaussian_kde.marginal)
+  - [`gaussian_kde.pdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.pdf.html#scipy.stats.gaussian_kde.pdf)
+  - [`gaussian_kde.resample`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.resample.html#scipy.stats.gaussian_kde.resample)
+  - [`gaussian_kde.scotts_factor`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.scotts_factor.html#scipy.stats.gaussian_kde.scotts_factor)
+  - [`gaussian_kde.set_bandwidth`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.set_bandwidth.html#scipy.stats.gaussian_kde.set_bandwidth)
+  - [`gaussian_kde.silverman_factor`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gaussian_kde.silverman_factor.html#scipy.stats.gaussian_kde.silverman_factor)
+- [`rv_continuous`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.html#scipy.stats.rv_continuous)
+  - [`rv_continuous.cdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.cdf.html#scipy.stats.rv_continuous.cdf)
+  - [`rv_continuous.entropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.entropy.html#scipy.stats.rv_continuous.entropy)
+  - [`rv_continuous.expect`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.expect.html#scipy.stats.rv_continuous.expect)
+  - [`rv_continuous.fit`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.fit.html#scipy.stats.rv_continuous.fit)
+  - [`rv_continuous.fit_loc_scale`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.fit_loc_scale.html#scipy.stats.rv_continuous.fit_loc_scale)
+  - [`rv_continuous.freeze`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.freeze.html#scipy.stats.rv_continuous.freeze)
+  - [`rv_continuous.interval`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.interval.html#scipy.stats.rv_continuous.interval)
+  - [`rv_continuous.isf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.isf.html#scipy.stats.rv_continuous.isf)
+  - [`rv_continuous.logcdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.logcdf.html#scipy.stats.rv_continuous.logcdf)
+  - [`rv_continuous.logpdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.logpdf.html#scipy.stats.rv_continuous.logpdf)
+  - [`rv_continuous.logsf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.logsf.html#scipy.stats.rv_continuous.logsf)
+  - [`rv_continuous.mean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.mean.html#scipy.stats.rv_continuous.mean)
+  - [`rv_continuous.median`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.median.html#scipy.stats.rv_continuous.median)
+  - [`rv_continuous.moment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.moment.html#scipy.stats.rv_continuous.moment)
+  - [`rv_continuous.nnlf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.nnlf.html#scipy.stats.rv_continuous.nnlf)
+  - [`rv_continuous.pdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.pdf.html#scipy.stats.rv_continuous.pdf)
+  - [`rv_continuous.ppf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.ppf.html#scipy.stats.rv_continuous.ppf)
+  - [`rv_continuous.rvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.rvs.html#scipy.stats.rv_continuous.rvs)
+  - [`rv_continuous.sf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.sf.html#scipy.stats.rv_continuous.sf)
+  - [`rv_continuous.stats`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.stats.html#scipy.stats.rv_continuous.stats)
+  - [`rv_continuous.std`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.std.html#scipy.stats.rv_continuous.std)
+  - [`rv_continuous.support`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.support.html#scipy.stats.rv_continuous.support)
+  - [`rv_continuous.var`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_continuous.var.html#scipy.stats.rv_continuous.var)
+- [`rv_discrete`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.html#scipy.stats.rv_discrete)
+  - [`rv_discrete.cdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.cdf.html#scipy.stats.rv_discrete.cdf)
+  - [`rv_discrete.entropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.entropy.html#scipy.stats.rv_discrete.entropy)
+  - [`rv_discrete.expect`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.expect.html#scipy.stats.rv_discrete.expect)
+  - [`rv_discrete.freeze`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.freeze.html#scipy.stats.rv_discrete.freeze)
+  - [`rv_discrete.interval`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.interval.html#scipy.stats.rv_discrete.interval)
+  - [`rv_discrete.isf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.isf.html#scipy.stats.rv_discrete.isf)
+  - [`rv_discrete.logcdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.logcdf.html#scipy.stats.rv_discrete.logcdf)
+  - [`rv_discrete.logpmf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.logpmf.html#scipy.stats.rv_discrete.logpmf)
+  - [`rv_discrete.logsf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.logsf.html#scipy.stats.rv_discrete.logsf)
+  - [`rv_discrete.mean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.mean.html#scipy.stats.rv_discrete.mean)
+  - [`rv_discrete.median`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.median.html#scipy.stats.rv_discrete.median)
+  - [`rv_discrete.moment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.moment.html#scipy.stats.rv_discrete.moment)
+  - [`rv_discrete.nnlf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.nnlf.html#scipy.stats.rv_discrete.nnlf)
+  - [`rv_discrete.pmf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.pmf.html#scipy.stats.rv_discrete.pmf)
+  - [`rv_discrete.ppf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.ppf.html#scipy.stats.rv_discrete.ppf)
+  - [`rv_discrete.rvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.rvs.html#scipy.stats.rv_discrete.rvs)
+  - [`rv_discrete.sf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.sf.html#scipy.stats.rv_discrete.sf)
+  - [`rv_discrete.stats`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.stats.html#scipy.stats.rv_discrete.stats)
+  - [`rv_discrete.std`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.std.html#scipy.stats.rv_discrete.std)
+  - [`rv_discrete.support`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.support.html#scipy.stats.rv_discrete.support)
+  - [`rv_discrete.var`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_discrete.var.html#scipy.stats.rv_discrete.var)
+- [`rv_histogram`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.html#scipy.stats.rv_histogram)
+  - [`rv_histogram.cdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.cdf.html#scipy.stats.rv_histogram.cdf)
+  - [`rv_histogram.entropy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.entropy.html#scipy.stats.rv_histogram.entropy)
+  - [`rv_histogram.expect`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.expect.html#scipy.stats.rv_histogram.expect)
+  - [`rv_histogram.fit`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.fit.html#scipy.stats.rv_histogram.fit)
+  - [`rv_histogram.fit_loc_scale`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.fit_loc_scale.html#scipy.stats.rv_histogram.fit_loc_scale)
+  - [`rv_histogram.freeze`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.freeze.html#scipy.stats.rv_histogram.freeze)
+  - [`rv_histogram.interval`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.interval.html#scipy.stats.rv_histogram.interval)
+  - [`rv_histogram.isf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.isf.html#scipy.stats.rv_histogram.isf)
+  - [`rv_histogram.logcdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.logcdf.html#scipy.stats.rv_histogram.logcdf)
+  - [`rv_histogram.logpdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.logpdf.html#scipy.stats.rv_histogram.logpdf)
+  - [`rv_histogram.logsf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.logsf.html#scipy.stats.rv_histogram.logsf)
+  - [`rv_histogram.mean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.mean.html#scipy.stats.rv_histogram.mean)
+  - [`rv_histogram.median`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.median.html#scipy.stats.rv_histogram.median)
+  - [`rv_histogram.moment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.moment.html#scipy.stats.rv_histogram.moment)
+  - [`rv_histogram.nnlf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.nnlf.html#scipy.stats.rv_histogram.nnlf)
+  - [`rv_histogram.pdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.pdf.html#scipy.stats.rv_histogram.pdf)
+  - [`rv_histogram.ppf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.ppf.html#scipy.stats.rv_histogram.ppf)
+  - [`rv_histogram.rvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.rvs.html#scipy.stats.rv_histogram.rvs)
+  - [`rv_histogram.sf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.sf.html#scipy.stats.rv_histogram.sf)
+  - [`rv_histogram.stats`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.stats.html#scipy.stats.rv_histogram.stats)
+  - [`rv_histogram.std`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.std.html#scipy.stats.rv_histogram.std)
+  - [`rv_histogram.support`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.support.html#scipy.stats.rv_histogram.support)
+  - [`rv_histogram.var`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.rv_histogram.var.html#scipy.stats.rv_histogram.var)
+
+### scipy.stats.contingency
+
+[Module reference](https://docs.scipy.org/doc/scipy/reference/stats.contingency.html#module-scipy.stats.contingency)
+
+Function entries: **7**. Callable objects: **0**. Classes: **1**.
+
+#### Functions
+
+- [`association`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.contingency.association.html#scipy.stats.contingency.association)
+- [`chi2_contingency`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.contingency.chi2_contingency.html#scipy.stats.contingency.chi2_contingency)
+- [`crosstab`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.contingency.crosstab.html#scipy.stats.contingency.crosstab)
+- [`expected_freq`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.contingency.expected_freq.html#scipy.stats.contingency.expected_freq)
+- [`margins`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.contingency.margins.html#scipy.stats.contingency.margins)
+- [`odds_ratio`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.contingency.odds_ratio.html#scipy.stats.contingency.odds_ratio)
+- [`relative_risk`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.contingency.relative_risk.html#scipy.stats.contingency.relative_risk)
+
+#### Classes and their public methods
+
+- `Chi2ContingencyResult`
+  - `Chi2ContingencyResult.count`
+  - `Chi2ContingencyResult.index`
+
+### scipy.stats.mstats
+
+[Module reference](https://docs.scipy.org/doc/scipy/reference/stats.mstats.html#module-scipy.stats.mstats)
+
+Function entries: **73**. Callable objects: **0**. Classes: **0**.
+
+#### Functions
+
+- [`argstoarray`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.argstoarray.html#scipy.stats.mstats.argstoarray)
+- [`brunnermunzel`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.brunnermunzel.html#scipy.stats.mstats.brunnermunzel)
+- [`chisquare`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.chisquare.html#scipy.stats.mstats.chisquare)
+- [`compare_medians_ms`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.compare_medians_ms.html#scipy.stats.mstats.compare_medians_ms)
+- [`count_tied_groups`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.count_tied_groups.html#scipy.stats.mstats.count_tied_groups)
+- [`describe`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.describe.html#scipy.stats.mstats.describe)
+- [`f_oneway`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.f_oneway.html#scipy.stats.mstats.f_oneway)
+- [`find_repeats`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.find_repeats.html#scipy.stats.mstats.find_repeats)
+- [`friedmanchisquare`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.friedmanchisquare.html#scipy.stats.mstats.friedmanchisquare)
+- [`gmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.gmean.html#scipy.stats.mstats.gmean)
+- [`hdmedian`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.hdmedian.html#scipy.stats.mstats.hdmedian)
+- [`hdquantiles`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.hdquantiles.html#scipy.stats.mstats.hdquantiles)
+- [`hdquantiles_sd`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.hdquantiles_sd.html#scipy.stats.mstats.hdquantiles_sd)
+- [`hmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.hmean.html#scipy.stats.mstats.hmean)
+- [`idealfourths`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.idealfourths.html#scipy.stats.mstats.idealfourths)
+- [`kendalltau`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.kendalltau.html#scipy.stats.mstats.kendalltau)
+- [`kendalltau_seasonal`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.kendalltau_seasonal.html#scipy.stats.mstats.kendalltau_seasonal)
+- [`kruskal`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.kruskal.html#scipy.stats.mstats.kruskal)
+- [`kruskalwallis`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.kruskalwallis.html#scipy.stats.mstats.kruskalwallis)
+- [`ks_1samp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.ks_1samp.html#scipy.stats.mstats.ks_1samp)
+- [`ks_2samp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.ks_2samp.html#scipy.stats.mstats.ks_2samp)
+- [`ks_twosamp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.ks_twosamp.html#scipy.stats.mstats.ks_twosamp)
+- [`kstest`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.kstest.html#scipy.stats.mstats.kstest)
+- [`kurtosis`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.kurtosis.html#scipy.stats.mstats.kurtosis)
+- [`kurtosistest`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.kurtosistest.html#scipy.stats.mstats.kurtosistest)
+- [`linregress`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.linregress.html#scipy.stats.mstats.linregress)
+- [`mannwhitneyu`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.mannwhitneyu.html#scipy.stats.mstats.mannwhitneyu)
+- [`median_cihs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.median_cihs.html#scipy.stats.mstats.median_cihs)
+- [`meppf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.meppf.html#scipy.stats.mstats.meppf)
+- [`mjci`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.mjci.html#scipy.stats.mstats.mjci)
+- [`mode`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.mode.html#scipy.stats.mstats.mode)
+- [`moment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.moment.html#scipy.stats.mstats.moment)
+- [`mquantiles`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.mquantiles.html#scipy.stats.mstats.mquantiles)
+- [`mquantiles_cimj`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.mquantiles_cimj.html#scipy.stats.mstats.mquantiles_cimj)
+- [`msign`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.msign.html#scipy.stats.mstats.msign)
+- [`normaltest`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.normaltest.html#scipy.stats.mstats.normaltest)
+- [`obrientransform`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.obrientransform.html#scipy.stats.mstats.obrientransform)
+- [`pearsonr`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.pearsonr.html#scipy.stats.mstats.pearsonr)
+- [`plotting_positions`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.plotting_positions.html#scipy.stats.mstats.plotting_positions)
+- [`pointbiserialr`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.pointbiserialr.html#scipy.stats.mstats.pointbiserialr)
+- [`rankdata`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.rankdata.html#scipy.stats.mstats.rankdata)
+- [`rsh`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.rsh.html#scipy.stats.mstats.rsh)
+- [`scoreatpercentile`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.scoreatpercentile.html#scipy.stats.mstats.scoreatpercentile)
+- [`sem`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.sem.html#scipy.stats.mstats.sem)
+- [`sen_seasonal_slopes`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.sen_seasonal_slopes.html#scipy.stats.mstats.sen_seasonal_slopes)
+- [`siegelslopes`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.siegelslopes.html#scipy.stats.mstats.siegelslopes)
+- [`skew`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.skew.html#scipy.stats.mstats.skew)
+- [`skewtest`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.skewtest.html#scipy.stats.mstats.skewtest)
+- [`spearmanr`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.spearmanr.html#scipy.stats.mstats.spearmanr)
+- [`theilslopes`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.theilslopes.html#scipy.stats.mstats.theilslopes)
+- [`tmax`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.tmax.html#scipy.stats.mstats.tmax)
+- [`tmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.tmean.html#scipy.stats.mstats.tmean)
+- [`tmin`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.tmin.html#scipy.stats.mstats.tmin)
+- [`trim`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.trim.html#scipy.stats.mstats.trim)
+- [`trima`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.trima.html#scipy.stats.mstats.trima)
+- [`trimboth`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.trimboth.html#scipy.stats.mstats.trimboth)
+- [`trimmed_mean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.trimmed_mean.html#scipy.stats.mstats.trimmed_mean)
+- [`trimmed_mean_ci`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.trimmed_mean_ci.html#scipy.stats.mstats.trimmed_mean_ci)
+- [`trimmed_std`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.trimmed_std.html#scipy.stats.mstats.trimmed_std)
+- [`trimmed_stde`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.trimmed_stde.html#scipy.stats.mstats.trimmed_stde)
+- [`trimmed_var`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.trimmed_var.html#scipy.stats.mstats.trimmed_var)
+- [`trimr`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.trimr.html#scipy.stats.mstats.trimr)
+- [`trimtail`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.trimtail.html#scipy.stats.mstats.trimtail)
+- [`tsem`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.tsem.html#scipy.stats.mstats.tsem)
+- [`ttest_1samp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.ttest_1samp.html#scipy.stats.mstats.ttest_1samp)
+- [`ttest_ind`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.ttest_ind.html#scipy.stats.mstats.ttest_ind)
+- [`ttest_onesamp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.ttest_onesamp.html#scipy.stats.mstats.ttest_onesamp)
+- [`ttest_rel`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.ttest_rel.html#scipy.stats.mstats.ttest_rel)
+- [`tvar`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.tvar.html#scipy.stats.mstats.tvar)
+- [`variation`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.variation.html#scipy.stats.mstats.variation)
+- [`winsorize`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.winsorize.html#scipy.stats.mstats.winsorize)
+- [`zmap`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.zmap.html#scipy.stats.mstats.zmap)
+- [`zscore`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mstats.zscore.html#scipy.stats.mstats.zscore)
+
+### scipy.stats.qmc
+
+[Module reference](https://docs.scipy.org/doc/scipy/reference/stats.qmc.html#module-scipy.stats.qmc)
+
+Function entries: **4**. Callable objects: **0**. Classes: **7**.
+
+#### Functions
+
+- [`discrepancy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.discrepancy.html#scipy.stats.qmc.discrepancy)
+- [`geometric_discrepancy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.geometric_discrepancy.html#scipy.stats.qmc.geometric_discrepancy)
+- [`scale`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.scale.html#scipy.stats.qmc.scale)
+- [`update_discrepancy`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.update_discrepancy.html#scipy.stats.qmc.update_discrepancy)
+
+#### Classes and their public methods
+
+- [`Halton`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.Halton.html#scipy.stats.qmc.halton)
+  - [`Halton.fast_forward`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.Halton.fast_forward.html#scipy.stats.qmc.halton.fast_forward)
+  - [`Halton.integers`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.Halton.integers.html#scipy.stats.qmc.halton.integers)
+  - [`Halton.random`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.Halton.random.html#scipy.stats.qmc.halton.random)
+  - [`Halton.reset`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.Halton.reset.html#scipy.stats.qmc.halton.reset)
+- [`LatinHypercube`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.LatinHypercube.html#scipy.stats.qmc.latinhypercube)
+  - [`LatinHypercube.fast_forward`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.LatinHypercube.fast_forward.html#scipy.stats.qmc.latinhypercube.fast_forward)
+  - [`LatinHypercube.integers`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.LatinHypercube.integers.html#scipy.stats.qmc.latinhypercube.integers)
+  - [`LatinHypercube.random`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.LatinHypercube.random.html#scipy.stats.qmc.latinhypercube.random)
+  - [`LatinHypercube.reset`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.LatinHypercube.reset.html#scipy.stats.qmc.latinhypercube.reset)
+- [`MultinomialQMC`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.MultinomialQMC.html#scipy.stats.qmc.multinomialqmc)
+  - [`MultinomialQMC.random`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.MultinomialQMC.random.html#scipy.stats.qmc.multinomialqmc.random)
+- [`MultivariateNormalQMC`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.MultivariateNormalQMC.html#scipy.stats.qmc.multivariatenormalqmc)
+  - [`MultivariateNormalQMC.random`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.MultivariateNormalQMC.random.html#scipy.stats.qmc.multivariatenormalqmc.random)
+- [`PoissonDisk`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.PoissonDisk.html#scipy.stats.qmc.poissondisk)
+  - [`PoissonDisk.fast_forward`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.PoissonDisk.fast_forward.html#scipy.stats.qmc.poissondisk.fast_forward)
+  - [`PoissonDisk.fill_space`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.PoissonDisk.fill_space.html#scipy.stats.qmc.poissondisk.fill_space)
+  - [`PoissonDisk.integers`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.PoissonDisk.integers.html#scipy.stats.qmc.poissondisk.integers)
+  - [`PoissonDisk.random`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.PoissonDisk.random.html#scipy.stats.qmc.poissondisk.random)
+  - [`PoissonDisk.reset`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.PoissonDisk.reset.html#scipy.stats.qmc.poissondisk.reset)
+- [`QMCEngine`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.QMCEngine.html#scipy.stats.qmc.qmcengine)
+  - [`QMCEngine.fast_forward`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.QMCEngine.fast_forward.html#scipy.stats.qmc.qmcengine.fast_forward)
+  - [`QMCEngine.integers`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.QMCEngine.integers.html#scipy.stats.qmc.qmcengine.integers)
+  - [`QMCEngine.random`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.QMCEngine.random.html#scipy.stats.qmc.qmcengine.random)
+  - [`QMCEngine.reset`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.QMCEngine.reset.html#scipy.stats.qmc.qmcengine.reset)
+- [`Sobol`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.Sobol.html#scipy.stats.qmc.sobol)
+  - [`Sobol.fast_forward`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.Sobol.fast_forward.html#scipy.stats.qmc.sobol.fast_forward)
+  - [`Sobol.integers`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.Sobol.integers.html#scipy.stats.qmc.sobol.integers)
+  - [`Sobol.random`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.Sobol.random.html#scipy.stats.qmc.sobol.random)
+  - [`Sobol.random_base2`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.Sobol.random_base2.html#scipy.stats.qmc.sobol.random_base2)
+  - [`Sobol.reset`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.Sobol.reset.html#scipy.stats.qmc.sobol.reset)
+
+### scipy.stats.sampling
+
+[Module reference](https://docs.scipy.org/doc/scipy/reference/stats.sampling.html#module-scipy.stats.sampling)
+
+Function entries: **0**. Callable objects: **0**. Classes: **9**.
+
+#### Classes and their public methods
+
+- [`DiscreteAliasUrn`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.DiscreteAliasUrn.html#scipy.stats.sampling.discretealiasurn)
+  - [`DiscreteAliasUrn.rvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.DiscreteAliasUrn.rvs.html#scipy.stats.sampling.discretealiasurn.rvs)
+  - [`DiscreteAliasUrn.set_random_state`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.DiscreteAliasUrn.set_random_state.html#scipy.stats.sampling.discretealiasurn.set_random_state)
+- [`DiscreteGuideTable`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.DiscreteGuideTable.html#scipy.stats.sampling.discreteguidetable)
+  - [`DiscreteGuideTable.ppf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.DiscreteGuideTable.ppf.html#scipy.stats.sampling.discreteguidetable.ppf)
+  - [`DiscreteGuideTable.rvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.DiscreteGuideTable.rvs.html#scipy.stats.sampling.discreteguidetable.rvs)
+  - [`DiscreteGuideTable.set_random_state`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.DiscreteGuideTable.set_random_state.html#scipy.stats.sampling.discreteguidetable.set_random_state)
+- [`FastGeneratorInversion`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.FastGeneratorInversion.html#scipy.stats.sampling.fastgeneratorinversion)
+  - [`FastGeneratorInversion.evaluate_error`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.FastGeneratorInversion.evaluate_error.html#scipy.stats.sampling.fastgeneratorinversion.evaluate_error)
+  - [`FastGeneratorInversion.ppf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.FastGeneratorInversion.ppf.html#scipy.stats.sampling.fastgeneratorinversion.ppf)
+  - [`FastGeneratorInversion.qrvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.FastGeneratorInversion.qrvs.html#scipy.stats.sampling.fastgeneratorinversion.qrvs)
+  - [`FastGeneratorInversion.rvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.FastGeneratorInversion.rvs.html#scipy.stats.sampling.fastgeneratorinversion.rvs)
+  - [`FastGeneratorInversion.support`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.FastGeneratorInversion.support.html#scipy.stats.sampling.fastgeneratorinversion.support)
+- [`NumericalInverseHermite`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.NumericalInverseHermite.html#scipy.stats.sampling.numericalinversehermite)
+  - [`NumericalInverseHermite.ppf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.NumericalInverseHermite.ppf.html#scipy.stats.sampling.numericalinversehermite.ppf)
+  - [`NumericalInverseHermite.qrvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.NumericalInverseHermite.qrvs.html#scipy.stats.sampling.numericalinversehermite.qrvs)
+  - [`NumericalInverseHermite.rvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.NumericalInverseHermite.rvs.html#scipy.stats.sampling.numericalinversehermite.rvs)
+  - [`NumericalInverseHermite.set_random_state`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.NumericalInverseHermite.set_random_state.html#scipy.stats.sampling.numericalinversehermite.set_random_state)
+  - [`NumericalInverseHermite.u_error`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.NumericalInverseHermite.u_error.html#scipy.stats.sampling.numericalinversehermite.u_error)
+- [`NumericalInversePolynomial`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.NumericalInversePolynomial.html#scipy.stats.sampling.numericalinversepolynomial)
+  - [`NumericalInversePolynomial.cdf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.NumericalInversePolynomial.cdf.html#scipy.stats.sampling.numericalinversepolynomial.cdf)
+  - [`NumericalInversePolynomial.ppf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.NumericalInversePolynomial.ppf.html#scipy.stats.sampling.numericalinversepolynomial.ppf)
+  - [`NumericalInversePolynomial.qrvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.NumericalInversePolynomial.qrvs.html#scipy.stats.sampling.numericalinversepolynomial.qrvs)
+  - [`NumericalInversePolynomial.rvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.NumericalInversePolynomial.rvs.html#scipy.stats.sampling.numericalinversepolynomial.rvs)
+  - [`NumericalInversePolynomial.set_random_state`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.NumericalInversePolynomial.set_random_state.html#scipy.stats.sampling.numericalinversepolynomial.set_random_state)
+  - [`NumericalInversePolynomial.u_error`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.NumericalInversePolynomial.u_error.html#scipy.stats.sampling.numericalinversepolynomial.u_error)
+- [`RatioUniforms`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.RatioUniforms.html#scipy.stats.sampling.ratiouniforms)
+  - [`RatioUniforms.rvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.RatioUniforms.rvs.html#scipy.stats.sampling.ratiouniforms.rvs)
+- [`SimpleRatioUniforms`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.SimpleRatioUniforms.html#scipy.stats.sampling.simpleratiouniforms)
+  - [`SimpleRatioUniforms.rvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.SimpleRatioUniforms.rvs.html#scipy.stats.sampling.simpleratiouniforms.rvs)
+  - [`SimpleRatioUniforms.set_random_state`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.SimpleRatioUniforms.set_random_state.html#scipy.stats.sampling.simpleratiouniforms.set_random_state)
+- [`TransformedDensityRejection`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.TransformedDensityRejection.html#scipy.stats.sampling.transformeddensityrejection)
+  - [`TransformedDensityRejection.ppf_hat`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.TransformedDensityRejection.ppf_hat.html#scipy.stats.sampling.transformeddensityrejection.ppf_hat)
+  - [`TransformedDensityRejection.rvs`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.TransformedDensityRejection.rvs.html#scipy.stats.sampling.transformeddensityrejection.rvs)
+  - [`TransformedDensityRejection.set_random_state`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.TransformedDensityRejection.set_random_state.html#scipy.stats.sampling.transformeddensityrejection.set_random_state)
+- [`UNURANError`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.UNURANError.html#scipy.stats.sampling.unuranerror)
+  - [`UNURANError.add_note`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.UNURANError.html#scipy.stats.sampling.unuranerror.add_note)
+  - [`UNURANError.with_traceback`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sampling.UNURANError.html#scipy.stats.sampling.unuranerror.with_traceback)
+
+## Additional and compatibility namespaces
+
+Many of these paths are deprecated compatibility aliases. Class and object method lists are omitted in these sections to avoid repeating the public API inventory.
+
+### scipy.stats.biasedurn
+
+Function entries: **0**. Callable objects: **0**. Classes: **0**.
+
+This namespace contains submodules or has no exported callable entries in this runtime.
+
+### scipy.stats.distributions
+
+Function entries: **1**. Callable objects: **131**. Classes: **4**.
+
+#### Functions
+
+- `entropy`
+
+#### Callable objects and distribution APIs
+
+- `alpha`
+- `anglit`
+- `arcsine`
+- `argus`
+- `bernoulli`
+- `beta`
+- `betabinom`
+- `betanbinom`
+- `betaprime`
+- `binom`
+- `boltzmann`
+- `bradford`
+- `burr`
+- `burr12`
+- `cauchy`
+- `chi`
+- `chi2`
+- `cosine`
+- `crystalball`
+- `dgamma`
+- `dlaplace`
+- `dpareto_lognorm`
+- `dweibull`
+- `erlang`
+- `expon`
+- `exponnorm`
+- `exponpow`
+- `exponweib`
+- `f`
+- `fatiguelife`
+- `fisk`
+- `foldcauchy`
+- `foldnorm`
+- `gamma`
+- `gausshyper`
+- `genexpon`
+- `genextreme`
+- `gengamma`
+- `genhalflogistic`
+- `genhyperbolic`
+- `geninvgauss`
+- `genlogistic`
+- `gennorm`
+- `genpareto`
+- `geom`
+- `gibrat`
+- `gompertz`
+- `gumbel_l`
+- `gumbel_r`
+- `halfcauchy`
+- `halfgennorm`
+- `halflogistic`
+- `halfnorm`
+- `hypergeom`
+- `hypsecant`
+- `invgamma`
+- `invgauss`
+- `invweibull`
+- `irwinhall`
+- `jf_skew_t`
+- `johnsonsb`
+- `johnsonsu`
+- `kappa3`
+- `kappa4`
+- `ksone`
+- `kstwo`
+- `kstwobign`
+- `landau`
+- `laplace`
+- `laplace_asymmetric`
+- `levy`
+- `levy_l`
+- `levy_stable`
+- `loggamma`
+- `logistic`
+- `loglaplace`
+- `lognorm`
+- `logser`
+- `loguniform`
+- `lomax`
+- `maxwell`
+- `mielke`
+- `moyal`
+- `nakagami`
+- `nbinom`
+- `ncf`
+- `nchypergeom_fisher`
+- `nchypergeom_wallenius`
+- `nct`
+- `ncx2`
+- `nhypergeom`
+- `norm`
+- `norminvgauss`
+- `pareto`
+- `pearson3`
+- `planck`
+- `poisson`
+- `poisson_binom`
+- `powerlaw`
+- `powerlognorm`
+- `powernorm`
+- `randint`
+- `rayleigh`
+- `rdist`
+- `recipinvgauss`
+- `reciprocal`
+- `rel_breitwigner`
+- `rice`
+- `semicircular`
+- `skellam`
+- `skewcauchy`
+- `skewnorm`
+- `studentized_range`
+- `t`
+- `trapezoid`
+- `triang`
+- `truncexpon`
+- `truncnorm`
+- `truncpareto`
+- `truncweibull_min`
+- `tukeylambda`
+- `uniform`
+- `vonmises`
+- `vonmises_line`
+- `wald`
+- `weibull_max`
+- `weibull_min`
+- `wrapcauchy`
+- `yulesimon`
+- `zipf`
+- `zipfian`
+
+#### Classes
+
+- `rv_continuous`
+- `rv_discrete`
+- `rv_frozen`
+- `rv_histogram`
+
+### scipy.stats.kde
+
+Function entries: **0**. Callable objects: **0**. Classes: **1**.
+
+#### Classes
+
+- `gaussian_kde`
+
+### scipy.stats.morestats
+
+Function entries: **29**. Callable objects: **0**. Classes: **0**.
+
+#### Functions
+
+- `anderson`
+- `anderson_ksamp`
+- `ansari`
+- `bartlett`
+- `bayes_mvs`
+- `boxcox`
+- `boxcox_llf`
+- `boxcox_normmax`
+- `boxcox_normplot`
+- `chi2_contingency`
+- `circmean`
+- `circstd`
+- `circvar`
+- `fligner`
+- `kstat`
+- `kstatvar`
+- `levene`
+- `median_test`
+- `mood`
+- `mvsdist`
+- `ppcc_max`
+- `ppcc_plot`
+- `probplot`
+- `shapiro`
+- `wilcoxon`
+- `yeojohnson`
+- `yeojohnson_llf`
+- `yeojohnson_normmax`
+- `yeojohnson_normplot`
+
+### scipy.stats.mstats_basic
+
+Function entries: **58**. Callable objects: **0**. Classes: **0**.
+
+#### Functions
+
+- `argstoarray`
+- `brunnermunzel`
+- `count_tied_groups`
+- `describe`
+- `f_oneway`
+- `find_repeats`
+- `friedmanchisquare`
+- `kendalltau`
+- `kendalltau_seasonal`
+- `kruskal`
+- `kruskalwallis`
+- `ks_1samp`
+- `ks_2samp`
+- `ks_twosamp`
+- `kstest`
+- `kurtosis`
+- `kurtosistest`
+- `linregress`
+- `mannwhitneyu`
+- `meppf`
+- `mode`
+- `moment`
+- `mquantiles`
+- `msign`
+- `normaltest`
+- `obrientransform`
+- `pearsonr`
+- `plotting_positions`
+- `pointbiserialr`
+- `rankdata`
+- `scoreatpercentile`
+- `sem`
+- `sen_seasonal_slopes`
+- `siegelslopes`
+- `skew`
+- `skewtest`
+- `spearmanr`
+- `theilslopes`
+- `tmax`
+- `tmean`
+- `tmin`
+- `trim`
+- `trima`
+- `trimboth`
+- `trimmed_mean`
+- `trimmed_std`
+- `trimmed_stde`
+- `trimmed_var`
+- `trimr`
+- `trimtail`
+- `tsem`
+- `ttest_1samp`
+- `ttest_ind`
+- `ttest_onesamp`
+- `ttest_rel`
+- `tvar`
+- `variation`
+- `winsorize`
+
+### scipy.stats.mstats_extras
+
+Function entries: **10**. Callable objects: **0**. Classes: **0**.
+
+#### Functions
+
+- `compare_medians_ms`
+- `hdmedian`
+- `hdquantiles`
+- `hdquantiles_sd`
+- `idealfourths`
+- `median_cihs`
+- `mjci`
+- `mquantiles_cimj`
+- `rsh`
+- `trimmed_mean_ci`
+
+### scipy.stats.mvn
+
+Function entries: **0**. Callable objects: **0**. Classes: **0**.
+
+This namespace contains submodules or has no exported callable entries in this runtime.
+
+### scipy.stats.stats
+
+Function entries: **64**. Callable objects: **0**. Classes: **0**.
+
+#### Functions
+
+- `alexandergovern`
+- `brunnermunzel`
+- `chisquare`
+- `combine_pvalues`
+- `cumfreq`
+- `describe`
+- `energy_distance`
+- `f_oneway`
+- `fisher_exact`
+- `friedmanchisquare`
+- `gmean`
+- `gstd`
+- `gzscore`
+- `hmean`
+- `iqr`
+- `jarque_bera`
+- `kendalltau`
+- `kruskal`
+- `ks_1samp`
+- `ks_2samp`
+- `kstest`
+- `kurtosis`
+- `kurtosistest`
+- `linregress`
+- `median_abs_deviation`
+- `mode`
+- `moment`
+- `multiscale_graphcorr`
+- `normaltest`
+- `obrientransform`
+- `pearsonr`
+- `percentileofscore`
+- `pmean`
+- `pointbiserialr`
+- `power_divergence`
+- `rankdata`
+- `ranksums`
+- `relfreq`
+- `scoreatpercentile`
+- `sem`
+- `siegelslopes`
+- `sigmaclip`
+- `skew`
+- `skewtest`
+- `spearmanr`
+- `theilslopes`
+- `tiecorrect`
+- `tmax`
+- `tmean`
+- `tmin`
+- `trim1`
+- `trim_mean`
+- `trimboth`
+- `tsem`
+- `tstd`
+- `ttest_1samp`
+- `ttest_ind`
+- `ttest_ind_from_stats`
+- `ttest_rel`
+- `tvar`
+- `wasserstein_distance`
+- `weightedtau`
+- `zmap`
+- `zscore`

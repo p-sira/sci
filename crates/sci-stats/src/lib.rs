@@ -1,0 +1,37 @@
+//! # Statistics
+//!
+//! Descriptive statistics, hypothesis tests, and native distributions on `f64` values.
+//! Distribution evaluation uses statrs and shared special functions privately; callers supply parameters
+//! directly rather than constructing a backend distribution.
+//!
+//! Finite observations are required, with at most 1,048,576 samples per slice.
+//! Mean is `Σx/n`; population variance uses denominator `n`, while sample
+//! variance uses `n - 1` (`ddof = 1`). Probability functions use the
+//! parameterization stated in each function and return the documented IEEE
+//! endpoint values; invalid parameters are reported as [`Error`].
+//!
+//! ## Examples
+//!
+//! ```
+//! use sci_complex as complex; use sci_fft as fft; use sci_stats as stats;
+//! let amplitudes: Vec<f64> = fft::rfft(&[1.0, 2.0, 3.0, 4.0])
+//!     .into_iter().map(complex::abs).collect();
+//! assert!(stats::mean(&amplitudes)? > 0.0);
+//! # Ok::<(), sci_core::Error>(())
+//! ```
+//!
+//! ## Acknowledgments
+//!
+//! We thank `nalgebra`, `statrs`, `basin`,
+//! `anofox-statistics`, `lapjv`, and `ndarray` for their statistical and
+//! numerical building blocks.
+
+#![forbid(unsafe_code)]
+#![deny(missing_docs, rustdoc::broken_intra_doc_links)]
+
+use sci_core as error;
+pub use sci_core::{Error, Result};
+use sci_special as special;
+#[path = "mod.rs"]
+mod implementation;
+pub use implementation::*;

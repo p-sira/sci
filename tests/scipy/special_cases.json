@@ -1,0 +1,4554 @@
+[
+  {
+    "name": "agm",
+    "args": [
+      1,
+      2
+    ]
+  },
+  {
+    "name": "airy",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "airye",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "itairy",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "ellipj",
+    "args": [
+      0.5,
+      0.4
+    ]
+  },
+  {
+    "name": "binom",
+    "args": [
+      5,
+      2
+    ]
+  },
+  {
+    "name": "erfcx",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "erfi",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "erfcinv",
+    "args": [
+      0.3
+    ]
+  },
+  {
+    "name": "dawsn",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "gammasgn",
+    "args": [
+      -0.5
+    ]
+  },
+  {
+    "name": "gammaincc",
+    "args": [
+      2.5,
+      3
+    ]
+  },
+  {
+    "name": "gammaincinv",
+    "args": [
+      2.5,
+      0.3
+    ]
+  },
+  {
+    "name": "gammainccinv",
+    "args": [
+      2.5,
+      0.3
+    ]
+  },
+  {
+    "name": "loggamma",
+    "args": [
+      2.5
+    ]
+  },
+  {
+    "name": "rgamma",
+    "args": [
+      -2
+    ]
+  },
+  {
+    "name": "polygamma",
+    "args": [
+      2,
+      2.5
+    ]
+  },
+  {
+    "name": "multigammaln",
+    "args": [
+      3,
+      2
+    ]
+  },
+  {
+    "name": "jv",
+    "args": [
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "jve",
+    "args": [
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "yv",
+    "args": [
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "yve",
+    "args": [
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "iv",
+    "args": [
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "ive",
+    "args": [
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "kv",
+    "args": [
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "kve",
+    "args": [
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "j0",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "j1",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "y0",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "y1",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "i0",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "i1",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "i0e",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "i1e",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "k0",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "k1",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "k0e",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "k1e",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "besselpoly",
+    "args": [
+      1,
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "itj0y0",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "it2j0y0",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "iti0k0",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "it2i0k0",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "struve",
+    "args": [
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "modstruve",
+    "args": [
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "itstruve0",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "it2struve0",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "itmodstruve0",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "hyp0f1",
+    "args": [
+      2.5,
+      0.5
+    ]
+  },
+  {
+    "name": "hyp1f1",
+    "args": [
+      1.5,
+      2.5,
+      0.5
+    ]
+  },
+  {
+    "name": "hyp2f1",
+    "args": [
+      0.5,
+      1,
+      2.5,
+      0.3
+    ]
+  },
+  {
+    "name": "hyperu",
+    "args": [
+      1.5,
+      2.5,
+      0.5
+    ]
+  },
+  {
+    "name": "exp1",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "expi",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "expn",
+    "args": [
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "sici",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "shichi",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "fresnel",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "spence",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "zeta",
+    "args": [
+      2.5,
+      1.5
+    ]
+  },
+  {
+    "name": "zetac",
+    "args": [
+      2.5
+    ]
+  },
+  {
+    "name": "wrightomega",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "wright_bessel",
+    "args": [
+      0.5,
+      1.5,
+      0.5
+    ]
+  },
+  {
+    "name": "log_wright_bessel",
+    "args": [
+      0.5,
+      1.5,
+      0.5
+    ]
+  },
+  {
+    "name": "voigt_profile",
+    "args": [
+      0.5,
+      1,
+      0.3
+    ]
+  },
+  {
+    "name": "bdtr",
+    "args": [
+      2,
+      5,
+      0.3
+    ]
+  },
+  {
+    "name": "bdtrc",
+    "args": [
+      2,
+      5,
+      0.3
+    ]
+  },
+  {
+    "name": "bdtri",
+    "args": [
+      2,
+      5,
+      0.3
+    ]
+  },
+  {
+    "name": "chdtr",
+    "args": [
+      3,
+      2.5
+    ]
+  },
+  {
+    "name": "chdtrc",
+    "args": [
+      3,
+      2.5
+    ]
+  },
+  {
+    "name": "chdtri",
+    "args": [
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "fdtr",
+    "args": [
+      3,
+      5,
+      2.5
+    ]
+  },
+  {
+    "name": "fdtrc",
+    "args": [
+      3,
+      5,
+      2.5
+    ]
+  },
+  {
+    "name": "fdtri",
+    "args": [
+      3,
+      5,
+      0.3
+    ]
+  },
+  {
+    "name": "gdtr",
+    "args": [
+      1.5,
+      2.5,
+      0.5
+    ]
+  },
+  {
+    "name": "gdtrc",
+    "args": [
+      1.5,
+      2.5,
+      0.5
+    ]
+  },
+  {
+    "name": "gdtrib",
+    "args": [
+      1.5,
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "nbdtr",
+    "args": [
+      2,
+      5,
+      0.3
+    ]
+  },
+  {
+    "name": "nbdtrc",
+    "args": [
+      2,
+      5,
+      0.3
+    ]
+  },
+  {
+    "name": "nbdtri",
+    "args": [
+      2,
+      5,
+      0.3
+    ]
+  },
+  {
+    "name": "ndtr",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "ndtri",
+    "args": [
+      0.3
+    ]
+  },
+  {
+    "name": "log_ndtr",
+    "args": [
+      -30
+    ]
+  },
+  {
+    "name": "ndtri_exp",
+    "args": [
+      -100
+    ]
+  },
+  {
+    "name": "pdtr",
+    "args": [
+      2,
+      1.5
+    ]
+  },
+  {
+    "name": "pdtrc",
+    "args": [
+      2,
+      1.5
+    ]
+  },
+  {
+    "name": "pdtri",
+    "args": [
+      2,
+      0.3
+    ]
+  },
+  {
+    "name": "stdtr",
+    "args": [
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "stdtrit",
+    "args": [
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "kolmogorov",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "kolmogi",
+    "args": [
+      0.3
+    ]
+  },
+  {
+    "name": "smirnov",
+    "args": [
+      5,
+      0.3
+    ]
+  },
+  {
+    "name": "smirnovi",
+    "args": [
+      5,
+      0.3
+    ]
+  },
+  {
+    "name": "owens_t",
+    "args": [
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "tklmbda",
+    "args": [
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "pbdv",
+    "args": [
+      0.5,
+      1
+    ]
+  },
+  {
+    "name": "pbvv",
+    "args": [
+      0.5,
+      1
+    ]
+  },
+  {
+    "name": "pbwa",
+    "args": [
+      0.5,
+      1
+    ]
+  },
+  {
+    "name": "mathieu_a",
+    "args": [
+      2,
+      0.5
+    ]
+  },
+  {
+    "name": "mathieu_b",
+    "args": [
+      2,
+      0.5
+    ]
+  },
+  {
+    "name": "mathieu_cem",
+    "args": [
+      2,
+      0.5,
+      30
+    ]
+  },
+  {
+    "name": "mathieu_sem",
+    "args": [
+      2,
+      0.5,
+      30
+    ]
+  },
+  {
+    "name": "mathieu_modcem1",
+    "args": [
+      2,
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "mathieu_modcem2",
+    "args": [
+      2,
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "mathieu_modsem1",
+    "args": [
+      2,
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "mathieu_modsem2",
+    "args": [
+      2,
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "ber",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "bei",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "ker",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "kei",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "berp",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "beip",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "kerp",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "keip",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "ber_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "bei_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "ker_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "kei_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "berp_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "beip_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "kerp_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "keip_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "kelvin_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "lpmv",
+    "args": [
+      1,
+      2.5,
+      0.3
+    ]
+  },
+  {
+    "name": "legendre_p",
+    "args": [
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "assoc_legendre_p",
+    "args": [
+      3,
+      1,
+      0.3
+    ]
+  },
+  {
+    "name": "sph_legendre_p",
+    "args": [
+      3,
+      1,
+      0.3
+    ]
+  },
+  {
+    "name": "lqn",
+    "args": [
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "lqmn",
+    "args": [
+      2,
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "cbrt",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "exp2",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "exp10",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "expm1",
+    "args": [
+      0.000001
+    ]
+  },
+  {
+    "name": "log1p",
+    "args": [
+      0.000001
+    ]
+  },
+  {
+    "name": "expit",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "logit",
+    "args": [
+      0.3
+    ]
+  },
+  {
+    "name": "softplus",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "log_expit",
+    "args": [
+      -100
+    ]
+  },
+  {
+    "name": "exprel",
+    "args": [
+      0.000001
+    ]
+  },
+  {
+    "name": "sinc",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "cosm1",
+    "args": [
+      0.000001
+    ]
+  },
+  {
+    "name": "sindg",
+    "args": [
+      30
+    ]
+  },
+  {
+    "name": "cosdg",
+    "args": [
+      30
+    ]
+  },
+  {
+    "name": "tandg",
+    "args": [
+      30
+    ]
+  },
+  {
+    "name": "cotdg",
+    "args": [
+      30
+    ]
+  },
+  {
+    "name": "radian",
+    "args": [
+      30,
+      20,
+      10
+    ]
+  },
+  {
+    "name": "round",
+    "args": [
+      2.5
+    ]
+  },
+  {
+    "name": "entr",
+    "args": [
+      0.3
+    ]
+  },
+  {
+    "name": "rel_entr",
+    "args": [
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "kl_div",
+    "args": [
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "huber",
+    "args": [
+      1,
+      2
+    ]
+  },
+  {
+    "name": "pseudo_huber",
+    "args": [
+      1,
+      2
+    ]
+  },
+  {
+    "name": "xlogy",
+    "args": [
+      0,
+      0
+    ]
+  },
+  {
+    "name": "xlog1py",
+    "args": [
+      0.3,
+      0.000001
+    ]
+  },
+  {
+    "name": "powm1",
+    "args": [
+      1.000001,
+      0.3
+    ]
+  },
+  {
+    "name": "boxcox",
+    "args": [
+      2,
+      0.3
+    ]
+  },
+  {
+    "name": "boxcox1p",
+    "args": [
+      0.000001,
+      0.3
+    ]
+  },
+  {
+    "name": "inv_boxcox",
+    "args": [
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "inv_boxcox1p",
+    "args": [
+      0.000001,
+      0.3
+    ]
+  },
+  {
+    "name": "psi",
+    "args": [
+      2.5
+    ]
+  },
+  {
+    "name": "betaincc",
+    "args": [
+      2.5,
+      3.5,
+      0.7
+    ]
+  },
+  {
+    "name": "betainccinv",
+    "args": [
+      2.5,
+      3.5,
+      0.3
+    ]
+  },
+  {
+    "name": "nrdtrimn",
+    "args": [
+      0.3,
+      0.5,
+      1.5
+    ]
+  },
+  {
+    "name": "nrdtrisd",
+    "args": [
+      1.5,
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "gdtria",
+    "args": [
+      0.3,
+      2.5,
+      0.5
+    ]
+  },
+  {
+    "name": "gdtrix",
+    "args": [
+      1.5,
+      2.5,
+      0.3
+    ]
+  },
+  {
+    "name": "chdtriv",
+    "args": [
+      0.3,
+      2.5
+    ]
+  },
+  {
+    "name": "jn",
+    "args": [
+      2,
+      0.5
+    ]
+  },
+  {
+    "name": "yn",
+    "args": [
+      2,
+      0.5
+    ]
+  },
+  {
+    "name": "kn",
+    "args": [
+      2,
+      0.5
+    ]
+  },
+  {
+    "name": "eval_jacobi",
+    "args": [
+      3,
+      0.5,
+      0.3,
+      0.2
+    ]
+  },
+  {
+    "name": "eval_legendre",
+    "args": [
+      3,
+      0.2
+    ]
+  },
+  {
+    "name": "eval_gegenbauer",
+    "args": [
+      3,
+      0.5,
+      0.2
+    ]
+  },
+  {
+    "name": "eval_genlaguerre",
+    "args": [
+      3,
+      0.5,
+      0.2
+    ]
+  },
+  {
+    "name": "eval_laguerre",
+    "args": [
+      3,
+      0.2
+    ]
+  },
+  {
+    "name": "eval_chebyt",
+    "args": [
+      3,
+      0.2
+    ]
+  },
+  {
+    "name": "eval_chebyu",
+    "args": [
+      3,
+      0.2
+    ]
+  },
+  {
+    "name": "eval_hermite",
+    "args": [
+      3,
+      0.2
+    ]
+  },
+  {
+    "name": "eval_hermitenorm",
+    "args": [
+      3,
+      0.2
+    ]
+  },
+  {
+    "name": "pro_cv",
+    "args": [
+      1,
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "pro_ang1",
+    "args": [
+      1,
+      3,
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "pro_ang1_cv",
+    "args": [
+      1,
+      3,
+      0.5,
+      12,
+      0.3
+    ]
+  },
+  {
+    "name": "pro_rad1",
+    "args": [
+      1,
+      3,
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "pro_rad1_cv",
+    "args": [
+      1,
+      3,
+      0.5,
+      12,
+      2
+    ]
+  },
+  {
+    "name": "pro_rad2",
+    "args": [
+      1,
+      3,
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "pro_rad2_cv",
+    "args": [
+      1,
+      3,
+      0.5,
+      12,
+      2
+    ]
+  },
+  {
+    "name": "obl_cv",
+    "args": [
+      1,
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "obl_ang1",
+    "args": [
+      1,
+      3,
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "obl_ang1_cv",
+    "args": [
+      1,
+      3,
+      0.5,
+      12,
+      0.3
+    ]
+  },
+  {
+    "name": "obl_rad1",
+    "args": [
+      1,
+      3,
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "obl_rad1_cv",
+    "args": [
+      1,
+      3,
+      0.5,
+      12,
+      2
+    ]
+  },
+  {
+    "name": "obl_rad2",
+    "args": [
+      1,
+      3,
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "obl_rad2_cv",
+    "args": [
+      1,
+      3,
+      0.5,
+      12,
+      2
+    ]
+  },
+  {
+    "name": "jacobi",
+    "args": [
+      3,
+      0.5,
+      0.3,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_jacobi",
+    "args": [
+      3,
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "legendre",
+    "args": [
+      3,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_legendre",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "gegenbauer",
+    "args": [
+      3,
+      0.5,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_gegenbauer",
+    "args": [
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "genlaguerre",
+    "args": [
+      3,
+      0.5,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_genlaguerre",
+    "args": [
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "laguerre",
+    "args": [
+      3,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_laguerre",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "hermite",
+    "args": [
+      3,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_hermite",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "hermitenorm",
+    "args": [
+      3,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_hermitenorm",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "chebyt",
+    "args": [
+      3,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_chebyt",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "chebyu",
+    "args": [
+      3,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_chebyu",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "chebyc",
+    "args": [
+      3,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_chebyc",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "chebys",
+    "args": [
+      3,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_chebys",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "sh_chebyt",
+    "args": [
+      3,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_sh_chebyt",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "sh_chebyu",
+    "args": [
+      3,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_sh_chebyu",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "sh_legendre",
+    "args": [
+      3,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_sh_legendre",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "sh_jacobi",
+    "args": [
+      3,
+      2.5,
+      1.5,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "roots_sh_jacobi",
+    "args": [
+      3,
+      2.5,
+      1.5
+    ]
+  },
+  {
+    "name": "hankel1",
+    "args": [
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "hankel1e",
+    "args": [
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "hankel2",
+    "args": [
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "hankel2e",
+    "args": [
+      0.5,
+      2
+    ]
+  },
+  {
+    "name": "wofz",
+    "args": [
+      [
+        0.5,
+        0.3
+      ]
+    ]
+  },
+  {
+    "name": "kelvin",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "modfresnelp",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "modfresnelm",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "fresnel_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "fresnels_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "fresnelc_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "sph_harm_y",
+    "args": [
+      3,
+      1,
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "sph_harm_y_all",
+    "args": [
+      3,
+      2,
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "legendre_p_all",
+    "args": [
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "assoc_legendre_p_all",
+    "args": [
+      3,
+      2,
+      0.3
+    ]
+  },
+  {
+    "name": "sph_legendre_p_all",
+    "args": [
+      3,
+      2,
+      0.3
+    ]
+  },
+  {
+    "name": "mathieu_even_coef",
+    "args": [
+      2,
+      0.5
+    ]
+  },
+  {
+    "name": "mathieu_odd_coef",
+    "args": [
+      2,
+      0.5
+    ]
+  },
+  {
+    "name": "pro_cv_seq",
+    "args": [
+      1,
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "obl_cv_seq",
+    "args": [
+      1,
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "jvp",
+    "args": [
+      0.5,
+      2,
+      2
+    ]
+  },
+  {
+    "name": "yvp",
+    "args": [
+      0.5,
+      2,
+      2
+    ]
+  },
+  {
+    "name": "ivp",
+    "args": [
+      0.5,
+      2,
+      2
+    ]
+  },
+  {
+    "name": "kvp",
+    "args": [
+      0.5,
+      2,
+      2
+    ]
+  },
+  {
+    "name": "h1vp",
+    "args": [
+      0.5,
+      2,
+      2
+    ]
+  },
+  {
+    "name": "h2vp",
+    "args": [
+      0.5,
+      2,
+      2
+    ]
+  },
+  {
+    "name": "spherical_jn",
+    "args": [
+      2,
+      0.5,
+      false
+    ]
+  },
+  {
+    "name": "spherical_yn",
+    "args": [
+      2,
+      0.5,
+      false
+    ]
+  },
+  {
+    "name": "spherical_in",
+    "args": [
+      2,
+      0.5,
+      false
+    ]
+  },
+  {
+    "name": "spherical_kn",
+    "args": [
+      2,
+      0.5,
+      false
+    ]
+  },
+  {
+    "name": "assoc_laguerre",
+    "args": [
+      0.3,
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "eval_chebyc",
+    "args": [
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "eval_chebys",
+    "args": [
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "eval_sh_chebyt",
+    "args": [
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "eval_sh_chebyu",
+    "args": [
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "eval_sh_legendre",
+    "args": [
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "eval_sh_jacobi",
+    "args": [
+      3,
+      2.5,
+      1.5,
+      0.3
+    ]
+  },
+  {
+    "name": "diric",
+    "args": [
+      0.3,
+      3
+    ]
+  },
+  {
+    "name": "factorial",
+    "args": [
+      5
+    ]
+  },
+  {
+    "name": "factorial2",
+    "args": [
+      7
+    ]
+  },
+  {
+    "name": "factorialk",
+    "args": [
+      8,
+      3
+    ]
+  },
+  {
+    "name": "comb",
+    "args": [
+      5,
+      2
+    ]
+  },
+  {
+    "name": "perm",
+    "args": [
+      5,
+      2
+    ]
+  },
+  {
+    "name": "poch",
+    "args": [
+      2.5,
+      3
+    ]
+  },
+  {
+    "name": "stirling2",
+    "args": [
+      5,
+      2
+    ]
+  },
+  {
+    "name": "bernoulli",
+    "args": [
+      8
+    ]
+  },
+  {
+    "name": "euler",
+    "args": [
+      8
+    ]
+  },
+  {
+    "name": "pbdv_seq",
+    "args": [
+      2.5,
+      0.3
+    ]
+  },
+  {
+    "name": "pbvv_seq",
+    "args": [
+      2.5,
+      0.3
+    ]
+  },
+  {
+    "name": "pbdn_seq",
+    "args": [
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "riccati_jn",
+    "args": [
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "riccati_yn",
+    "args": [
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "lmbda",
+    "args": [
+      2.5,
+      0.5
+    ]
+  },
+  {
+    "name": "logsumexp",
+    "args": [
+      [
+        1000,
+        1000,
+        999
+      ]
+    ]
+  },
+  {
+    "name": "softmax",
+    "args": [
+      [
+        1000,
+        1000,
+        999
+      ]
+    ]
+  },
+  {
+    "name": "log_softmax",
+    "args": [
+      [
+        1000,
+        1000,
+        999
+      ]
+    ]
+  },
+  {
+    "name": "c_roots",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "cg_roots",
+    "args": [
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "h_roots",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "he_roots",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "j_roots",
+    "args": [
+      3,
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "js_roots",
+    "args": [
+      3,
+      2.5,
+      1.5
+    ]
+  },
+  {
+    "name": "l_roots",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "la_roots",
+    "args": [
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "p_roots",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "ps_roots",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "s_roots",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "t_roots",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "ts_roots",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "u_roots",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "us_roots",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "btdtria",
+    "args": [
+      0.3,
+      2.5,
+      0.5
+    ]
+  },
+  {
+    "name": "btdtrib",
+    "args": [
+      2.5,
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "bdtrik",
+    "args": [
+      0.3,
+      5,
+      0.5
+    ]
+  },
+  {
+    "name": "bdtrin",
+    "args": [
+      2,
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "nbdtrik",
+    "args": [
+      0.3,
+      5,
+      0.5
+    ]
+  },
+  {
+    "name": "nbdtrin",
+    "args": [
+      2,
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "pdtrik",
+    "args": [
+      0.3,
+      5
+    ]
+  },
+  {
+    "name": "stdtridf",
+    "args": [
+      0.6742760175759245,
+      0.5
+    ]
+  },
+  {
+    "name": "fdtridfd",
+    "args": [
+      3,
+      0.30154736269507604,
+      0.5
+    ]
+  },
+  {
+    "name": "chndtr",
+    "args": [
+      2.5,
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "chndtrix",
+    "args": [
+      0.3,
+      3,
+      0.5
+    ]
+  },
+  {
+    "name": "chndtridf",
+    "args": [
+      2.5,
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "chndtrinc",
+    "args": [
+      2.5,
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "ncfdtr",
+    "args": [
+      3,
+      5,
+      0.5,
+      2.5
+    ]
+  },
+  {
+    "name": "ncfdtri",
+    "args": [
+      3,
+      5,
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "ncfdtridfd",
+    "args": [
+      3,
+      0.25637506749643246,
+      0.5,
+      0.5
+    ]
+  },
+  {
+    "name": "ncfdtridfn",
+    "args": [
+      0.25637506749643246,
+      5,
+      0.5,
+      0.5
+    ]
+  },
+  {
+    "name": "ncfdtrinc",
+    "args": [
+      3,
+      5,
+      0.3,
+      2.5
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      3,
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "nctdtrit",
+    "args": [
+      3,
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "nctdtrinc",
+    "args": [
+      3,
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "nctdtridf",
+    "args": [
+      0.4120716320853016,
+      0.5,
+      0.3
+    ]
+  },
+  {
+    "name": "jn_zeros",
+    "args": [
+      2,
+      3
+    ]
+  },
+  {
+    "name": "jnp_zeros",
+    "args": [
+      2,
+      3
+    ]
+  },
+  {
+    "name": "yn_zeros",
+    "args": [
+      2,
+      3
+    ]
+  },
+  {
+    "name": "ynp_zeros",
+    "args": [
+      2,
+      3
+    ]
+  },
+  {
+    "name": "jnyn_zeros",
+    "args": [
+      2,
+      3
+    ]
+  },
+  {
+    "name": "y0_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "y1_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "y1p_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "ai_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "bi_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "erf_zeros",
+    "args": [
+      3
+    ]
+  },
+  {
+    "name": "jnjnp_zeros",
+    "args": [
+      8
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      2,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      2,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      2
+    ]
+  },
+  {
+    "name": "gamma",
+    "args": [
+      2.5
+    ]
+  },
+  {
+    "name": "gammaln",
+    "args": [
+      2.5
+    ]
+  },
+  {
+    "name": "digamma",
+    "args": [
+      2.5
+    ]
+  },
+  {
+    "name": "erf",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "erfc",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "erfinv",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "beta",
+    "args": [
+      2.5,
+      3.5
+    ]
+  },
+  {
+    "name": "betaln",
+    "args": [
+      2.5,
+      3.5
+    ]
+  },
+  {
+    "name": "betainc",
+    "args": [
+      2.5,
+      3.5,
+      0.4
+    ]
+  },
+  {
+    "name": "betaincinv",
+    "args": [
+      2.5,
+      3.5,
+      0.4
+    ]
+  },
+  {
+    "name": "gammainc",
+    "args": [
+      2.5,
+      0.5
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "ellipk",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "ellipe",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "ellipeinc",
+    "args": [
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "elliprf",
+    "args": [
+      0.5,
+      1.5,
+      2.5
+    ]
+  },
+  {
+    "name": "elliprd",
+    "args": [
+      0.5,
+      1.5,
+      2.5
+    ]
+  },
+  {
+    "name": "elliprg",
+    "args": [
+      0.5,
+      1.5,
+      2.5
+    ]
+  },
+  {
+    "name": "elliprj",
+    "args": [
+      0.5,
+      1.5,
+      2.5,
+      3.5
+    ]
+  },
+  {
+    "name": "elliprc",
+    "args": [
+      0.5,
+      1.5
+    ]
+  },
+  {
+    "name": "ellipkinc",
+    "args": [
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "ellipkm1",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "trigamma",
+    "args": [
+      2.5
+    ]
+  },
+  {
+    "name": "lambertwm1",
+    "args": [
+      -0.1
+    ]
+  },
+  {
+    "name": "ellipke",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "ellipf",
+    "args": [
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "ellippi",
+    "args": [
+      0.2,
+      0.5
+    ]
+  },
+  {
+    "name": "ellippiinc",
+    "args": [
+      0.3,
+      0.2,
+      0.5
+    ]
+  },
+  {
+    "name": "ellipd",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "ellipdinc",
+    "args": [
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "cel",
+    "args": [
+      0.7,
+      0.8,
+      1.2,
+      0.6
+    ]
+  },
+  {
+    "name": "cel1",
+    "args": [
+      0.7
+    ]
+  },
+  {
+    "name": "cel2",
+    "args": [
+      0.7,
+      1.2,
+      0.6
+    ]
+  },
+  {
+    "name": "cel3",
+    "args": [
+      0.7,
+      0.8
+    ]
+  },
+  {
+    "name": "el1",
+    "args": [
+      0.3,
+      0.7
+    ]
+  },
+  {
+    "name": "el2",
+    "args": [
+      0.3,
+      0.7,
+      1.2,
+      0.6
+    ]
+  },
+  {
+    "name": "el3",
+    "args": [
+      0.3,
+      0.7,
+      0.8
+    ]
+  },
+  {
+    "name": "jacobi_zeta",
+    "args": [
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "heuman_lambda",
+    "args": [
+      0.3,
+      0.5
+    ]
+  },
+  {
+    "name": "ellippiinc_bulirsch",
+    "args": [
+      0.3,
+      0.2,
+      0.5
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      0,
+      1,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      0,
+      1,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      0,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      1,
+      1,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      1,
+      1,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      1,
+      2,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      1,
+      2,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      1,
+      2
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      1,
+      3,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      1,
+      3,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      1,
+      3
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      1,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      1,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      2,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      2,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      2
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      3,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      3,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      3
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      4,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      4,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      4
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      5,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      5,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      2,
+      5
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      1,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      1,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      2,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      2,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      2
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      3,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      3,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      3
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      4,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      4,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      4
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      5,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      5,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      5
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      6,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      6,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      6
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      7,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      7,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      3,
+      7
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      1,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      1,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      2,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      2,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      2
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      3,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      3,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      3
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      4,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      4,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      4
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      5,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      5,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      5
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      6,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      6,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      6
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      7,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      7,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      7
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      8,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      8,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      8
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      9,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      9,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      4,
+      9
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      1,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      1,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      2,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      2,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      2
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      3,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      3,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      3
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      4,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      4,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      4
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      5,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      5,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      5
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      6,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      6,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      6
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      7,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      7,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      7
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      8,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      8,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      8
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      9,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      9,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      9
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      10,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      10,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      10
+    ]
+  },
+  {
+    "name": "ellip_harm",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      11,
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "ellip_harm_2",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      11,
+      2
+    ]
+  },
+  {
+    "name": "ellip_normal",
+    "args": [
+      0.5,
+      1.5,
+      5,
+      11
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      1,
+      -3,
+      -2
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      1,
+      -3,
+      0
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      1,
+      -3,
+      3
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      5,
+      -3,
+      -2
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      5,
+      -3,
+      0
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      5,
+      -3,
+      3
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      30,
+      -3,
+      -2
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      30,
+      -3,
+      0
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      30,
+      -3,
+      3
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      1,
+      0,
+      -2
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      1,
+      0,
+      0
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      1,
+      0,
+      3
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      5,
+      0,
+      -2
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      5,
+      0,
+      0
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      5,
+      0,
+      3
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      30,
+      0,
+      -2
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      30,
+      0,
+      0
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      30,
+      0,
+      3
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      1,
+      2,
+      -2
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      1,
+      2,
+      0
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      1,
+      2,
+      3
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      5,
+      2,
+      -2
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      5,
+      2,
+      0
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      5,
+      2,
+      3
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      30,
+      2,
+      -2
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      30,
+      2,
+      0
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      30,
+      2,
+      3
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      1,
+      5,
+      -2
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      1,
+      5,
+      0
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      1,
+      5,
+      3
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      5,
+      5,
+      -2
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      5,
+      5,
+      0
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      5,
+      5,
+      3
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      30,
+      5,
+      -2
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      30,
+      5,
+      0
+    ]
+  },
+  {
+    "name": "nctdtr",
+    "args": [
+      30,
+      5,
+      3
+    ]
+  },
+  {
+    "name": "jn_zeros",
+    "args": [
+      0,
+      5
+    ]
+  },
+  {
+    "name": "jn_zeros",
+    "args": [
+      1,
+      5
+    ]
+  },
+  {
+    "name": "jn_zeros",
+    "args": [
+      10,
+      5
+    ]
+  },
+  {
+    "name": "jnp_zeros",
+    "args": [
+      0,
+      5
+    ]
+  },
+  {
+    "name": "jnp_zeros",
+    "args": [
+      1,
+      5
+    ]
+  },
+  {
+    "name": "jnp_zeros",
+    "args": [
+      10,
+      5
+    ]
+  },
+  {
+    "name": "yn_zeros",
+    "args": [
+      0,
+      5
+    ]
+  },
+  {
+    "name": "yn_zeros",
+    "args": [
+      1,
+      5
+    ]
+  },
+  {
+    "name": "yn_zeros",
+    "args": [
+      10,
+      5
+    ]
+  },
+  {
+    "name": "ynp_zeros",
+    "args": [
+      0,
+      5
+    ]
+  },
+  {
+    "name": "ynp_zeros",
+    "args": [
+      1,
+      5
+    ]
+  },
+  {
+    "name": "ynp_zeros",
+    "args": [
+      10,
+      5
+    ]
+  },
+  {
+    "name": "legendre",
+    "args": [
+      0,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "legendre",
+    "args": [
+      1,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "legendre",
+    "args": [
+      8,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "chebyt",
+    "args": [
+      0,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "chebyt",
+    "args": [
+      1,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "chebyt",
+    "args": [
+      8,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "chebyu",
+    "args": [
+      0,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "chebyu",
+    "args": [
+      1,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "chebyu",
+    "args": [
+      8,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "hermite",
+    "args": [
+      0,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "hermite",
+    "args": [
+      1,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "hermite",
+    "args": [
+      8,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "hermitenorm",
+    "args": [
+      0,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "hermitenorm",
+    "args": [
+      1,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "hermitenorm",
+    "args": [
+      8,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "laguerre",
+    "args": [
+      0,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "laguerre",
+    "args": [
+      1,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "laguerre",
+    "args": [
+      8,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "lqmn",
+    "args": [
+      0,
+      0,
+      0.3
+    ]
+  },
+  {
+    "name": "lqmn",
+    "args": [
+      0,
+      3,
+      0.3
+    ]
+  },
+  {
+    "name": "lqmn",
+    "args": [
+      3,
+      0,
+      0.3
+    ]
+  },
+  {
+    "name": "digamma",
+    "args": [
+      -2.3
+    ]
+  },
+  {
+    "name": "digamma",
+    "args": [
+      -0.5
+    ]
+  },
+  {
+    "name": "digamma",
+    "args": [
+      1e-8
+    ]
+  },
+  {
+    "name": "digamma",
+    "args": [
+      50
+    ]
+  },
+  {
+    "name": "trigamma",
+    "args": [
+      -2.3
+    ]
+  },
+  {
+    "name": "trigamma",
+    "args": [
+      -0.5
+    ]
+  },
+  {
+    "name": "trigamma",
+    "args": [
+      1e-8
+    ]
+  },
+  {
+    "name": "trigamma",
+    "args": [
+      50
+    ]
+  },
+  {
+    "name": "jacobi",
+    "args": [
+      0,
+      0.2,
+      0.4,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "jacobi",
+    "args": [
+      0,
+      0.2,
+      0.4,
+      true
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "legendre",
+    "args": [
+      0,
+      true
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "gegenbauer",
+    "args": [
+      0,
+      0.5,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "gegenbauer",
+    "args": [
+      0,
+      0.5,
+      true
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "genlaguerre",
+    "args": [
+      0,
+      0.3,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "genlaguerre",
+    "args": [
+      0,
+      0.3,
+      true
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "laguerre",
+    "args": [
+      0,
+      true
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "hermite",
+    "args": [
+      0,
+      true
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "hermitenorm",
+    "args": [
+      0,
+      true
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "chebyt",
+    "args": [
+      0,
+      true
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "chebyu",
+    "args": [
+      0,
+      true
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "chebyc",
+    "args": [
+      0,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "chebyc",
+    "args": [
+      0,
+      true
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "chebys",
+    "args": [
+      0,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "chebys",
+    "args": [
+      0,
+      true
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "sh_chebyt",
+    "args": [
+      0,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "sh_chebyt",
+    "args": [
+      0,
+      true
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "sh_chebyu",
+    "args": [
+      0,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "sh_chebyu",
+    "args": [
+      0,
+      true
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "sh_legendre",
+    "args": [
+      0,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "sh_legendre",
+    "args": [
+      0,
+      true
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "sh_jacobi",
+    "args": [
+      0,
+      1.5,
+      0.7,
+      false
+    ],
+    "polynomial": true
+  },
+  {
+    "name": "sh_jacobi",
+    "args": [
+      0,
+      1.5,
+      0.7,
+      true
+    ],
+    "polynomial": true
+  }
+]

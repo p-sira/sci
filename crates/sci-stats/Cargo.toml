@@ -1,0 +1,28 @@
+[package]
+name = "sci-stats"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Statistics and probability distributions"
+documentation = "https://docs.rs/sci-stats"
+homepage = "https://github.com/p-sira/sci"
+repository = "https://github.com/p-sira/sci"
+categories = ["algorithms", "mathematics", "science"]
+keywords = ["statistics", "probability", "distributions", "numerics", "data-analysis"]
+include = ["src/**", "LICENSE"]
+
+[dependencies]
+sci-core.workspace = true
+sci-special.workspace = true
+nalgebra.workspace = true
+statrs.workspace = true
+basin.workspace = true
+anofox-statistics.workspace = true
+lapjv.workspace = true
+ndarray.workspace = true
+
+[dev-dependencies]
+sci-complex.workspace = true
+sci-fft.workspace = true

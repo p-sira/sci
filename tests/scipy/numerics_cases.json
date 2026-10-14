@@ -1,0 +1,9705 @@
+[
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        2
+      ],
+      null,
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        2
+      ],
+      null,
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        2
+      ],
+      null,
+      1,
+      null
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        2
+      ],
+      null,
+      1,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        2
+      ],
+      null,
+      1,
+      null
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        2
+      ],
+      null,
+      1,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        2
+      ],
+      null,
+      1,
+      2.5
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        0,
+        1
+      ],
+      null,
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        0,
+        1
+      ],
+      null,
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        0,
+        1
+      ],
+      null,
+      1,
+      null
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        0,
+        1
+      ],
+      null,
+      1,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        0,
+        1
+      ],
+      null,
+      1,
+      null
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        0,
+        1
+      ],
+      null,
+      1,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        0,
+        1
+      ],
+      null,
+      1,
+      2.5
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        0,
+        1,
+        4
+      ],
+      null,
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        0,
+        1,
+        4
+      ],
+      null,
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        0,
+        1,
+        4
+      ],
+      null,
+      1,
+      null
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        0,
+        1,
+        4
+      ],
+      null,
+      1,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        0,
+        1,
+        4
+      ],
+      null,
+      1,
+      null
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        0,
+        1,
+        4
+      ],
+      null,
+      1,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        0,
+        1,
+        4
+      ],
+      null,
+      1,
+      2.5
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27
+      ],
+      null,
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27
+      ],
+      null,
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27
+      ],
+      null,
+      1,
+      null
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27
+      ],
+      null,
+      1,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27
+      ],
+      null,
+      1,
+      null
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27
+      ],
+      null,
+      1,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27
+      ],
+      null,
+      1,
+      2.5
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27,
+        64
+      ],
+      null,
+      0.5
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27,
+        64
+      ],
+      null,
+      0.5
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27,
+        64
+      ],
+      null,
+      0.5,
+      null
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27,
+        64
+      ],
+      null,
+      0.5,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27,
+        64
+      ],
+      null,
+      0.5,
+      null
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27,
+        64
+      ],
+      null,
+      0.5,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27,
+        64
+      ],
+      null,
+      0.5,
+      2.5
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        2,
+        -1,
+        3,
+        7,
+        4,
+        0
+      ],
+      [
+        0,
+        0.3,
+        0.9,
+        1.2,
+        2.5,
+        4
+      ],
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        2,
+        -1,
+        3,
+        7,
+        4,
+        0
+      ],
+      [
+        0,
+        0.3,
+        0.9,
+        1.2,
+        2.5,
+        4
+      ],
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        2,
+        -1,
+        3,
+        7,
+        4,
+        0
+      ],
+      [
+        0,
+        0.3,
+        0.9,
+        1.2,
+        2.5,
+        4
+      ],
+      1,
+      null
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        2,
+        -1,
+        3,
+        7,
+        4,
+        0
+      ],
+      [
+        0,
+        0.3,
+        0.9,
+        1.2,
+        2.5,
+        4
+      ],
+      1,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        2,
+        -1,
+        3,
+        7,
+        4,
+        0
+      ],
+      [
+        0,
+        0.3,
+        0.9,
+        1.2,
+        2.5,
+        4
+      ],
+      1,
+      null
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        2,
+        -1,
+        3,
+        7,
+        4,
+        0
+      ],
+      [
+        0,
+        0.3,
+        0.9,
+        1.2,
+        2.5,
+        4
+      ],
+      1,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        2,
+        -1,
+        3,
+        7,
+        4,
+        0
+      ],
+      [
+        0,
+        0.3,
+        0.9,
+        1.2,
+        2.5,
+        4
+      ],
+      1,
+      2.5
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        3,
+        1,
+        0
+      ],
+      [
+        2,
+        1,
+        0
+      ],
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        3,
+        1,
+        0
+      ],
+      [
+        2,
+        1,
+        0
+      ],
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        3,
+        1,
+        0
+      ],
+      [
+        2,
+        1,
+        0
+      ],
+      1,
+      null
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        3,
+        1,
+        0
+      ],
+      [
+        2,
+        1,
+        0
+      ],
+      1,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1,
+        2,
+        3
+      ],
+      null,
+      -2
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1,
+        2,
+        3
+      ],
+      null,
+      -2
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1,
+        2,
+        3
+      ],
+      null,
+      -2,
+      null
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1,
+        2,
+        3
+      ],
+      null,
+      -2,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        2,
+        3,
+        4
+      ],
+      [
+        1,
+        1,
+        2
+      ],
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1,
+        2
+      ],
+      null,
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1,
+        2
+      ],
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        0,
+        1,
+        4
+      ],
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        0,
+        1,
+        8,
+        27,
+        64
+      ],
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        0,
+        1,
+        4,
+        9,
+        16,
+        25,
+        36,
+        49,
+        64
+      ],
+      0.25
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        2,
+        3,
+        1,
+        0,
+        1
+      ],
+      -2
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        2,
+        3,
+        1
+      ],
+      0
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "square",
+      0,
+      1,
+      3
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "cubic",
+      -2,
+      3,
+      5
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "sin",
+      0,
+      3.141592653589793,
+      16
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "exp",
+      -1,
+      1,
+      20
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "square",
+      1,
+      -1,
+      4
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "constant",
+      2,
+      2,
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "constant",
+      -3,
+      5,
+      1
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "newton_cotes",
+    "args": [
+      [
+        0,
+        1
+      ]
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "newton_cotes",
+    "args": [
+      [
+        0,
+        1,
+        2
+      ]
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "newton_cotes",
+    "args": [
+      [
+        0,
+        1,
+        2,
+        3
+      ]
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "newton_cotes",
+    "args": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "newton_cotes",
+    "args": [
+      [
+        0,
+        0.2,
+        2
+      ]
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "newton_cotes",
+    "args": [
+      [
+        0,
+        0.5,
+        2.5,
+        3
+      ]
+    ]
+  },
+  {
+    "module": "integrate",
+    "api": "newton_cotes",
+    "args": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "barycentric_interpolate",
+    "args": [
+      [
+        0
+      ],
+      [
+        7
+      ],
+      [
+        -2,
+        0,
+        3
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "krogh_interpolate",
+    "args": [
+      [
+        0
+      ],
+      [
+        7
+      ],
+      [
+        -2,
+        0,
+        3
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "lagrange",
+    "args": [
+      [
+        0
+      ],
+      [
+        7
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "barycentric_interpolate",
+    "args": [
+      [
+        0,
+        1
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        -1,
+        0,
+        0.5,
+        1,
+        2
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "krogh_interpolate",
+    "args": [
+      [
+        0,
+        1
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        -1,
+        0,
+        0.5,
+        1,
+        2
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "lagrange",
+    "args": [
+      [
+        0,
+        1
+      ],
+      [
+        2,
+        4
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "barycentric_interpolate",
+    "args": [
+      [
+        -2,
+        -1,
+        0,
+        1,
+        2
+      ],
+      [
+        4,
+        1,
+        0,
+        1,
+        4
+      ],
+      [
+        -3,
+        -1,
+        0.25,
+        1.5,
+        3
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "krogh_interpolate",
+    "args": [
+      [
+        -2,
+        -1,
+        0,
+        1,
+        2
+      ],
+      [
+        4,
+        1,
+        0,
+        1,
+        4
+      ],
+      [
+        -3,
+        -1,
+        0.25,
+        1.5,
+        3
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "lagrange",
+    "args": [
+      [
+        -2,
+        -1,
+        0,
+        1,
+        2
+      ],
+      [
+        4,
+        1,
+        0,
+        1,
+        4
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "barycentric_interpolate",
+    "args": [
+      [
+        3,
+        0,
+        1
+      ],
+      [
+        9,
+        0,
+        1
+      ],
+      [
+        0,
+        0.5,
+        2,
+        3
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "krogh_interpolate",
+    "args": [
+      [
+        3,
+        0,
+        1
+      ],
+      [
+        9,
+        0,
+        1
+      ],
+      [
+        0,
+        0.5,
+        2,
+        3
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "lagrange",
+    "args": [
+      [
+        3,
+        0,
+        1
+      ],
+      [
+        9,
+        0,
+        1
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "barycentric_interpolate",
+    "args": [
+      [
+        0,
+        0.2,
+        0.9,
+        2
+      ],
+      [
+        1,
+        0.5,
+        3,
+        4
+      ],
+      [
+        -0.1,
+        0.4,
+        1.8
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "krogh_interpolate",
+    "args": [
+      [
+        0,
+        0.2,
+        0.9,
+        2
+      ],
+      [
+        1,
+        0.5,
+        3,
+        4
+      ],
+      [
+        -0.1,
+        0.4,
+        1.8
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "lagrange",
+    "args": [
+      [
+        0,
+        0.2,
+        0.9,
+        2
+      ],
+      [
+        1,
+        0.5,
+        3,
+        4
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "barycentric_interpolate",
+    "args": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ],
+      []
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "krogh_interpolate",
+    "args": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ],
+      []
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "lagrange",
+    "args": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        1
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "krogh_interpolate",
+    "args": [
+      [
+        0,
+        0,
+        1
+      ],
+      [
+        0,
+        0,
+        1
+      ],
+      [
+        -1,
+        0,
+        0.5,
+        1,
+        2
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "krogh_interpolate",
+    "args": [
+      [
+        0,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        1,
+        1,
+        1,
+        2.718281828,
+        2.718281828
+      ],
+      [
+        -0.5,
+        0,
+        0.3,
+        1
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "krogh_interpolate",
+    "args": [
+      [
+        1,
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        0.5,
+        1
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "pchip_interpolate",
+    "args": [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        2
+      ],
+      [
+        -1,
+        0,
+        0.5,
+        1,
+        2
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "pchip_interpolate",
+    "args": [
+      [
+        0,
+        1,
+        2,
+        4
+      ],
+      [
+        0,
+        2,
+        3,
+        4
+      ],
+      [
+        -1,
+        0,
+        0.5,
+        1.5,
+        3,
+        5
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "pchip_interpolate",
+    "args": [
+      [
+        0,
+        0.2,
+        1,
+        2
+      ],
+      [
+        1,
+        3,
+        2,
+        4
+      ],
+      [
+        -0.1,
+        0.1,
+        0.8,
+        1.5,
+        3
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "pchip_interpolate",
+    "args": [
+      [
+        0,
+        1,
+        2
+      ],
+      [
+        2,
+        2,
+        2
+      ],
+      [
+        0,
+        0.5,
+        2,
+        3
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "pchip_interpolate",
+    "args": [
+      [
+        0,
+        1,
+        2,
+        3
+      ],
+      [
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        0.5,
+        1.5,
+        2.5
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "pchip_interpolate",
+    "args": [
+      [
+        0,
+        1,
+        2
+      ],
+      [
+        0,
+        -1,
+        -4
+      ],
+      [
+        0.5,
+        1.5
+      ]
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "pade",
+    "args": [
+      [
+        1,
+        1,
+        0.5
+      ],
+      1,
+      null
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "pade",
+    "args": [
+      [
+        1,
+        1,
+        0.5,
+        0.16666666666666666,
+        0.041666666666666664
+      ],
+      2,
+      null
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "pade",
+    "args": [
+      [
+        1,
+        2,
+        3
+      ],
+      0,
+      null
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "pade",
+    "args": [
+      [
+        1,
+        2,
+        3,
+        4
+      ],
+      2,
+      1
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "pade",
+    "args": [
+      [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      1,
+      1
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "pade",
+    "args": [
+      [
+        1,
+        0,
+        0.5,
+        0,
+        0.041666666666666664
+      ],
+      2,
+      2
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "vq",
+    "args": [
+      [
+        [
+          0
+        ],
+        [
+          1
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        [
+          0
+        ],
+        [
+          2
+        ]
+      ]
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "py_vq",
+    "args": [
+      [
+        [
+          0
+        ],
+        [
+          1
+        ],
+        [
+          3
+        ]
+      ],
+      [
+        [
+          0
+        ],
+        [
+          2
+        ]
+      ]
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "vq",
+    "args": [
+      [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          -1,
+          0
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          4,
+          4
+        ]
+      ]
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "py_vq",
+    "args": [
+      [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          -1,
+          0
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          4,
+          4
+        ]
+      ]
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "vq",
+    "args": [
+      [
+        [
+          2,
+          0
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "py_vq",
+    "args": [
+      [
+        [
+          2,
+          0
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          4,
+          0
+        ]
+      ]
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "whiten",
+    "args": [
+      [
+        [
+          1
+        ],
+        [
+          3
+        ]
+      ]
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "whiten",
+    "args": [
+      [
+        [
+          1,
+          2
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          5,
+          2
+        ]
+      ]
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "whiten",
+    "args": [
+      [
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          1
+        ]
+      ]
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "whiten",
+    "args": [
+      [
+        [
+          1,
+          3,
+          7
+        ]
+      ]
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "kmeans2",
+    "args": [
+      [
+        [
+          0
+        ],
+        [
+          1
+        ],
+        [
+          9
+        ],
+        [
+          10
+        ]
+      ],
+      [
+        [
+          0
+        ],
+        [
+          10
+        ]
+      ],
+      1
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "kmeans2",
+    "args": [
+      [
+        [
+          0
+        ],
+        [
+          1
+        ],
+        [
+          9
+        ],
+        [
+          10
+        ]
+      ],
+      [
+        [
+          0
+        ],
+        [
+          10
+        ]
+      ],
+      3
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "kmeans",
+    "args": [
+      [
+        [
+          0
+        ],
+        [
+          1
+        ],
+        [
+          9
+        ],
+        [
+          10
+        ]
+      ],
+      [
+        [
+          0
+        ],
+        [
+          10
+        ]
+      ],
+      1e-08,
+      20
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "kmeans2",
+    "args": [
+      [
+        [
+          0,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          10,
+          1
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          10,
+          1
+        ]
+      ],
+      1
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "kmeans2",
+    "args": [
+      [
+        [
+          0,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          10,
+          1
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          10,
+          1
+        ]
+      ],
+      3
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "kmeans",
+    "args": [
+      [
+        [
+          0,
+          0
+        ],
+        [
+          2,
+          0
+        ],
+        [
+          8,
+          1
+        ],
+        [
+          10,
+          1
+        ]
+      ],
+      [
+        [
+          0,
+          0
+        ],
+        [
+          10,
+          1
+        ]
+      ],
+      1e-08,
+      20
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "kmeans2",
+    "args": [
+      [
+        [
+          0
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        [
+          0
+        ],
+        [
+          100
+        ]
+      ],
+      1
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "kmeans2",
+    "args": [
+      [
+        [
+          0
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        [
+          0
+        ],
+        [
+          100
+        ]
+      ],
+      3
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "kmeans",
+    "args": [
+      [
+        [
+          0
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        [
+          0
+        ],
+        [
+          100
+        ]
+      ],
+      1e-08,
+      20
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "kmeans2",
+    "args": [
+      [
+        [
+          0
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        [
+          0
+        ]
+      ],
+      1
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "kmeans2",
+    "args": [
+      [
+        [
+          0
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        [
+          0
+        ]
+      ],
+      3
+    ]
+  },
+  {
+    "module": "cluster",
+    "api": "kmeans",
+    "args": [
+      [
+        [
+          0
+        ],
+        [
+          2
+        ]
+      ],
+      [
+        [
+          0
+        ]
+      ],
+      1e-08,
+      20
+    ]
+  },
+  {
+    "module": "interpolate",
+    "api": "barycentric_interpolate",
+    "args": [
+      [
+        0.0,
+        1.0
+      ],
+      [
+        2.0,
+        3.0
+      ],
+      [
+        5e-324,
+        -5e-324,
+        1e-310,
+        -1e-310
+      ]
+    ],
+    "reference": "krogh_interpolate"
+  },
+  {
+    "module": "interpolate",
+    "api": "barycentric_interpolate",
+    "args": [
+      [
+        0.0,
+        1.0,
+        2.0
+      ],
+      [
+        2.0,
+        3.0,
+        4.0
+      ],
+      [
+        5e-324,
+        -5e-324
+      ]
+    ],
+    "reference": "krogh_interpolate"
+  },
+  {
+    "module": "interpolate",
+    "api": "barycentric_interpolate",
+    "args": [
+      [
+        0.0,
+        1.0
+      ],
+      [
+        1e+308,
+        1.2e+308
+      ],
+      [
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0
+      ]
+    ],
+    "value_scale": 1e+308
+  },
+  {
+    "module": "interpolate",
+    "api": "barycentric_interpolate",
+    "args": [
+      [
+        0.0,
+        1.0
+      ],
+      [
+        -1e+308,
+        -1.2e+308
+      ],
+      [
+        0.25,
+        0.5,
+        0.75
+      ]
+    ],
+    "value_scale": 1e+308
+  },
+  {
+    "module": "interpolate",
+    "api": "barycentric_interpolate",
+    "args": [
+      [
+        -1.0,
+        0.0,
+        1.0
+      ],
+      [
+        1.7e+308,
+        1.7e+308,
+        1.7e+308
+      ],
+      [
+        -0.5,
+        0.5
+      ]
+    ],
+    "value_scale": 1.7e+308
+  },
+  {
+    "module": "interpolate",
+    "api": "barycentric_interpolate",
+    "args": [
+      [
+        -1.0,
+        0.0,
+        1.0
+      ],
+      [
+        -1.7e+308,
+        -1.7e+308,
+        -1.7e+308
+      ],
+      [
+        -0.5,
+        0.5
+      ]
+    ],
+    "value_scale": 1.7e+308
+  },
+  {
+    "module": "interpolate",
+    "api": "pchip_interpolate",
+    "args": [
+      [
+        0.0,
+        0.5,
+        1.0
+      ],
+      [
+        0.0,
+        5e+307,
+        1e+308
+      ],
+      [
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0
+      ]
+    ],
+    "value_scale": 1e+308
+  },
+  {
+    "module": "interpolate",
+    "api": "pchip_interpolate",
+    "args": [
+      [
+        0.0,
+        0.5,
+        1.0
+      ],
+      [
+        0.0,
+        -5e+307,
+        -1e+308
+      ],
+      [
+        0.25,
+        0.5,
+        0.75
+      ]
+    ],
+    "value_scale": 1e+308
+  },
+  {
+    "module": "interpolate",
+    "api": "pchip_interpolate",
+    "args": [
+      [
+        0.0,
+        0.5,
+        1.0
+      ],
+      [
+        0.0,
+        4e+307,
+        0.0
+      ],
+      [
+        0.25,
+        0.5,
+        0.75
+      ]
+    ],
+    "value_scale": 1e+308
+  },
+  {
+    "module": "interpolate",
+    "api": "pchip_interpolate",
+    "args": [
+      [
+        0.0,
+        0.5,
+        1.0
+      ],
+      [
+        0.0,
+        0.0,
+        5e+307
+      ],
+      [
+        0.25,
+        0.5,
+        0.75
+      ]
+    ],
+    "value_scale": 1e+308
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_0"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_1"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_2"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_3"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_4"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_5"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_6"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_7"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_8"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_9"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e-300,
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_10"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1e-300,
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_11"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e-300,
+        1e-300,
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_12"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1e-300,
+        -1e-300,
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_13"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e-300,
+        1e-300,
+        1e-300,
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_14"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1e-300,
+        -1e-300,
+        -1e-300,
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_15"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_16"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_17"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_18"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_19"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_20"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_21"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_22"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_23"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_24"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_25"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_26"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_27"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_28"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_29"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_30"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_31"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_32"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_33"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_34"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_35"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_36"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_37"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_38"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_39"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_40"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_41"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_42"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_43"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_44"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_45"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_46"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_47"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        0.0,
+        1e+307,
+        4e+307,
+        9e+307,
+        1.6e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_48"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e+307,
+        -2e+307,
+        3e+307,
+        -4e+307,
+        5e+307
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_49"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_50"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_51"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_52"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_53"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_54"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_55"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_56"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_57"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_58"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_59"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e-300,
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_60"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1e-300,
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_61"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e-300,
+        1e-300,
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_62"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1e-300,
+        -1e-300,
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_63"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e-300,
+        1e-300,
+        1e-300,
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_64"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1e-300,
+        -1e-300,
+        -1e-300,
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_65"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_66"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_67"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_68"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_69"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_70"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_71"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_72"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_73"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_74"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_75"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_76"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_77"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_78"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_79"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_80"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_81"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_82"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_83"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_84"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_85"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_86"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_87"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_88"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_89"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_90"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_91"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_92"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_93"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_94"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_95"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_96"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_97"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        0.0,
+        1e+307,
+        4e+307,
+        9e+307,
+        1.6e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_98"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e+307,
+        -2e+307,
+        3e+307,
+        -4e+307,
+        5e+307
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_99"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_100"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_101"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_102"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_103"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_104"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_105"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_106"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_107"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_108"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_109"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e-300,
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_110"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1e-300,
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_111"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e-300,
+        1e-300,
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_112"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1e-300,
+        -1e-300,
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_113"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e-300,
+        1e-300,
+        1e-300,
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_114"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1e-300,
+        -1e-300,
+        -1e-300,
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_115"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_116"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_117"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_118"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_119"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_120"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_121"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_122"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_123"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_124"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_125"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_126"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_127"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_128"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_129"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_130"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_131"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_132"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_133"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_134"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_135"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_136"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_137"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_138"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_139"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_140"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_141"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_142"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_143"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_144"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_145"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_146"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_147"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        0.0,
+        1e+307,
+        4e+307,
+        9e+307,
+        1.6e+308
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_148"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e+307,
+        -2e+307,
+        3e+307,
+        -4e+307,
+        5e+307
+      ],
+      null,
+      1e-300
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_149"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_150"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_151"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_152"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_153"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_154"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_155"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_156"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_157"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_158"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_159"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e-300,
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_160"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1e-300,
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_161"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e-300,
+        1e-300,
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_162"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1e-300,
+        -1e-300,
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_163"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e-300,
+        1e-300,
+        1e-300,
+        1e-300,
+        1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_164"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1e-300,
+        -1e-300,
+        -1e-300,
+        -1e-300,
+        -1e-300
+      ],
+      null,
+      1e+300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_165"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_166"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_167"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_168"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_169"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_170"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_171"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_172"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      2.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_173"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_174"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_175"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_176"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_177"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_178"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_179"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_180"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_181"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_182"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_183"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_184"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_185"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_186"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_187"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_188"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      null,
+      1e+308,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_189"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_190"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_191"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_192"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_193"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_194"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_195"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_196"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      null,
+      5e-324,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_197"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        0.0,
+        1e+307,
+        4e+307,
+        9e+307,
+        1.6e+308
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_198"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e+307,
+        -2e+307,
+        3e+307,
+        -4e+307,
+        5e+307
+      ],
+      null,
+      1e-300,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_199"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e+16,
+        1e+16,
+        1.0,
+        1.0,
+        -1e+16,
+        -1e+16
+      ],
+      [
+        0.0,
+        1.0,
+        1.0,
+        2.0,
+        2.0,
+        3.0
+      ],
+      1.0
+    ],
+    "reference": "longdouble_trapezoid",
+    "id": "integration_cancel_0"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e+16,
+        1e+16,
+        1.0,
+        1.0,
+        -1e+16,
+        -1e+16
+      ],
+      [
+        0.0,
+        1.0,
+        1.0,
+        2.0,
+        2.0,
+        3.0
+      ],
+      1.0,
+      0.0
+    ],
+    "reference": "longdouble_trapezoid",
+    "id": "integration_cancel_1"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      [
+        -1.7e+308,
+        0.0,
+        1.7e+308
+      ],
+      1.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_200"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      [
+        0.0,
+        5e-324,
+        1.0
+      ],
+      1.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_201"
+  },
+  {
+    "module": "integrate",
+    "api": "trapezoid",
+    "args": [
+      [
+        1e-300,
+        2e-300,
+        3e-300
+      ],
+      [
+        0.0,
+        1e+300,
+        3e+300
+      ],
+      1.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_202"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      [
+        -1.7e+308,
+        0.0,
+        1.7e+308
+      ],
+      1.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_203"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      [
+        0.0,
+        5e-324,
+        1.0
+      ],
+      1.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_204"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_trapezoid",
+    "args": [
+      [
+        1e-300,
+        2e-300,
+        3e-300
+      ],
+      [
+        0.0,
+        1e+300,
+        3e+300
+      ],
+      1.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_205"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      [
+        -1.7e+308,
+        0.0,
+        1.7e+308
+      ],
+      1.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_206"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      [
+        0.0,
+        5e-324,
+        1.0
+      ],
+      1.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_207"
+  },
+  {
+    "module": "integrate",
+    "api": "simpson",
+    "args": [
+      [
+        1e-300,
+        2e-300,
+        3e-300
+      ],
+      [
+        0.0,
+        1e+300,
+        3e+300
+      ],
+      1.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_208"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      [
+        -1.7e+308,
+        0.0,
+        1.7e+308
+      ],
+      1.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_209"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      [
+        0.0,
+        5e-324,
+        1.0
+      ],
+      1.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_210"
+  },
+  {
+    "module": "integrate",
+    "api": "cumulative_simpson",
+    "args": [
+      [
+        1e-300,
+        2e-300,
+        3e-300
+      ],
+      [
+        0.0,
+        1e+300,
+        3e+300
+      ],
+      1.0,
+      0.0
+    ],
+    "reference": "scaled_integral",
+    "id": "integration_scaled_211"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e+308,
+        1e+308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_0"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e+308,
+        -1e+308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_1"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_2"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_3"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_4"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_5"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_6"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_7"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_8"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_9"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e+308,
+        1e+308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_20"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e+308,
+        -1e+308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_21"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_22"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_23"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_24"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_25"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_26"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_27"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308,
+        1e+308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_28"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308,
+        -1e+308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_29"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e+308,
+        1e+308
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_30"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e+308,
+        -1e+308
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_31"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_40"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_41"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_42"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_43"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_44"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_45"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_46"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_47"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_48"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_49"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_50"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_51"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_52"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_53"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_54"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_55"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_56"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_57"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_58"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_59"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_60"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_61"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_62"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_63"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_64"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_65"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_66"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_67"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_68"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_69"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_70"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_71"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_72"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_73"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_74"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_75"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_76"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_77"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308,
+        1e-308
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_78"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308,
+        -1e-308
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_79"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_80"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_81"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_82"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_83"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_84"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_85"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_86"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_87"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_88"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_89"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_90"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_91"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_92"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_93"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_94"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_95"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_96"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_97"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_98"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_99"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_100"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_101"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_102"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_103"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_104"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_105"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_106"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_107"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_108"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_109"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_110"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_111"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_112"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_113"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_114"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_115"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_116"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_117"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324,
+        5e-324
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_118"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324,
+        -5e-324
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_119"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_120"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_121"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_122"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_123"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_124"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_125"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_126"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_127"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_128"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_129"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_130"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_131"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_132"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_133"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_134"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_135"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_136"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_137"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_138"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_139"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_140"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_141"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_142"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_143"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_144"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_145"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_146"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_147"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_148"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      5e-324
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_149"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_150"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_151"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_152"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_153"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_154"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_155"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_156"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_157"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_158"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_159"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "constant",
+      0.0,
+      5e-324,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_0"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "constant",
+      0.0,
+      5e-324,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_1"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "constant",
+      0.0,
+      5e-324,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_2"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "constant",
+      0.0,
+      5e-324,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_3"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "constant",
+      0.0,
+      1e-300,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_6"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "constant",
+      0.0,
+      1e-300,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_7"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "constant",
+      0.0,
+      1e-300,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_8"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "constant",
+      0.0,
+      1e-300,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_9"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "constant",
+      0.0,
+      1.0,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_12"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "constant",
+      0.0,
+      1.0,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_13"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "constant",
+      0.0,
+      1.0,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_14"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "constant",
+      0.0,
+      1.0,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_15"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "huge_constant",
+      0.0,
+      5e-324,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_48"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "huge_constant",
+      0.0,
+      5e-324,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_49"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "huge_constant",
+      0.0,
+      5e-324,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_50"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "huge_constant",
+      0.0,
+      5e-324,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_51"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "huge_constant",
+      0.0,
+      1e-300,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_54"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "huge_constant",
+      0.0,
+      1e-300,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_55"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "huge_constant",
+      0.0,
+      1e-300,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_56"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "huge_constant",
+      0.0,
+      1e-300,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_57"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      5e-324,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_96"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      5e-324,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_97"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      5e-324,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_98"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      5e-324,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_99"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      1e-300,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_102"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      1e-300,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_103"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      1e-300,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_104"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      1e-300,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_105"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      1.0,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_108"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      1.0,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_109"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      1.0,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_110"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      1.0,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_111"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      1.7e+308,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_114"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      1.7e+308,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_115"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      1.7e+308,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_116"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      0.0,
+      1.7e+308,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_117"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      5e-324,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_120"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      5e-324,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_121"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      5e-324,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_122"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      5e-324,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_123"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      1e-300,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_126"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      1e-300,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_127"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      1e-300,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_128"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      1e-300,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_129"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      1.0,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_132"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      1.0,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_133"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      1.0,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_134"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      1.0,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_135"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      1.7e+308,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_138"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      1.7e+308,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_139"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      1.7e+308,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_140"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "tiny_constant",
+      -1.7e+308,
+      1.7e+308,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_141"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      5e-324,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_144"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      5e-324,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_145"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      5e-324,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_146"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      5e-324,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_147"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      1e-300,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_150"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      1e-300,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_151"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      1e-300,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_152"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      1e-300,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_153"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      1.0,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_156"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      1.0,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_157"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      1.0,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_158"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      1.0,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_159"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      1.7e+308,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_162"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      1.7e+308,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_163"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      1.7e+308,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_164"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      0.0,
+      1.7e+308,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_165"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      5e-324,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_168"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      5e-324,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_169"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      5e-324,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_170"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      5e-324,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_171"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      1e-300,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_174"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      1e-300,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_175"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      1e-300,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_176"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      1e-300,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_177"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      1.0,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_180"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      1.0,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_181"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      1.0,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_182"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      1.0,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_183"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      1.7e+308,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_186"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      1.7e+308,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_187"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      1.7e+308,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_188"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "subnormal_constant",
+      -1.7e+308,
+      1.7e+308,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_scaled_189"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "scaled_square",
+      -1e+308,
+      1e+308,
+      1
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_square_1"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "scaled_square",
+      -1e+308,
+      1e+308,
+      2
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_square_2"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "scaled_square",
+      -1e+308,
+      1e+308,
+      3
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_square_3"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "scaled_square",
+      -1e+308,
+      1e+308,
+      5
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_square_5"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "scaled_square",
+      -1e+308,
+      1e+308,
+      16
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_square_16"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "scaled_square",
+      -1e+308,
+      1e+308,
+      64
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_square_64"
+  },
+  {
+    "module": "integrate",
+    "api": "fixed_quad",
+    "args": [
+      "scaled_square",
+      -1e+308,
+      1e+308,
+      256
+    ],
+    "reference": "scaled_fixed_quad",
+    "id": "gauss_square_256"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        0.0,
+        1e-300,
+        4e-300,
+        9e-300,
+        1.6e-299
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_polynomial_0"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-300,
+        -2e-300,
+        3e-300,
+        -4e-300,
+        5e-300
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_polynomial_1"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        0.0,
+        1e-300,
+        4e-300,
+        9e-300,
+        1.6e-299
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_polynomial_2"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e-300,
+        -2e-300,
+        3e-300,
+        -4e-300,
+        5e-300
+      ],
+      1e+300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_polynomial_3"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        0.0,
+        1e+300,
+        4e+300,
+        9.000000000000001e+300,
+        1.6e+301
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_polynomial_4"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        1e+300,
+        -2e+300,
+        3e+300,
+        -4e+300,
+        5e+300
+      ],
+      1e-300
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_polynomial_5"
+  },
+  {
+    "module": "integrate",
+    "api": "romb",
+    "args": [
+      [
+        -5.5e+307,
+        1.55e+308,
+        -5.5e+307
+      ],
+      1.0
+    ],
+    "reference": "scaled_romb",
+    "id": "romb_scaled_correction"
+  }
+]

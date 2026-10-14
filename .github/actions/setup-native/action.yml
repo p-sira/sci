@@ -1,0 +1,36 @@
+name: Set up native dependencies
+description: Install a C++17 compiler and libclang for the private xsf backend
+
+runs:
+  using: composite
+  steps:
+    - name: Install Linux dependencies
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install --yes build-essential libclang-dev
+
+    - name: Install macOS dependencies
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        if ! brew list --versions llvm >/dev/null 2>&1; then
+          brew install llvm
+        fi
+        echo "LIBCLANG_PATH=$(brew --prefix llvm)/lib" >> "$GITHUB_ENV"
+        xcrun --find clang++
+
+    - name: Set up Windows dependencies
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $llvmBin = Join-Path $env:ProgramFiles 'LLVM\bin'
+        if (!(Test-Path (Join-Path $llvmBin 'libclang.dll'))) {
+          choco install llvm --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        }
+        if (!(Test-Path (Join-Path $llvmBin 'libclang.dll'))) {
+          throw "libclang.dll was not found in $llvmBin"
+        }
+        "LIBCLANG_PATH=$llvmBin" >> $env:GITHUB_ENV

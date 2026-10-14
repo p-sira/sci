@@ -1,0 +1,20 @@
+api,argument,from,to
+value,speed of light in vacuum,,
+value,electron mass,,
+unit,Planck constant,,
+unit,fine-structure constant,,
+precision,electron mass,,
+precision,speed of light in vacuum,,
+find,electron mass,,
+find,SPEED OF LIGHT,,
+find,missing-key,,
+convert_temperature,0,Celsius,Kelvin
+convert_temperature,32,Fahrenheit,Celsius
+convert_temperature,0,Kelvin,Rankine
+convert_temperature,491.67,Rankine,Fahrenheit
+lambda2nu,1,,
+lambda2nu,0,,
+lambda2nu,-2,,
+nu2lambda,299792458,,
+nu2lambda,0,,
+nu2lambda,-2,,

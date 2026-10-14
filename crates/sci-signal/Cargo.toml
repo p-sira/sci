@@ -1,0 +1,24 @@
+[package]
+name = "sci-signal"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Digital signal processing algorithms"
+documentation = "https://docs.rs/sci-signal"
+homepage = "https://github.com/p-sira/sci"
+repository = "https://github.com/p-sira/sci"
+categories = ["algorithms", "mathematics", "science"]
+keywords = ["signal-processing", "filtering", "spectral-analysis", "numerics", "fourier-transform"]
+include = ["src/**", "LICENSE"]
+
+[dependencies]
+sci-core.workspace = true
+sci-complex.workspace = true
+sci-special.workspace = true
+sci-fft.workspace = true
+nalgebra.workspace = true
+num-complex.workspace = true
+pm-remez.workspace = true
+rustfft.workspace = true

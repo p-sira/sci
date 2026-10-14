@@ -1,0 +1,235 @@
+[workspace]
+members = ["crates/*"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+authors = ["Sira Pornsiriprasert <code@psira.me>"]
+license = "BSD-3-Clause"
+rust-version = "1.89"
+description = "Unified scientific computation for Rust"
+documentation = "https://docs.rs/sci"
+homepage = "https://github.com/p-sira/sci"
+repository = "https://github.com/p-sira/sci"
+
+categories = ["science", "mathematics"]
+
+[workspace.dependencies]
+smelly = "=0.1.0"
+kalman_filters = { version = "=1.0.1", default-features = false, features = ["std"] }
+nalgebra-filter = { package = "nalgebra", version = "0.35", default-features = false, features = ["std"] }
+basin = { version = "1.15.1", default-features = false }
+ellip = "1.2.2"
+ndarray = "0.16.1"
+nalgebra = { version = "0.33.2", default-features = false, features = ["std"] }
+num-complex = "0.4.6"
+rustfft = "6.4.0"
+realfft = "3.5.0"
+special = "0.11.4"
+statrs = "0.18.0"
+anofox-statistics = { version = "=0.4.8", default-features = false }
+lapjv = "0.3.0"
+xsf = "0.6.0"
+pm-remez = { version = "=0.2.1", default-features = false, features = ["faer-backend"] }
+faer = { version = "0.24.4", default-features = false, features = ["std", "linalg"] }
+dyn-stack = "0.13.2"
+kodama = "0.3.0"
+rustdct = "0.7.1"
+splinefit = "0.4.1"
+delaunator = "1.1.0"
+sci-core = { version = "0.1.0", path = "crates/sci-core" }
+sci-cluster = { version = "0.1.0", path = "crates/sci-cluster" }
+sci-complex = { version = "0.1.0", path = "crates/sci-complex" }
+sci-constants = { version = "0.1.0", path = "crates/sci-constants" }
+sci-differentiate = { version = "0.1.0", path = "crates/sci-differentiate" }
+sci-fft = { version = "0.1.0", path = "crates/sci-fft" }
+sci-filter = { version = "0.1.0", path = "crates/sci-filter" }
+sci-integrate = { version = "0.1.0", path = "crates/sci-integrate" }
+sci-interpolate = { version = "0.1.0", path = "crates/sci-interpolate" }
+sci-linalg = { version = "0.1.0", path = "crates/sci-linalg", default-features = false }
+sci-optimize = { version = "0.1.0", path = "crates/sci-optimize" }
+sci-signal = { version = "0.1.0", path = "crates/sci-signal" }
+sci-spatial = { version = "0.1.0", path = "crates/sci-spatial" }
+sci-special = { version = "0.1.0", path = "crates/sci-special" }
+sci-stats = { version = "0.1.0", path = "crates/sci-stats" }
+
+[package]
+name = "sci"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Unified scientific computation for Rust"
+categories = ["mathematics", "science"]
+keywords = ["scientific-computing", "numerics", "mathematics", "optimization", "statistics"]
+readme = "README.md"
+include = ["src/**", "LICENSE"]
+autotests = false
+
+[features]
+default = ["cluster", "complex", "constants", "differentiate", "filter", "fft", "integrate", "interpolate", "linalg", "linalg-faer", "linalg-nalgebra", "linalg-ndarray", "optimize", "signal", "spatial", "special", "stats"]
+cluster = ["dep:sci-cluster"]
+complex = ["dep:sci-complex"]
+constants = ["dep:sci-constants"]
+differentiate = ["dep:sci-differentiate"]
+filter = ["dep:sci-filter"]
+fft = ["dep:sci-fft"]
+integrate = ["dep:sci-integrate"]
+interpolate = ["dep:sci-interpolate"]
+linalg = ["dep:sci-linalg"]
+linalg-faer = ["linalg", "sci-linalg/faer"]
+linalg-nalgebra = ["linalg", "sci-linalg/nalgebra"]
+linalg-ndarray = ["linalg", "sci-linalg/ndarray"]
+optimize = ["dep:sci-optimize"]
+signal = ["dep:sci-signal"]
+spatial = ["dep:sci-spatial"]
+special = ["dep:sci-special"]
+stats = ["dep:sci-stats"]
+
+[dependencies]
+sci-filter = { workspace = true, optional = true }
+sci-core.workspace = true
+sci-cluster = { workspace = true, optional = true }
+sci-complex = { workspace = true, optional = true }
+sci-constants = { workspace = true, optional = true }
+sci-differentiate = { workspace = true, optional = true }
+sci-fft = { workspace = true, optional = true }
+sci-integrate = { workspace = true, optional = true }
+sci-interpolate = { workspace = true, optional = true }
+sci-linalg = { workspace = true, optional = true }
+sci-optimize = { workspace = true, optional = true }
+sci-signal = { workspace = true, optional = true }
+sci-spatial = { workspace = true, optional = true }
+sci-special = { workspace = true, optional = true }
+sci-stats = { workspace = true, optional = true }
+
+[dev-dependencies]
+ndarray.workspace = true
+nalgebra.workspace = true
+faer.workspace = true
+
+[[test]]
+name = "cluster"
+path = "tests/cluster.rs"
+required-features = ["cluster", "stats"]
+
+[[test]]
+name = "complex"
+path = "tests/complex.rs"
+required-features = ["complex", "fft"]
+
+[[test]]
+name = "differentiation"
+path = "tests/differentiation.rs"
+required-features = ["differentiate", "linalg"]
+
+[[test]]
+name = "fft_extended"
+path = "tests/fft_extended.rs"
+required-features = ["complex", "fft", "stats"]
+
+[[test]]
+name = "fft_periodic"
+path = "tests/fft_periodic.rs"
+required-features = ["fft", "signal"]
+
+[[test]]
+name = "functional"
+path = "tests/functional.rs"
+required-features = ["complex", "differentiate", "fft", "linalg", "optimize", "special", "stats"]
+
+[[test]]
+name = "geometry"
+path = "tests/geometry.rs"
+required-features = ["linalg", "spatial"]
+
+[[test]]
+name = "linalg"
+path = "tests/linalg.rs"
+required-features = ["complex", "differentiate", "fft", "linalg", "signal"]
+
+[[test]]
+name = "linalg_interop"
+path = "tests/linalg_interop.rs"
+required-features = ["differentiate", "linalg", "linalg-faer", "linalg-nalgebra", "linalg-ndarray"]
+
+[[test]]
+name = "numerics"
+path = "tests/numerics.rs"
+required-features = ["cluster", "constants", "integrate", "interpolate", "linalg", "spatial", "special", "stats"]
+
+[[test]]
+name = "optimize_helpers"
+path = "tests/optimize_helpers.rs"
+required-features = ["differentiate", "linalg", "optimize"]
+
+[[test]]
+name = "scipy_compatibility"
+path = "tests/scipy_compatibility.rs"
+required-features = ["complex", "differentiate", "fft", "linalg", "optimize", "special", "stats"]
+
+[[test]]
+name = "signal"
+path = "tests/signal.rs"
+required-features = ["complex", "fft", "linalg", "signal", "stats"]
+
+[[test]]
+name = "special_extended"
+path = "tests/special_extended.rs"
+required-features = ["complex", "special"]
+
+[[test]]
+name = "special_properties"
+path = "tests/special_properties.rs"
+required-features = ["linalg", "special"]
+
+[[test]]
+name = "statistics"
+path = "tests/statistics.rs"
+required-features = ["complex", "fft", "stats"]
+
+[[test]]
+name = "audit_regressions"
+path = "tests/audit_regressions.rs"
+required-features = ["complex", "fft", "filter", "linalg", "optimize", "signal", "spatial", "special", "stats"]
+
+[[test]]
+name = "interpolation"
+path = "tests/interpolation.rs"
+required-features = ["interpolate"]
+
+[[test]]
+name = "coverage"
+path = "tests/coverage.rs"
+required-features = ["cluster", "complex", "constants", "differentiate", "fft", "integrate", "interpolate", "linalg", "optimize", "signal", "spatial", "special"]
+
+[[test]]
+name = "core"
+path = "tests/core.rs"
+
+[[test]]
+name = "statistics_coverage"
+path = "tests/statistics_coverage.rs"
+required-features = ["stats"]
+
+[[test]]
+name = "linalg_coverage"
+path = "tests/linalg_coverage.rs"
+required-features = ["linalg"]
+
+[[test]]
+name = "filter"
+path = "tests/filter.rs"
+required-features = ["filter"]
+
+[[test]]
+name = "filter_interop"
+path = "tests/filter_interop.rs"
+required-features = ["filter", "linalg", "stats"]
+
+[[test]]
+name = "dependency_extras"
+path = "tests/dependency_extras.rs"
+required-features = ["complex", "special"]

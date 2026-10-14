@@ -1,0 +1,19 @@
+[package]
+name = "sci-integrate"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Numerical integration and quadrature"
+documentation = "https://docs.rs/sci-integrate"
+homepage = "https://github.com/p-sira/sci"
+repository = "https://github.com/p-sira/sci"
+categories = ["mathematics", "science"]
+keywords = ["integration", "quadrature", "calculus", "numerics", "scientific-computing"]
+include = ["src/**", "LICENSE"]
+
+[dependencies]
+sci-core.workspace = true
+sci-special.workspace = true
+nalgebra.workspace = true

@@ -1,0 +1,26 @@
+//! # Spatial algorithms and distances
+//!
+//! Euclidean geometry, spatial queries, and pairwise distances.
+//!
+//! Points are rows of `Vec<Vec<f64>>`, interoperable with `sci_linalg`.
+//! Coordinates must be finite. Vector and matrix work is limited to 1,000,000
+//! entries and pairwise work to 10,000,000 coordinate comparisons. Overflow
+//! returns an error; mathematically undefined distances return NaN as documented.
+//!
+//! Euclidean distance is `d(a,b) = sqrt(Σ (a[i] - b[i])²)`. Pairwise
+//! functions return rows for the first point set and columns for the second.
+//! Metric-specific normalization, weights, and covariance conventions are
+//! documented on each metric; there is no implicit coordinate scaling.
+//!
+//! ## Acknowledgments
+//!
+//! We thank `nalgebra` for its private matrix operations.
+
+#![forbid(unsafe_code)]
+#![deny(missing_docs, rustdoc::broken_intra_doc_links)]
+
+use sci_core as error;
+pub use sci_core::{Error, Result};
+#[path = "mod.rs"]
+mod implementation;
+pub use implementation::*;

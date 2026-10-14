@@ -1,0 +1,20 @@
+[package]
+name = "sci-cluster"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Clustering algorithms for scientific computing"
+documentation = "https://docs.rs/sci-cluster"
+homepage = "https://github.com/p-sira/sci"
+repository = "https://github.com/p-sira/sci"
+categories = ["algorithms", "mathematics", "science"]
+keywords = ["clustering", "machine-learning", "numerics", "statistics", "data-analysis"]
+include = ["src/**", "LICENSE"]
+
+[dependencies]
+sci-core.workspace = true
+sci-spatial.workspace = true
+sci-stats.workspace = true
+kodama.workspace = true
