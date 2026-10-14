@@ -16,6 +16,9 @@
     <a href="https://codecov.io/gh/p-sira/sci" style="text-decoration:none"> 
         <img src="https://codecov.io/gh/p-sira/sci/graph/badge.svg?token=JJVn2k9hM4"/> 
     </a>
+    <a href="https://app.codspeed.io/p-sira/sci?utm_source=badge" style="text-decoration:none">
+        <img src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json" alt="CodSpeed"/>
+    </a>
 </p>
 
 **Sci** is a family of scientific computing crates with a unified Rust interface. The philosophy of Sci is to build on Rust's scientific ecosystem maintained by domain experts, while Sci supplies a consistent interface, input validation, and interoperability. Shared types let results flow between modules, from differentiation into optimization or Fourier analysis into statistics.

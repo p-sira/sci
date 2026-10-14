@@ -109,6 +109,7 @@ sci-stats = { workspace = true, optional = true }
 ndarray.workspace = true
 nalgebra.workspace = true
 faer.workspace = true
+divan = { version = "5.0.3", package = "codspeed-divan-compat" }
 
 [[test]]
 name = "cluster"
@@ -233,3 +234,8 @@ required-features = ["filter", "linalg", "stats"]
 name = "dependency_extras"
 path = "tests/dependency_extras.rs"
 required-features = ["complex", "special"]
+
+[[bench]]
+name = "modules"
+harness = false
+required-features = ["cluster", "complex", "differentiate", "fft", "integrate", "interpolate", "linalg", "optimize", "signal", "spatial", "special", "stats"]

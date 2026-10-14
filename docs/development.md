@@ -26,6 +26,26 @@ python tests/check_features.py
 
 Documentation-only changes do not require fixture regeneration.
 
+## Benchmarks
+
+Benchmarks for representative functions of each module live in
+`benches/modules.rs` and use [divan](https://docs.rs/divan) through the
+CodSpeed compatibility layer. Run them locally with:
+
+```sh
+cargo bench -p sci --bench modules
+```
+
+The `CodSpeed` workflow runs the same suite on every push to `main` and on pull
+requests, and reports performance changes with
+[CodSpeed](https://app.codspeed.io/p-sira/sci). To reproduce a CodSpeed
+measurement locally, install `cargo-codspeed` and run:
+
+```sh
+cargo codspeed build -m simulation -p sci
+cargo codspeed run -p sci
+```
+
 ## Pre-commit formatting
 
 Enable the repository's pre-commit hook once per clone:
