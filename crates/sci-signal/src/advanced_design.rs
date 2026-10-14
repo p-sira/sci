@@ -835,3 +835,7 @@ pub fn gammatone(
     ];
     Ok((checked(b)?, checked(a)?))
 }
+
+#[cfg(test)]
+#[path = "tests/bessel_refinement.rs"]
+mod bessel_refinement_tests;

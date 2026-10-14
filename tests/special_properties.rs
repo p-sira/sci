@@ -9,22 +9,26 @@ fn close(a: f64, b: f64, tolerance: f64) {
     common::assert_close(a, b, tolerance, tolerance, "special-function identity");
 }
 
-#[test]
-fn inventory_is_covered_by_csv_or_explicit_policies() {
-    let inventory = include_str!("../function_coverages/scipy_function_list/scipy.special.md")
-        .split("#### Functions\n")
-        .nth(1)
-        .unwrap()
-        .split("#### Classes")
-        .next()
-        .unwrap();
-    let expected: BTreeSet<_> = inventory
+fn inventory_names(inventory: &str) -> BTreeSet<&str> {
+    inventory
         .lines()
+        .skip_while(|line| *line != "#### Functions")
+        .skip(1)
+        .take_while(|line| *line != "#### Classes")
         .filter_map(|line| {
             line.strip_prefix("- ")
                 .and_then(|line| line.split('`').nth(1))
         })
-        .collect();
+        .collect()
+}
+
+#[test]
+fn inventory_is_covered_by_csv_or_explicit_policies() {
+    let inventory = include_str!("../function_coverages/scipy_function_list/scipy.special.md");
+    let expected = inventory_names(inventory);
+    let unix = inventory.replace("\r\n", "\n");
+    let windows = unix.replace('\n', "\r\n");
+    assert_eq!(inventory_names(&unix), inventory_names(&windows));
     assert_eq!(expected.len(), 355);
     let mut covered: BTreeSet<_> = common::lines(include_str!("fixtures/special_extended.csv"))
         .map(|line| line.split(',').next().unwrap())

@@ -3157,42 +3157,43 @@ pub fn kerp_zeros(nt: usize) -> Result<Vec<f64>> {
 
 // kei'(x) = Im[-a K_1(a x)], a = exp(i pi/4). Removing the
 // positive exp(-x/sqrt(2)) factor avoids underflow for long sequences.
-fn stable_keip_zeros(nt: usize) -> Result<Vec<f64>> {
+fn refine_keip_zero(mut x: f64) -> Result<f64> {
     use num_complex::Complex64;
-    use std::f64::consts::{FRAC_1_SQRT_2, PI, SQRT_2};
+    use std::f64::consts::FRAC_1_SQRT_2;
     let a = Complex64::new(FRAC_1_SQRT_2, FRAC_1_SQRT_2);
-    let mut zeros = Vec::with_capacity(nt);
-    for index in 0..nt {
-        let mut x = 4.93 + index as f64 * PI * SQRT_2;
-        let mut converged = false;
-        for _ in 0..16 {
-            let z = a * x;
-            let phase = Complex64::from_polar(1., -z.im);
-            let k0 = xsf::bessel_ke(0., z);
-            let k1 = xsf::bessel_ke(1., z);
-            let value = (-a * phase * k1).im;
-            // K_1'(z) = -K_0(z) - K_1(z)/z. Include the derivative
-            // of the removed real exponential factor in the scaled function.
-            let derivative = (a * a * phase * (k0 + k1 / z)).im + FRAC_1_SQRT_2 * value;
-            let step = value / derivative;
-            if !step.is_finite() || step.abs() > 1. {
-                return Err(Error::NumericalFailure("Kelvin zero refinement failed"));
-            }
-            x -= step;
-            if step.abs() <= 8. * f64::EPSILON * x {
-                converged = true;
-                break;
-            }
+    for _ in 0..16 {
+        let z = a * x;
+        let phase = Complex64::from_polar(1., -z.im);
+        let k0 = xsf::bessel_ke(0., z);
+        let k1 = xsf::bessel_ke(1., z);
+        let value = (-a * phase * k1).im;
+        // K_1'(z) = -K_0(z) - K_1(z)/z. Include the derivative
+        // of the removed real exponential factor in the scaled function.
+        let derivative = (a * a * phase * (k0 + k1 / z)).im + FRAC_1_SQRT_2 * value;
+        let step = value / derivative;
+        if !step.is_finite() || step.abs() > 1. {
+            return Err(Error::NumericalFailure("Kelvin zero refinement failed"));
         }
-        if !converged {
-            return Err(Error::NumericalFailure(
-                "Kelvin zero refinement did not converge",
-            ));
+        x -= step;
+        if step.abs() <= 8. * f64::EPSILON * x {
+            return Ok(x);
         }
-        zeros.push(x);
     }
-    Ok(zeros)
+    Err(Error::NumericalFailure(
+        "Kelvin zero refinement did not converge",
+    ))
 }
+
+fn stable_keip_zeros(nt: usize) -> Result<Vec<f64>> {
+    use std::f64::consts::{PI, SQRT_2};
+    (0..nt)
+        .map(|index| refine_keip_zero(4.93 + index as f64 * PI * SQRT_2))
+        .collect()
+}
+
+#[cfg(test)]
+#[path = "tests/kelvin_refinement.rs"]
+mod kelvin_refinement_tests;
 
 /// First nt positive zeros of keip in ascending order.
 ///
