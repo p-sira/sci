@@ -14,7 +14,7 @@ fn inventory_names(inventory: &str) -> BTreeSet<&str> {
         .lines()
         .skip_while(|line| *line != "#### Functions")
         .skip(1)
-        .take_while(|line| *line != "#### Classes")
+        .take_while(|line| !line.starts_with("#### "))
         .filter_map(|line| {
             line.strip_prefix("- ")
                 .and_then(|line| line.split('`').nth(1))
