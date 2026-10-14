@@ -12,11 +12,10 @@ fn complex(re: &[f64], im: &[f64]) -> Vec<Complex> {
         .map(|(&re, &im)| Complex { re, im })
         .collect()
 }
+#[track_caller]
 fn close(a: f64, b: f64) {
-    assert!(
-        a.is_finite() && (a - b).abs() <= 3e-12 * (1.0 + b.abs()),
-        "{a} != {b}"
-    );
+    assert!(a.is_finite() && b.is_finite());
+    common::assert_close(a, b, 3e-12, 3e-12, "numerical comparison");
 }
 fn rows<T: Clone>(x: &[T], n: usize) -> Vec<Vec<T>> {
     x.chunks(n).map(<[T]>::to_vec).collect()
@@ -348,7 +347,11 @@ fn fftlog_round_trips_and_domains() {
         let y = f::fht(&x, dln, mu, offset, bias).unwrap();
         let restored = f::ifht(&y, dln, mu, offset, bias).unwrap();
         for (a, b) in restored.iter().zip(&x) {
-            assert!((a - b).abs() <= 3e-11 * (1.0 + b.abs()));
+            assert!(approx::abs_diff_eq!(
+                a,
+                b,
+                epsilon = 3e-11 * (1.0 + b.abs())
+            ));
         }
     }
     for (dln, mu, offset, bias) in [

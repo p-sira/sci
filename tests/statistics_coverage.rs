@@ -3,17 +3,9 @@ use common::vector as numbers;
 
 use sci::{Error, stats as s};
 
+#[track_caller]
 fn close(actual: f64, expected: f64, context: &str) {
-    if expected.is_nan() {
-        assert!(actual.is_nan(), "{context}: {actual} != NaN");
-    } else if expected.is_infinite() {
-        assert_eq!(actual, expected, "{context}");
-    } else {
-        assert!(
-            actual.is_finite() && (actual - expected).abs() <= 2e-10 + 2e-10 * expected.abs(),
-            "{context}: {actual} != {expected}"
-        );
-    }
+    common::assert_close(actual, expected, 2e-10, 2e-10, context);
 }
 
 fn distribution(name: &str, p: &[f64]) -> s::Distribution {

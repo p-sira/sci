@@ -44,12 +44,12 @@ fn independent_dependency_references() {
             name => panic!("unknown fixture {name}"),
         };
         assert_eq!(actual.len(), expected.len(), "{row:?}");
-        for (actual, expected) in actual.iter().zip(expected) {
+        for (&actual, expected) in actual.iter().zip(expected) {
             // Relative comparisons preserve tiny roots; an absolute tolerance is
             // needed only for cancellation near the axes in complex powers.
             let atol = if row[0] == "powu" { 2e-14 } else { 0.0 };
             assert!(
-                (actual - expected).abs() <= atol + 3e-13 * expected.abs(),
+                approx::abs_diff_eq!(actual, expected, epsilon = atol + 3e-13 * expected.abs()),
                 "{row:?}: {actual} != {expected}"
             );
         }

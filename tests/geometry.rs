@@ -28,17 +28,9 @@ fn metric<'a>(name: &str, extra: &str, v: &'a [f64], m: &'a [Vec<f64>]) -> Metri
         _ => panic!("unknown metric"),
     }
 }
+#[track_caller]
 fn close(a: f64, b: f64) {
-    if b.is_nan() {
-        assert!(a.is_nan(), "{a} != NaN");
-    } else if b.is_infinite() {
-        assert_eq!(a, b);
-    } else {
-        assert!(
-            a.is_finite() && (a - b).abs() <= 3e-12 + 3e-12 * b.abs(),
-            "{a} != {b}"
-        );
-    }
+    common::assert_close(a, b, 3e-12, 3e-12, "numerical comparison");
 }
 
 #[test]

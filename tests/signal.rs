@@ -573,17 +573,9 @@ fn evaluate(name: &str, a: &[&str]) -> Vec<Vec<f64>> {
     vec![result]
 }
 
+#[track_caller]
 fn near(actual: f64, expected: f64, tolerance: f64, context: &str) {
-    if expected.is_nan() {
-        assert!(actual.is_nan(), "{context}: expected NaN, got {actual}");
-    } else if expected.is_infinite() {
-        assert_eq!(actual, expected, "{context}");
-    } else {
-        assert!(
-            (actual - expected).abs() <= tolerance * (1. + expected.abs()),
-            "{context}: expected {expected}, got {actual}"
-        );
-    }
+    common::assert_close(actual, expected, tolerance, tolerance, context);
 }
 
 #[test]
@@ -603,8 +595,8 @@ fn scipy_signal_fixtures() {
             assert_eq!(actual.len(), expected.len(), "{context} row count");
             // Direct f64 formulas/FFT normally agree to <1e-13; the 2e-11
             // combined absolute/relative bound also covers small SVD/eigen fits.
-            // Remez proxy/grid approximation and Bessel orders 10..12 have
-            // separate measured bounds, documented in SIGNAL_COVERAGE.md.
+            // Remez proxy/grid approximation has a separate measured bound,
+            // documented in function_coverages/SIGNAL_COVERAGE.md.
             for (actual, expected) in actual.iter().zip(expected) {
                 assert_eq!(
                     actual.len(),
@@ -612,16 +604,7 @@ fn scipy_signal_fixtures() {
                     "{context} row shape: {actual:?} versus {expected:?}"
                 );
                 for (&x, y) in actual.iter().zip(expected) {
-                    near(
-                        x,
-                        y,
-                        if a[1] == "remez" || (a[1] == "besselap" && integer(a[2]) >= 10) {
-                            1e-10
-                        } else {
-                            2e-11
-                        },
-                        &context,
-                    );
+                    near(x, y, if a[1] == "remez" { 1e-10 } else { 2e-11 }, &context);
                 }
             }
         });
@@ -1201,7 +1184,7 @@ fn advanced_filter_representations_preserve_transfer_functions() {
             near(x.im, y.im, 1e-9, "SOS imaginary response");
         }
     }
-    for n in [1, 2, 5] {
+    for n in 1..=12 {
         let delay = besselap(n, BesselNorm::Delay).unwrap();
         let w = [0., 1e-5];
         let response = freqs_zpk(&delay, &w).unwrap();

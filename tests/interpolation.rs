@@ -24,17 +24,9 @@ fn surface(s: &str) -> SurfaceSpline {
 fn optional(s: &str) -> Option<Vec<f64>> {
     (!s.is_empty()).then(|| vector(s))
 }
+#[track_caller]
 fn close(actual: f64, expected: f64) {
-    if expected.is_nan() {
-        assert!(actual.is_nan());
-    } else if expected.is_infinite() {
-        assert_eq!(actual, expected);
-    } else {
-        assert!(
-            actual.is_finite() && (actual - expected).abs() <= 2e-10 + 2e-10 * expected.abs(),
-            "{actual:0.17e} != {expected:0.17e}"
-        );
-    }
+    common::assert_close(actual, expected, 2e-10, 2e-10, "numerical comparison");
 }
 fn check(actual: &[f64], expected: &str) {
     let expected = vector(expected);

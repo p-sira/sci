@@ -4,17 +4,9 @@ use common::{csv_row, matrix, vector};
 
 use sci::{cluster::vq, constants as c, integrate as i, interpolate as p};
 
+#[track_caller]
 fn close(actual: f64, expected: f64) {
-    if expected.is_nan() {
-        assert!(actual.is_nan());
-    } else if expected.is_infinite() {
-        assert_eq!(actual, expected);
-    } else {
-        assert!(
-            actual.is_finite() && (actual - expected).abs() <= 3e-12 + 3e-12 * expected.abs(),
-            "{actual} != {expected}"
-        );
-    }
+    common::assert_close(actual, expected, 3e-12, 3e-12, "numerical comparison");
 }
 fn check_vector(actual: &[f64], expected: &str) {
     let expected = vector(expected);
@@ -81,7 +73,8 @@ fn public_numerical_apis_match_scipy() {
                                 assert_ne!(actual, 0.0, "{input}: lost a nonzero integral");
                             }
                             assert!(
-                                actual.is_finite() && (actual - expected).abs() <= tolerance,
+                                actual.is_finite()
+                                    && approx::abs_diff_eq!(actual, expected, epsilon = tolerance),
                                 "{input}: {actual} != {expected}"
                             );
                         } else {

@@ -864,7 +864,11 @@ fn special_families_match_scipy() {
                 let rtol: f64 = fields[3].parse().unwrap();
                 let atol: f64 = fields[4].parse().unwrap();
                 assert!(
-                    (actual - expected).abs() <= atol.max(rtol * expected.abs()),
+                    approx::abs_diff_eq!(
+                        actual,
+                        expected,
+                        epsilon = atol.max(rtol * expected.abs())
+                    ),
                     "{}[{i}]: {actual} != {expected}",
                     fields[0]
                 );

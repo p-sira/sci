@@ -6,6 +6,7 @@ use sci::{
     fft,
 };
 
+#[track_caller]
 fn close(actual: f64, expected: f64, context: &str) {
     if expected.is_nan() {
         assert!(actual.is_nan(), "{context}: {actual} != NaN");
@@ -24,7 +25,7 @@ fn close(actual: f64, expected: f64, context: &str) {
             );
         }
         assert!(
-            actual.is_finite() && (actual - expected).abs() <= tolerance,
+            actual.is_finite() && approx::abs_diff_eq!(actual, expected, epsilon = tolerance),
             "{context}: {actual} != {expected}"
         );
     }

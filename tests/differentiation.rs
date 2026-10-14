@@ -45,12 +45,10 @@ fn vector(name: &str, x: &[f64]) -> Vec<f64> {
     }
 }
 
+#[track_caller]
 fn close(actual: f64, expected: f64, atol: f64, rtol: f64) {
     assert!(actual.is_finite() && expected.is_finite());
-    assert!(
-        (actual - expected).abs() <= atol + rtol * expected.abs(),
-        "{actual} != {expected}; atol={atol}, rtol={rtol}"
-    );
+    common::assert_close(actual, expected, atol, rtol, "differentiation comparison");
 }
 
 #[test]

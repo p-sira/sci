@@ -1,11 +1,10 @@
 mod common;
 use common::vector;
 use sci::fft as f;
+#[track_caller]
 fn close(a: f64, b: f64) {
-    assert!(
-        a.is_finite() && (a - b).abs() <= 3e-12 * (1.0 + b.abs()),
-        "{a} != {b}"
-    );
+    assert!(a.is_finite() && b.is_finite());
+    common::assert_close(a, b, 3e-12, 3e-12, "numerical comparison");
 }
 #[test]
 fn public_periodic_operators_match_scipy() {

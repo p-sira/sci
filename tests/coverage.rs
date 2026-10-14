@@ -1,15 +1,14 @@
 //! Boundary and property tests that also run with the `stats` feature disabled.
+mod common;
 use sci::{
     Error, Mode, Spline, cluster, complex, constants, differentiate, fft, integrate, interpolate,
     linalg, optimize, signal, spatial, special,
 };
 
+#[track_caller]
 fn close(actual: f64, expected: f64) {
     assert!(actual.is_finite() && expected.is_finite());
-    assert!(
-        (actual - expected).abs() <= 2e-12 + 2e-12 * expected.abs(),
-        "{actual} != {expected}"
-    );
+    common::assert_close(actual, expected, 2e-12, 2e-12, "numerical comparison");
 }
 
 #[test]

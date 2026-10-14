@@ -67,9 +67,10 @@ fn jacobian(x: &[f64], name: &str) -> sci::Result<Matrix> {
         _ => panic!("unknown Jacobian {name}"),
     })
 }
+#[track_caller]
 fn close(a: f64, b: f64) {
     assert!(a.is_finite() && b.is_finite());
-    assert!((a - b).abs() <= 2e-11 * (1. + b.abs()), "{a} != {b}");
+    common::assert_close(a, b, 2e-11, 2e-11, "numerical comparison");
 }
 
 #[test]

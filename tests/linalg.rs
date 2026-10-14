@@ -58,12 +58,8 @@ fn eigenvalues(mut w: Vec<sci::complex::Complex>, re: &str, im: &str) {
 
 #[track_caller]
 fn close(a: f64, b: f64) {
-    // Well-conditioned small reference systems: allow different dense algorithms
-    // and BLAS reduction orders, without accepting nonfinite numerical output.
-    assert!(
-        a.is_finite() && b.is_finite() && (a - b).abs() <= 3e-11 + 3e-11 * b.abs(),
-        "{a} != {b}"
-    );
+    assert!(a.is_finite() && b.is_finite());
+    common::assert_close(a, b, 3e-11, 3e-11, "linear algebra comparison");
 }
 #[track_caller]
 fn check_vector(a: &[f64], b: &[f64]) {
@@ -1635,7 +1631,7 @@ fn hyperbolic_extreme_scales_match_independent_references() {
                     );
                 }
                 assert!(
-                    a.is_finite() && (a - b).abs() <= tolerance,
+                    a.is_finite() && approx::abs_diff_eq!(a, b, epsilon = tolerance),
                     "{input}: {a} != {b}"
                 );
             }

@@ -1,3 +1,4 @@
+mod common;
 use sci::Error;
 
 #[test]
@@ -48,4 +49,22 @@ fn finite_checks_preserve_ieee_values_and_reject_nonfinite_inputs() {
             );
         }
     }
+}
+
+#[test]
+fn fixture_comparisons_preserve_bounds_and_special_values() {
+    use common::matches;
+    assert!(matches(1.125, 1., 0.0625, 0.0625));
+    assert!(!matches(1.125 + f64::EPSILON, 1., 0.0625, 0.0625));
+    assert!(!matches(0., 1e-100, 0., 1e-12));
+    assert!(matches(f64::NAN, f64::NAN, 0., 0.));
+    assert!(!matches(0., f64::NAN, 1., 1.));
+    assert!(!matches(f64::NAN, 0., 1., 1.));
+    for infinity in [f64::INFINITY, f64::NEG_INFINITY] {
+        assert!(matches(infinity, infinity, 0., 0.));
+        assert!(!matches(-infinity, infinity, 1., 1.));
+        assert!(!matches(infinity, 0., 1., 1.));
+    }
+    // Ordinary equality permits both zero signs; contract tests check bits.
+    assert!(matches(-0., 0., 0., 0.));
 }

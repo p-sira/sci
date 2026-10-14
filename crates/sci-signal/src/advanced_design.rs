@@ -6,7 +6,7 @@ use super::{
 use crate::special::{ellipj, ellipk, ellipkinc, ellipkm1};
 use crate::{
     Error, Result,
-    complex::{Complex, native},
+    complex::{Complex, native, owned},
 };
 use num_complex::Complex64;
 use std::f64::consts::PI;
@@ -23,6 +23,27 @@ pub enum BesselNorm {
 }
 fn fact(n: usize) -> f64 {
     (1..=n).fold(1., |v, k| v * k as f64)
+}
+// The scaled companion solver supplies initial guesses. Refine zeros of
+// exp(z) K_(n+1/2)(z), whose zeros are those of theta_n(z), avoiding
+// cancellation in high-order polynomial evaluation (as in SciPy besselap).
+fn refine_bessel_pole(n: usize, mut z: Complex64) -> Result<Complex64> {
+    for _ in 0..16 {
+        let value = xsf::bessel_ke(n as f64 + 0.5, z);
+        let derivative =
+            value - 0.5 * (xsf::bessel_ke(n as f64 - 0.5, z) + xsf::bessel_ke(n as f64 + 1.5, z));
+        let step = value / derivative;
+        if !step.re.is_finite() || !step.im.is_finite() {
+            return Err(Error::NonFiniteEvaluation);
+        }
+        z -= step;
+        if step.norm() <= 8. * f64::EPSILON * z.norm() {
+            return Ok(z);
+        }
+    }
+    Err(Error::NumericalFailure(
+        "Bessel pole refinement did not converge",
+    ))
 }
 fn dc_gain(p: &[Complex], z: &[Complex]) -> f64 {
     (p.iter()
@@ -47,25 +68,34 @@ fn specification(rp: f64, rs: f64) -> Result<f64> {
 ///
 /// ## Parameters
 ///
-/// `n` is 0..12. `norm` sets delay, magnitude, or phase normalization; returns ZPK, with poles sorted by real then imaginary parts.
+/// `n` is 0..12. `norm` selects unit group delay at zero (`Delay`),
+/// half-power magnitude at angular frequency 1 (`Magnitude`), or unit
+/// asymptotic phase midpoint (`Phase`). Frequencies use radians per unit time.
 ///
 /// ## Domain
 ///
-/// Inputs must be finite and satisfy the stated bounds. NaN and infinity are errors.
+/// Order zero returns no zeros or poles and gain 1. The discrete parameters
+/// do not admit NaN or infinity.
 ///
 /// ## Returns
 ///
-/// Returns the values in the ordering and normalization stated above.
+/// Returns ZPK with no finite zeros, poles sorted by real then imaginary
+/// parts, and gain scaled to the selected normalization.
 ///
 /// ## Errors
 ///
-/// Returns shared errors for invalid inputs, incompatible shapes, singular solves,
-/// work limits, or nonfinite results. Sample lengths are at most 1048576 and
-/// direct work at most 16777216 operations.
+/// Returns [`Error::InvalidInput`] for orders above 12,
+/// [`Error::NumericalFailure`] if the Schur solver or pole refinement fails,
+/// and [`Error::NonFiniteEvaluation`] for nonfinite numerical results.
 ///
 /// ## Numerical behavior
 ///
-/// Uses a private bounded Schur solver for polynomial roots. Orders above 12 are rejected because polynomial root conditioning deteriorates.
+/// Uses a private Schur solver with at most 100000 iterations for initial
+/// polynomial roots, followed by at most 16 Newton steps per pole using the
+/// exponentially scaled complex Bessel K backend. This avoids cancellation
+/// in polynomial refinement. Conjugate pairs are exactly symmetric.
+/// Magnitude normalization uses at most 64 bracketing and 80 bisection steps.
+/// No uniform relative accuracy guarantee is made.
 ///
 /// # Examples
 ///
@@ -101,10 +131,23 @@ pub fn besselap(n: usize, norm: BesselNorm) -> Result<Zpk> {
         .map(|(j, c)| c * phase_scale.powi(j as i32))
         .collect();
     let mut poles = roots(&scaled)?;
-    for p in &mut poles {
-        p.re /= phase_scale;
-        p.im /= phase_scale;
+    // Schur returns conjugate pairs with identical real components; roots()
+    // sorts each pair together. Refine one member and reflect it exactly.
+    let mut i = 0;
+    while i < poles.len() {
+        let real = poles[i].im == 0.;
+        let mut p = refine_bessel_pole(n, native(poles[i]) / phase_scale)?;
+        if real {
+            p.im = 0.;
+            poles[i] = owned(p);
+            i += 1;
+        } else {
+            poles[i] = owned(p);
+            poles[i + 1] = owned(p.conj());
+            i += 2;
+        }
     }
+    poles.sort_by(|a, b| a.re.total_cmp(&b.re).then(a.im.total_cmp(&b.im)));
     let scale = match norm {
         BesselNorm::Delay => 1.,
         BesselNorm::Phase => gain.powf(-1. / n as f64),

@@ -1,4 +1,4 @@
-//! Parsers for checked-in SciPy fixtures; numerical comparison policies stay in each suite.
+//! Shared fixture parsers and comparisons; tolerance values stay in each suite.
 // Each integration test compiles this module separately and uses a subset of its helpers.
 #![allow(dead_code)]
 
@@ -117,4 +117,27 @@ pub fn csv_row(row: &str) -> Vec<String> {
     assert!(!quoted);
     fields.push(field);
     fields
+}
+
+/// Compare using the suite's existing absolute-plus-relative reference bound.
+/// `approx` uses the supplied absolute bound without a symmetric relative scale.
+/// NaNs match only NaNs; infinities must have the same sign. Signed zero is
+/// compared explicitly by suites where its sign is part of the contract.
+pub fn matches(actual: f64, expected: f64, atol: f64, rtol: f64) -> bool {
+    if expected.is_nan() {
+        actual.is_nan()
+    } else if expected.is_infinite() {
+        actual == expected
+    } else {
+        actual.is_finite()
+            && approx::abs_diff_eq!(actual, expected, epsilon = atol + rtol * expected.abs())
+    }
+}
+
+#[track_caller]
+pub fn assert_close(actual: f64, expected: f64, atol: f64, rtol: f64, context: &str) {
+    assert!(
+        matches(actual, expected, atol, rtol),
+        "{context}: expected {expected:.17e}, got {actual:.17e}; atol={atol:e}, rtol={rtol:e}"
+    );
 }

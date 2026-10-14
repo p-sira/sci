@@ -214,7 +214,7 @@ fn audit_fixes_match_independent_references() {
                     assert_ne!(a, 0., "case {input}: lost representable nonzero result");
                 }
                 assert!(
-                    a.is_finite() && (a - b).abs() <= atol + rtol * b.abs(),
+                    a.is_finite() && approx::abs_diff_eq!(a, b, epsilon = atol + rtol * b.abs()),
                     "case {input}: {a} != {b}"
                 );
             }

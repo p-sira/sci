@@ -6,11 +6,12 @@ use sci::{
     linalg::{self as l, MatrixInput, VectorInput},
 };
 
+#[track_caller]
 fn close(a: f64, b: f64) {
     // BLAS reductions can use different summation orders. A relative tolerance
     // also checks the very small nonzero reference values in the third case.
     assert!(
-        (a - b).abs() <= 2e-14 * b.abs().max(f64::MIN_POSITIVE),
+        approx::abs_diff_eq!(a, b, epsilon = 2e-14 * b.abs().max(f64::MIN_POSITIVE)),
         "{a} != {b}"
     );
 }
@@ -205,7 +206,11 @@ fn errors_and_shared_results_interoperate_across_libraries() {
     // absolute residual by the matrix scale, including entries expected to be zero.
     let scale = jac.iter().flatten().fold(0.0_f64, |s, &v| s.max(v.abs()));
     for (actual, expected) in reconstructed.iter().flatten().zip(jac.iter().flatten()) {
-        assert!((actual - expected).abs() <= 2e-14 * scale);
+        assert!(approx::abs_diff_eq!(
+            actual,
+            expected,
+            epsilon = 2e-14 * scale
+        ));
     }
     let a = ndarray::arr2(&[[1.0, 2.0]]);
     let b = nalgebra::Matrix2::identity();

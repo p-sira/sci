@@ -3,8 +3,10 @@ mod common;
 use sci::{linalg, special as s};
 use std::collections::BTreeSet;
 
+#[track_caller]
 fn close(a: f64, b: f64, tolerance: f64) {
-    assert!((a - b).abs() <= tolerance * (1.0 + b.abs()), "{a} != {b}");
+    assert!(a.is_finite() && b.is_finite());
+    common::assert_close(a, b, tolerance, tolerance, "special-function identity");
 }
 
 #[test]
@@ -120,4 +122,24 @@ fn elementary_limits_and_elliptic_conventions() {
         1000.0 + 2.0_f64.ln(),
         1e-14,
     );
+}
+
+#[test]
+fn kelvin_zero_sequences_agree_and_remain_ordered_after_exponential_underflow() {
+    let zeros = s::keip_zeros(4096).unwrap();
+    assert_eq!(zeros.len(), 4096);
+    assert!(zeros.iter().all(|x| x.is_finite() && *x > 0.));
+    assert!(zeros.windows(2).all(|pair| pair[0] < pair[1]));
+    for count in [1, 3, 5] {
+        let grouped = s::kelvin_zeros(count).unwrap();
+        assert_eq!(grouped[7], zeros[..count]);
+        for &x in &grouped[7] {
+            // The scalar Kelvin series has cancellation near x=9.4;
+            // compare the derivative residual on its local envelope scale.
+            let envelope = (-x / std::f64::consts::SQRT_2).exp() / x.sqrt();
+            assert!(s::keip(x).abs() <= 2e-9 * envelope);
+        }
+    }
+    assert!(s::keip_zeros(0).is_err());
+    assert!(s::keip_zeros(4097).is_err());
 }

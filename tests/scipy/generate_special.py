@@ -15,11 +15,33 @@ from pathlib import Path
 
 import numpy as np
 import scipy
-from scipy import special, integrate
+from scipy import special, integrate, optimize
+
+
+def stable_keip_zeros(count):
+    """Independent bracketed roots of Im[-a K1(a*x)] via SciPy AMOS.
+
+    Identity: https://dlmf.nist.gov/10.61.E2 (differentiate K0).
+    SciPy keip_zeros uses a cancellation-sensitive series around x=9.4;
+    its second zero differs by ~4e-10 from the complex K identity.
+    Removing exp(-x/sqrt(2)) keeps the reference finite for long sequences.
+    """
+    a = np.exp(1j * np.pi / 4)
+    def residual(x):
+        return (-a * np.exp(-1j * x * a.imag) * special.kve(1, a*x)).imag
+    return np.array([
+        optimize.brentq(residual, 4.93 + i*np.pi*np.sqrt(2) - 0.5,
+                        4.93 + i*np.pi*np.sqrt(2) + 0.5, xtol=5e-14)
+        for i in range(count)
+    ])
 
 
 def reference(name, args):
     """SciPy evaluations or independent quadrature for ellip-only functions."""
+    if name == "keip_zeros":
+        return stable_keip_zeros(*args)
+    if name == "kelvin_zeros":
+        return (*special.kelvin_zeros(*args)[:7], stable_keip_zeros(*args))
     if name == "trigamma":
         return special.polygamma(1, *args)
     if name == "lambertwm1":

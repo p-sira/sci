@@ -940,7 +940,7 @@ fn scipy_references() {
                     "tukey_hsd" if i >= fields[5].split('/').count().pow(2) => 5e-7,
                     _ => 2e-10,
                 };
-                a.is_finite() && (a - b).abs() <= tolerance * (1. + b.abs())
+                a.is_finite() && approx::abs_diff_eq!(a, b, epsilon = tolerance * (1. + b.abs()))
             };
             if !matches {
                 failures.push(format!(

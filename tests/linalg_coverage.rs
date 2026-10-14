@@ -6,6 +6,7 @@ fn identity(n: usize) -> l::Matrix {
         .collect()
 }
 
+#[track_caller]
 fn close(a: &[Vec<f64>], b: &[Vec<f64>]) {
     assert_eq!(a.len(), b.len());
     for (a, b) in a.iter().zip(b) {
@@ -13,7 +14,10 @@ fn close(a: &[Vec<f64>], b: &[Vec<f64>]) {
         for (&a, &b) in a.iter().zip(b) {
             // Small, well-conditioned reconstruction identities; allow the
             // rounding accumulated by factorization and matrix products.
-            assert!((a - b).abs() <= 2e-12 * (1.0 + b.abs()), "{a} != {b}");
+            assert!(
+                approx::abs_diff_eq!(a, b, epsilon = 2e-12 * (1.0 + b.abs())),
+                "{a} != {b}"
+            );
         }
     }
 }

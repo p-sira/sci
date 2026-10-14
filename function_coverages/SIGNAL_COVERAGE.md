@@ -20,18 +20,21 @@ remain private; data uses f64 slices, row-major vectors, and shared Complex.
 
 `tests/scipy/signal_cases.json` contains inputs only. The generator
 `tests/scipy/generate_signal.py` pins SciPy 1.18.1 and NumPy 2.5.4 and writes
-1401 cases to separate input and expected CSV files. Rust tests check every
+1416 cases to separate input and expected CSV files. Rust tests check every
 output row and its length, complex interleaving, indices, state ordering, and
 frequency/time axes. The justified combined tolerance is
 `2e-11 * (1 + abs(expected))`; most direct formulas agree within 1e-13.
-Remez coefficients and Bessel roots at orders 10..12 use `1e-10` in the same
-combined comparison. Remez references use SciPy grid_density=32768 and maxiter=100:
-a density comparison at 2048/32768 identified up to 3.4e-9 grid errors. Increasing
-the backend Chebyshev proxy degree from 8 to 24 reduced even-length design
-differences from 2e-9 to about 2e-11. High-order Bessel companion polynomials
-have cancellation-sensitive roots; scaling the polynomial before Schur
-factorization improves conditioning, with remaining differences around 1e-10.
-These tolerances apply only to those functions; the other tolerances are unchanged.
+Remez coefficients use `1e-10` in the same combined comparison.
+Remez references use SciPy grid_density=32768 and maxiter=100: a density
+comparison at 2048/32768 identified up to 3.4e-9 grid errors. Increasing the
+backend Chebyshev proxy degree from 8 to 24 reduced even-length design
+differences from 2e-9 to about 2e-11. Bessel roots use the ordinary `2e-11`
+bound at every supported order (0..12), in all three normalizations. Scaled
+Schur factorization supplies initial poles; bounded Newton refinement on
+`exp(z) K_(n+1/2)(z)` avoids the companion polynomial's cancellation and
+platform-sensitive root errors. Exact conjugate symmetry preserves real
+transfer functions. These tolerances are unchanged by the shared `approx`
+comparison helper, which retains absolute-plus-relative reference bounds.
 NaN and signed infinities are compared explicitly. Independent checks cover
 streaming state, steady steps, FIR polynomial preservation, Parseval energy,
 CZT/FFT equivalence, STFT and resampling round trips, DPSS orthogonality,

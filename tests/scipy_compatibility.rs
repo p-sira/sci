@@ -3,11 +3,12 @@ use common::{number, rows};
 
 use sci::{complex::Complex, differentiate, fft, optimize, special, stats};
 
+#[track_caller]
 fn assert_close(actual: f64, expected: f64, relative_tolerance: f64, absolute_tolerance: f64) {
     let difference = (actual - expected).abs();
     let tolerance = absolute_tolerance.max(relative_tolerance * expected.abs());
     assert!(
-        difference <= tolerance,
+        approx::abs_diff_eq!(actual, expected, epsilon = tolerance),
         "actual {actual:.17e} differs from SciPy {expected:.17e} by {difference:.3e} (tolerance {tolerance:.3e})"
     );
 }
