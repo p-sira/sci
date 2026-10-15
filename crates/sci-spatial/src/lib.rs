@@ -1,6 +1,8 @@
-//! # Spatial algorithms and distances
+//! # Sci-Spatial
 //!
 //! Euclidean geometry, spatial queries, and pairwise distances.
+//!
+//! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Points are rows of `Vec<Vec<f64>>`, interoperable with `sci_linalg`.
 //! Coordinates must be finite. Vector and matrix work is limited to 1,000,000

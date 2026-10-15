@@ -1,4 +1,8 @@
-//! # Complex arithmetic and elementary functions
+//! # Sci-Complex
+//!
+//! Complex arithmetic and elementary mathematical functions.
+//!
+//! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Scalar functional operations on [`Complex`], shared with `sci_fft` and
 //! `sci_special`. Components use `f64`; angles use radians. Elementary

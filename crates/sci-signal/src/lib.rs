@@ -1,6 +1,8 @@
-//! # Signal processing
+//! # Sci-Signal
 //!
 //! Signal processing on one-dimensional real samples and shared complex values.
+//!
+//! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Functions use explicit parameters. Digital angular frequencies use
 //! radians/sample unless a sample rate is supplied; analog frequencies use
@@ -27,7 +29,6 @@
 //!
 //! We thank `nalgebra`, `num-complex`, `pm-remez`, and
 //! `rustfft` for their signal-processing and numerical building blocks.
-//!
 #![forbid(unsafe_code)]
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]
 

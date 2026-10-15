@@ -1,4 +1,8 @@
-//! # Linear algebra
+//! # Sci-Linalg
+//!
+//! Linear algebra for real and complex vectors and matrices.
+//!
+//! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Operations on `f64` vectors and matrices through [`VectorInput`] and
 //! [`MatrixInput`]. Inputs may use shared slices/rows, ndarray arrays, nalgebra

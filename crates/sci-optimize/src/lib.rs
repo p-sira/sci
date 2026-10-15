@@ -1,4 +1,8 @@
-//! # Optimization
+//! # Sci-Optimize
+//!
+//! Numerical optimization and minimization.
+//!
+//! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Unconstrained minimization using Basin internally. Objective and gradient
 //! callbacks take the same `&[f64]` used by differentiation and linear algebra.

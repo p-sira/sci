@@ -1,4 +1,8 @@
+//! # Sci-Filter
+//!
 //! Functional Bayesian state estimation on shared row-major [`Matrix`] values.
+//!
+//! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Linear and extended Kalman steps and the scaled unscented filter delegate to
 //! private Smelly backends. Particle propagation and moments use kalman_filters;

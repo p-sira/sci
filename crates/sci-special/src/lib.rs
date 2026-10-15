@@ -1,4 +1,8 @@
-//! # Special functions
+//! # Sci-Special
+//!
+//! Special mathematical functions.
+//!
+//! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Gamma, Bessel, elliptic, probability, polynomial, and combinatorial functions
 //! with `f64` scalars and shared Sci types. Specialized algorithms use private

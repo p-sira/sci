@@ -1,6 +1,8 @@
-//! # Fourier transforms
+//! # Sci-FFT
 //!
 //! Fourier transforms on shared real and complex data.
+//!
+//! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Forward transforms are unnormalized; inverses divide by transformed lengths.
 //! The multidimensional and extended transform functions validate finite data and bound work to 1,048,576 entries and

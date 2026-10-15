@@ -1,6 +1,8 @@
-//! # Numerical integration
+//! # Sci-Integrate
 //!
 //! One-dimensional integration of samples and fixed-order Gaussian quadrature.
+//!
+//! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Functions accept slices or scalar callbacks; sampled inputs have at most
 //! 1,000,001 entries. Adaptive quadrature,

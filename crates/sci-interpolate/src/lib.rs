@@ -1,6 +1,8 @@
-//! # Interpolation
+//! # Sci-Interpolate
 //!
 //! Scalar polynomial, B-spline, surface, and multidimensional interpolation.
+//!
+//! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Functions use slices and shared spline types. Polynomial coefficients use
 //! descending powers, interoperating with signal APIs. Parametric curves support

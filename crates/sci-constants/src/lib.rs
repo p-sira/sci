@@ -1,4 +1,8 @@
-//! # Physical constants
+//! # Sci-Constants
+//!
+//! Physical constants and unit conversions.
+//!
+//! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Physical constants and unit conversions using a pinned CODATA 2022 snapshot.
 //! Table entries include SI units and standard uncertainties. Historical lookup

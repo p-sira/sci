@@ -1,4 +1,8 @@
-//! # Numerical differentiation
+//! # Sci-Differentiate
+//!
+//! Numerical differentiation using finite differences.
+//!
+//! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Second-order central finite differences on `f64` values. Gradient vectors
 //! and Jacobian/Hessian matrices share the slice and row-major conventions of

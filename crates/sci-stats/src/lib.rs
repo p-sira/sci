@@ -1,4 +1,8 @@
-//! # Statistics
+//! # Sci-Stats
+//!
+//! Statistical analysis, hypothesis tests, and probability distributions.
+//!
+//! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Descriptive statistics, hypothesis tests, and native distributions on `f64` values.
 //! Distribution evaluation uses statrs and shared special functions privately; callers supply parameters
