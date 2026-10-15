@@ -1,5 +1,6 @@
 use sci::{Error, Matrix, filter::*};
 mod common;
+use common::finite_close;
 
 fn v(s: &str) -> Vec<f64> {
     common::vector(s)
@@ -66,11 +67,6 @@ fn jacobian(x: &[f64], name: &str) -> sci::Result<Matrix> {
         }
         _ => panic!("unknown Jacobian {name}"),
     })
-}
-#[track_caller]
-fn close(a: f64, b: f64) {
-    assert!(a.is_finite() && b.is_finite());
-    common::assert_close(a, b, 2e-11, 2e-11, "numerical comparison");
 }
 
 #[test]
@@ -166,7 +162,7 @@ fn independent_scipy_identities_cover_every_public_function() {
             input[1]
         );
         for (a, b) in actual.into_iter().zip(expected) {
-            close(a, b);
+            finite_close(a, b, 2e-11, 2e-11);
         }
     }
 }
@@ -217,9 +213,9 @@ fn linear_models_agree_across_all_kalman_variants_and_streaming() {
             .into_iter()
             .zip(gaussian_values(uu.estimate))
         {
-            close(a, b);
+            finite_close(a, b, 2e-11, 2e-11);
         }
-        close(u.innovation[0], uu.innovation[0]);
+        finite_close(u.innovation[0], uu.innovation[0], 2e-11, 2e-11);
         assert!(u.estimate.covariance[0][0] < prediction.covariance[0][0]);
         state = u.estimate;
     }
@@ -522,9 +518,11 @@ fn particle_identities_and_resampling_boundaries() {
             particle_estimate(&p).unwrap(),
             particle_estimate(&scaled).unwrap()
         );
-        close(
+        finite_close(
             effective_sample_size(&p).unwrap(),
             effective_sample_size(&scaled).unwrap(),
+            2e-11,
+            2e-11,
         );
     }
     let zero = ParticleSet {
@@ -534,7 +532,7 @@ fn particle_identities_and_resampling_boundaries() {
     for offset in [0., 0.5, 1. - f64::EPSILON] {
         let q = systematic_resample(&zero, offset).unwrap();
         assert_eq!(q.states, vec![vec![5.]; 3]);
-        close(effective_sample_size(&q).unwrap(), 3.);
+        finite_close(effective_sample_size(&q).unwrap(), 3., 2e-11, 2e-11);
     }
     let uniform = ParticleSet {
         states: p.states.clone(),
@@ -551,9 +549,11 @@ fn particle_identities_and_resampling_boundaries() {
     })
     .unwrap();
     assert_eq!(count, 3);
-    close(
+    finite_close(
         particle_estimate(&moved).unwrap().mean[0],
         particle_estimate(&p).unwrap().mean[0] + 2.,
+        2e-11,
+        2e-11,
     );
     assert_eq!(
         particle_estimate(&moved).unwrap().covariance,

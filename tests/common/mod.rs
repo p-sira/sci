@@ -141,3 +141,62 @@ pub fn assert_close(actual: f64, expected: f64, atol: f64, rtol: f64, context: &
         "{context}: expected {expected:.17e}, got {actual:.17e}; atol={atol:e}, rtol={rtol:e}"
     );
 }
+
+/// Compare values using an absolute-plus-relative reference bound.
+#[track_caller]
+pub fn close(actual: f64, expected: f64, atol: f64, rtol: f64) {
+    assert_close(actual, expected, atol, rtol, "numerical comparison");
+}
+
+/// Compare finite values, rejecting matching NaNs and infinities as well.
+#[track_caller]
+pub fn finite_close(actual: f64, expected: f64, atol: f64, rtol: f64) {
+    assert!(
+        actual.is_finite() && expected.is_finite(),
+        "expected finite values, got {actual} and {expected}"
+    );
+    close(actual, expected, atol, rtol);
+}
+
+/// Compare with a relative bound floored at the smallest positive normal value.
+#[track_caller]
+pub fn relative_close(actual: f64, expected: f64, rtol: f64) {
+    close(
+        actual,
+        expected,
+        rtol * expected.abs().max(f64::MIN_POSITIVE),
+        0.0,
+    );
+}
+
+/// Compare matrix shapes and entries with an absolute-plus-relative bound.
+#[track_caller]
+pub fn matrix_close(actual: &[Vec<f64>], expected: &[Vec<f64>], atol: f64, rtol: f64) {
+    assert_eq!(actual.len(), expected.len(), "row count");
+    for (actual, expected) in actual.iter().zip(expected) {
+        assert_eq!(actual.len(), expected.len(), "column count");
+        for (&actual, &expected) in actual.iter().zip(expected) {
+            finite_close(actual, expected, atol, rtol);
+        }
+    }
+}
+
+/// Preserve nonzero references, using only relative error below `small`.
+/// The bound is floored at the smallest subnormal value for tiny references.
+/// Larger references use `tolerance * (1 + abs(expected))`; NaNs and signed
+/// infinities follow `assert_close`.
+#[track_caller]
+pub fn assert_nonzero_close(actual: f64, expected: f64, tolerance: f64, small: f64, context: &str) {
+    let bound = if expected != 0.0 && expected.abs() < small {
+        (tolerance * expected.abs()).max(f64::from_bits(1))
+    } else {
+        tolerance + tolerance * expected.abs()
+    };
+    if expected.is_finite() && expected != 0.0 {
+        assert_ne!(
+            actual, 0.0,
+            "{context}: nonzero reference underflowed to zero"
+        );
+    }
+    assert_close(actual, expected, bound, 0.0, context);
+}

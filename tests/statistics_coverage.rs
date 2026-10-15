@@ -1,12 +1,8 @@
 mod common;
+use common::assert_close;
 use common::vector as numbers;
 
 use sci::{Error, stats as s};
-
-#[track_caller]
-fn close(actual: f64, expected: f64, context: &str) {
-    common::assert_close(actual, expected, 2e-10, 2e-10, context);
-}
 
 fn distribution(name: &str, p: &[f64]) -> s::Distribution {
     use s::Distribution::*;
@@ -78,7 +74,7 @@ fn support_endpoints_degenerate_distributions_and_posteriors_match_scipy() {
         let expected = numbers(reference[1]);
         assert_eq!(got.len(), expected.len(), "{input}");
         for (actual, expected) in got.into_iter().zip(expected) {
-            close(actual, expected, input);
+            assert_close(actual, expected, 2e-10, 2e-10, input);
         }
     }
 }
@@ -313,9 +309,11 @@ fn discrete_quantiles_are_left_continuous_inverse_cdfs() {
             assert!(q >= previous && q.fract() == 0.0);
             assert!(s::cdf(d, q).unwrap() >= p - 2e-14);
             assert!(s::cdf(d, q - 1.0).unwrap() < p + 2e-14);
-            close(
+            assert_close(
                 s::cdf(d, q).unwrap() + s::sf(d, q).unwrap(),
                 1.0,
+                2e-10,
+                2e-10,
                 "discrete tails",
             );
             previous = q;

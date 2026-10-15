@@ -1,13 +1,8 @@
 mod common;
+use common::finite_close;
 
 use sci::{linalg, special as s};
 use std::collections::BTreeSet;
-
-#[track_caller]
-fn close(a: f64, b: f64, tolerance: f64) {
-    assert!(a.is_finite() && b.is_finite());
-    common::assert_close(a, b, tolerance, tolerance, "special-function identity");
-}
 
 fn inventory_names(inventory: &str) -> BTreeSet<&str> {
     inventory
@@ -53,7 +48,7 @@ fn small_sequences_and_native_work_limits_are_safe() {
             assert_eq!(values.len(), m + 1);
             assert_eq!(values[0].len(), n + 1);
             assert_eq!(derivatives.len(), m + 1);
-            close(values[0][0], 0.5 * (1.3_f64 / 0.7).ln(), 1e-14);
+            finite_close(values[0][0], 0.5 * (1.3_f64 / 0.7).ln(), 1e-14, 1e-14);
         }
     }
     assert_eq!(s::lqn(0, 0.3).unwrap().0.len(), 1);
@@ -71,18 +66,19 @@ fn small_sequences_and_native_work_limits_are_safe() {
 fn distribution_inverses_round_trip() {
     for p in [0.01, 0.2, 0.5, 0.9, 0.99] {
         for nc in [0.0, 0.5, 5.0] {
-            close(s::chndtr(s::chndtrix(p, 3.0, nc), 3.0, nc), p, 2e-13);
-            close(
+            finite_close(s::chndtr(s::chndtrix(p, 3.0, nc), 3.0, nc), p, 2e-13, 2e-13);
+            finite_close(
                 s::ncfdtr(3.0, 5.0, nc, s::ncfdtri(3.0, 5.0, nc, p)),
                 p,
                 2e-13,
+                2e-13,
             );
-            close(s::nctdtr(5.0, nc, s::nctdtrit(5.0, nc, p)), p, 2e-12);
+            finite_close(s::nctdtr(5.0, nc, s::nctdtrit(5.0, nc, p)), p, 2e-12, 2e-12);
         }
     }
     let p = s::ncfdtr(3.0, 5.0, 0.5, 0.5);
-    close(s::ncfdtrinc(3.0, 5.0, p, 0.5), 0.5, 2e-12);
-    close(s::ncfdtridfd(3.0, p, 0.5, 0.5), 5.0, 2e-12);
+    finite_close(s::ncfdtrinc(3.0, 5.0, p, 0.5), 0.5, 2e-12, 2e-12);
+    finite_close(s::ncfdtridfd(3.0, p, 0.5, 0.5), 5.0, 2e-12, 2e-12);
 }
 
 #[test]
@@ -95,12 +91,17 @@ fn quadrature_composes_with_polynomial_evaluation_and_linalg() {
         } else {
             0.0
         };
-        close(linalg::dot(&weights, &values).unwrap(), expected, 3e-14);
+        finite_close(
+            linalg::dot(&weights, &values).unwrap(),
+            expected,
+            3e-14,
+            3e-14,
+        );
     }
     let coefficients = s::legendre(7, false).unwrap();
     for x in [-0.9, 0.0, 0.3, 0.9] {
         let value = coefficients.iter().fold(0.0, |v, c| v * x + c);
-        close(value, s::eval_legendre(7, x), 2e-13);
+        finite_close(value, s::eval_legendre(7, x), 2e-13, 2e-13);
     }
 }
 
@@ -112,18 +113,20 @@ fn elementary_limits_and_elliptic_conventions() {
     assert_eq!(s::pseudo_huber(f64::INFINITY, 2.0), 2.0);
     for m in [-2.0, 0.0, 0.5, 0.99] {
         let (k, e) = s::ellipke(m).unwrap();
-        close(k, s::ellipk(m).unwrap(), 1e-14);
-        close(e, s::ellipe(m).unwrap(), 1e-14);
-        close(
+        finite_close(k, s::ellipk(m).unwrap(), 1e-14, 1e-14);
+        finite_close(e, s::ellipe(m).unwrap(), 1e-14, 1e-14);
+        finite_close(
             s::cel3((1.0 - m).sqrt(), 0.8).unwrap(),
             s::ellippi(0.2, m).unwrap(),
+            1e-14,
             1e-14,
         );
     }
     assert!(s::ellipkm1(1e-20).unwrap().is_finite());
-    close(
+    finite_close(
         s::logsumexp(&[1000.0, 1000.0]),
         1000.0 + 2.0_f64.ln(),
+        1e-14,
         1e-14,
     );
 }

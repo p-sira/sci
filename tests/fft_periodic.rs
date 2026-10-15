@@ -1,11 +1,7 @@
 mod common;
+use common::finite_close;
 use common::vector;
 use sci::fft as f;
-#[track_caller]
-fn close(a: f64, b: f64) {
-    assert!(a.is_finite() && b.is_finite());
-    common::assert_close(a, b, 3e-12, 3e-12, "numerical comparison");
-}
 #[test]
 fn public_periodic_operators_match_scipy() {
     let inputs: Vec<_> = common::lines(include_str!("fixtures/fft_periodic_inputs.csv")).collect();
@@ -58,7 +54,7 @@ fn public_periodic_operators_match_scipy() {
         assert_eq!(got.len(), want.len(), "{} length", c[0]);
         assert!(vector(e[3]).iter().all(|v| *v == 0.0));
         for (a, b) in got.into_iter().zip(want) {
-            close(a, b);
+            finite_close(a, b, 3e-12, 3e-12);
         }
     }
     assert_eq!(covered.len(), 10);
@@ -71,33 +67,33 @@ fn properties_and_interoperability() {
         .collect();
     let p = std::f64::consts::TAU;
     for (a, b) in f::diff(&x, 1, p).unwrap().iter().enumerate() {
-        close(*b, (a as f64 * p / n as f64).cos());
+        finite_close(*b, (a as f64 * p / n as f64).cos(), 3e-12, 3e-12);
     }
     for order in [-3, -2, -1, 1, 2, 3] {
         let y = f::diff(&f::diff(&x, order, p).unwrap(), -order, p).unwrap();
         for (a, b) in y.iter().zip(&x) {
-            close(*a, *b);
+            finite_close(*a, *b, 3e-12, 3e-12);
         }
     }
     let y = f::hilbert(&x).unwrap();
     let analytic = sci::signal::hilbert(&x).unwrap();
     for (a, b) in y.iter().zip(&analytic) {
-        close(*a, -b.im);
+        finite_close(*a, -b.im, 3e-12, 3e-12);
     }
     let z = f::ihilbert(&y).unwrap();
     for (a, b) in z.iter().zip(&x) {
-        close(*a, *b);
+        finite_close(*a, *b, 3e-12, 3e-12);
     }
     let z = f::tilbert(&f::itilbert(&x, 0.3, p).unwrap(), 0.3, p).unwrap();
     for (a, b) in z.iter().zip(&x) {
-        close(*a, *b);
+        finite_close(*a, *b, 3e-12, 3e-12);
     }
     for (a, b) in f::shift(&x, p / n as f64, p)
         .unwrap()
         .iter()
         .zip(x.iter().cycle().skip(1))
     {
-        close(*a, *b);
+        finite_close(*a, *b, 3e-12, 3e-12);
     }
     let alternate: Vec<_> = (0..6)
         .map(|i| if i % 2 == 0 { 1.0 } else { -1.0 })
@@ -109,14 +105,14 @@ fn properties_and_interoperability() {
         .iter()
         .zip(&alternate)
     {
-        close(*a, *b * scale);
+        finite_close(*a, *b * scale, 3e-12, 3e-12);
     }
     for (a, b) in f::cc_diff(&[1.0, 2.0, 3.0], 1000.0, 1000.0, p)
         .unwrap()
         .iter()
         .zip([1.0, 2.0, 3.0])
     {
-        close(*a, b);
+        finite_close(*a, b, 3e-12, 3e-12);
     }
 }
 #[test]

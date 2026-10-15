@@ -1,4 +1,5 @@
 mod common;
+use common::relative_close;
 use common::{matrix_rows as matrix, vector};
 
 use sci::{
@@ -6,19 +7,12 @@ use sci::{
     linalg::{self as l, MatrixInput, VectorInput},
 };
 
-#[track_caller]
-fn close(a: f64, b: f64) {
-    // BLAS reductions can use different summation orders. A relative tolerance
-    // also checks the very small nonzero reference values in the third case.
-    assert!(
-        approx::abs_diff_eq!(a, b, epsilon = 2e-14 * b.abs().max(f64::MIN_POSITIVE)),
-        "{a} != {b}"
-    );
-}
+// BLAS reductions can use different summation orders. A relative tolerance
+// also checks the very small nonzero reference values in the fixtures.
 fn check_vector(a: &[f64], b: &[f64]) {
     assert_eq!(a.len(), b.len());
     for (&a, &b) in a.iter().zip(b) {
-        close(a, b);
+        relative_close(a, b, 2e-14);
     }
 }
 fn check_matrix(a: &[Vec<f64>], b: &[Vec<f64>]) {
@@ -33,7 +27,11 @@ fn check_basic(a: &dyn MatrixInput, b: &dyn MatrixInput, x: &dyn VectorInput, ex
     check_vector(&l::matvec(a, x).unwrap(), &vector(expected[2]));
     check_matrix(&l::transpose(a).unwrap(), &matrix(expected[3]));
     let reverse: Vec<_> = x.to_vector().unwrap().into_iter().rev().collect();
-    close(l::dot(x, &reverse).unwrap(), expected[4].parse().unwrap());
+    relative_close(
+        l::dot(x, &reverse).unwrap(),
+        expected[4].parse().unwrap(),
+        2e-14,
+    );
 }
 
 #[test]

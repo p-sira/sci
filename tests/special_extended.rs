@@ -97,7 +97,9 @@ fn special_families_match_scipy() {
             "zetac" => scalar_call!(special::zetac; args[0]),
             "wrightomega" => scalar_call!(special::wrightomega; args[0]),
             "wright_bessel" => scalar_call!(special::wright_bessel; args[0], args[1], args[2]),
-            "log_wright_bessel" => scalar_call!(special::log_wright_bessel; args[0], args[1], args[2]),
+            "log_wright_bessel" => {
+                scalar_call!(special::log_wright_bessel; args[0], args[1], args[2])
+            }
             "voigt_profile" => scalar_call!(special::voigt_profile; args[0], args[1], args[2]),
             "bdtr" => scalar_call!(special::bdtr; args[0], args[1], args[2]),
             "bdtrc" => scalar_call!(special::bdtrc; args[0], args[1], args[2]),
@@ -175,30 +177,14 @@ fn special_families_match_scipy() {
             "beip" => scalar_call!(special::beip; args[0]),
             "kerp" => scalar_call!(special::kerp; args[0]),
             "keip" => scalar_call!(special::keip; args[0]),
-            "ber_zeros" => parsed_call!(special::ber_zeros; args[0])
-                .unwrap()
-                .to_vec(),
-            "bei_zeros" => parsed_call!(special::bei_zeros; args[0])
-                .unwrap()
-                .to_vec(),
-            "ker_zeros" => parsed_call!(special::ker_zeros; args[0])
-                .unwrap()
-                .to_vec(),
-            "kei_zeros" => parsed_call!(special::kei_zeros; args[0])
-                .unwrap()
-                .to_vec(),
-            "berp_zeros" => parsed_call!(special::berp_zeros; args[0])
-                .unwrap()
-                .to_vec(),
-            "beip_zeros" => parsed_call!(special::beip_zeros; args[0])
-                .unwrap()
-                .to_vec(),
-            "kerp_zeros" => parsed_call!(special::kerp_zeros; args[0])
-                .unwrap()
-                .to_vec(),
-            "keip_zeros" => parsed_call!(special::keip_zeros; args[0])
-                .unwrap()
-                .to_vec(),
+            "ber_zeros" => parsed_call!(special::ber_zeros; args[0]).unwrap(),
+            "bei_zeros" => parsed_call!(special::bei_zeros; args[0]).unwrap(),
+            "ker_zeros" => parsed_call!(special::ker_zeros; args[0]).unwrap(),
+            "kei_zeros" => parsed_call!(special::kei_zeros; args[0]).unwrap(),
+            "berp_zeros" => parsed_call!(special::berp_zeros; args[0]).unwrap(),
+            "beip_zeros" => parsed_call!(special::beip_zeros; args[0]).unwrap(),
+            "kerp_zeros" => parsed_call!(special::kerp_zeros; args[0]).unwrap(),
+            "keip_zeros" => parsed_call!(special::keip_zeros; args[0]).unwrap(),
             "kelvin_zeros" => parsed_call!(special::kelvin_zeros; args[0])
                 .unwrap()
                 .into_iter()
@@ -206,16 +192,16 @@ fn special_families_match_scipy() {
                 .collect(),
             "lpmv" => scalar_call!(special::lpmv; args[0], args[1], args[2]),
             "legendre_p" => scalar_call!(special::legendre_p; args[0], args[1]),
-            "assoc_legendre_p" => scalar_call!(special::assoc_legendre_p; args[0], args[1], args[2]),
+            "assoc_legendre_p" => {
+                scalar_call!(special::assoc_legendre_p; args[0], args[1], args[2])
+            }
             "sph_legendre_p" => scalar_call!(special::sph_legendre_p; args[0], args[1], args[2]),
             "lqn" => {
-                let (a, b) = parsed_call!(special::lqn; args[0], args[1])
-                .unwrap();
+                let (a, b) = parsed_call!(special::lqn; args[0], args[1]).unwrap();
                 [a, b].concat()
             }
             "lqmn" => {
-                let (a, b) = parsed_call!(special::lqmn; args[0], args[1], args[2])
-                .unwrap();
+                let (a, b) = parsed_call!(special::lqmn; args[0], args[1], args[2]).unwrap();
                 [a, b].into_iter().flatten().flatten().collect()
             }
             "cbrt" => scalar_call!(special::cbrt; args[0]),
@@ -262,7 +248,9 @@ fn special_families_match_scipy() {
             "eval_jacobi" => scalar_call!(special::eval_jacobi; args[0], args[1], args[2], args[3]),
             "eval_legendre" => scalar_call!(special::eval_legendre; args[0], args[1]),
             "eval_gegenbauer" => scalar_call!(special::eval_gegenbauer; args[0], args[1], args[2]),
-            "eval_genlaguerre" => scalar_call!(special::eval_genlaguerre; args[0], args[1], args[2]),
+            "eval_genlaguerre" => {
+                scalar_call!(special::eval_genlaguerre; args[0], args[1], args[2])
+            }
             "eval_laguerre" => scalar_call!(special::eval_laguerre; args[0], args[1]),
             "eval_chebyt" => scalar_call!(special::eval_chebyt; args[0], args[1]),
             "eval_chebyu" => scalar_call!(special::eval_chebyu; args[0], args[1]),
@@ -274,7 +262,8 @@ fn special_families_match_scipy() {
                 vec![a, b]
             }
             "pro_ang1_cv" => {
-                let (a, b) = parsed_call!(special::pro_ang1_cv; args[0], args[1], args[2], args[3], args[4]);
+                let (a, b) =
+                    parsed_call!(special::pro_ang1_cv; args[0], args[1], args[2], args[3], args[4]);
                 vec![a, b]
             }
             "pro_rad1" => {
@@ -282,7 +271,8 @@ fn special_families_match_scipy() {
                 vec![a, b]
             }
             "pro_rad1_cv" => {
-                let (a, b) = parsed_call!(special::pro_rad1_cv; args[0], args[1], args[2], args[3], args[4]);
+                let (a, b) =
+                    parsed_call!(special::pro_rad1_cv; args[0], args[1], args[2], args[3], args[4]);
                 vec![a, b]
             }
             "pro_rad2" => {
@@ -290,7 +280,8 @@ fn special_families_match_scipy() {
                 vec![a, b]
             }
             "pro_rad2_cv" => {
-                let (a, b) = parsed_call!(special::pro_rad2_cv; args[0], args[1], args[2], args[3], args[4]);
+                let (a, b) =
+                    parsed_call!(special::pro_rad2_cv; args[0], args[1], args[2], args[3], args[4]);
                 vec![a, b]
             }
             "obl_cv" => scalar_call!(special::obl_cv; args[0], args[1], args[2]),
@@ -299,7 +290,8 @@ fn special_families_match_scipy() {
                 vec![a, b]
             }
             "obl_ang1_cv" => {
-                let (a, b) = parsed_call!(special::obl_ang1_cv; args[0], args[1], args[2], args[3], args[4]);
+                let (a, b) =
+                    parsed_call!(special::obl_ang1_cv; args[0], args[1], args[2], args[3], args[4]);
                 vec![a, b]
             }
             "obl_rad1" => {
@@ -307,7 +299,8 @@ fn special_families_match_scipy() {
                 vec![a, b]
             }
             "obl_rad1_cv" => {
-                let (a, b) = parsed_call!(special::obl_rad1_cv; args[0], args[1], args[2], args[3], args[4]);
+                let (a, b) =
+                    parsed_call!(special::obl_rad1_cv; args[0], args[1], args[2], args[3], args[4]);
                 vec![a, b]
             }
             "obl_rad2" => {
@@ -315,116 +308,87 @@ fn special_families_match_scipy() {
                 vec![a, b]
             }
             "obl_rad2_cv" => {
-                let (a, b) = parsed_call!(special::obl_rad2_cv; args[0], args[1], args[2], args[3], args[4]);
+                let (a, b) =
+                    parsed_call!(special::obl_rad2_cv; args[0], args[1], args[2], args[3], args[4]);
                 vec![a, b]
             }
-            "jacobi" => parsed_call!(special::jacobi; args[0], args[1], args[2], args[3])
-            .unwrap()
-            .to_vec(),
+            "jacobi" => parsed_call!(special::jacobi; args[0], args[1], args[2], args[3]).unwrap(),
             "roots_jacobi" => {
-                let (a, b) = parsed_call!(special::roots_jacobi; args[0], args[1], args[2])
-                .unwrap();
+                let (a, b) =
+                    parsed_call!(special::roots_jacobi; args[0], args[1], args[2]).unwrap();
                 [a, b].concat()
             }
-            "legendre" => parsed_call!(special::legendre; args[0], args[1])
-            .unwrap()
-            .to_vec(),
+            "legendre" => parsed_call!(special::legendre; args[0], args[1]).unwrap(),
             "roots_legendre" => {
                 let (a, b) = parsed_call!(special::roots_legendre; args[0]).unwrap();
                 [a, b].concat()
             }
-            "gegenbauer" => parsed_call!(special::gegenbauer; args[0], args[1], args[2])
-            .unwrap()
-            .to_vec(),
+            "gegenbauer" => parsed_call!(special::gegenbauer; args[0], args[1], args[2]).unwrap(),
             "roots_gegenbauer" => {
-                let (a, b) = parsed_call!(special::roots_gegenbauer; args[0], args[1])
-                .unwrap();
+                let (a, b) = parsed_call!(special::roots_gegenbauer; args[0], args[1]).unwrap();
                 [a, b].concat()
             }
-            "genlaguerre" => parsed_call!(special::genlaguerre; args[0], args[1], args[2])
-            .unwrap()
-            .to_vec(),
+            "genlaguerre" => parsed_call!(special::genlaguerre; args[0], args[1], args[2]).unwrap(),
             "roots_genlaguerre" => {
-                let (a, b) = parsed_call!(special::roots_genlaguerre; args[0], args[1])
-                .unwrap();
+                let (a, b) = parsed_call!(special::roots_genlaguerre; args[0], args[1]).unwrap();
                 [a, b].concat()
             }
-            "laguerre" => parsed_call!(special::laguerre; args[0], args[1])
-            .unwrap()
-            .to_vec(),
+            "laguerre" => parsed_call!(special::laguerre; args[0], args[1]).unwrap(),
             "roots_laguerre" => {
                 let (a, b) = parsed_call!(special::roots_laguerre; args[0]).unwrap();
                 [a, b].concat()
             }
-            "hermite" => parsed_call!(special::hermite; args[0], args[1])
-            .unwrap()
-            .to_vec(),
+            "hermite" => parsed_call!(special::hermite; args[0], args[1]).unwrap(),
             "roots_hermite" => {
                 let (a, b) = parsed_call!(special::roots_hermite; args[0]).unwrap();
                 [a, b].concat()
             }
-            "hermitenorm" => parsed_call!(special::hermitenorm; args[0], args[1])
-            .unwrap()
-            .to_vec(),
+            "hermitenorm" => parsed_call!(special::hermitenorm; args[0], args[1]).unwrap(),
             "roots_hermitenorm" => {
                 let (a, b) = parsed_call!(special::roots_hermitenorm; args[0]).unwrap();
                 [a, b].concat()
             }
-            "chebyt" => parsed_call!(special::chebyt; args[0], args[1])
-            .unwrap()
-            .to_vec(),
+            "chebyt" => parsed_call!(special::chebyt; args[0], args[1]).unwrap(),
             "roots_chebyt" => {
                 let (a, b) = parsed_call!(special::roots_chebyt; args[0]).unwrap();
                 [a, b].concat()
             }
-            "chebyu" => parsed_call!(special::chebyu; args[0], args[1])
-            .unwrap()
-            .to_vec(),
+            "chebyu" => parsed_call!(special::chebyu; args[0], args[1]).unwrap(),
             "roots_chebyu" => {
                 let (a, b) = parsed_call!(special::roots_chebyu; args[0]).unwrap();
                 [a, b].concat()
             }
-            "chebyc" => parsed_call!(special::chebyc; args[0], args[1])
-            .unwrap()
-            .to_vec(),
+            "chebyc" => parsed_call!(special::chebyc; args[0], args[1]).unwrap(),
             "roots_chebyc" => {
                 let (a, b) = parsed_call!(special::roots_chebyc; args[0]).unwrap();
                 [a, b].concat()
             }
-            "chebys" => parsed_call!(special::chebys; args[0], args[1])
-            .unwrap()
-            .to_vec(),
+            "chebys" => parsed_call!(special::chebys; args[0], args[1]).unwrap(),
             "roots_chebys" => {
                 let (a, b) = parsed_call!(special::roots_chebys; args[0]).unwrap();
                 [a, b].concat()
             }
-            "sh_chebyt" => parsed_call!(special::sh_chebyt; args[0], args[1])
-            .unwrap()
-            .to_vec(),
+            "sh_chebyt" => parsed_call!(special::sh_chebyt; args[0], args[1]).unwrap(),
             "roots_sh_chebyt" => {
                 let (a, b) = parsed_call!(special::roots_sh_chebyt; args[0]).unwrap();
                 [a, b].concat()
             }
-            "sh_chebyu" => parsed_call!(special::sh_chebyu; args[0], args[1])
-            .unwrap()
-            .to_vec(),
+            "sh_chebyu" => parsed_call!(special::sh_chebyu; args[0], args[1]).unwrap(),
             "roots_sh_chebyu" => {
                 let (a, b) = parsed_call!(special::roots_sh_chebyu; args[0]).unwrap();
                 [a, b].concat()
             }
-            "sh_legendre" => parsed_call!(special::sh_legendre; args[0], args[1])
-            .unwrap()
-            .to_vec(),
+            "sh_legendre" => parsed_call!(special::sh_legendre; args[0], args[1]).unwrap(),
             "roots_sh_legendre" => {
                 let (a, b) = parsed_call!(special::roots_sh_legendre; args[0]).unwrap();
                 [a, b].concat()
             }
-            "sh_jacobi" => parsed_call!(special::sh_jacobi; args[0], args[1], args[2], args[3])
-            .unwrap()
-            .to_vec(),
+            "sh_jacobi" => {
+                parsed_call!(special::sh_jacobi; args[0], args[1], args[2], args[3]).unwrap()
+            }
             "roots_sh_jacobi" => {
-                let (a, b) = parsed_call!(special::roots_sh_jacobi; args[0], args[1], args[2])
-                .unwrap();
+                let (a, b) =
+                    parsed_call!(special::roots_sh_jacobi; args[0], args[1], args[2]).unwrap();
                 [a, b].concat()
             }
             "hankel1" => {
@@ -484,37 +448,37 @@ fn special_families_match_scipy() {
                 let z = parsed_call!(special::sph_harm_y; args[0], args[1], args[2], args[3]);
                 vec![z.re, z.im]
             }
-            "sph_harm_y_all" => parsed_call!(special::sph_harm_y_all; args[0], args[1], args[2], args[3])
-            .unwrap()
-            .into_iter()
-            .flatten()
-            .flat_map(|z| [z.re, z.im])
-            .collect(),
-            "legendre_p_all" => parsed_call!(special::legendre_p_all; args[0], args[1])
-            .unwrap()
-            .to_vec(),
-            "assoc_legendre_p_all" => parsed_call!(special::assoc_legendre_p_all; args[0], args[1], args[2])
-            .unwrap()
-            .into_iter()
-            .flatten()
-            .collect(),
-            "sph_legendre_p_all" => parsed_call!(special::sph_legendre_p_all; args[0], args[1], args[2])
-            .unwrap()
-            .into_iter()
-            .flatten()
-            .collect(),
-            "mathieu_even_coef" => parsed_call!(special::mathieu_even_coef; args[0], args[1])
-            .unwrap()
-            .to_vec(),
-            "mathieu_odd_coef" => parsed_call!(special::mathieu_odd_coef; args[0], args[1])
-            .unwrap()
-            .to_vec(),
-            "pro_cv_seq" => parsed_call!(special::pro_cv_seq; args[0], args[1], args[2])
-            .unwrap()
-            .to_vec(),
-            "obl_cv_seq" => parsed_call!(special::obl_cv_seq; args[0], args[1], args[2])
-            .unwrap()
-            .to_vec(),
+            "sph_harm_y_all" => {
+                parsed_call!(special::sph_harm_y_all; args[0], args[1], args[2], args[3])
+                    .unwrap()
+                    .into_iter()
+                    .flatten()
+                    .flat_map(|z| [z.re, z.im])
+                    .collect()
+            }
+            "legendre_p_all" => parsed_call!(special::legendre_p_all; args[0], args[1]).unwrap(),
+            "assoc_legendre_p_all" => {
+                parsed_call!(special::assoc_legendre_p_all; args[0], args[1], args[2])
+                    .unwrap()
+                    .into_iter()
+                    .flatten()
+                    .collect()
+            }
+            "sph_legendre_p_all" => {
+                parsed_call!(special::sph_legendre_p_all; args[0], args[1], args[2])
+                    .unwrap()
+                    .into_iter()
+                    .flatten()
+                    .collect()
+            }
+            "mathieu_even_coef" => {
+                parsed_call!(special::mathieu_even_coef; args[0], args[1]).unwrap()
+            }
+            "mathieu_odd_coef" => {
+                parsed_call!(special::mathieu_odd_coef; args[0], args[1]).unwrap()
+            }
+            "pro_cv_seq" => parsed_call!(special::pro_cv_seq; args[0], args[1], args[2]).unwrap(),
+            "obl_cv_seq" => parsed_call!(special::obl_cv_seq; args[0], args[1], args[2]).unwrap(),
             "jvp" => scalar_call!(special::jvp; args[0], args[1], args[2]),
             "yvp" => scalar_call!(special::yvp; args[0], args[1], args[2]),
             "ivp" => scalar_call!(special::ivp; args[0], args[1], args[2]),
@@ -537,7 +501,9 @@ fn special_families_match_scipy() {
             "eval_sh_chebyt" => scalar_call!(special::eval_sh_chebyt; args[0], args[1]),
             "eval_sh_chebyu" => scalar_call!(special::eval_sh_chebyu; args[0], args[1]),
             "eval_sh_legendre" => scalar_call!(special::eval_sh_legendre; args[0], args[1]),
-            "eval_sh_jacobi" => scalar_call!(special::eval_sh_jacobi; args[0], args[1], args[2], args[3]),
+            "eval_sh_jacobi" => {
+                scalar_call!(special::eval_sh_jacobi; args[0], args[1], args[2], args[3])
+            }
             "diric" => scalar_call!(special::diric; args[0], args[1]),
             "factorial" => scalar_call!(special::factorial; args[0]),
             "factorial2" => scalar_call!(special::factorial2; args[0]),
@@ -546,40 +512,30 @@ fn special_families_match_scipy() {
             "perm" => scalar_call!(special::perm; args[0], args[1]),
             "poch" => scalar_call!(special::poch; args[0], args[1]),
             "stirling2" => scalar_call!(special::stirling2; args[0], args[1]),
-            "bernoulli" => parsed_call!(special::bernoulli; args[0])
-                .unwrap()
-                .to_vec(),
-            "euler" => parsed_call!(special::euler; args[0])
-                .unwrap()
-                .to_vec(),
+            "bernoulli" => parsed_call!(special::bernoulli; args[0]).unwrap(),
+            "euler" => parsed_call!(special::euler; args[0]).unwrap(),
             "pbdv_seq" => {
-                let (a, b) = parsed_call!(special::pbdv_seq; args[0], args[1])
-                .unwrap();
+                let (a, b) = parsed_call!(special::pbdv_seq; args[0], args[1]).unwrap();
                 [a, b].concat()
             }
             "pbvv_seq" => {
-                let (a, b) = parsed_call!(special::pbvv_seq; args[0], args[1])
-                .unwrap();
+                let (a, b) = parsed_call!(special::pbvv_seq; args[0], args[1]).unwrap();
                 [a, b].concat()
             }
             "pbdn_seq" => {
-                let (a, b) = parsed_call!(special::pbdn_seq; args[0], args[1])
-                .unwrap();
+                let (a, b) = parsed_call!(special::pbdn_seq; args[0], args[1]).unwrap();
                 [a, b].concat()
             }
             "riccati_jn" => {
-                let (a, b) = parsed_call!(special::riccati_jn; args[0], args[1])
-                .unwrap();
+                let (a, b) = parsed_call!(special::riccati_jn; args[0], args[1]).unwrap();
                 [a, b].concat()
             }
             "riccati_yn" => {
-                let (a, b) = parsed_call!(special::riccati_yn; args[0], args[1])
-                .unwrap();
+                let (a, b) = parsed_call!(special::riccati_yn; args[0], args[1]).unwrap();
                 [a, b].concat()
             }
             "lmbda" => {
-                let (a, b) = parsed_call!(special::lmbda; args[0], args[1])
-                .unwrap();
+                let (a, b) = parsed_call!(special::lmbda; args[0], args[1]).unwrap();
                 [a, b].concat()
             }
             "logsumexp" => vec![special::logsumexp(
@@ -607,8 +563,7 @@ fn special_families_match_scipy() {
                 [a, b].concat()
             }
             "cg_roots" => {
-                let (a, b) = parsed_call!(special::cg_roots; args[0], args[1])
-                .unwrap();
+                let (a, b) = parsed_call!(special::cg_roots; args[0], args[1]).unwrap();
                 [a, b].concat()
             }
             "h_roots" => {
@@ -620,13 +575,11 @@ fn special_families_match_scipy() {
                 [a, b].concat()
             }
             "j_roots" => {
-                let (a, b) = parsed_call!(special::j_roots; args[0], args[1], args[2])
-                .unwrap();
+                let (a, b) = parsed_call!(special::j_roots; args[0], args[1], args[2]).unwrap();
                 [a, b].concat()
             }
             "js_roots" => {
-                let (a, b) = parsed_call!(special::js_roots; args[0], args[1], args[2])
-                .unwrap();
+                let (a, b) = parsed_call!(special::js_roots; args[0], args[1], args[2]).unwrap();
                 [a, b].concat()
             }
             "l_roots" => {
@@ -634,8 +587,7 @@ fn special_families_match_scipy() {
                 [a, b].concat()
             }
             "la_roots" => {
-                let (a, b) = parsed_call!(special::la_roots; args[0], args[1])
-                .unwrap();
+                let (a, b) = parsed_call!(special::la_roots; args[0], args[1]).unwrap();
                 [a, b].concat()
             }
             "p_roots" => {
@@ -688,23 +640,15 @@ fn special_families_match_scipy() {
             "nctdtrit" => scalar_call!(special::nctdtrit; args[0], args[1], args[2]),
             "nctdtrinc" => scalar_call!(special::nctdtrinc; args[0], args[1], args[2]),
             "nctdtridf" => scalar_call!(special::nctdtridf; args[0], args[1], args[2]),
-            "jn_zeros" => parsed_call!(special::jn_zeros; args[0], args[1])
-            .unwrap()
-            .to_vec(),
-            "jnp_zeros" => parsed_call!(special::jnp_zeros; args[0], args[1])
-            .unwrap()
-            .to_vec(),
-            "yn_zeros" => parsed_call!(special::yn_zeros; args[0], args[1])
-            .unwrap()
-            .to_vec(),
-            "ynp_zeros" => parsed_call!(special::ynp_zeros; args[0], args[1])
-            .unwrap()
-            .to_vec(),
+            "jn_zeros" => parsed_call!(special::jn_zeros; args[0], args[1]).unwrap(),
+            "jnp_zeros" => parsed_call!(special::jnp_zeros; args[0], args[1]).unwrap(),
+            "yn_zeros" => parsed_call!(special::yn_zeros; args[0], args[1]).unwrap(),
+            "ynp_zeros" => parsed_call!(special::ynp_zeros; args[0], args[1]).unwrap(),
             "jnyn_zeros" => parsed_call!(special::jnyn_zeros; args[0], args[1])
-            .unwrap()
-            .into_iter()
-            .flatten()
-            .collect(),
+                .unwrap()
+                .into_iter()
+                .flatten()
+                .collect(),
             "y0_zeros" => {
                 let (a, b) = parsed_call!(special::y0_zeros; args[0]).unwrap();
                 [a, b].concat()
@@ -737,18 +681,18 @@ fn special_families_match_scipy() {
                 .into_iter()
                 .flatten()
                 .collect(),
-            "ellip_harm" => vec![
-                parsed_call!(special::ellip_harm; args[0], args[1], args[2], args[3], args[4], args[5], args[6])
-                .unwrap(),
-            ],
-            "ellip_harm_2" => vec![
-                parsed_call!(special::ellip_harm_2; args[0], args[1], args[2], args[3], args[4])
-                .unwrap(),
-            ],
-            "ellip_normal" => vec![
-                parsed_call!(special::ellip_normal; args[0], args[1], args[2], args[3])
-                .unwrap(),
-            ],
+            "ellip_harm" => {
+                vec![parsed_call!(special::ellip_harm; args[0], args[1], args[2], args[3], args[4], args[5], args[6]).unwrap()]
+            }
+            "ellip_harm_2" => {
+                vec![parsed_call!(special::ellip_harm_2; args[0], args[1], args[2], args[3], args[4]).unwrap()]
+            }
+            "ellip_normal" => {
+                vec![
+                    parsed_call!(special::ellip_normal; args[0], args[1], args[2], args[3])
+                        .unwrap(),
+                ]
+            }
             "gamma" => scalar_call!(special::gamma; args[0]),
             "gammaln" => scalar_call!(special::gammaln; args[0]),
             "digamma" => scalar_call!(special::digamma; args[0]),
@@ -763,34 +707,15 @@ fn special_families_match_scipy() {
             "lambertw" => scalar_call!(special::lambertw; args[0]),
             "ellipk" => vec![parsed_call!(special::ellipk; args[0]).unwrap()],
             "ellipe" => vec![parsed_call!(special::ellipe; args[0]).unwrap()],
-            "ellipeinc" => vec![
-                parsed_call!(special::ellipeinc; args[0], args[1])
-                .unwrap(),
-            ],
-            "elliprf" => vec![
-                parsed_call!(special::elliprf; args[0], args[1], args[2])
-                .unwrap(),
-            ],
-            "elliprd" => vec![
-                parsed_call!(special::elliprd; args[0], args[1], args[2])
-                .unwrap(),
-            ],
-            "elliprg" => vec![
-                parsed_call!(special::elliprg; args[0], args[1], args[2])
-                .unwrap(),
-            ],
-            "elliprj" => vec![
-                parsed_call!(special::elliprj; args[0], args[1], args[2], args[3])
-                .unwrap(),
-            ],
-            "elliprc" => vec![
-                parsed_call!(special::elliprc; args[0], args[1])
-                .unwrap(),
-            ],
-            "ellipkinc" => vec![
-                parsed_call!(special::ellipkinc; args[0], args[1])
-                .unwrap(),
-            ],
+            "ellipeinc" => vec![parsed_call!(special::ellipeinc; args[0], args[1]).unwrap()],
+            "elliprf" => vec![parsed_call!(special::elliprf; args[0], args[1], args[2]).unwrap()],
+            "elliprd" => vec![parsed_call!(special::elliprd; args[0], args[1], args[2]).unwrap()],
+            "elliprg" => vec![parsed_call!(special::elliprg; args[0], args[1], args[2]).unwrap()],
+            "elliprj" => {
+                vec![parsed_call!(special::elliprj; args[0], args[1], args[2], args[3]).unwrap()]
+            }
+            "elliprc" => vec![parsed_call!(special::elliprc; args[0], args[1]).unwrap()],
+            "ellipkinc" => vec![parsed_call!(special::ellipkinc; args[0], args[1]).unwrap()],
             "ellipkm1" => vec![parsed_call!(special::ellipkm1; args[0]).unwrap()],
             "trigamma" => scalar_call!(special::trigamma; args[0]),
             "lambertwm1" => scalar_call!(special::lambertwm1; args[0]),
@@ -798,60 +723,27 @@ fn special_families_match_scipy() {
                 let (a, b) = parsed_call!(special::ellipke; args[0]).unwrap();
                 vec![a, b]
             }
-            "ellipf" => vec![
-                parsed_call!(special::ellipf; args[0], args[1])
-                .unwrap(),
-            ],
-            "ellippi" => vec![
-                parsed_call!(special::ellippi; args[0], args[1])
-                .unwrap(),
-            ],
-            "ellippiinc" => vec![
-                parsed_call!(special::ellippiinc; args[0], args[1], args[2])
-                .unwrap(),
-            ],
+            "ellipf" => vec![parsed_call!(special::ellipf; args[0], args[1]).unwrap()],
+            "ellippi" => vec![parsed_call!(special::ellippi; args[0], args[1]).unwrap()],
+            "ellippiinc" => {
+                vec![parsed_call!(special::ellippiinc; args[0], args[1], args[2]).unwrap()]
+            }
             "ellipd" => vec![parsed_call!(special::ellipd; args[0]).unwrap()],
-            "ellipdinc" => vec![
-                parsed_call!(special::ellipdinc; args[0], args[1])
-                .unwrap(),
-            ],
-            "cel" => vec![
-                parsed_call!(special::cel; args[0], args[1], args[2], args[3])
-                .unwrap(),
-            ],
+            "ellipdinc" => vec![parsed_call!(special::ellipdinc; args[0], args[1]).unwrap()],
+            "cel" => vec![parsed_call!(special::cel; args[0], args[1], args[2], args[3]).unwrap()],
             "cel1" => vec![parsed_call!(special::cel1; args[0]).unwrap()],
-            "cel2" => vec![
-                parsed_call!(special::cel2; args[0], args[1], args[2])
-                .unwrap(),
-            ],
-            "cel3" => vec![
-                parsed_call!(special::cel3; args[0], args[1])
-                .unwrap(),
-            ],
-            "el1" => vec![
-                parsed_call!(special::el1; args[0], args[1])
-                .unwrap(),
-            ],
-            "el2" => vec![
-                parsed_call!(special::el2; args[0], args[1], args[2], args[3])
-                .unwrap(),
-            ],
-            "el3" => vec![
-                parsed_call!(special::el3; args[0], args[1], args[2])
-                .unwrap(),
-            ],
-            "jacobi_zeta" => vec![
-                parsed_call!(special::jacobi_zeta; args[0], args[1])
-                .unwrap(),
-            ],
-            "heuman_lambda" => vec![
-                parsed_call!(special::heuman_lambda; args[0], args[1])
-                .unwrap(),
-            ],
-            "ellippiinc_bulirsch" => vec![
-                parsed_call!(special::ellippiinc_bulirsch; args[0], args[1], args[2])
-                .unwrap(),
-            ],
+            "cel2" => vec![parsed_call!(special::cel2; args[0], args[1], args[2]).unwrap()],
+            "cel3" => vec![parsed_call!(special::cel3; args[0], args[1]).unwrap()],
+            "el1" => vec![parsed_call!(special::el1; args[0], args[1]).unwrap()],
+            "el2" => vec![parsed_call!(special::el2; args[0], args[1], args[2], args[3]).unwrap()],
+            "el3" => vec![parsed_call!(special::el3; args[0], args[1], args[2]).unwrap()],
+            "jacobi_zeta" => vec![parsed_call!(special::jacobi_zeta; args[0], args[1]).unwrap()],
+            "heuman_lambda" => {
+                vec![parsed_call!(special::heuman_lambda; args[0], args[1]).unwrap()]
+            }
+            "ellippiinc_bulirsch" => {
+                vec![parsed_call!(special::ellippiinc_bulirsch; args[0], args[1], args[2]).unwrap()]
+            }
             name => panic!("missing Rust dispatch for {name}"),
         };
         assert_eq!(actual.len(), expected.len(), "{} shape", fields[0]);

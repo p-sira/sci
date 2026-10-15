@@ -1,18 +1,15 @@
 mod common;
+use common::close;
 use common::parsed_call;
 use common::{csv_row, matrix, vector};
 
 use sci::{cluster::vq, constants as c, integrate as i, interpolate as p};
 
-#[track_caller]
-fn close(actual: f64, expected: f64) {
-    common::assert_close(actual, expected, 3e-12, 3e-12, "numerical comparison");
-}
 fn check_vector(actual: &[f64], expected: &str) {
     let expected = vector(expected);
     assert_eq!(actual.len(), expected.len());
     for (&a, b) in actual.iter().zip(expected) {
-        close(a, b);
+        close(a, b, 3e-12, 3e-12);
     }
 }
 fn check_matrix(actual: &[Vec<f64>], expected: &str) {
@@ -21,7 +18,7 @@ fn check_matrix(actual: &[Vec<f64>], expected: &str) {
     for (a, b) in actual.iter().zip(expected) {
         assert_eq!(a.len(), b.len());
         for (&a, b) in a.iter().zip(b) {
-            close(a, b);
+            close(a, b, 3e-12, 3e-12);
         }
     }
 }
@@ -78,7 +75,7 @@ fn public_numerical_apis_match_scipy() {
                                 "{input}: {actual} != {expected}"
                             );
                         } else {
-                            close(actual, expected);
+                            close(actual, expected, 3e-12, 3e-12);
                         }
                     }
                 };
@@ -102,13 +99,13 @@ fn public_numerical_apis_match_scipy() {
                                 "{input}: {actual} != {expected}"
                             );
                         } else {
-                            close(actual, expected);
+                            close(actual, expected, 3e-12, 3e-12);
                         }
                     }
                     "newton_cotes" => {
                         let (w, b) = i::newton_cotes(&a).unwrap();
                         check_vector(&w, e[1]);
-                        close(b, e[2].parse().unwrap());
+                        close(b, e[2].parse().unwrap(), 3e-12, 3e-12);
                     }
                     "fixed_quad" => {
                         let f: fn(f64) -> f64 = match c[3] {
@@ -142,7 +139,7 @@ fn public_numerical_apis_match_scipy() {
                                 "{input}: {actual} != {expected}"
                             );
                         } else {
-                            close(actual, expected);
+                            close(actual, expected, 3e-12, 3e-12);
                         }
                     }
                     _ => panic!("{api}"),
@@ -200,7 +197,7 @@ fn public_numerical_apis_match_scipy() {
                             vq::kmeans(&obs, &codes, c[5].parse().unwrap(), c[6].parse().unwrap())
                                 .unwrap();
                         check_matrix(&centroids, e[1]);
-                        close(distortion, e[2].parse().unwrap());
+                        close(distortion, e[2].parse().unwrap(), 3e-12, 3e-12);
                     }
                     _ => panic!("{api}"),
                 }
@@ -249,7 +246,7 @@ fn constants_match_scipy_and_full_codata_snapshot() {
             "nu2lambda" => parsed_call!(c::nu2lambda; row[1]),
             _ => panic!(),
         };
-        close(value, e[1].parse().unwrap());
+        close(value, e[1].parse().unwrap(), 3e-12, 3e-12);
     }
     assert_eq!(covered.len(), 7);
     let table: Vec<_> = common::lines(include_str!("fixtures/constants_table.csv")).collect();
@@ -311,10 +308,15 @@ fn integration_domains_boundaries_and_properties() {
     assert!(i::newton_cotes(&(0..=13).map(|x| x as f64).collect::<Vec<_>>()).is_err());
     let x = [0.0, 0.3, 1.0, 1.4, 2.0];
     let y: Vec<_> = x.iter().map(|v| v * v).collect();
-    close(i::simpson(&y, Some(&x), 1.0).unwrap(), 8.0 / 3.0);
+    close(
+        i::simpson(&y, Some(&x), 1.0).unwrap(),
+        8.0 / 3.0,
+        3e-12,
+        3e-12,
+    );
     let integral = i::cumulative_simpson(&y, Some(&x), 1.0, Some(0.0)).unwrap();
     for (&x, value) in x.iter().zip(integral) {
-        close(value, x * x * x / 3.0);
+        close(value, x * x * x / 3.0, 3e-12, 3e-12);
     }
     for n in 1..=8 {
         let (nodes, weights) = sci::special::roots_legendre(n).unwrap();
@@ -322,6 +324,8 @@ fn integration_domains_boundaries_and_properties() {
         close(
             i::fixed_quad(|v| v.powi((2 * n - 2) as i32), -1.0, 1.0, n).unwrap(),
             sci::linalg::dot(&weights, &samples).unwrap(),
+            3e-12,
+            3e-12,
         );
     }
     for n in 1..=8 {
@@ -332,6 +336,8 @@ fn integration_domains_boundaries_and_properties() {
             close(
                 sci::linalg::dot(&w, &y).unwrap(),
                 (n as f64).powi(k + 1) / (k + 1) as f64,
+                3e-12,
+                3e-12,
             );
         }
     }
@@ -354,7 +360,7 @@ fn interpolation_preserves_finite_results_at_extreme_scales() {
                 .unwrap();
         for (&t, value) in query.iter().zip(values) {
             // Normalize before comparing so subnormal results receive a useful tolerance.
-            close(value / scale, t);
+            close(value / scale, t, 3e-12, 3e-12);
         }
     }
 
@@ -397,21 +403,23 @@ fn interpolation_domains_and_independent_identities() {
     let coefficients = p::lagrange(&nodes, &data).unwrap();
     for ((&x, b), k) in query.iter().zip(bary).zip(krogh) {
         let expected = x * x * x - 2.0 * x + 1.0;
-        close(b, expected);
-        close(k, expected);
+        close(b, expected, 3e-12, 3e-12);
+        close(k, expected, 3e-12, 3e-12);
         close(
             coefficients.iter().fold(0.0, |value, c| value * x + c),
             expected,
+            3e-12,
+            3e-12,
         );
     }
     let hermite =
         p::krogh_interpolate(&[0.0, 0.0, 0.0, 0.0], &[1.0, -2.0, 0.0, 6.0], &query).unwrap();
     for (&x, value) in query.iter().zip(hermite) {
-        close(value, x * x * x - 2.0 * x + 1.0);
+        close(value, x * x * x - 2.0 * x + 1.0, 3e-12, 3e-12);
     }
     // Reciprocal slopes would overflow here. Linear reproduction remains valid.
     let tiny = p::pchip_interpolate(&[0.0, 1.0, 2.0], &[0.0, 1e-310, 2e-310], &[1.5]).unwrap();
-    close(tiny[0] / 1e-310, 1.5);
+    close(tiny[0] / 1e-310, 1.5, 3e-12, 3e-12);
     assert!(p::barycentric_interpolate(&[0.0; 257], &[0.0; 257], &[]).is_err());
     assert!(p::krogh_interpolate(&[0.0; 33], &[0.0; 33], &[]).is_err());
     assert!(p::lagrange(&[0.0; 33], &[0.0; 33]).is_err());
@@ -429,7 +437,7 @@ fn interpolation_domains_and_independent_identities() {
         den.reverse();
         for k in 0..=m + n {
             let product: f64 = (0..=k.min(m)).map(|j| den[j] * t[k - j]).sum();
-            close(product, num.get(k).copied().unwrap_or(0.0));
+            close(product, num.get(k).copied().unwrap_or(0.0), 3e-12, 3e-12);
         }
     }
 }
@@ -460,16 +468,25 @@ fn clustering_validation_ties_and_interoperability() {
     close(
         sci::stats::std(&whitened.iter().map(|r| r[0]).collect::<Vec<_>>(), 0).unwrap(),
         1.0,
+        3e-12,
+        3e-12,
     );
     let (codes, distortion) =
         vq::kmeans(&obs, &[vec![0.0, 0.0], vec![10.0, 1.0]], 1e-10, 20).unwrap();
     let (labels, distances) = vq::vq(&obs, &codes).unwrap();
     assert_eq!(labels, vec![0, 0, 1, 1]);
-    close(distortion, sci::stats::mean(&distances).unwrap());
+    close(
+        distortion,
+        sci::stats::mean(&distances).unwrap(),
+        3e-12,
+        3e-12,
+    );
     for (row, &label) in obs.iter().zip(&labels) {
         close(
             sci::spatial::distance::euclidean(row, &codes[label], None).unwrap(),
             1.0,
+            3e-12,
+            3e-12,
         );
     }
 }
@@ -486,7 +503,12 @@ fn constants_special_values_round_trips_and_aliases() {
     assert!(c::lambda2nu(f64::NAN).is_nan());
     assert!(c::nu2lambda(f64::NAN).is_nan());
     for wavelength in [1e-9, 1.0, 1e6] {
-        close(c::nu2lambda(c::lambda2nu(wavelength)), wavelength);
+        close(
+            c::nu2lambda(c::lambda2nu(wavelength)),
+            wavelength,
+            3e-12,
+            3e-12,
+        );
     }
     use c::TemperatureScale::*;
     for from in [Celsius, Kelvin, Fahrenheit, Rankine] {
@@ -495,6 +517,8 @@ fn constants_special_values_round_trips_and_aliases() {
                 close(
                     c::convert_temperature(c::convert_temperature(x, from, to), to, from),
                     x,
+                    3e-12,
+                    3e-12,
                 );
             }
             assert!(c::convert_temperature(f64::NAN, from, to).is_nan());
@@ -518,7 +542,12 @@ fn integration_scaling_and_compensation_preserve_independent_identities() {
     assert_eq!(i::trapezoid(&[tiny, tiny], None, 1.0).unwrap(), tiny);
     assert_eq!(i::trapezoid(&[tiny, 0.0], None, 2.0).unwrap(), tiny);
     assert_eq!(i::simpson(&[1.0; 3], None, tiny).unwrap(), 2.0 * tiny);
-    close(i::simpson(&[1e308; 3], None, 1e-300).unwrap(), 2e8);
+    close(
+        i::simpson(&[1e308; 3], None, 1e-300).unwrap(),
+        2e8,
+        3e-12,
+        3e-12,
+    );
     let y = [1e16, 1e16, 1.0, 1.0, -1e16, -1e16];
     let x = [0.0, 1.0, 1.0, 2.0, 2.0, 3.0];
     assert_eq!(i::trapezoid(&y, Some(&x), 1.0).unwrap(), 1.0);
@@ -533,7 +562,7 @@ fn integration_scaling_and_compensation_preserve_independent_identities() {
         let y = [amplitude; 5];
         let forward = i::simpson(&y, None, 1.0 / amplitude).unwrap();
         let backward = i::simpson(&y, None, -1.0 / amplitude).unwrap();
-        close(forward, 4.0);
+        close(forward, 4.0, 3e-12, 3e-12);
         assert_eq!(backward, -forward);
         assert_eq!(
             i::cumulative_simpson(&y, None, 1.0 / amplitude, Some(0.0))
@@ -581,17 +610,24 @@ fn quadrature_extreme_scales_obey_moments_and_callback_contracts() {
             order,
         )
         .unwrap();
-        close(forward, 3.4);
+        close(forward, 3.4, 3e-12, 3e-12);
         let backward = i::fixed_quad(|_| 1e-308, 1.7e308, -1.7e308, order).unwrap();
-        close(backward, -forward);
+        close(backward, -forward, 3e-12, 3e-12);
     }
     for n in [2, 3, 5, 9] {
         assert_eq!(i::romb(&vec![1.0; n], tiny).unwrap(), (n - 1) as f64 * tiny);
-        close(i::romb(&vec![1e-308; n], 1e308).unwrap(), (n - 1) as f64);
+        close(
+            i::romb(&vec![1e-308; n], 1e308).unwrap(),
+            (n - 1) as f64,
+            3e-12,
+            3e-12,
+        );
     }
     close(
         i::romb(&[-5.5e307, 1.55e308, -5.5e307], 1.0).unwrap(),
         1.7e308,
+        3e-12,
+        3e-12,
     );
     assert!(
         i::fixed_quad(|_| 0.0, 1.0, 0.0, 3)

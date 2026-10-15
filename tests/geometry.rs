@@ -1,4 +1,5 @@
 mod common;
+use common::close;
 use common::{matrix, vector};
 
 use g::{DistanceForm, DistanceOutput, Metric};
@@ -27,10 +28,6 @@ fn metric<'a>(name: &str, extra: &str, v: &'a [f64], m: &'a [Vec<f64>]) -> Metri
         "jensenshannon" => Metric::JensenShannon(None),
         _ => panic!("unknown metric"),
     }
-}
-#[track_caller]
-fn close(a: f64, b: f64) {
-    common::assert_close(a, b, 3e-12, 3e-12, "numerical comparison");
 }
 
 #[test]
@@ -138,12 +135,14 @@ fn all_numerical_inventory_names_match_scipy() {
                     close(
                         g::euclidean(&x[r.index_u], &y[r.index_v], None).unwrap(),
                         r.distance,
+                        3e-12,
+                        3e-12,
                     );
                     let nearest = y
                         .iter()
                         .map(|b| g::euclidean(&x[r.index_u], b, None).unwrap())
                         .fold(f64::INFINITY, f64::min);
-                    close(nearest, r.distance);
+                    close(nearest, r.distance, 3e-12, 3e-12);
                     vec![vec![r.distance, r.index_u as f64, r.index_v as f64]]
                 }
                 "tsearch" => {
@@ -171,7 +170,7 @@ fn all_numerical_inventory_names_match_scipy() {
             // SciPy shuffles, so tied witness indices may differ. Shapes and
             // the returned witnesses are checked above; compare the distance.
             if c[1] != "directed_hausdorff" || i == 0 {
-                close(a, b);
+                close(a, b, 3e-12, 3e-12);
             }
         }
     }
@@ -361,7 +360,12 @@ fn independent_properties_and_interoperability() {
         spatial::distance::euclidean(&x[0], &x[1], None).unwrap(),
         dm[0][1]
     );
-    close(linalg::matvec(&dm, &[1.0, 0.0, 0.0]).unwrap()[1], dm[1][0]);
+    close(
+        linalg::matvec(&dm, &[1.0, 0.0, 0.0]).unwrap()[1],
+        dm[1][0],
+        3e-12,
+        3e-12,
+    );
     for i in 0..3 {
         for j in 0..3 {
             for k in 0..3 {
@@ -377,17 +381,22 @@ fn independent_properties_and_interoperability() {
     )
     .unwrap()
     {
-        close(linalg::dot(&row, &row).unwrap(), 1.0);
+        close(linalg::dot(&row, &row).unwrap(), 1.0, 3e-12, 3e-12);
     }
     let shifted: Vec<_> = x
         .iter()
         .map(|r| vec![3.0 + 2.0 * r[1], 1.0 - 2.0 * r[0], 4.0 + 2.0 * r[2]])
         .collect();
     let fit = g::procrustes(&x, &shifted).unwrap();
-    close(fit.disparity, 0.0);
-    close(fit.reference.iter().flatten().map(|x| x * x).sum(), 1.0);
+    close(fit.disparity, 0.0, 3e-12, 3e-12);
+    close(
+        fit.reference.iter().flatten().map(|x| x * x).sum(),
+        1.0,
+        3e-12,
+        3e-12,
+    );
     let reverse = g::procrustes(&shifted, &x).unwrap();
-    close(fit.disparity, reverse.disparity);
+    close(fit.disparity, reverse.disparity, 3e-12, 3e-12);
     let vertices = vec![
         vec![0.0, 0.0],
         vec![1.0, 0.0],
@@ -407,33 +416,52 @@ fn independent_properties_and_interoperability() {
     close(
         g::euclidean(&[1e300, 1e300], &[0.0, 0.0], None).unwrap() / 1e300,
         2.0_f64.sqrt(),
+        3e-12,
+        3e-12,
     );
-    close(g::canberra(&[1e308], &[-1e308], None).unwrap(), 1.0);
+    close(
+        g::canberra(&[1e308], &[-1e308], None).unwrap(),
+        1.0,
+        3e-12,
+        3e-12,
+    );
     close(
         g::hamming(&[1.0, 0.0], &[0.0, 0.0], Some(&[1e308, 1e308])).unwrap(),
         0.5,
+        3e-12,
+        3e-12,
     );
     close(
         g::dice(&[1.0, 0.0], &[1.0, 1.0], Some(&[1e308, 1e308])).unwrap(),
         1.0 / 3.0,
+        3e-12,
+        3e-12,
     );
     close(
         g::braycurtis(&[1.0, 2.0], &[2.0, 1.0], Some(&[1e308, 1e308])).unwrap(),
         1.0 / 3.0,
+        3e-12,
+        3e-12,
     );
     close(
         g::minkowski_distance_p(&[1e300, 1e300], &[0.0, 0.0], 0.1).unwrap() / 1e30,
         2.0,
+        3e-12,
+        3e-12,
     );
     let tie = g::directed_hausdorff(&[vec![0.0], vec![2.0]], &[vec![1.0]]).unwrap();
     assert_eq!((tie.index_u, tie.index_v), (0, 0));
     close(
         g::cosine(&[1e300, 1e300], &[1e300, 1e300], None).unwrap(),
         0.0,
+        3e-12,
+        3e-12,
     );
     close(
         g::jensenshannon(&[1e308, 1e308], &[1.0, 1.0], None).unwrap(),
         0.0,
+        3e-12,
+        3e-12,
     );
     assert_eq!(
         g::chebyshev(&[f64::MAX, 0.0], &[-f64::MAX, 2.0], Some(&[0.0, 1.0])).unwrap(),

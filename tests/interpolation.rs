@@ -1,4 +1,5 @@
 mod common;
+use common::close;
 use common::{matrix, vector};
 
 use sci::{Error, Spline, SurfaceSpline, interpolate as p};
@@ -24,15 +25,11 @@ fn surface(s: &str) -> SurfaceSpline {
 fn optional(s: &str) -> Option<Vec<f64>> {
     (!s.is_empty()).then(|| vector(s))
 }
-#[track_caller]
-fn close(actual: f64, expected: f64) {
-    common::assert_close(actual, expected, 2e-10, 2e-10, "numerical comparison");
-}
 fn check(actual: &[f64], expected: &str) {
     let expected = vector(expected);
     assert_eq!(actual.len(), expected.len());
     for (&a, e) in actual.iter().zip(expected) {
-        close(a, e);
+        close(a, e, 2e-10, 2e-10);
     }
 }
 fn check_matrix(actual: &[Vec<f64>], expected: &str) {
@@ -219,6 +216,8 @@ fn every_added_inventory_name_matches_scipy() {
             "splint" => close(
                 p::splint(a[0].parse().unwrap(), a[1].parse().unwrap(), &spline(a[2])).unwrap(),
                 e[1].parse().unwrap(),
+                2e-10,
+                2e-10,
             ),
             "insert" => check_transform(
                 &p::insert(a[0].parse().unwrap(), &spline(a[1]), a[2].parse().unwrap()).unwrap(),
@@ -305,7 +304,7 @@ fn spline_calculus_and_refinement_preserve_identities() {
         .iter()
         .zip(p::splev(&boundary_x, &boundary_fit, 0, p::SplineExtension::Error).unwrap())
     {
-        close(value, 2.0 * x + 1.0);
+        close(value, 2.0 * x + 1.0, 2e-10, 2e-10);
     }
     let maximal_degree = Spline {
         knots: [vec![0.0; 33], vec![1.0; 33]].concat(),
@@ -320,7 +319,7 @@ fn spline_calculus_and_refinement_preserve_identities() {
     )
     .unwrap()
     {
-        close(value, 1.0);
+        close(value, 1.0, 2e-10, 2e-10);
     }
     assert!(p::splantider(&maximal_degree, 1).is_err());
     let x = [0., 0.3, 0.7, 1., 1.5, 2., 2.4, 3.];
@@ -329,36 +328,38 @@ fn spline_calculus_and_refinement_preserve_identities() {
     let query: Vec<_> = (0..=60).map(|i| i as f64 / 20.).collect();
     let values = p::splev(&query, &s, 0, p::SplineExtension::Error).unwrap();
     for (&q, v) in query.iter().zip(&values) {
-        close(*v, q * q * q - 2. * q + 1.);
+        close(*v, q * q * q - 2. * q + 1., 2e-10, 2e-10);
     }
     let d = p::splder(&s, 1).unwrap();
     for (&q, v) in query
         .iter()
         .zip(p::splev(&query, &d, 0, p::SplineExtension::Error).unwrap())
     {
-        close(v, 3. * q * q - 2.);
+        close(v, 3. * q * q - 2., 2e-10, 2e-10);
     }
     let round = p::splder(&p::splantider(&s, 2).unwrap(), 2).unwrap();
     for (&v, r) in values
         .iter()
         .zip(p::splev(&query, &round, 0, p::SplineExtension::Error).unwrap())
     {
-        close(v, r);
+        close(v, r, 2e-10, 2e-10);
     }
     let refined = p::insert(0.8, &s, 2).unwrap();
     for (&v, r) in values
         .iter()
         .zip(p::splev(&query, &refined, 0, p::SplineExtension::Error).unwrap())
     {
-        close(v, r);
+        close(v, r, 2e-10, 2e-10);
     }
-    close(p::splint(0., 3., &s).unwrap(), 14.25);
-    close(p::splint(3., 0., &s).unwrap(), -14.25);
+    close(p::splint(0., 3., &s).unwrap(), 14.25, 2e-10, 2e-10);
+    close(p::splint(3., 0., &s).unwrap(), -14.25, 2e-10, 2e-10);
     let roots = p::sproot(&s).unwrap();
     for r in roots {
         close(
             p::splev(&[r], &s, 0, p::SplineExtension::Error).unwrap()[0],
             0.,
+            2e-10,
+            2e-10,
         );
     }
     let noisy = [0., 0.4, -0.1, 0.8, 0.2, 1., 0.7, 1.5];
@@ -382,6 +383,8 @@ fn spline_calculus_and_refinement_preserve_identities() {
         close(
             p::splev(&[q], &smooth, 2, p::SplineExtension::Error).unwrap()[0],
             0.,
+            2e-10,
+            2e-10,
         );
     }
 }

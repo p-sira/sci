@@ -1,5 +1,6 @@
 //! Public API coverage for the complete scipy.differentiate inventory and gradient.
 mod common;
+use common::finite_close;
 use common::vector as numbers;
 
 use std::cell::Cell;
@@ -45,12 +46,6 @@ fn vector(name: &str, x: &[f64]) -> Vec<f64> {
     }
 }
 
-#[track_caller]
-fn close(actual: f64, expected: f64, atol: f64, rtol: f64) {
-    assert!(actual.is_finite() && expected.is_finite());
-    common::assert_close(actual, expected, atol, rtol, "differentiation comparison");
-}
-
 #[test]
 fn all_inventory_functions_and_gradient_match_scipy() {
     let inputs: Vec<_> =
@@ -79,7 +74,7 @@ fn all_inventory_functions_and_gradient_match_scipy() {
         let reference = numbers(expected[2]);
         assert_eq!(reference.len(), rows * columns);
         for (actual, expected) in actual.iter().flatten().zip(reference) {
-            close(
+            finite_close(
                 *actual,
                 expected,
                 fields[4].parse().unwrap(),
@@ -243,9 +238,9 @@ fn evaluation_counts_and_symmetric_matrix_interoperate() {
 #[test]
 fn second_order_convergence_and_extreme_scales() {
     let error = |h| (d::hessian(|x| x[0].powi(4), &[1.0], h).unwrap()[0][0] - 12.0).abs();
-    close(error(0.125) / error(0.0625), 4.0, 1e-12, 0.0);
+    finite_close(error(0.125) / error(0.0625), 4.0, 1e-12, 0.0);
     let error = |h| (d::derivative(|x| x.powi(3), 1.0, h).unwrap() - 3.0).abs();
-    close(error(0.125) / error(0.0625), 4.0, 1e-12, 0.0);
+    finite_close(error(0.125) / error(0.0625), 4.0, 1e-12, 0.0);
     assert_eq!(d::derivative(|x| x, 0.0, f64::MAX).unwrap(), 1.0);
     assert_eq!(
         d::derivative(|x| x.signum() * f64::MAX, 0.0, 1.0).unwrap(),
