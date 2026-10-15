@@ -25,6 +25,18 @@ macro_rules! scalar_call {
 #[allow(unused_imports)]
 pub(crate) use scalar_call;
 
+/// Parse fixture arguments and normalize a pair result to a two-element vector.
+/// The first tuple element precedes the second in the output.
+#[allow(unused_macros)]
+macro_rules! pair_call {
+    ($function:path; $($argument:expr),+ $(,)?) => {{
+        let (a, b) = $crate::common::parsed_call!($function; $($argument),+);
+        vec![a, b]
+    }};
+}
+#[allow(unused_imports)]
+pub(crate) use pair_call;
+
 use std::{fmt::Debug, str::FromStr};
 
 /// Skip the CSV header, retaining row text for case diagnostics.

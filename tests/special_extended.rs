@@ -1,5 +1,5 @@
 mod common;
-use common::{parsed_call, scalar_call};
+use common::{pair_call, parsed_call, scalar_call};
 
 use sci::{complex::Complex, special};
 
@@ -52,22 +52,10 @@ fn special_families_match_scipy() {
             "k0e" => scalar_call!(special::k0e; args[0]),
             "k1e" => scalar_call!(special::k1e; args[0]),
             "besselpoly" => scalar_call!(special::besselpoly; args[0], args[1], args[2]),
-            "itj0y0" => {
-                let (a, b) = parsed_call!(special::itj0y0; args[0]);
-                vec![a, b]
-            }
-            "it2j0y0" => {
-                let (a, b) = parsed_call!(special::it2j0y0; args[0]);
-                vec![a, b]
-            }
-            "iti0k0" => {
-                let (a, b) = parsed_call!(special::iti0k0; args[0]);
-                vec![a, b]
-            }
-            "it2i0k0" => {
-                let (a, b) = parsed_call!(special::it2i0k0; args[0]);
-                vec![a, b]
-            }
+            "itj0y0" => pair_call!(special::itj0y0; args[0]),
+            "it2j0y0" => pair_call!(special::it2j0y0; args[0]),
+            "iti0k0" => pair_call!(special::iti0k0; args[0]),
+            "it2i0k0" => pair_call!(special::it2i0k0; args[0]),
             "struve" => scalar_call!(special::struve; args[0], args[1]),
             "modstruve" => scalar_call!(special::modstruve; args[0], args[1]),
             "itstruve0" => scalar_call!(special::itstruve0; args[0]),
@@ -80,18 +68,9 @@ fn special_families_match_scipy() {
             "exp1" => scalar_call!(special::exp1; args[0]),
             "expi" => scalar_call!(special::expi; args[0]),
             "expn" => scalar_call!(special::expn; args[0], args[1]),
-            "sici" => {
-                let (a, b) = parsed_call!(special::sici; args[0]);
-                vec![a, b]
-            }
-            "shichi" => {
-                let (a, b) = parsed_call!(special::shichi; args[0]);
-                vec![a, b]
-            }
-            "fresnel" => {
-                let (a, b) = parsed_call!(special::fresnel; args[0]);
-                vec![a, b]
-            }
+            "sici" => pair_call!(special::sici; args[0]),
+            "shichi" => pair_call!(special::shichi; args[0]),
+            "fresnel" => pair_call!(special::fresnel; args[0]),
             "spence" => scalar_call!(special::spence; args[0]),
             "zeta" => scalar_call!(special::zeta; args[0], args[1]),
             "zetac" => scalar_call!(special::zetac; args[0]),
@@ -131,44 +110,17 @@ fn special_families_match_scipy() {
             "smirnovi" => scalar_call!(special::smirnovi; args[0], args[1]),
             "owens_t" => scalar_call!(special::owens_t; args[0], args[1]),
             "tklmbda" => scalar_call!(special::tklmbda; args[0], args[1]),
-            "pbdv" => {
-                let (a, b) = parsed_call!(special::pbdv; args[0], args[1]);
-                vec![a, b]
-            }
-            "pbvv" => {
-                let (a, b) = parsed_call!(special::pbvv; args[0], args[1]);
-                vec![a, b]
-            }
-            "pbwa" => {
-                let (a, b) = parsed_call!(special::pbwa; args[0], args[1]);
-                vec![a, b]
-            }
+            "pbdv" => pair_call!(special::pbdv; args[0], args[1]),
+            "pbvv" => pair_call!(special::pbvv; args[0], args[1]),
+            "pbwa" => pair_call!(special::pbwa; args[0], args[1]),
             "mathieu_a" => scalar_call!(special::mathieu_a; args[0], args[1]),
             "mathieu_b" => scalar_call!(special::mathieu_b; args[0], args[1]),
-            "mathieu_cem" => {
-                let (a, b) = parsed_call!(special::mathieu_cem; args[0], args[1], args[2]);
-                vec![a, b]
-            }
-            "mathieu_sem" => {
-                let (a, b) = parsed_call!(special::mathieu_sem; args[0], args[1], args[2]);
-                vec![a, b]
-            }
-            "mathieu_modcem1" => {
-                let (a, b) = parsed_call!(special::mathieu_modcem1; args[0], args[1], args[2]);
-                vec![a, b]
-            }
-            "mathieu_modcem2" => {
-                let (a, b) = parsed_call!(special::mathieu_modcem2; args[0], args[1], args[2]);
-                vec![a, b]
-            }
-            "mathieu_modsem1" => {
-                let (a, b) = parsed_call!(special::mathieu_modsem1; args[0], args[1], args[2]);
-                vec![a, b]
-            }
-            "mathieu_modsem2" => {
-                let (a, b) = parsed_call!(special::mathieu_modsem2; args[0], args[1], args[2]);
-                vec![a, b]
-            }
+            "mathieu_cem" => pair_call!(special::mathieu_cem; args[0], args[1], args[2]),
+            "mathieu_sem" => pair_call!(special::mathieu_sem; args[0], args[1], args[2]),
+            "mathieu_modcem1" => pair_call!(special::mathieu_modcem1; args[0], args[1], args[2]),
+            "mathieu_modcem2" => pair_call!(special::mathieu_modcem2; args[0], args[1], args[2]),
+            "mathieu_modsem1" => pair_call!(special::mathieu_modsem1; args[0], args[1], args[2]),
+            "mathieu_modsem2" => pair_call!(special::mathieu_modsem2; args[0], args[1], args[2]),
             "ber" => scalar_call!(special::ber; args[0]),
             "bei" => scalar_call!(special::bei; args[0]),
             "ker" => scalar_call!(special::ker; args[0]),
@@ -257,60 +209,30 @@ fn special_families_match_scipy() {
             "eval_hermite" => scalar_call!(special::eval_hermite; args[0], args[1]),
             "eval_hermitenorm" => scalar_call!(special::eval_hermitenorm; args[0], args[1]),
             "pro_cv" => scalar_call!(special::pro_cv; args[0], args[1], args[2]),
-            "pro_ang1" => {
-                let (a, b) = parsed_call!(special::pro_ang1; args[0], args[1], args[2], args[3]);
-                vec![a, b]
-            }
+            "pro_ang1" => pair_call!(special::pro_ang1; args[0], args[1], args[2], args[3]),
             "pro_ang1_cv" => {
-                let (a, b) =
-                    parsed_call!(special::pro_ang1_cv; args[0], args[1], args[2], args[3], args[4]);
-                vec![a, b]
+                pair_call!(special::pro_ang1_cv; args[0], args[1], args[2], args[3], args[4])
             }
-            "pro_rad1" => {
-                let (a, b) = parsed_call!(special::pro_rad1; args[0], args[1], args[2], args[3]);
-                vec![a, b]
-            }
+            "pro_rad1" => pair_call!(special::pro_rad1; args[0], args[1], args[2], args[3]),
             "pro_rad1_cv" => {
-                let (a, b) =
-                    parsed_call!(special::pro_rad1_cv; args[0], args[1], args[2], args[3], args[4]);
-                vec![a, b]
+                pair_call!(special::pro_rad1_cv; args[0], args[1], args[2], args[3], args[4])
             }
-            "pro_rad2" => {
-                let (a, b) = parsed_call!(special::pro_rad2; args[0], args[1], args[2], args[3]);
-                vec![a, b]
-            }
+            "pro_rad2" => pair_call!(special::pro_rad2; args[0], args[1], args[2], args[3]),
             "pro_rad2_cv" => {
-                let (a, b) =
-                    parsed_call!(special::pro_rad2_cv; args[0], args[1], args[2], args[3], args[4]);
-                vec![a, b]
+                pair_call!(special::pro_rad2_cv; args[0], args[1], args[2], args[3], args[4])
             }
             "obl_cv" => scalar_call!(special::obl_cv; args[0], args[1], args[2]),
-            "obl_ang1" => {
-                let (a, b) = parsed_call!(special::obl_ang1; args[0], args[1], args[2], args[3]);
-                vec![a, b]
-            }
+            "obl_ang1" => pair_call!(special::obl_ang1; args[0], args[1], args[2], args[3]),
             "obl_ang1_cv" => {
-                let (a, b) =
-                    parsed_call!(special::obl_ang1_cv; args[0], args[1], args[2], args[3], args[4]);
-                vec![a, b]
+                pair_call!(special::obl_ang1_cv; args[0], args[1], args[2], args[3], args[4])
             }
-            "obl_rad1" => {
-                let (a, b) = parsed_call!(special::obl_rad1; args[0], args[1], args[2], args[3]);
-                vec![a, b]
-            }
+            "obl_rad1" => pair_call!(special::obl_rad1; args[0], args[1], args[2], args[3]),
             "obl_rad1_cv" => {
-                let (a, b) =
-                    parsed_call!(special::obl_rad1_cv; args[0], args[1], args[2], args[3], args[4]);
-                vec![a, b]
+                pair_call!(special::obl_rad1_cv; args[0], args[1], args[2], args[3], args[4])
             }
-            "obl_rad2" => {
-                let (a, b) = parsed_call!(special::obl_rad2; args[0], args[1], args[2], args[3]);
-                vec![a, b]
-            }
+            "obl_rad2" => pair_call!(special::obl_rad2; args[0], args[1], args[2], args[3]),
             "obl_rad2_cv" => {
-                let (a, b) =
-                    parsed_call!(special::obl_rad2_cv; args[0], args[1], args[2], args[3], args[4]);
-                vec![a, b]
+                pair_call!(special::obl_rad2_cv; args[0], args[1], args[2], args[3], args[4])
             }
             "jacobi" => parsed_call!(special::jacobi; args[0], args[1], args[2], args[3]).unwrap(),
             "roots_jacobi" => {
