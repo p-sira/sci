@@ -37,6 +37,18 @@ macro_rules! pair_call {
 #[allow(unused_imports)]
 pub(crate) use pair_call;
 
+/// Concatenate a pair of sequences, placing the first sequence before the second.
+/// Pass the resolved pair expression, e.g. `concat_pair!(parsed_call!(f; x).unwrap())`.
+#[allow(unused_macros)]
+macro_rules! concat_pair {
+    ($pair:expr $(,)?) => {{
+        let (a, b) = $pair;
+        [a, b].concat()
+    }};
+}
+#[allow(unused_imports)]
+pub(crate) use concat_pair;
+
 use std::{fmt::Debug, str::FromStr};
 
 /// Skip the CSV header, retaining row text for case diagnostics.

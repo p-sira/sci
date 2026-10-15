@@ -1,5 +1,5 @@
 mod common;
-use common::{pair_call, parsed_call, scalar_call};
+use common::{concat_pair, pair_call, parsed_call, scalar_call};
 
 use sci::{complex::Complex, special};
 
@@ -148,10 +148,7 @@ fn special_families_match_scipy() {
                 scalar_call!(special::assoc_legendre_p; args[0], args[1], args[2])
             }
             "sph_legendre_p" => scalar_call!(special::sph_legendre_p; args[0], args[1], args[2]),
-            "lqn" => {
-                let (a, b) = parsed_call!(special::lqn; args[0], args[1]).unwrap();
-                [a, b].concat()
-            }
+            "lqn" => concat_pair!(parsed_call!(special::lqn; args[0], args[1]).unwrap()),
             "lqmn" => {
                 let (a, b) = parsed_call!(special::lqmn; args[0], args[1], args[2]).unwrap();
                 [a, b].into_iter().flatten().flatten().collect()
@@ -235,84 +232,57 @@ fn special_families_match_scipy() {
                 pair_call!(special::obl_rad2_cv; args[0], args[1], args[2], args[3], args[4])
             }
             "jacobi" => parsed_call!(special::jacobi; args[0], args[1], args[2], args[3]).unwrap(),
-            "roots_jacobi" => {
-                let (a, b) =
-                    parsed_call!(special::roots_jacobi; args[0], args[1], args[2]).unwrap();
-                [a, b].concat()
-            }
+            "roots_jacobi" => concat_pair!(
+                parsed_call!(special::roots_jacobi; args[0], args[1], args[2]).unwrap()
+            ),
             "legendre" => parsed_call!(special::legendre; args[0], args[1]).unwrap(),
             "roots_legendre" => {
-                let (a, b) = parsed_call!(special::roots_legendre; args[0]).unwrap();
-                [a, b].concat()
+                concat_pair!(parsed_call!(special::roots_legendre; args[0]).unwrap())
             }
             "gegenbauer" => parsed_call!(special::gegenbauer; args[0], args[1], args[2]).unwrap(),
             "roots_gegenbauer" => {
-                let (a, b) = parsed_call!(special::roots_gegenbauer; args[0], args[1]).unwrap();
-                [a, b].concat()
+                concat_pair!(parsed_call!(special::roots_gegenbauer; args[0], args[1]).unwrap())
             }
             "genlaguerre" => parsed_call!(special::genlaguerre; args[0], args[1], args[2]).unwrap(),
             "roots_genlaguerre" => {
-                let (a, b) = parsed_call!(special::roots_genlaguerre; args[0], args[1]).unwrap();
-                [a, b].concat()
+                concat_pair!(parsed_call!(special::roots_genlaguerre; args[0], args[1]).unwrap())
             }
             "laguerre" => parsed_call!(special::laguerre; args[0], args[1]).unwrap(),
             "roots_laguerre" => {
-                let (a, b) = parsed_call!(special::roots_laguerre; args[0]).unwrap();
-                [a, b].concat()
+                concat_pair!(parsed_call!(special::roots_laguerre; args[0]).unwrap())
             }
             "hermite" => parsed_call!(special::hermite; args[0], args[1]).unwrap(),
-            "roots_hermite" => {
-                let (a, b) = parsed_call!(special::roots_hermite; args[0]).unwrap();
-                [a, b].concat()
-            }
+            "roots_hermite" => concat_pair!(parsed_call!(special::roots_hermite; args[0]).unwrap()),
             "hermitenorm" => parsed_call!(special::hermitenorm; args[0], args[1]).unwrap(),
             "roots_hermitenorm" => {
-                let (a, b) = parsed_call!(special::roots_hermitenorm; args[0]).unwrap();
-                [a, b].concat()
+                concat_pair!(parsed_call!(special::roots_hermitenorm; args[0]).unwrap())
             }
             "chebyt" => parsed_call!(special::chebyt; args[0], args[1]).unwrap(),
-            "roots_chebyt" => {
-                let (a, b) = parsed_call!(special::roots_chebyt; args[0]).unwrap();
-                [a, b].concat()
-            }
+            "roots_chebyt" => concat_pair!(parsed_call!(special::roots_chebyt; args[0]).unwrap()),
             "chebyu" => parsed_call!(special::chebyu; args[0], args[1]).unwrap(),
-            "roots_chebyu" => {
-                let (a, b) = parsed_call!(special::roots_chebyu; args[0]).unwrap();
-                [a, b].concat()
-            }
+            "roots_chebyu" => concat_pair!(parsed_call!(special::roots_chebyu; args[0]).unwrap()),
             "chebyc" => parsed_call!(special::chebyc; args[0], args[1]).unwrap(),
-            "roots_chebyc" => {
-                let (a, b) = parsed_call!(special::roots_chebyc; args[0]).unwrap();
-                [a, b].concat()
-            }
+            "roots_chebyc" => concat_pair!(parsed_call!(special::roots_chebyc; args[0]).unwrap()),
             "chebys" => parsed_call!(special::chebys; args[0], args[1]).unwrap(),
-            "roots_chebys" => {
-                let (a, b) = parsed_call!(special::roots_chebys; args[0]).unwrap();
-                [a, b].concat()
-            }
+            "roots_chebys" => concat_pair!(parsed_call!(special::roots_chebys; args[0]).unwrap()),
             "sh_chebyt" => parsed_call!(special::sh_chebyt; args[0], args[1]).unwrap(),
             "roots_sh_chebyt" => {
-                let (a, b) = parsed_call!(special::roots_sh_chebyt; args[0]).unwrap();
-                [a, b].concat()
+                concat_pair!(parsed_call!(special::roots_sh_chebyt; args[0]).unwrap())
             }
             "sh_chebyu" => parsed_call!(special::sh_chebyu; args[0], args[1]).unwrap(),
             "roots_sh_chebyu" => {
-                let (a, b) = parsed_call!(special::roots_sh_chebyu; args[0]).unwrap();
-                [a, b].concat()
+                concat_pair!(parsed_call!(special::roots_sh_chebyu; args[0]).unwrap())
             }
             "sh_legendre" => parsed_call!(special::sh_legendre; args[0], args[1]).unwrap(),
             "roots_sh_legendre" => {
-                let (a, b) = parsed_call!(special::roots_sh_legendre; args[0]).unwrap();
-                [a, b].concat()
+                concat_pair!(parsed_call!(special::roots_sh_legendre; args[0]).unwrap())
             }
             "sh_jacobi" => {
                 parsed_call!(special::sh_jacobi; args[0], args[1], args[2], args[3]).unwrap()
             }
-            "roots_sh_jacobi" => {
-                let (a, b) =
-                    parsed_call!(special::roots_sh_jacobi; args[0], args[1], args[2]).unwrap();
-                [a, b].concat()
-            }
+            "roots_sh_jacobi" => concat_pair!(
+                parsed_call!(special::roots_sh_jacobi; args[0], args[1], args[2]).unwrap()
+            ),
             "hankel1" => {
                 let z = parsed_call!(special::hankel1; args[0], args[1]);
                 vec![z.re, z.im]
@@ -436,30 +406,16 @@ fn special_families_match_scipy() {
             "stirling2" => scalar_call!(special::stirling2; args[0], args[1]),
             "bernoulli" => parsed_call!(special::bernoulli; args[0]).unwrap(),
             "euler" => parsed_call!(special::euler; args[0]).unwrap(),
-            "pbdv_seq" => {
-                let (a, b) = parsed_call!(special::pbdv_seq; args[0], args[1]).unwrap();
-                [a, b].concat()
-            }
-            "pbvv_seq" => {
-                let (a, b) = parsed_call!(special::pbvv_seq; args[0], args[1]).unwrap();
-                [a, b].concat()
-            }
-            "pbdn_seq" => {
-                let (a, b) = parsed_call!(special::pbdn_seq; args[0], args[1]).unwrap();
-                [a, b].concat()
-            }
+            "pbdv_seq" => concat_pair!(parsed_call!(special::pbdv_seq; args[0], args[1]).unwrap()),
+            "pbvv_seq" => concat_pair!(parsed_call!(special::pbvv_seq; args[0], args[1]).unwrap()),
+            "pbdn_seq" => concat_pair!(parsed_call!(special::pbdn_seq; args[0], args[1]).unwrap()),
             "riccati_jn" => {
-                let (a, b) = parsed_call!(special::riccati_jn; args[0], args[1]).unwrap();
-                [a, b].concat()
+                concat_pair!(parsed_call!(special::riccati_jn; args[0], args[1]).unwrap())
             }
             "riccati_yn" => {
-                let (a, b) = parsed_call!(special::riccati_yn; args[0], args[1]).unwrap();
-                [a, b].concat()
+                concat_pair!(parsed_call!(special::riccati_yn; args[0], args[1]).unwrap())
             }
-            "lmbda" => {
-                let (a, b) = parsed_call!(special::lmbda; args[0], args[1]).unwrap();
-                [a, b].concat()
-            }
+            "lmbda" => concat_pair!(parsed_call!(special::lmbda; args[0], args[1]).unwrap()),
             "logsumexp" => vec![special::logsumexp(
                 &args[0]
                     .split('/')
@@ -480,66 +436,25 @@ fn special_families_match_scipy() {
                     .collect::<Vec<_>>(),
             )
             .to_vec(),
-            "c_roots" => {
-                let (a, b) = parsed_call!(special::c_roots; args[0]).unwrap();
-                [a, b].concat()
-            }
-            "cg_roots" => {
-                let (a, b) = parsed_call!(special::cg_roots; args[0], args[1]).unwrap();
-                [a, b].concat()
-            }
-            "h_roots" => {
-                let (a, b) = parsed_call!(special::h_roots; args[0]).unwrap();
-                [a, b].concat()
-            }
-            "he_roots" => {
-                let (a, b) = parsed_call!(special::he_roots; args[0]).unwrap();
-                [a, b].concat()
-            }
+            "c_roots" => concat_pair!(parsed_call!(special::c_roots; args[0]).unwrap()),
+            "cg_roots" => concat_pair!(parsed_call!(special::cg_roots; args[0], args[1]).unwrap()),
+            "h_roots" => concat_pair!(parsed_call!(special::h_roots; args[0]).unwrap()),
+            "he_roots" => concat_pair!(parsed_call!(special::he_roots; args[0]).unwrap()),
             "j_roots" => {
-                let (a, b) = parsed_call!(special::j_roots; args[0], args[1], args[2]).unwrap();
-                [a, b].concat()
+                concat_pair!(parsed_call!(special::j_roots; args[0], args[1], args[2]).unwrap())
             }
             "js_roots" => {
-                let (a, b) = parsed_call!(special::js_roots; args[0], args[1], args[2]).unwrap();
-                [a, b].concat()
+                concat_pair!(parsed_call!(special::js_roots; args[0], args[1], args[2]).unwrap())
             }
-            "l_roots" => {
-                let (a, b) = parsed_call!(special::l_roots; args[0]).unwrap();
-                [a, b].concat()
-            }
-            "la_roots" => {
-                let (a, b) = parsed_call!(special::la_roots; args[0], args[1]).unwrap();
-                [a, b].concat()
-            }
-            "p_roots" => {
-                let (a, b) = parsed_call!(special::p_roots; args[0]).unwrap();
-                [a, b].concat()
-            }
-            "ps_roots" => {
-                let (a, b) = parsed_call!(special::ps_roots; args[0]).unwrap();
-                [a, b].concat()
-            }
-            "s_roots" => {
-                let (a, b) = parsed_call!(special::s_roots; args[0]).unwrap();
-                [a, b].concat()
-            }
-            "t_roots" => {
-                let (a, b) = parsed_call!(special::t_roots; args[0]).unwrap();
-                [a, b].concat()
-            }
-            "ts_roots" => {
-                let (a, b) = parsed_call!(special::ts_roots; args[0]).unwrap();
-                [a, b].concat()
-            }
-            "u_roots" => {
-                let (a, b) = parsed_call!(special::u_roots; args[0]).unwrap();
-                [a, b].concat()
-            }
-            "us_roots" => {
-                let (a, b) = parsed_call!(special::us_roots; args[0]).unwrap();
-                [a, b].concat()
-            }
+            "l_roots" => concat_pair!(parsed_call!(special::l_roots; args[0]).unwrap()),
+            "la_roots" => concat_pair!(parsed_call!(special::la_roots; args[0], args[1]).unwrap()),
+            "p_roots" => concat_pair!(parsed_call!(special::p_roots; args[0]).unwrap()),
+            "ps_roots" => concat_pair!(parsed_call!(special::ps_roots; args[0]).unwrap()),
+            "s_roots" => concat_pair!(parsed_call!(special::s_roots; args[0]).unwrap()),
+            "t_roots" => concat_pair!(parsed_call!(special::t_roots; args[0]).unwrap()),
+            "ts_roots" => concat_pair!(parsed_call!(special::ts_roots; args[0]).unwrap()),
+            "u_roots" => concat_pair!(parsed_call!(special::u_roots; args[0]).unwrap()),
+            "us_roots" => concat_pair!(parsed_call!(special::us_roots; args[0]).unwrap()),
             "btdtria" => scalar_call!(special::btdtria; args[0], args[1], args[2]),
             "btdtrib" => scalar_call!(special::btdtrib; args[0], args[1], args[2]),
             "bdtrik" => scalar_call!(special::bdtrik; args[0], args[1], args[2]),
@@ -571,18 +486,9 @@ fn special_families_match_scipy() {
                 .into_iter()
                 .flatten()
                 .collect(),
-            "y0_zeros" => {
-                let (a, b) = parsed_call!(special::y0_zeros; args[0]).unwrap();
-                [a, b].concat()
-            }
-            "y1_zeros" => {
-                let (a, b) = parsed_call!(special::y1_zeros; args[0]).unwrap();
-                [a, b].concat()
-            }
-            "y1p_zeros" => {
-                let (a, b) = parsed_call!(special::y1p_zeros; args[0]).unwrap();
-                [a, b].concat()
-            }
+            "y0_zeros" => concat_pair!(parsed_call!(special::y0_zeros; args[0]).unwrap()),
+            "y1_zeros" => concat_pair!(parsed_call!(special::y1_zeros; args[0]).unwrap()),
+            "y1p_zeros" => concat_pair!(parsed_call!(special::y1p_zeros; args[0]).unwrap()),
             "ai_zeros" => parsed_call!(special::ai_zeros; args[0])
                 .unwrap()
                 .into_iter()
