@@ -1,4 +1,5 @@
 mod common;
+use common::finite_close;
 use common::vector;
 
 use f::RealTransformType as T;
@@ -11,12 +12,6 @@ fn complex(re: &[f64], im: &[f64]) -> Vec<Complex> {
         .zip(im)
         .map(|(&re, &im)| Complex { re, im })
         .collect()
-}
-fn close(a: f64, b: f64) {
-    assert!(
-        a.is_finite() && (a - b).abs() <= 3e-12 * (1.0 + b.abs()),
-        "{a} != {b}"
-    );
 }
 fn rows<T: Clone>(x: &[T], n: usize) -> Vec<Vec<T>> {
     x.chunks(n).map(<[T]>::to_vec).collect()
@@ -180,8 +175,8 @@ fn public_fft_inventory_matches_scipy() {
         let want = complex(&vector(e[2]), &vector(e[3]));
         assert_eq!(got.len(), want.len(), "{} length", c[0]);
         for (a, b) in got.into_iter().zip(want) {
-            close(a.re, b.re);
-            close(a.im, b.im);
+            finite_close(a.re, b.re, 3e-12, 3e-12);
+            finite_close(a.im, b.im, 3e-12, 3e-12);
         }
     }
     assert_eq!(covered.len(), 35);
@@ -193,12 +188,12 @@ fn inverse_and_interoperability_properties() {
         let bins = f::rfft(&x);
         let restored = f::irfft(&bins, Some(n)).unwrap();
         for (a, b) in restored.into_iter().zip(&x) {
-            close(a, *b);
+            finite_close(a, *b, 3e-12, 3e-12);
         }
         let hermitian = f::ihfft(&x, None).unwrap();
         let restored = f::hfft(&hermitian, Some(n)).unwrap();
         for (a, b) in restored.into_iter().zip(&x) {
-            close(a, *b);
+            finite_close(a, *b, 3e-12, 3e-12);
         }
         let full = complex(&x, &vec![0.0; n]);
         assert_eq!(f::ifftshift(&f::fftshift(&full).unwrap()).unwrap(), full);
@@ -206,12 +201,12 @@ fn inverse_and_interoperability_properties() {
             if n > 1 || kind != T::I {
                 let restored = f::idct(&f::dct(&x, kind).unwrap(), kind).unwrap();
                 for (a, b) in restored.into_iter().zip(&x) {
-                    close(a, *b);
+                    finite_close(a, *b, 3e-12, 3e-12);
                 }
             }
             let restored = f::idst(&f::dst(&x, kind).unwrap(), kind).unwrap();
             for (a, b) in restored.into_iter().zip(&x) {
-                close(a, *b);
+                finite_close(a, *b, 3e-12, 3e-12);
             }
         }
     }
@@ -221,20 +216,20 @@ fn inverse_and_interoperability_properties() {
         let (bins, small) = f::rfftn(&x, &shape, axes).unwrap();
         assert_eq!(bins.len(), small.iter().product());
         for (a, b) in f::irfftn(&bins, &shape, axes).unwrap().iter().zip(&x) {
-            close(*a, *b);
+            finite_close(*a, *b, 3e-12, 3e-12);
         }
         let (bins, _) = f::ihfftn(&x, &shape, axes).unwrap();
         for (a, b) in f::hfftn(&bins, &shape, axes).unwrap().iter().zip(&x) {
-            close(*a, *b);
+            finite_close(*a, *b, 3e-12, 3e-12);
         }
         for kind in [T::I, T::II, T::III, T::IV] {
             let y = f::dctn(&x, &shape, axes, kind).unwrap();
             for (a, b) in f::idctn(&y, &shape, axes, kind).unwrap().iter().zip(&x) {
-                close(*a, *b);
+                finite_close(*a, *b, 3e-12, 3e-12);
             }
             let y = f::dstn(&x, &shape, axes, kind).unwrap();
             for (a, b) in f::idstn(&y, &shape, axes, kind).unwrap().iter().zip(&x) {
-                close(*a, *b);
+                finite_close(*a, *b, 3e-12, 3e-12);
             }
         }
     }
@@ -242,7 +237,7 @@ fn inverse_and_interoperability_properties() {
     let spectrum = f::rfft2(&matrix).unwrap();
     let restored = f::irfft2(&spectrum, 5).unwrap();
     for (a, b) in restored.iter().flatten().zip(matrix.iter().flatten()) {
-        close(*a, *b);
+        finite_close(*a, *b, 3e-12, 3e-12);
     }
     let power: Vec<_> = spectrum
         .iter()
@@ -348,7 +343,11 @@ fn fftlog_round_trips_and_domains() {
         let y = f::fht(&x, dln, mu, offset, bias).unwrap();
         let restored = f::ifht(&y, dln, mu, offset, bias).unwrap();
         for (a, b) in restored.iter().zip(&x) {
-            assert!((a - b).abs() <= 3e-11 * (1.0 + b.abs()));
+            assert!(approx::abs_diff_eq!(
+                a,
+                b,
+                epsilon = 3e-11 * (1.0 + b.abs())
+            ));
         }
     }
     for (dln, mu, offset, bias) in [

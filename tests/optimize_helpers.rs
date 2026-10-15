@@ -67,7 +67,7 @@ fn public_helpers_match_scipy() {
         };
         for (a, b) in got.into_iter().flatten().zip(vector(e[3])) {
             assert!(
-                a.is_finite() && (a - b).abs() <= tolerance * (1.0 + b.abs()),
+                a.is_finite() && approx::abs_diff_eq!(a, b, epsilon = tolerance * (1.0 + b.abs())),
                 "{}: {a} != {b}",
                 c[0]
             );
@@ -83,12 +83,16 @@ fn analytical_identities_and_interoperability() {
         let hp = o::rosen_hess_prod(&x, &p).unwrap();
         let dense = linalg::matvec(&h, &p).unwrap();
         for (a, b) in hp.iter().zip(&dense) {
-            assert!((a - b).abs() <= 1e-12 * (1.0 + b.abs()));
+            assert!(approx::abs_diff_eq!(
+                a,
+                b,
+                epsilon = 1e-12 * (1.0 + b.abs())
+            ));
         }
         let g = o::rosen_der(&x).unwrap();
         let numeric = differentiate::gradient(|x| o::rosen(x).unwrap(), &x, 1e-5).unwrap();
         for (a, b) in g.iter().zip(&numeric) {
-            assert!((a - b).abs() <= 2e-6 * (1.0 + b.abs()));
+            assert!(approx::abs_diff_eq!(a, b, epsilon = 2e-6 * (1.0 + b.abs())));
         }
         let nh = differentiate::jacobian(|x| o::rosen_der(x).unwrap(), &x, 1e-5).unwrap();
         for (i, row) in h.iter().enumerate() {

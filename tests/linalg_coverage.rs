@@ -1,21 +1,13 @@
+mod common;
+// Small, well-conditioned reconstruction identities; allow rounding
+// accumulated by factorization and matrix products with 2e-12 bounds.
+use common::matrix_close;
 use sci::{Error, linalg as l};
 
 fn identity(n: usize) -> l::Matrix {
     (0..n)
         .map(|i| (0..n).map(|j| f64::from(i == j)).collect())
         .collect()
-}
-
-fn close(a: &[Vec<f64>], b: &[Vec<f64>]) {
-    assert_eq!(a.len(), b.len());
-    for (a, b) in a.iter().zip(b) {
-        assert_eq!(a.len(), b.len());
-        for (&a, &b) in a.iter().zip(b) {
-            // Small, well-conditioned reconstruction identities; allow the
-            // rounding accumulated by factorization and matrix products.
-            assert!((a - b).abs() <= 2e-12 * (1.0 + b.abs()), "{a} != {b}");
-        }
-    }
 }
 
 fn projector(a: &l::Matrix) -> l::Matrix {
@@ -41,9 +33,11 @@ fn singular_lu_preserves_rectangular_reconstruction_and_rejects_solves() {
         let k = a.len().min(a[0].len());
         assert_eq!((f.l.len(), f.l[0].len()), (a.len(), k));
         assert_eq!((f.u.len(), f.u[0].len()), (k, a[0].len()));
-        close(
+        matrix_close(
             &l::matmul(&l::matmul(&f.p, &f.l).unwrap(), &f.u).unwrap(),
             &a,
+            2e-12,
+            2e-12,
         );
         if a.len() == a[0].len() {
             let f = l::lu_factor(&a).unwrap();
@@ -75,8 +69,8 @@ fn rank_cutoff_is_strict_and_projectors_partition_the_space() {
             .zip(&q)
             .map(|(p, q)| p.iter().zip(q).map(|(p, q)| p + q).collect())
             .collect();
-        close(&sum, &identity(2));
-        close(&l::matmul(&a, &inverse).unwrap(), &p);
+        matrix_close(&sum, &identity(2), 2e-12, 2e-12);
+        matrix_close(&l::matmul(&a, &inverse).unwrap(), &p, 2e-12, 2e-12);
         let fit = l::lstsq(&a, &[4., 1.], Some(cutoff)).unwrap();
         assert_eq!(fit.rank, rank);
         assert!(fit.residuals.is_empty());
@@ -90,7 +84,7 @@ fn dense_axis_limit_accepts_256_and_rejects_257() {
     let b = vec![1.; 256];
     assert_eq!(l::solve(&a, &b).unwrap(), b);
     assert_eq!(l::det(&a).unwrap(), 1.);
-    close(&l::cholesky(&a, true).unwrap(), &a);
+    matrix_close(&l::cholesky(&a, true).unwrap(), &a, 2e-12, 2e-12);
     let too_large = identity(257);
     for result in [l::inv(&too_large), l::cholesky(&too_large, true)] {
         assert!(matches!(result, Err(Error::InvalidInput(_))));
@@ -232,9 +226,11 @@ fn balancing_isolated_columns_preserves_similarity_and_checks_overflow() {
     let a = [[1., 0., 2.], [0., 3., 4.], [0., 5., 6.]];
     for scale in [false, true] {
         let (balanced, t) = l::matrix_balance(&a, true, scale).unwrap();
-        close(
+        matrix_close(
             &l::matmul(&l::matmul(&t, &balanced).unwrap(), &l::inv(&t).unwrap()).unwrap(),
             &a.map(Vec::from),
+            2e-12,
+            2e-12,
         );
     }
     let huge = [[1., f64::MAX, f64::MAX], [1., 2., 1.], [1., 1., 3.]];

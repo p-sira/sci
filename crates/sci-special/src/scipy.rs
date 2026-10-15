@@ -3155,6 +3155,46 @@ pub fn kerp_zeros(nt: usize) -> Result<Vec<f64>> {
     Ok(xsf::kerp_zeros(nt))
 }
 
+// kei'(x) = Im[-a K_1(a x)], a = exp(i pi/4). Removing the
+// positive exp(-x/sqrt(2)) factor avoids underflow for long sequences.
+fn refine_keip_zero(mut x: f64) -> Result<f64> {
+    use num_complex::Complex64;
+    use std::f64::consts::FRAC_1_SQRT_2;
+    let a = Complex64::new(FRAC_1_SQRT_2, FRAC_1_SQRT_2);
+    for _ in 0..16 {
+        let z = a * x;
+        let phase = Complex64::from_polar(1., -z.im);
+        let k0 = xsf::bessel_ke(0., z);
+        let k1 = xsf::bessel_ke(1., z);
+        let value = (-a * phase * k1).im;
+        // K_1'(z) = -K_0(z) - K_1(z)/z. Include the derivative
+        // of the removed real exponential factor in the scaled function.
+        let derivative = (a * a * phase * (k0 + k1 / z)).im + FRAC_1_SQRT_2 * value;
+        let step = value / derivative;
+        if !step.is_finite() || step.abs() > 1. {
+            return Err(Error::NumericalFailure("Kelvin zero refinement failed"));
+        }
+        x -= step;
+        if step.abs() <= 8. * f64::EPSILON * x {
+            return Ok(x);
+        }
+    }
+    Err(Error::NumericalFailure(
+        "Kelvin zero refinement did not converge",
+    ))
+}
+
+fn stable_keip_zeros(nt: usize) -> Result<Vec<f64>> {
+    use std::f64::consts::{PI, SQRT_2};
+    (0..nt)
+        .map(|index| refine_keip_zero(4.93 + index as f64 * PI * SQRT_2))
+        .collect()
+}
+
+#[cfg(test)]
+#[path = "tests/kelvin_refinement.rs"]
+mod kelvin_refinement_tests;
+
 /// First nt positive zeros of keip in ascending order.
 ///
 /// ## Parameters and domain
@@ -3168,6 +3208,16 @@ pub fn kerp_zeros(nt: usize) -> Result<Vec<f64>> {
 /// ## Errors
 ///
 /// Returns [`Error::InvalidInput`] when the requested count is outside the stated domain.
+/// Returns [`Error::NumericalFailure`] if a refined kei derivative zero fails to converge.
+///
+/// ## Numerical behavior
+///
+/// The kei derivative zeros use `kei'(x) = Im[-a K_1(a x)]`, where
+/// `a = exp(i pi/4)`, with the private scaled complex Bessel K backend and
+/// at most 16 Newton iterations per zero. Scaling avoids exponential underflow.
+/// This avoids cancellation in the Kelvin series near x=9.4; SciPy's
+/// `keip_zeros` can differ by about 4e-10 there. Accuracy remains limited
+/// by binary64 argument reduction for large zeros.
 ///
 /// # Examples
 ///
@@ -3179,6 +3229,8 @@ pub fn kerp_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// # References
 ///
+/// - [DLMF Kelvin definition, Eq. 10.61.2](https://dlmf.nist.gov/10.61.E2).
+/// - [DLMF Bessel K derivatives, §10.29](https://dlmf.nist.gov/10.29).
 /// - [SciPy keip_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.keip_zeros.html).
 pub fn keip_zeros(nt: usize) -> Result<Vec<f64>> {
     if !(nt <= 4096 && nt > 0) {
@@ -3186,7 +3238,7 @@ pub fn keip_zeros(nt: usize) -> Result<Vec<f64>> {
             "requested special-function sequence is too large or empty",
         ));
     }
-    Ok(xsf::keip_zeros(nt))
+    stable_keip_zeros(nt)
 }
 
 /// First nt positive zeros of ber,bei,ker,kei,berp,beip,kerp,keip, in that order.
@@ -3203,6 +3255,16 @@ pub fn keip_zeros(nt: usize) -> Result<Vec<f64>> {
 /// ## Errors
 ///
 /// Returns [`Error::InvalidInput`] when the requested count is outside the stated domain.
+/// Returns [`Error::NumericalFailure`] if a refined kei derivative zero fails to converge.
+///
+/// ## Numerical behavior
+///
+/// The kei derivative zeros use `kei'(x) = Im[-a K_1(a x)]`, where
+/// `a = exp(i pi/4)`, with the private scaled complex Bessel K backend and
+/// at most 16 Newton iterations per zero. Scaling avoids exponential underflow.
+/// This avoids cancellation in the Kelvin series near x=9.4; SciPy's
+/// `keip_zeros` can differ by about 4e-10 there. Other Kelvin families retain
+/// the backend's series/asymptotic accuracy limitations.
 ///
 /// # Examples
 ///
@@ -3214,6 +3276,8 @@ pub fn keip_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// # References
 ///
+/// - [DLMF Kelvin definition, Eq. 10.61.2](https://dlmf.nist.gov/10.61.E2).
+/// - [DLMF Bessel K derivatives, §10.29](https://dlmf.nist.gov/10.29).
 /// - [SciPy kelvin_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kelvin_zeros.html).
 pub fn kelvin_zeros(nt: usize) -> Result<[Vec<f64>; 8]> {
     if !(nt <= 4096 && nt > 0) {
@@ -3221,7 +3285,16 @@ pub fn kelvin_zeros(nt: usize) -> Result<[Vec<f64>; 8]> {
             "requested special-function sequence is too large or empty",
         ));
     }
-    Ok(xsf::kelvin_zeros(nt))
+    Ok([
+        xsf::ber_zeros(nt),
+        xsf::bei_zeros(nt),
+        xsf::ker_zeros(nt),
+        xsf::kei_zeros(nt),
+        xsf::berp_zeros(nt),
+        xsf::beip_zeros(nt),
+        xsf::kerp_zeros(nt),
+        stable_keip_zeros(nt)?,
+    ])
 }
 
 /// Associated Legendre function P_v^m(x), including the Condon–Shortley phase (−1)^m.

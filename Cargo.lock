@@ -2157,6 +2157,7 @@ dependencies = [
 name = "sci"
 version = "0.1.0"
 dependencies = [
+ "approx",
  "codspeed-divan-compat",
  "faer 0.24.4",
  "nalgebra 0.33.2",
@@ -2298,6 +2299,7 @@ dependencies = [
  "sci-core",
  "sci-fft",
  "sci-special",
+ "xsf",
 ]
 
 [[package]]

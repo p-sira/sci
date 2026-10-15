@@ -4550,5 +4550,35 @@
       true
     ],
     "polynomial": true
+  },
+  {
+    "name": "keip_zeros",
+    "args": [
+      1
+    ]
+  },
+  {
+    "name": "keip_zeros",
+    "args": [
+      5
+    ]
+  },
+  {
+    "name": "keip_zeros",
+    "args": [
+      32
+    ]
+  },
+  {
+    "name": "keip_zeros",
+    "args": [
+      257
+    ]
+  },
+  {
+    "name": "kelvin_zeros",
+    "args": [
+      5
+    ]
   }
 ]

@@ -1,4 +1,5 @@
 mod common;
+use common::finite_close;
 use common::parsed_call;
 use common::{matrix, number as boolean, optional, vector};
 
@@ -57,19 +58,10 @@ fn eigenvalues(mut w: Vec<sci::complex::Complex>, re: &str, im: &str) {
 }
 
 #[track_caller]
-fn close(a: f64, b: f64) {
-    // Well-conditioned small reference systems: allow different dense algorithms
-    // and BLAS reduction orders, without accepting nonfinite numerical output.
-    assert!(
-        a.is_finite() && b.is_finite() && (a - b).abs() <= 3e-11 + 3e-11 * b.abs(),
-        "{a} != {b}"
-    );
-}
-#[track_caller]
 fn check_vector(a: &[f64], b: &[f64]) {
     assert_eq!(a.len(), b.len());
     for (&a, &b) in a.iter().zip(b) {
-        close(a, b);
+        finite_close(a, b, 3e-11, 3e-11);
     }
 }
 #[track_caller]
@@ -223,9 +215,11 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
             .unwrap()),
             "solve" => vm(l::solve(&convert_matrix(&a()), &convert_vector(&b())).unwrap()),
             "inv" => mm(l::inv(&convert_matrix(&a())).unwrap()),
-            "det" => close(
+            "det" => finite_close(
                 l::det(&convert_matrix(&a())).unwrap(),
                 e[1].parse().unwrap(),
+                3e-11,
+                3e-11,
             ),
             "solve_triangular" => vm(l::solve_triangular(
                 &convert_matrix(&a()),
@@ -434,7 +428,7 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
                     l::orthogonal_procrustes(&convert_matrix(&a()), &convert_matrix(&matrix(c[3])))
                         .unwrap();
                 mm(r.clone());
-                close(s, e[2].parse().unwrap());
+                finite_close(s, e[2].parse().unwrap(), 3e-11, 3e-11);
                 check_matrix(&mul(&trans(&r), &r), &identity(r.len()));
             }
             "eigh" => eigen(
@@ -463,7 +457,7 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
                 check_matrix(&mul(&trans(&z), &z), &matrix(e[2]));
                 for (i, row) in t.iter().enumerate() {
                     for &v in row.iter().take(i.saturating_sub(1)) {
-                        close(v, 0.);
+                        finite_close(v, 0., 3e-11, 3e-11);
                     }
                 }
                 if c[1] == "schur" {
@@ -511,10 +505,10 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
                 let f = l::ldl(&convert_matrix(&a()), lower).unwrap();
                 mm(mul(&mul(&f.outer, &f.d), &trans(&f.outer)));
                 for i in 0..f.outer.len() {
-                    close(f.outer[f.permutation[i]][i], 1.);
+                    finite_close(f.outer[f.permutation[i]][i], 1., 3e-11, 3e-11);
                     for j in 0..f.outer.len() {
                         if (lower && j > i) || (!lower && j < i) {
-                            close(f.outer[f.permutation[i]][j], 0.);
+                            finite_close(f.outer[f.permutation[i]][j], 0., 3e-11, 3e-11);
                         }
                     }
                 }
@@ -556,8 +550,8 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
                 ccheck(&cmul(&cadjoint(&z), &z), &cfrom(&identity(z.len())));
                 for (i, row) in t.iter().enumerate() {
                     for z in row.iter().take(i) {
-                        close(z.re, 0.);
-                        close(z.im, 0.);
+                        finite_close(z.re, 0., 3e-11, 3e-11);
+                        finite_close(z.im, 0., 3e-11, 3e-11);
                     }
                 }
             }
@@ -608,10 +602,10 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
                 ccheck(&cmul(&cadjoint(&f.z), &f.z), &cfrom(&identity(f.z.len())));
                 for i in 0..f.s.len() {
                     for j in 0..i {
-                        close(f.s[i][j].re, 0.);
-                        close(f.s[i][j].im, 0.);
-                        close(f.t[i][j].re, 0.);
-                        close(f.t[i][j].im, 0.);
+                        finite_close(f.s[i][j].re, 0., 3e-11, 3e-11);
+                        finite_close(f.s[i][j].im, 0., 3e-11, 3e-11);
+                        finite_close(f.t[i][j].re, 0., 3e-11, 3e-11);
+                        finite_close(f.t[i][j].im, 0., 3e-11, 3e-11);
                     }
                 }
                 let w: Vec<_> = f
@@ -698,10 +692,10 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
                 for i in 0..f.u.len() {
                     for j in 0..f.u.len() {
                         if (i < p) != (j < p) {
-                            close(f.u[i][j], 0.);
+                            finite_close(f.u[i][j], 0., 3e-11, 3e-11);
                         }
                         if (i < q) != (j < q) {
-                            close(f.vh[i][j], 0.);
+                            finite_close(f.vh[i][j], 0., 3e-11, 3e-11);
                         }
                     }
                 }
@@ -719,11 +713,18 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
                 assert_eq!(t.prefer_fortran, boolean(e[3]));
             }
             "get_blas_funcs" => match l::get_blas_funcs(&[c[2]]).unwrap()[0] {
-                l::BlasFunction::Dot(f) => close(
+                l::BlasFunction::Dot(f) => finite_close(
                     f(&vector(c[3]), &vector(c[4])).unwrap(),
                     e[1].parse().unwrap(),
+                    3e-11,
+                    3e-11,
                 ),
-                l::BlasFunction::Nrm2(f) => close(f(&vector(c[3])).unwrap(), e[1].parse().unwrap()),
+                l::BlasFunction::Nrm2(f) => finite_close(
+                    f(&vector(c[3])).unwrap(),
+                    e[1].parse().unwrap(),
+                    3e-11,
+                    3e-11,
+                ),
                 l::BlasFunction::Gemv(f) => vm(f(&matrix(c[3]), &vector(c[4])).unwrap()),
                 l::BlasFunction::Gemm(f) => mm(f(&matrix(c[3]), &matrix(c[4])).unwrap()),
             },
@@ -737,17 +738,21 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
                     .unwrap(),
                 e[1].parse::<usize>().unwrap()
             ),
-            "interpolative.estimate_spectral_norm" => close(
+            "interpolative.estimate_spectral_norm" => finite_close(
                 l::interpolative::estimate_spectral_norm(&convert_matrix(&a())).unwrap(),
                 e[1].parse().unwrap(),
+                3e-11,
+                3e-11,
             ),
-            "interpolative.estimate_spectral_norm_diff" => close(
+            "interpolative.estimate_spectral_norm_diff" => finite_close(
                 l::interpolative::estimate_spectral_norm_diff(
                     &convert_matrix(&a()),
                     &convert_matrix(&matrix(c[3])),
                 )
                 .unwrap(),
                 e[1].parse().unwrap(),
+                3e-11,
+                3e-11,
             ),
             "interpolative.interp_decomp" => {
                 let f = l::interpolative::interp_decomp(
@@ -867,9 +872,11 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
                     "nuc" => l::MatrixNorm::Nuclear,
                     _ => panic!(),
                 };
-                close(
+                finite_close(
                     l::norm(&convert_matrix(&a()), order).unwrap(),
                     e[1].parse().unwrap(),
+                    3e-11,
+                    3e-11,
                 );
             }
             "solve_banded" => vm(l::solve_banded(
@@ -920,9 +927,11 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
                 mm(exp);
                 check_matrix(&derivative, &matrix(e[2]));
             }
-            "expm_cond" => close(
+            "expm_cond" => finite_close(
                 l::expm_cond(&convert_matrix(&a())).unwrap(),
                 e[1].parse().unwrap(),
+                3e-11,
+                3e-11,
             ),
             "solve_sylvester" => mm(l::solve_sylvester(
                 &convert_matrix(&a()),
@@ -1130,16 +1139,18 @@ fn ieee_values_overflow_and_stable_scaling() {
     for scale in [1e-200, 1e200] {
         let a = vec![vec![2. * scale, 0.], vec![0., scale]];
         let s = l::svdvals(&a).unwrap();
-        close(s[0] / scale, 2.);
-        close(s[1] / scale, 1.);
+        finite_close(s[0] / scale, 2., 3e-11, 3e-11);
+        finite_close(s[1] / scale, 1., 3e-11, 3e-11);
         let e = l::eigvalsh(&a, true).unwrap();
-        close(e[0] / scale, 1.);
-        close(e[1] / scale, 2.);
+        finite_close(e[0] / scale, 1., 3e-11, 3e-11);
+        finite_close(e[1] / scale, 2., 3e-11, 3e-11);
         let e = l::eigvals(&a).unwrap();
         assert!(e.iter().all(|z| z.im == 0.));
-        close(
+        finite_close(
             l::norm(&a, l::MatrixNorm::Frobenius).unwrap() / scale,
             5.0_f64.sqrt(),
+            3e-11,
+            3e-11,
         );
     }
     assert!(l::pinv(&[vec![1.]], f64::MAX, Some(f64::MAX)).is_err());
@@ -1184,8 +1195,18 @@ fn inverse_identities_and_cross_module_interoperability() {
     let f = l::dft(n, l::DftScale::None).unwrap();
     let spectrum = sci::fft::rfft(&x);
     for (k, z) in spectrum.iter().enumerate() {
-        close(f[k].iter().zip(&x).map(|(z, x)| z.re * x).sum(), z.re);
-        close(f[k].iter().zip(&x).map(|(z, x)| z.im * x).sum(), z.im);
+        finite_close(
+            f[k].iter().zip(&x).map(|(z, x)| z.re * x).sum(),
+            z.re,
+            3e-11,
+            3e-11,
+        );
+        finite_close(
+            f[k].iter().zip(&x).map(|(z, x)| z.im * x).sum(),
+            z.im,
+            3e-11,
+            3e-11,
+        );
     }
     let jac = sci::differentiate::jacobian(
         |x| vec![2. * x[0] + x[1], x[0] + 3. * x[1]],
@@ -1243,7 +1264,7 @@ fn matrix_functions_validate_work_and_satisfy_identities() {
     let (_, zero) = l::expm_frechet(&a, &vec![vec![0.; 2]; 2]).unwrap();
     check_matrix(&zero, &vec![vec![0.; 2]; 2]);
     let n = l::expm_cond(&[vec![-700.]]).unwrap();
-    close(n, 700.);
+    finite_close(n, 700., 3e-11, 3e-11);
     let direction = vec![vec![1., 2.], vec![-1., 0.5]];
     let (_, d) = l::expm_frechet(&a, &direction).unwrap();
     let h = 1e-5;
@@ -1382,13 +1403,13 @@ fn advanced_domains_and_matrix_identities() {
     ccheck(&log, &cfrom(&nilpotent));
     for scale in [1e-200, 1e200] {
         let root = l::sqrtm(&[vec![4. * scale]]).unwrap();
-        close(root[0][0].re / (2. * scale.sqrt()), 1.);
+        finite_close(root[0][0].re / (2. * scale.sqrt()), 1., 3e-11, 3e-11);
         let logarithm = l::logm(&[vec![scale]]).unwrap();
-        close(logarithm[0][0].re, scale.ln());
+        finite_close(logarithm[0][0].re, scale.ln(), 3e-11, 3e-11);
         let power = l::fractional_matrix_power(&[vec![scale]], 0.5).unwrap();
-        close(power[0][0].re / scale.sqrt(), 1.);
+        finite_close(power[0][0].re / scale.sqrt(), 1., 3e-11, 3e-11);
         let eig = l::eig(&[vec![scale]]).unwrap();
-        close(eig.eigenvalues[0].re / scale, 1.);
+        finite_close(eig.eigenvalues[0].re / scale, 1., 3e-11, 3e-11);
     }
     assert!(l::rsf2csf(&a, &zero).is_err());
     assert!(
@@ -1522,7 +1543,7 @@ fn typed_dispatch_calls_shared_apis_and_rejects_unknown_names() {
         assert!(f(&[f64::NAN], &[1.]).is_err());
     }
     if let B::Nrm2(f) = l::get_blas_funcs(&["dnrm2"]).unwrap()[0] {
-        close(f(&[3e200, 4e200]).unwrap() / 1e200, 5.);
+        finite_close(f(&[3e200, 4e200]).unwrap() / 1e200, 5., 3e-11, 3e-11);
         assert!(f(&[f64::INFINITY]).is_err());
     }
     if let B::Gemv(f) = l::get_blas_funcs(&["gemv"]).unwrap()[0] {
@@ -1635,7 +1656,7 @@ fn hyperbolic_extreme_scales_match_independent_references() {
                     );
                 }
                 assert!(
-                    a.is_finite() && (a - b).abs() <= tolerance,
+                    a.is_finite() && approx::abs_diff_eq!(a, b, epsilon = tolerance),
                     "{input}: {a} != {b}"
                 );
             }

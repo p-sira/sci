@@ -1,4 +1,5 @@
 mod common;
+use common::concat_pair;
 use common::vector as numbers;
 
 use sci::{Error, Result, stats::*};
@@ -866,10 +867,7 @@ fn evaluate(fields: &[&str]) -> Result<Vec<f64>> {
         )?),
         "chisquare" => test(chisquare(&x, &y, p[0] as usize)?),
         "power_divergence" => test(power_divergence(&x, &y, p[0] as usize, p[1])?),
-        "margins" => {
-            let (a, b) = contingency::margins(&x, p[0] as usize, p[1] as usize)?;
-            [a, b].concat()
-        }
+        "margins" => concat_pair!(contingency::margins(&x, p[0] as usize, p[1] as usize)?),
         "expected_freq" => contingency::expected_freq(&x, p[0] as usize, p[1] as usize)?,
         "chi2_contingency" => {
             let r = chi2_contingency(&x, p[0] as usize, p[1] as usize, p[2] != 0.)?;
@@ -940,7 +938,7 @@ fn scipy_references() {
                     "tukey_hsd" if i >= fields[5].split('/').count().pow(2) => 5e-7,
                     _ => 2e-10,
                 };
-                a.is_finite() && (a - b).abs() <= tolerance * (1. + b.abs())
+                a.is_finite() && approx::abs_diff_eq!(a, b, epsilon = tolerance * (1. + b.abs()))
             };
             if !matches {
                 failures.push(format!(

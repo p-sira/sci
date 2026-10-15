@@ -145,7 +145,8 @@ fn public_hierarchy_matches_scipy() {
                     if b.is_nan() {
                         a.is_nan()
                     } else {
-                        a.is_finite() && (a - b).abs() <= 3e-12 + 3e-12 * b.abs()
+                        a.is_finite()
+                            && approx::abs_diff_eq!(a, b, epsilon = 3e-12 + 3e-12 * b.abs())
                     },
                     "{}: {a} != {b}",
                     c[0]

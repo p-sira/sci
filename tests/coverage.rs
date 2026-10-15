@@ -1,16 +1,10 @@
 //! Boundary and property tests that also run with the `stats` feature disabled.
+mod common;
+use common::finite_close;
 use sci::{
     Error, Mode, Spline, cluster, complex, constants, differentiate, fft, integrate, interpolate,
     linalg, optimize, signal, spatial, special,
 };
-
-fn close(actual: f64, expected: f64) {
-    assert!(actual.is_finite() && expected.is_finite());
-    assert!(
-        (actual - expected).abs() <= 2e-12 + 2e-12 * expected.abs(),
-        "{actual} != {expected}"
-    );
-}
 
 #[test]
 fn complex_division_preserves_representable_extreme_quotients() {
@@ -21,8 +15,8 @@ fn complex_division_preserves_representable_extreme_quotients() {
             im: -scale,
         };
         let quotient = complex::divide(z, z);
-        close(quotient.re, 1.0);
-        close(quotient.im, 0.0);
+        finite_close(quotient.re, 1.0, 2e-12, 2e-12);
+        finite_close(quotient.im, 0.0, 2e-12, 2e-12);
         let quotient = complex::divide(
             Complex {
                 re: -scale,
@@ -30,8 +24,8 @@ fn complex_division_preserves_representable_extreme_quotients() {
             },
             z,
         );
-        close(quotient.re, 0.0);
-        close(quotient.im, -1.0);
+        finite_close(quotient.re, 0.0, 2e-12, 2e-12);
+        finite_close(quotient.im, -1.0, 2e-12, 2e-12);
     }
     let quotient = complex::divide(
         Complex {
@@ -165,16 +159,18 @@ fn integration_rejects_overflow_and_respects_callback_counts() {
             n,
         )
         .unwrap();
-        close(result, 2.0);
+        finite_close(result, 2.0, 2e-12, 2e-12);
         assert_eq!(count.get(), n);
     }
     assert_eq!(
         integrate::fixed_quad(|_| 0.0, -f64::MAX, f64::MAX, 2),
         Ok(0.0)
     );
-    close(
+    finite_close(
         integrate::fixed_quad(|_| f64::MAX, 0.0, 1.0, 2).unwrap(),
         f64::MAX,
+        2e-12,
+        2e-12,
     );
     assert_eq!(
         integrate::fixed_quad(|_| f64::MAX, 0.0, 2.0, 2),
@@ -222,7 +218,12 @@ fn spline_public_fields_are_validated_by_every_consumer() {
     }
     assert_eq!(interpolate::splder(&valid, 0).unwrap(), valid);
     assert_eq!(interpolate::splantider(&valid, 0).unwrap(), valid);
-    close(interpolate::splint(1.0, 0.0, &valid).unwrap(), -0.5);
+    finite_close(
+        interpolate::splint(1.0, 0.0, &valid).unwrap(),
+        -0.5,
+        2e-12,
+        2e-12,
+    );
 }
 
 #[test]
@@ -235,7 +236,7 @@ fn vector_quantization_handles_empty_clusters_and_distance_overflow() {
     assert_eq!(labels, vec![0, 0]);
     let (dropped, distortion) = vq::kmeans(&observations, &codes, 1e-8, 4).unwrap();
     assert_eq!(dropped, vec![vec![1.0]]);
-    close(distortion, 1.0);
+    finite_close(distortion, 1.0, 2e-12, 2e-12);
     assert_eq!(
         vq::kmeans(&observations, &[vec![100.0]], 0.0, 1),
         Err(Error::NumericalFailure(
@@ -259,22 +260,26 @@ fn spatial_zero_weights_exclude_overflowing_coordinate_differences() {
     let v = [-f64::MAX, 4.0];
     let w = [0.0, 1.0];
     for metric in [d::euclidean, d::cityblock, d::chebyshev] {
-        close(metric(&u, &v, Some(&w)).unwrap(), 3.0);
+        finite_close(metric(&u, &v, Some(&w)).unwrap(), 3.0, 2e-12, 2e-12);
         assert_eq!(metric(&u, &v, None), Err(Error::NonFiniteEvaluation));
     }
-    close(d::sqeuclidean(&u, &v, Some(&w)).unwrap(), 9.0);
+    finite_close(d::sqeuclidean(&u, &v, Some(&w)).unwrap(), 9.0, 2e-12, 2e-12);
     assert_eq!(
         d::sqeuclidean(&[1e200], &[0.0], None),
         Err(Error::NonFiniteEvaluation)
     );
     for weights in [[1.0, 2.0], [1e300, 2e300], [1e-300, 2e-300]] {
-        close(
+        finite_close(
             d::hamming(&[0.0, 1.0], &[0.0, 0.0], Some(&weights)).unwrap(),
             2.0 / 3.0,
+            2e-12,
+            2e-12,
         );
-        close(
+        finite_close(
             d::jaccard(&[0.0, 1.0], &[0.0, 0.0], Some(&weights)).unwrap(),
             1.0,
+            2e-12,
+            2e-12,
         );
     }
 }
@@ -302,9 +307,9 @@ fn special_reductions_handle_empty_and_nonfinite_normalization() {
         let values = [shift - 2.0, shift, shift + 3.0];
         let probabilities = special::softmax(&values);
         let logs = special::log_softmax(&values);
-        close(probabilities.iter().sum(), 1.0);
+        finite_close(probabilities.iter().sum(), 1.0, 2e-12, 2e-12);
         for (p, log) in probabilities.iter().zip(logs) {
-            close(*p, log.exp());
+            finite_close(*p, log.exp(), 2e-12, 2e-12);
         }
     }
 }
@@ -345,7 +350,7 @@ fn fft_zero_hyperbolic_numerators_and_overflow_are_explicit() {
     );
     let mean = x.iter().sum::<f64>() / x.len() as f64;
     for v in fft::ss_diff(&x, 0.0, 1.0, std::f64::consts::TAU).unwrap() {
-        close(v, 0.0 * mean);
+        finite_close(v, 0.0 * mean, 2e-12, 2e-12);
     }
     assert!(fft::diff(&x, 64, f64::MIN_POSITIVE).is_err());
     assert!(fft::shift(&x, f64::MAX, 1.0).is_err());
@@ -411,7 +416,7 @@ fn signal_division_and_convolution_cover_short_dividends_and_operand_order() {
         let b = signal::fftconvolve(&x, &h, mode).unwrap();
         assert_eq!(a.len(), b.len());
         for (a, b) in a.iter().zip(b) {
-            close(*a, b);
+            finite_close(*a, b, 2e-12, 2e-12);
         }
     }
     // Same-mode output is sized to the first operand, including n < m.

@@ -1,34 +1,11 @@
 mod common;
+use common::assert_nonzero_close;
 
 use sci::{
     Error,
     complex::{self as c, Complex},
     fft,
 };
-
-fn close(actual: f64, expected: f64, context: &str) {
-    if expected.is_nan() {
-        assert!(actual.is_nan(), "{context}: {actual} != NaN");
-    } else if expected.is_infinite() {
-        assert_eq!(actual, expected, "{context}");
-    } else {
-        let tolerance = if expected != 0.0 && expected.abs() < 1e-6 {
-            (3e-14 * expected.abs()).max(f64::from_bits(1))
-        } else {
-            3e-14 + 3e-14 * expected.abs()
-        };
-        if expected != 0.0 {
-            assert_ne!(
-                actual, 0.0,
-                "{context}: nonzero reference underflowed to zero"
-            );
-        }
-        assert!(
-            actual.is_finite() && (actual - expected).abs() <= tolerance,
-            "{context}: {actual} != {expected}"
-        );
-    }
-}
 
 #[test]
 fn every_public_function_matches_independent_references() {
@@ -88,8 +65,8 @@ fn every_public_function_matches_independent_references() {
             name => panic!("unknown function {name}"),
         };
         covered.insert(row[1]);
-        close(result.re, reference[1].parse().unwrap(), input);
-        close(result.im, reference[2].parse().unwrap(), input);
+        assert_nonzero_close(result.re, reference[1].parse().unwrap(), 3e-14, 1e-6, input);
+        assert_nonzero_close(result.im, reference[2].parse().unwrap(), 3e-14, 1e-6, input);
         if row[0].starts_with("large_") || row[0].starts_with("tangent_") {
             for (actual, expected) in [result.re, result.im]
                 .into_iter()
@@ -149,8 +126,8 @@ fn domains_and_signed_zero_conventions() {
 }
 
 fn complex_close(a: Complex, b: Complex) {
-    close(a.re, b.re, "identity real");
-    close(a.im, b.im, "identity imaginary");
+    assert_nonzero_close(a.re, b.re, 3e-14, 1e-6, "identity real");
+    assert_nonzero_close(a.im, b.im, 3e-14, 1e-6, "identity imaginary");
 }
 
 #[test]
@@ -182,7 +159,7 @@ fn identities_inverse_round_trips_and_fft_interoperability() {
     let input = [Complex { re: 1.0, im: 0.0 }, Complex { re: 0.0, im: 1.0 }];
     let spectrum = fft::fft(&input);
     let energy: f64 = spectrum.iter().copied().map(c::norm_sqr).sum();
-    close(energy, 4.0, "Parseval");
+    assert_nonzero_close(energy, 4.0, 3e-14, 1e-6, "Parseval");
 }
 
 #[test]
@@ -207,8 +184,14 @@ fn inverse_round_trips_preserve_tiny_components() {
             c::sinh(c::asinh(z)),
             c::tanh(c::atanh(z)),
         ] {
-            close(actual.re, z.re, "tiny inverse real round trip");
-            close(actual.im, z.im, "tiny inverse imaginary round trip");
+            assert_nonzero_close(actual.re, z.re, 3e-14, 1e-6, "tiny inverse real round trip");
+            assert_nonzero_close(
+                actual.im,
+                z.im,
+                3e-14,
+                1e-6,
+                "tiny inverse imaginary round trip",
+            );
         }
     }
 }
@@ -251,7 +234,7 @@ fn real_powers_reuse_roots_and_preserve_axis_components() {
         1.5,
     );
     assert!(z.re.is_infinite());
-    close(z.im, 1.5e-146, "near-axis power derivative");
+    assert_nonzero_close(z.im, 1.5e-146, 3e-14, 1e-6, "near-axis power derivative");
 }
 
 #[test]
