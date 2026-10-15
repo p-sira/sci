@@ -18,4 +18,4 @@ sci-core.workspace = true
 nalgebra.workspace = true
 
 [dev-dependencies]
-sci-linalg.workspace = true
+sci-linalg = { path = "../sci-linalg", default-features = false }

@@ -17,5 +17,5 @@ include = ["src/**", "LICENSE"]
 sci-core.workspace = true
 
 [dev-dependencies]
-sci-linalg.workspace = true
-sci-optimize.workspace = true
+sci-linalg = { path = "../sci-linalg", default-features = false }
+sci-optimize = { path = "../sci-optimize" }

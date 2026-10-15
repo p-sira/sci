@@ -18,5 +18,5 @@ sci-core.workspace = true
 num-complex.workspace = true
 
 [dev-dependencies]
-sci-fft.workspace = true
-sci-special.workspace = true
+sci-fft = { path = "../sci-fft" }
+sci-special = { path = "../sci-special" }

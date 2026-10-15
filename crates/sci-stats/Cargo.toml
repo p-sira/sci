@@ -24,5 +24,5 @@ lapjv.workspace = true
 ndarray.workspace = true
 
 [dev-dependencies]
-sci-complex.workspace = true
-sci-fft.workspace = true
+sci-complex = { path = "../sci-complex" }
+sci-fft = { path = "../sci-fft" }

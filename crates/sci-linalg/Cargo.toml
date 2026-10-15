@@ -31,5 +31,5 @@ ndarray = { workspace = true, optional = true }
 num-complex.workspace = true
 
 [dev-dependencies]
-sci-differentiate.workspace = true
-sci-signal.workspace = true
+sci-differentiate = { path = "../sci-differentiate" }
+sci-signal = { path = "../sci-signal" }
