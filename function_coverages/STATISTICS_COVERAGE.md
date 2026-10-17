@@ -8,7 +8,7 @@ coverage is complete for the documented Rust signatures; full SciPy statistics
 parity is not complete.** The audit against `SCIPY_FUNCTIONS.md` and
 `scipy-func-list/scipy.stats.md` covers **137 of 137 scipy.stats function names**,
 all **7 contingency names**, and all **4 QMC utility function names**.
-Distribution coverage is **29 of 149 callable families** with evaluation methods;
+Distribution coverage is **30 of 149 callable families** with evaluation methods;
 this does not claim their entire object-oriented SciPy method surface.
 
 The coverage audit fails for exported functions without committed reference
@@ -20,6 +20,21 @@ lists no Cython-only statistics namespace. Masked statistics are not implemented
 overlapping mstats names can use the canonical finite, unmasked APIs, while
 mask-specific functions and missing-data dispatch remain gaps. Right-censoring
 is supported through explicit logrank event flags.
+
+Statrs 0.19.1 additions used by Sci:
+
+- `Distribution::Levy` evaluates SciPy `levy` density/log-density, CDF/SF and
+  quantiles with native location/scale parameters; it also works with existing
+  truncation, order-statistic and continuous-null APIs. Moments, sampling and
+  fitting remain unsupported.
+- Chi and inverse-gamma quantiles first use the new safeguarded Newton inverses.
+  Sci validates the smaller-tail probability residual before accepting a result;
+  its bounded bisection remains the fallback. Endpoints and domains are unchanged.
+- The new generic inverse remains unsuitable as a blanket replacement for Sci's
+  inversion, because it does not report convergence and has different work limits.
+- New upstream hypothesis tests overlap Sci's existing APIs; their direct moment
+  sums and CDF-subtracted tails do not preserve Sci's extreme-scale/tail behavior.
+  KDE and online accumulators are not exposed by this change.
 
 ## Supported native groups
 
@@ -263,7 +278,7 @@ the backend. Multivariate matrices use one Vec per row, interoperable with algeb
 
 `tests/scipy/statistics_cases.json` contains inputs separately from expected
 results. `generate_statistics.py` pins SciPy 1.18.1 and NumPy 2.5.4 and emits
-4890 cases into `stats_inputs.csv` and `stats_expected.csv`. Ordinary Rust tests
+5101 cases into `stats_inputs.csv` and `stats_expected.csv`. Ordinary Rust tests
 read the CSV files; they require no Python. The fixture generator explicitly
 identifies independent mathematical references for the documented corner
 adaptations and KS limiting probabilities. References never use Sci/statrs.
