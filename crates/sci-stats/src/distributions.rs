@@ -485,15 +485,17 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
             }
         },
         Distribution::Poisson { rate } => discrete(&make(Poisson::new(shape(rate)?))?, x, op)?,
-        Distribution::Geometric { probability } => discrete(
-            &{
-                probability_check(probability)?;
-                positive(probability)?;
-                make(Geometric::new(probability))?
-            },
-            x,
-            op,
-        )?,
+        Distribution::Geometric { probability } => {
+            probability_check(probability)?;
+            positive(probability)?;
+            let d = make(Geometric::new(probability))?;
+            // SciPy retains the nominal unbounded support even when p = 1.
+            if matches!(op, Operation::Ppf) && x == 1. {
+                f64::INFINITY
+            } else {
+                discrete(&d, x, op)?
+            }
+        }
         Distribution::NegativeBinomial {
             successes,
             probability,
@@ -890,7 +892,8 @@ pub fn sf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 ///
 /// ## Domain
 ///
-/// NaN arguments are errors. p is in \[0,1\]. Continuous endpoints return support bounds; discrete p=0 returns support minimum minus one, following SciPy. Unbounded p=1 returns infinity.
+/// NaN arguments are errors. p is in \[0,1\]. Continuous endpoints return support bounds; discrete p=0 returns support minimum minus one, following SciPy. Unbounded p=1 returns infinity. The geometric distribution retains this endpoint
+/// convention even when its success probability is one, matching SciPy.
 ///
 /// ## Returns
 ///
