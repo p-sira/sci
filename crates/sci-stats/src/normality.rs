@@ -390,11 +390,10 @@ pub fn alexandergovern(groups: &[&[f64]]) -> Result<TestResult> {
 ///
 /// ## Numerical behavior
 ///
-/// Native shifted/scaled centering followed by private anofox-statistics AS R94
-/// evaluation; O(n log n) sorting and O(n) memory. Scaling avoids its absolute
-/// near-constant cutoff and avoids overflow in ordered differences. Small
-/// numerical differences from SciPy's normal-quantile approximation can affect
-/// p-values, especially near W=1. Samples larger than 5000 are rejected because
+/// Native shifted/scaled centering followed by private BSD-licensed SciPy AS R94
+/// evaluation; O(n log n) sorting and O(n) memory. Scaling avoids overflow in ordered differences.
+/// Normal weights and tails reuse statrs, matching SciPy 1.18.1 normal quantiles.
+/// Rounding near W=1 can affect p-values. Samples larger than 5000 are rejected because
 /// this calibration is unreliable beyond that range.
 ///
 /// ## Examples
@@ -420,10 +419,9 @@ pub fn shapiro(values: &[f64]) -> Result<TestResult> {
             pvalue: f64::NAN,
         });
     }
-    let r = anofox_statistics::shapiro_wilk(&normalized)
-        .map_err(|_| Error::NumericalFailure("Shapiro-Wilk backend failed"))?;
+    let r = shapiro_backend::evaluate(&normalized)?;
     let statistic = finite(r.statistic)?;
-    let pvalue = finite(r.p_value)?;
+    let pvalue = finite(r.pvalue)?;
     if !(0. ..=1.).contains(&statistic) || !(0. ..=1.).contains(&pvalue) {
         return Err(Error::NumericalFailure(
             "Shapiro-Wilk backend returned invalid result",

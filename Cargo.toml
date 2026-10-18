@@ -17,17 +17,15 @@ categories = ["science", "mathematics"]
 [workspace.dependencies]
 smelly = "=0.1.0"
 kalman_filters = { version = "=1.0.1", default-features = false, features = ["std"] }
-nalgebra-filter = { package = "nalgebra", version = "0.35", default-features = false, features = ["std"] }
 basin = { version = "1.15.1", default-features = false }
 ellip = "1.2.2"
 ndarray = "0.16.1"
-nalgebra = { version = "0.33.2", default-features = false, features = ["std"] }
+nalgebra = { version = "0.35", default-features = false, features = ["std"] }
 num-complex = "0.4.6"
 rustfft = "6.4.0"
 realfft = "3.5.0"
 special = "0.11.4"
-statrs = "0.18.0"
-anofox-statistics = { version = "=0.4.8", default-features = false }
+statrs = "0.19.1"
 lapjv = "0.3.0"
 xsf = "0.6.0"
 pm-remez = { version = "=0.2.1", default-features = false, features = ["faer-backend"] }

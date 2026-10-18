@@ -932,10 +932,6 @@ fn scipy_references() {
                     // 1.4e8: NumPy SVD and direct solves differ by ~3e-9.
                     "epps_singleton_2samp" => 2e-9,
                     "dunnett" if i >= fields[5].split('/').count() - 1 => 5e-5,
-                    // The R studentized-range quadrature differs from SciPy
-                    // by up to 3.3e-7 at df=3; retain the ordinary tolerance
-                    // for mean differences and widen only adjusted p-values.
-                    "tukey_hsd" if i >= fields[5].split('/').count().pow(2) => 5e-7,
                     _ => 2e-10,
                 };
                 a.is_finite() && approx::abs_diff_eq!(a, b, epsilon = tolerance * (1. + b.abs()))
@@ -953,6 +949,45 @@ fn scipy_references() {
         failures.len(),
         failures.join("\n")
     );
+}
+
+#[test]
+fn studentized_range_scipy_references() -> Result<()> {
+    let inputs = common::lines(include_str!("fixtures/range_inputs.csv"));
+    let expected = common::lines(include_str!("fixtures/range_expected.csv"));
+    assert_eq!(inputs.clone().count(), expected.clone().count());
+    for (input, expected) in inputs.zip(expected) {
+        let fields = common::fields(input);
+        let reference = common::fields(expected);
+        assert_eq!(fields[0], reference[0]);
+        let sizes = numbers(fields[1]);
+        let locations = numbers(fields[2]);
+        let groups: Vec<Vec<f64>> = sizes
+            .iter()
+            .zip(locations)
+            .map(|(n, loc)| {
+                (0..*n as usize)
+                    .map(|i| loc + if i % 2 == 0 { -1. } else { 1. })
+                    .collect()
+            })
+            .collect();
+        let slices: Vec<_> = groups.iter().map(Vec::as_slice).collect();
+        let result = tukey_hsd(&slices)?;
+        for (actual, expected) in [
+            (&result.statistic, reference[1]),
+            (&result.pvalue, reference[2]),
+        ] {
+            assert_eq!(actual.len(), groups.len());
+            assert!(actual.iter().all(|row| row.len() == groups.len()));
+            for (a, b) in actual.iter().flatten().zip(numbers(expected)) {
+                assert!(
+                    (a - b).abs() <= 2e-10 * (1. + b.abs()),
+                    "case {input}: {a:e} vs {b:e}"
+                );
+            }
+        }
+    }
+    Ok(())
 }
 
 #[test]

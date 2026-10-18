@@ -30,12 +30,12 @@
 //! ## Acknowledgments
 //!
 //! We thank `smelly`, `kalman_filters`, and
-//! `nalgebra-filter` for their state-estimation algorithms.
+//! `nalgebra` for their state-estimation algorithms.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]
 
-use nalgebra_filter::{DMatrix, DVector};
+use nalgebra::{DMatrix, DVector};
 pub use sci_core::{Error, Matrix, Result};
 
 mod kalman;
@@ -139,10 +139,9 @@ fn covariance(a: &[Vec<f64>], n: usize) -> Result<DMatrix<f64>> {
             a[(j, i)] = average;
         }
     }
-    let eigen = nalgebra_filter::linalg::SymmetricEigen::try_new(&a / scale, f64::EPSILON, 10_000)
-        .ok_or(Error::NumericalFailure(
-            "covariance validation did not converge",
-        ))?;
+    let eigen = nalgebra::linalg::SymmetricEigen::try_new(&a / scale, f64::EPSILON, 10_000).ok_or(
+        Error::NumericalFailure("covariance validation did not converge"),
+    )?;
     if eigen
         .eigenvalues
         .iter()

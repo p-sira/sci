@@ -40,11 +40,14 @@ pub struct PairwiseTest {
 ///
 /// ## Numerical behavior
 ///
-/// O(N+k²) native scaled summaries plus at most k(k−1)/2 private anofox-statistics
-/// studentized-range CDF evaluations. Its bounded R ptukey quadrature has looser
-/// tail accuracy than SciPy adaptive quadrature; absolute errors can reach about
-/// 5e-7 at small residual degrees of freedom, and very small p-values lose
-/// relative accuracy by CDF subtraction.
+/// O(N+k²) native scaled summaries and at most k(k−1)/2 private SciPy-based
+/// studentized-range mixture integrals. Composite Gaussian quadrature uses
+/// orders 32 and 64, with at most 358400 integrand evaluations per pair.
+/// Their absolute difference must be at most 2e-10; this is an error estimate,
+/// not a rigorous bound. Normal integration is truncated to [-10,10] and the
+/// standardized log-chi-square variable to [-32,12]; omitted tails are below
+/// 1e-16 over the supported domain. Direct survival integration avoids CDF
+/// subtraction, but extremely small p-values still have limited relative accuracy.
 /// Two groups use the exact Student-t identity through the shared statrs backend.
 /// Backend objects and result types are kept private. Heteroscedasticity or
 /// nonnormal small samples can invalidate familywise calibration.
@@ -91,6 +94,7 @@ pub fn tukey_hsd(groups: &[&[f64]]) -> Result<PairwiseTest> {
     let k = groups.len();
     let df = (count - k) as f64;
     let mse = squares / df;
+    let range = studentized_range::StudentizedRange::new(k, df);
     let mut statistic = vec![vec![0.; k]; k];
     let mut pvalue = vec![vec![if mse == 0. { f64::NAN } else { 1. }; k]; k];
     for i in 0..k {
@@ -105,7 +109,7 @@ pub fn tukey_hsd(groups: &[&[f64]]) -> Result<PairwiseTest> {
             } else if k == 2 {
                 inference::t_probability(q / std::f64::consts::SQRT_2, df, Alternative::TwoSided)?
             } else {
-                finite(anofox_statistics::ptukey(q, k as f64, df, 1., false))?.clamp(0., 1.)
+                range.sf(q)?
             };
             statistic[i][j] = difference;
             statistic[j][i] = -difference;

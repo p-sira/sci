@@ -11,7 +11,7 @@ homepage = "https://github.com/p-sira/sci"
 repository = "https://github.com/p-sira/sci"
 categories = ["algorithms", "mathematics", "science"]
 keywords = ["statistics", "probability", "distributions", "numerics", "data-analysis"]
-include = ["src/**", "LICENSE"]
+include = ["src/**", "LICENSE", "SCIPY_LICENSE.txt"]
 
 [dependencies]
 sci-core.workspace = true
@@ -19,7 +19,6 @@ sci-special.workspace = true
 nalgebra.workspace = true
 statrs.workspace = true
 basin.workspace = true
-anofox-statistics.workspace = true
 lapjv.workspace = true
 ndarray.workspace = true
 
