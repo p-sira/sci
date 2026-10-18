@@ -1341,6 +1341,15 @@ fn specialized_quantiles_preserve_smaller_tail_probabilities() -> Result<()> {
     for d in [
         Distribution::Chi { df: 1. },
         Distribution::Chi { df: 1000. },
+        Distribution::Chi { df: 100000. },
+        Distribution::InverseGamma {
+            shape_value: 1.,
+            scale: 1e-200,
+        },
+        Distribution::InverseGamma {
+            shape_value: 0.1,
+            scale: 1.,
+        },
         Distribution::InverseGamma {
             shape_value: 0.2,
             scale: 1.,
@@ -1350,7 +1359,15 @@ fn specialized_quantiles_preserve_smaller_tail_probabilities() -> Result<()> {
             scale: 0.01,
         },
     ] {
-        for p in [1e-100, 1e-12, 0.01, 0.5, 0.99, 1. - 1e-12] {
+        for p in [
+            1e-100,
+            1e-12,
+            0.01,
+            0.5,
+            0.99,
+            1. - 1e-12,
+            1. - f64::EPSILON,
+        ] {
             let x = ppf(d, p)?;
             let (actual, expected) = if p <= 0.5 {
                 (cdf(d, x)?, p)
@@ -1365,6 +1382,67 @@ fn specialized_quantiles_preserve_smaller_tail_probabilities() -> Result<()> {
         }
         assert_eq!(ppf(d, 0.)?, 0.);
         assert_eq!(ppf(d, 1.)?, f64::INFINITY);
+    }
+    assert_eq!(
+        ppf(
+            Distribution::InverseGamma {
+                shape_value: 0.01,
+                scale: 1e200,
+            },
+            0.99,
+        ),
+        Err(sci::Error::NumericalFailure(
+            "quantile outside finite range"
+        ))
+    );
+    Ok(())
+}
+
+#[test]
+fn levy_overflow_paths_preserve_location_scale_identities() -> Result<()> {
+    let standard = Distribution::Levy {
+        location: 0.,
+        scale: 1.,
+    };
+    let large = Distribution::Levy {
+        location: -f64::MAX,
+        scale: f64::MAX,
+    };
+    // x-location overflows, but (x-location)/scale is exactly two.
+    assert_eq!(cdf(large, f64::MAX)?, cdf(standard, 2.)?);
+    assert_eq!(sf(large, f64::MAX)?, sf(standard, 2.)?);
+    assert!((logpdf(large, f64::MAX)? + f64::MAX.ln() - logpdf(standard, 2.)?).abs() < 2e-13);
+    assert!((pdf(large, f64::MAX)? * f64::MAX / pdf(standard, 2.)? - 1.).abs() < 2e-13);
+
+    // At huge positive separations, exp(-c/(2*(x-location))) rounds to one.
+    // The independent leading terms are SF=sqrt(2*c/(pi*delta)) and
+    // PDF=SF/(2*delta), with relative error O(c/delta), here below 1e-308.
+    // Both finite and overflowing delta must preserve representable tails.
+    for (location, x, log_delta) in [
+        (0., 10., 10_f64.ln()),
+        (-f64::MAX, f64::MAX, f64::MAX.ln() + 2_f64.ln()),
+    ] {
+        let d = Distribution::Levy {
+            location,
+            scale: 1e-320,
+        };
+        let log_survival =
+            0.5 * (2_f64.ln() + 1e-320_f64.ln() - std::f64::consts::PI.ln() - log_delta);
+        let log_density = log_survival - 2_f64.ln() - log_delta;
+        let expected_survival = log_survival.exp();
+        // Subnormal survival probabilities also incur binary64 quantization.
+        assert!(
+            (sf(d, x)? - expected_survival).abs()
+                <= 3e-13 * expected_survival + 2. * f64::from_bits(1)
+        );
+        assert_eq!(cdf(d, x)?, 1.);
+        assert!((logpdf(d, x)? - log_density).abs() < 5e-13);
+        let density = pdf(d, x)?;
+        if log_density.exp() == 0. {
+            assert_eq!(density.to_bits(), 0_f64.to_bits());
+        } else {
+            assert!((density / log_density.exp() - 1.).abs() < 3e-13);
+        }
     }
     Ok(())
 }
