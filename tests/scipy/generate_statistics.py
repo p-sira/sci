@@ -29,6 +29,7 @@ ALTS = ["two-sided", "less", "greater"]
 
 def distribution(name, p):
     constructors = {
+        "Levy": lambda: stats.levy(loc=p[0], scale=p[1]),
         "Normal": lambda: stats.norm(loc=p[0], scale=p[1]),
         "Beta": lambda: stats.beta(*p),
         "Gamma": lambda: stats.gamma(p[0], scale=p[1]),
