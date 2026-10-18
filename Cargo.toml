@@ -240,3 +240,83 @@ required-features = ["complex", "special"]
 name = "modules"
 harness = false
 required-features = ["cluster", "complex", "differentiate", "fft", "integrate", "interpolate", "linalg", "optimize", "signal", "spatial", "special", "stats"]
+
+[[bench]]
+name = "special"
+harness = false
+required-features = ["complex", "special"]
+
+[[bench]]
+name = "special_scipy"
+harness = false
+required-features = ["special"]
+
+[[bench]]
+name = "stats"
+harness = false
+required-features = ["stats"]
+
+[[bench]]
+name = "stats_tests"
+harness = false
+required-features = ["stats"]
+
+[[bench]]
+name = "signal"
+harness = false
+required-features = ["complex", "signal"]
+
+[[bench]]
+name = "linalg"
+harness = false
+required-features = ["complex", "linalg", "linalg-faer", "linalg-nalgebra", "linalg-ndarray"]
+
+[[bench]]
+name = "fft"
+harness = false
+required-features = ["fft", "complex"]
+
+[[bench]]
+name = "complex"
+harness = false
+required-features = ["complex"]
+
+[[bench]]
+name = "integrate"
+harness = false
+required-features = ["integrate"]
+
+[[bench]]
+name = "differentiate"
+harness = false
+required-features = ["differentiate"]
+
+[[bench]]
+name = "constants"
+harness = false
+required-features = ["constants"]
+
+[[bench]]
+name = "interpolate"
+harness = false
+required-features = ["interpolate"]
+
+[[bench]]
+name = "spatial"
+harness = false
+required-features = ["spatial"]
+
+[[bench]]
+name = "cluster"
+harness = false
+required-features = ["cluster", "spatial"]
+
+[[bench]]
+name = "optimize"
+harness = false
+required-features = ["optimize"]
+
+[[bench]]
+name = "filter"
+harness = false
+required-features = ["filter"]
