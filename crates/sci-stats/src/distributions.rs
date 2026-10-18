@@ -276,18 +276,32 @@ fn normal_value(mean: f64, std_dev: f64, x: f64, op: Operation) -> Result<f64> {
 }
 
 fn levy_value(location: f64, scale: f64, x: f64, op: Operation) -> Result<f64> {
+    // Quantiles return before observation evaluation; encode that distinction
+    // so the observation matches have no impossible quantile branch.
+    enum Observation {
+        Cdf,
+        Sf,
+        LogDensity,
+        Density,
+    }
     finite(location)?;
     positive(scale)?;
     let standard = make(Levy::new(0., 1.))?;
-    if matches!(op, Operation::Ppf) {
-        if x == 0. {
-            return Ok(location);
+    let observation = match op {
+        Operation::Ppf => {
+            if x == 0. {
+                return Ok(location);
+            }
+            if x == 1. {
+                return Ok(f64::INFINITY);
+            }
+            return finite(scale.mul_add(standard.inverse_cdf(x), location));
         }
-        if x == 1. {
-            return Ok(f64::INFINITY);
-        }
-        return finite(scale.mul_add(standard.inverse_cdf(x), location));
-    }
+        Operation::Cdf => Observation::Cdf,
+        Operation::Sf => Observation::Sf,
+        Operation::LogDensity => Observation::LogDensity,
+        Operation::Density => Observation::Density,
+    };
     let delta = x - location;
     let z = if delta.is_finite() || x.is_infinite() {
         delta / scale
@@ -306,20 +320,18 @@ fn levy_value(location: f64, scale: f64, x: f64, op: Operation) -> Result<f64> {
         let root = (-0.5 * (std::f64::consts::LN_2 + log_z)).exp();
         let log_density =
             -0.5 * (2. * std::f64::consts::PI).ln() - 1.5 * log_delta + 0.5 * scale.ln();
-        return match op {
-            Operation::Cdf => Ok(statrs::function::erf::erfc(root)),
-            Operation::Sf => Ok(statrs::function::erf::erf(root)),
-            Operation::LogDensity => Ok(log_density),
-            Operation::Density => finite(log_density.exp()),
-            Operation::Ppf => unreachable!(),
+        return match observation {
+            Observation::Cdf => Ok(statrs::function::erf::erfc(root)),
+            Observation::Sf => Ok(statrs::function::erf::erf(root)),
+            Observation::LogDensity => Ok(log_density),
+            Observation::Density => finite(log_density.exp()),
         };
     }
-    match op {
-        Operation::Cdf => Ok(standard.cdf(z)),
-        Operation::Sf => Ok(standard.sf(z)),
-        Operation::LogDensity => Ok(standard.ln_pdf(z) - scale.ln()),
-        Operation::Density => finite((standard.ln_pdf(z) - scale.ln()).exp()),
-        Operation::Ppf => unreachable!(),
+    match observation {
+        Observation::Cdf => Ok(standard.cdf(z)),
+        Observation::Sf => Ok(standard.sf(z)),
+        Observation::LogDensity => Ok(standard.ln_pdf(z) - scale.ln()),
+        Observation::Density => finite((standard.ln_pdf(z) - scale.ln()).exp()),
     }
 }
 

@@ -28,6 +28,18 @@ fn gaussian_values(g: Gaussian) -> Vec<f64> {
         .chain(g.covariance.into_iter().flatten())
         .collect()
 }
+
+#[test]
+fn identity_prediction_preserves_correlated_covariance() -> sci::Result<()> {
+    let prior = Gaussian {
+        mean: vec![1., -2., 3.],
+        covariance: vec![vec![4., 1., 1.], vec![1., 3., 0.5], vec![1., 0.5, 2.]],
+    };
+    let identity = vec![vec![1., 0., 0.], vec![0., 1., 0.], vec![0., 0., 1.]];
+    let result = kalman_predict(&prior, &identity, &vec![vec![0.; 3]; 3])?;
+    assert_eq!(result, prior);
+    Ok(())
+}
 fn update_values(u: Update, size: usize) -> Vec<f64> {
     assert_eq!(u.innovation.len(), size);
     gaussian_values(u.estimate)

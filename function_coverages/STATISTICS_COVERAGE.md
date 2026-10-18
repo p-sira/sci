@@ -278,7 +278,7 @@ the backend. Multivariate matrices use one Vec per row, interoperable with algeb
 
 `tests/scipy/statistics_cases.json` contains inputs separately from expected
 results. `generate_statistics.py` pins SciPy 1.18.1 and NumPy 2.5.4 and emits
-5101 cases into `stats_inputs.csv` and `stats_expected.csv`. Ordinary Rust tests
+5116 cases into `stats_inputs.csv` and `stats_expected.csv`. Ordinary Rust tests
 read the CSV files; they require no Python. The fixture generator explicitly
 identifies independent mathematical references for the documented corner
 adaptations and KS limiting probabilities. References never use Sci/statrs.
@@ -297,7 +297,20 @@ per pair. Truncation tails are below 1e-16 over the supported domain; the order
 comparison is an error estimate, not a rigorous accuracy bound. Additional
 `range_inputs.csv` and `range_expected.csv` fixtures cover residual degrees of
 freedom through 65533 and the 16-group and combined-count boundaries. Shapiro
-passes the ordinary tolerance, including n=3,11,12,25,100,5000 and extreme units.
+passes the ordinary tolerance, including n=3,11,12,25,100,5000, single-outlier
+samples for every n=4..11, and extreme units. The uncensored Shapiro backend
+omits AS R94's unreachable small-sample p-value floor: for n>=5 gamma is
+positive while log(1-W)<=0; at n=4 the ordered-sample lower bound
+W>=4*a[0]^2/3>0.62 also keeps log(1-W) below gamma. Constant Tukey groups
+exercise infinite statistics and preserve SciPy's zero/NaN p-value conventions.
+Private guard tests deterministically reject unconverged quadrature estimates;
+filter eigensolver exhaustion is tested with a reduced private iteration budget.
+Lévy properties cover overflowing differences and standardized coordinates,
+including direct log-density and survival asymptotics when c/(x-location)
+is below 1e-308 and the relative remainder is negligible in binary64.
+Specialized quantile tests cover rejected Newton results and bounded fallback
+inversion for Chi with 100000 degrees of freedom, inverse-gamma upper tails
+at 1-epsilon, tiny inverse-gamma scales, and unrepresentable interior quantiles.
 Dunnett probabilities use 5e-5 for fixed-order mixture quadrature; statistics
 retain the ordinary tolerance. References use SciPy multivariate-t CDF with
 one million integration points and a fixed RNG seed, reducing SciPy's default

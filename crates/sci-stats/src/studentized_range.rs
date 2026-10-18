@@ -114,11 +114,43 @@ impl StudentizedRange {
         }
         let coarse = self.integrate(q, 32)?;
         let fine = self.integrate(q, 64)?;
-        if (coarse - fine).abs() > 2e-10 || !(0. ..=1. + 2e-10).contains(&fine) {
-            return Err(Error::NumericalFailure(
-                "studentized-range quadrature did not converge",
-            ));
+        converged_probability(coarse, fine)
+    }
+}
+
+// Validate the quadrature estimate separately from producing it: ordinary
+// supported inputs should converge, but failures must remain checked.
+fn converged_probability(coarse: f64, fine: f64) -> Result<f64> {
+    if !coarse.is_finite() || (coarse - fine).abs() > 2e-10 || !(0. ..=1. + 2e-10).contains(&fine) {
+        return Err(Error::NumericalFailure(
+            "studentized-range quadrature did not converge",
+        ));
+    }
+    Ok(fine.clamp(0., 1.))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quadrature_rejects_disagreement_and_invalid_probabilities() {
+        for (coarse, fine) in [
+            (0.5, 0.5 + 3e-10),
+            (-1e-12, -1e-12),
+            (1. + 3e-10, 1. + 3e-10),
+            (f64::NAN, 0.5),
+            (0.5, f64::NAN),
+            (f64::INFINITY, f64::INFINITY),
+        ] {
+            assert_eq!(
+                converged_probability(coarse, fine),
+                Err(Error::NumericalFailure(
+                    "studentized-range quadrature did not converge"
+                ))
+            );
         }
-        Ok(fine.clamp(0., 1.))
+        assert_eq!(converged_probability(0.5, 0.5), Ok(0.5));
+        assert_eq!(converged_probability(1., 1. + 1e-10), Ok(1.));
     }
 }

@@ -78,12 +78,10 @@ pub(super) fn evaluate(values: &[f64]) -> Result<TestResult> {
         let mut y = complement.ln();
         let (m, s) = if n <= 11 {
             let gamma = polynomial(&[-2.273, 0.459], an);
-            if y >= gamma {
-                return Ok(TestResult {
-                    statistic,
-                    pvalue: 1e-19,
-                });
-            }
+            // The censored AS R94 path also checks y >= gamma. For these
+            // uncensored samples this cannot occur: gamma > 0 for n >= 5,
+            // whereas y = ln(1-W) <= 0. For n = 4, ordered observations have
+            // W >= 4*a[0]^2/3 > 0.62, so y < ln(0.38) < gamma = -0.437.
             y = -(gamma - y).ln();
             (
                 polynomial(&[0.544, -0.39978, 0.025054, -0.0006714], an),
