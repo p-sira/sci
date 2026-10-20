@@ -49,7 +49,7 @@ for the private `xsf` backend, including through transitive dependencies.
 | Mathematical functions | [`complex`](https://docs.rs/sci-complex), [`constants`](https://docs.rs/sci-constants), [`special`](https://docs.rs/sci-special) |
 
 Linear algebra accepts shared rows and faer, ndarray, or nalgebra storage.
-Sparse matrices use shared CSR storage, with construction, arithmetic, and sparse LU solves.
+Sparse operations use shared CSR/COO storage, with graph algorithms, direct and iterative solves, spectral routines, and NPZ interchange.
 
 ## Documentation
 

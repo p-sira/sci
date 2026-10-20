@@ -2,16 +2,20 @@
 //!
 //! Construction and arithmetic use canonical CSR: sorted, unique columns per
 //! row. Duplicate coordinates are summed; explicit zeros are retained unless
-//! [`eliminate_zeros`] is requested. All APIs reject NaN and infinity, invalid
+//! [`eliminate_zeros`] is requested. Numerical inputs reject NaN and infinity, invalid
 //! storage, axes above 1,000,000, and storage above 1,000,000 entries. Arithmetic
 //! rejects nonfinite results. Dense conversion is limited to 1,000,000 cells;
 //! sparse multiplication to 20,000,000 scalar products and block assembly to
 //! 20,000,000 total input rows. Empty axes are supported.
 //!
-//! SciPy's matrix/array and format variants share this two-dimensional type.
-//! Graph algorithms, random sampling, serialization, and iterative/eigenvalue
-//! solvers are outside v0.1.0; see the repository's sparse coverage report.
-//! The private faer backend supplies sparse LU factorizations.
+//! Shared [`SparseArray`] COO storage supports rank 1..32 and axis operations.
+//! Graph algorithms, iterative solves, spectral decompositions, matrix functions,
+//! random sampling, and NPZ interchange cover the modern SciPy function inventory
+//! through documented Rust adaptations. Spectral and iterative axes are bounded
+//! at 256; spectral routines use dense fallbacks. Python mutable storage classes,
+//! deprecated compatibility namespaces and legacy solver controls are excluded.
+//! Private faer, petgraph, lapjv, RNG and ZIP backends do not appear in the API.
+//! See the repository's sparse coverage report for signature and work limits.
 //!
 //! ```
 //! use sci_sparse::{from_coo, matvec, linalg::spsolve};
@@ -24,11 +28,17 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]
 
-pub use sci_core::{Error, Matrix, Result, SparseMatrix};
+pub use sci_core::{Error, Matrix, Result, SparseArray, SparseMatrix};
 use std::collections::BTreeMap;
 
+mod array;
+/// Algorithms for weighted graphs represented by CSR matrices.
+pub mod csgraph;
+mod io;
 /// Sparse linear algebra using finite real matrices.
 pub mod linalg;
+pub use array::*;
+pub use io::{load_npz, save_npz};
 
 const LIMIT: usize = 1_000_000;
 const WORK: usize = 20_000_000;

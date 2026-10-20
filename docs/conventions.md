@@ -45,7 +45,10 @@ columns are sorted and unique per row. Explicit zeros are retained. Sparse
 operations validate public storage before use and reject nonfinite inputs and
 results. `sparse::from_coo`, `from_csr`, and `from_csc` canonicalize storage;
 `from_dense` and `to_dense` connect sparse data with shared row matrices and
-existing linear algebra adapters. See [sparse coverage](../function_coverages/SPARSE_COVERAGE.md)
+existing linear algebra adapters. `sci::SparseArray` supplies rank-1..32 COO
+coordinates for sparse axis operations. Graphs distinguish unstored non-edges
+from explicitly stored zero-weight edges; unreachable graph distances and
+caller-selected null fills may be nonfinite. See [sparse coverage](../function_coverages/SPARSE_COVERAGE.md)
 for supported operations and limits.
 
 ## Numerical conventions

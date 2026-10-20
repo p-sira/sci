@@ -149,3 +149,19 @@ pub struct SparseMatrix {
     /// Finite stored values, including any explicit zeros.
     pub data: Vec<f64>,
 }
+
+/// Real sparse array in canonical coordinate (COO) storage of arbitrary rank.
+///
+/// `coordinates[p]` is the zero-based multi-index of `data[p]`. Coordinates
+/// are lexicographically increasing and unique. Each coordinate has exactly
+/// `shape.len()` components. Explicit zeros are allowed. Numerical operations
+/// validate these public fields before use. Rank is between one and 32.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SparseArray {
+    /// Axis lengths in logical order.
+    pub shape: Vec<usize>,
+    /// One multi-index per stored entry, in lexicographic order.
+    pub coordinates: Vec<Vec<usize>>,
+    /// Finite real values aligned with coordinates.
+    pub data: Vec<f64>,
+}

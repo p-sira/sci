@@ -1,4 +1,4 @@
-//! Sparse direct solves and elementary matrix operations.
+//! Sparse direct/iterative solves, operators, spectra, and matrix functions.
 //!
 //! LU uses faer privately, with an order limit of 1,024 to bound worst-case
 //! fill-in. No dense copy of the input matrix is formed. The pivoting strategy
@@ -197,6 +197,8 @@ pub fn spsolve_triangular(
 pub enum MatrixNorm {
     /// `sqrt(Σ_ij |A[i,j]|²)`.
     Frobenius,
+    /// Largest singular value (spectral 2-norm), axes at most 256.
+    Spectral,
     /// Maximum absolute column sum.
     One,
     /// Minimum absolute column sum (SciPy `ord=-1`; not a mathematical norm).
@@ -211,7 +213,7 @@ pub enum MatrixNorm {
 ///
 /// # Parameters and conventions
 /// `a` is canonical CSR; `order` selects the formula in [`MatrixNorm`].
-/// Only whole two-dimensional matrices are supported, without axis options.
+/// Whole-matrix norms use this entry point; [`norm_axis`] supplies vector-axis norms.
 /// # Domain and special values
 /// Finite entries. Frobenius accepts empty axes and returns zero. Other orders
 /// require both axes nonempty; implicit zeros contribute zero to all sums.
@@ -222,6 +224,7 @@ pub enum MatrixNorm {
 /// # Numerical behavior
 /// O(rows + cols + stored entries). Frobenius uses repeated `hypot` to avoid
 /// intermediate squaring overflow/underflow; induced sums use sequential f64 addition.
+/// Spectral norm uses the bounded dense SVD fallback with axes <=256.
 /// # Examples
 /// ```
 /// use sci_sparse::linalg::{norm, MatrixNorm};
@@ -234,6 +237,9 @@ pub fn norm(a: &SparseMatrix, order: MatrixNorm) -> Result<f64> {
     validate(a)?;
     if order == MatrixNorm::Frobenius {
         return finite(a.data.iter().fold(0.0, |s, &v| s.hypot(v)));
+    }
+    if order == MatrixNorm::Spectral {
+        return Ok(svds(a, 1, true)?.singular_values[0]);
     }
     if a.rows == 0 || a.cols == 0 {
         return Err(Error::InvalidInput("induced norm requires nonempty axes"));
@@ -395,3 +401,10 @@ pub fn is_sptriangular(a: &SparseMatrix) -> Result<(bool, bool)> {
     let (lower, upper) = spbandwidth(a)?;
     Ok((upper == 0, lower == 0))
 }
+
+mod ilu;
+mod iterative;
+mod spectral;
+pub use ilu::{SparseIlu, spilu};
+pub use iterative::*;
+pub use spectral::*;
