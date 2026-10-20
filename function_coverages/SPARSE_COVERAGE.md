@@ -59,7 +59,8 @@ All 148 inventory entries have explicit dispositions in the table below.
   valid paths, matchings or forests; invariants and objectives are tested.
 - Dijkstra supports source lists, inclusive cutoff, unweighted and minimum-only
   searches. Automatic paths select Dijkstra for nonnegative weights and
-  Bellman–Ford otherwise. Floyd–Warshall/Johnson detect any negative cycle;
+  Bellman–Ford otherwise; cutoff and minimum-only controls are rejected when
+  automatic selection chooses Bellman–Ford. Floyd–Warshall/Johnson detect any negative cycle;
   Bellman–Ford detects cycles reachable from requested sources. Dijkstra and Yen
   reject negative weights. Matrix-sized source lists are always explicit output
   rows, even for one source; predecessor computation is always enabled.
@@ -96,6 +97,11 @@ All 148 inventory entries have explicit dispositions in the table below.
   real QMR/TFQMR recurrences are adapted from SciPy under its included BSD license.
   GMRES uses restarting; LGMRES retains corrections; GCROT retains orthogonal
   correction/image pairs and truncates oldest pairs. Recycling is local to a call.
+  Projected solves update a Givens QR factorization, using Sci/faer SVD for
+  deficient systems. Arnoldi breakdown is relative to the preconditioned operator
+  action. Projected residuals trigger true-residual checks, also performed at
+  each cycle end; uniform operator/right-side scaling preserves the relative
+  stopping criterion within floating-point arithmetic limits.
 - `SolverOptions` controls tolerances, initial guess, iterations, restart,
   recycling, inverse preconditioning and MINRES shift. QMR, TFQMR and the
   full-reorthogonalized MINRES adaptation require identity preconditioning.

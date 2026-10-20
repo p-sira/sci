@@ -45,7 +45,7 @@ pub trait LinearMap {
     /// # Errors
     /// Invalid storage/length, callback failure, nonfinite evaluation or overflow.
     /// # Numerical behavior
-    /// CSR inputs build a canonical transpose and multiply; callback accuracy
+    /// CSR inputs accumulate columns in one scan using O(cols) storage; callback accuracy
     /// and work depend on their implementation. No complex conjugation is needed.
     /// # Examples
     /// ```
@@ -68,7 +68,16 @@ impl LinearMap for SparseMatrix {
         matvec(self, x)
     }
     fn transpose_apply(&self, x: &[f64]) -> Result<Vec<f64>> {
-        matvec(&transpose(self)?, x)
+        validate(self)?;
+        if x.len() != self.rows {
+            return Err(Error::DimensionMismatch);
+        }
+        sci_core::finite_slice(x)?;
+        let mut out = vec![0.; self.cols];
+        for (r, c, v) in entries(self) {
+            out[c] = finite(out[c] + finite(v * x[r])?)?;
+        }
+        Ok(out)
     }
 }
 type Action = Arc<dyn Fn(&[f64]) -> Result<Vec<f64>> + Send + Sync>;
@@ -673,6 +682,11 @@ fn projected(
                 axpy(&mut x, t, u)?;
                 axpy(&mut r, -t, c)?;
             }
+            r = residual(a, b, &x)?;
+        }
+        let residual_norm = length(&r)?;
+        if residual_norm <= tol {
+            return finish(a, b, x, used, tol);
         }
         let base = x.clone();
         let r = pre(o, &r, false)?;
@@ -695,6 +709,12 @@ fn projected(
         let mut q = vec![times(&r, 1. / beta)?];
         let mut z: Vec<Vec<f64>> = vec![];
         let mut h = vec![vec![0.; max]; max + 1];
+        let mut qr = h.clone();
+        let mut rotations: Vec<(f64, f64)> = vec![];
+        let mut rhs = vec![0.; max + 1];
+        rhs[0] = beta;
+        let projected_tol = beta * (tol / residual_norm);
+        let mut deficient = false;
         for j in 0..max {
             let mut direction = if matches!(kind, Restarted::Lgmres) && j < recycle.len() {
                 recycle[j].0.clone()
@@ -712,6 +732,7 @@ fn projected(
                 }
             }
             w = pre(o, &w, false)?;
+            let image_norm = length(&w)?;
             for _ in 0..2 {
                 for (i, qi) in q.iter().enumerate() {
                     let t = dot(qi, &w)?;
@@ -723,19 +744,59 @@ fn projected(
             h[j + 1][j] = wn;
             z.push(direction);
             used += 1;
-            let hj: Matrix = (0..j + 2).map(|i| h[i][..=j].to_vec()).collect();
-            let mut rhs = vec![0.; j + 2];
-            rhs[0] = beta;
-            let y = sci_linalg::lstsq(&hj, &rhs, None)?.solution;
-            x = base.clone();
-            for (zi, &c) in z.iter().zip(&y) {
-                axpy(&mut x, c, zi)?;
+            // Incremental Givens QR keeps projected factorization work quadratic
+            // per cycle. Preserve H for a minimum-norm SVD fallback at rank loss.
+            for i in 0..=j + 1 {
+                qr[i][j] = h[i][j];
             }
-            if length(&residual(a, b, &x)?)? <= tol {
-                return finish(a, b, x, used, tol);
+            for (i, &(c, s)) in rotations.iter().enumerate() {
+                let top = qr[i][j];
+                let bottom = qr[i + 1][j];
+                qr[i][j] = finite(c * top + s * bottom)?;
+                qr[i + 1][j] = finite(-s * top + c * bottom)?;
             }
-            if wn <= 64. * f64::EPSILON || used == o.maxiter {
-                break;
+            let diagonal = finite(qr[j][j].hypot(qr[j + 1][j]))?;
+            let (c, s) = if diagonal == 0. {
+                (1., 0.)
+            } else {
+                (qr[j][j] / diagonal, qr[j + 1][j] / diagonal)
+            };
+            rotations.push((c, s));
+            qr[j][j] = diagonal;
+            qr[j + 1][j] = 0.;
+            rhs[j + 1] = finite(-s * rhs[j])?;
+            rhs[j] = finite(c * rhs[j])?;
+            deficient |= diagonal <= 64. * f64::EPSILON * image_norm;
+            let breakdown = wn <= 64. * f64::EPSILON * image_norm;
+            let end = breakdown || j + 1 == max;
+            // A projected residual is only a trigger: accept convergence solely
+            // after checking the original, unpreconditioned system.
+            if end || deficient || rhs[j + 1].abs() <= projected_tol {
+                let y = if deficient {
+                    let hj: Matrix = (0..j + 2).map(|i| h[i][..=j].to_vec()).collect();
+                    let mut target = vec![0.; j + 2];
+                    target[0] = beta;
+                    sci_linalg::lstsq(&hj, &target, None)?.solution
+                } else {
+                    let mut y = rhs[..=j].to_vec();
+                    for i in (0..=j).rev() {
+                        for k in i + 1..=j {
+                            y[i] = finite(y[i] - qr[i][k] * y[k])?;
+                        }
+                        y[i] = ratio(y[i], qr[i][i])?;
+                    }
+                    y
+                };
+                x = base.clone();
+                for (zi, &c) in z.iter().zip(&y) {
+                    axpy(&mut x, c, zi)?;
+                }
+                if length(&residual(a, b, &x)?)? <= tol {
+                    return finish(a, b, x, used, tol);
+                }
+                if end {
+                    break;
+                }
             }
             q.push(times(&w, 1. / wn)?);
         }
@@ -743,6 +804,7 @@ fn projected(
             let mut u = x.clone();
             axpy(&mut u, -1., &base)?;
             let mut c = mv(a, &u, false)?;
+            let image_norm = length(&c)?;
             if matches!(kind, Restarted::Gcrot) {
                 for (ui, ci) in &recycle {
                     let t = dot(ci, &c)?;
@@ -755,7 +817,12 @@ fn projected(
             } else {
                 length(&u)?
             };
-            if norm > 64. * f64::EPSILON {
+            let cutoff = if matches!(kind, Restarted::Gcrot) {
+                64. * f64::EPSILON * image_norm
+            } else {
+                0.
+            };
+            if norm > cutoff {
                 if recycle.len() == o.recycle {
                     recycle.remove(0);
                 }
@@ -1221,7 +1288,9 @@ pub fn tfqmr(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<I
 /// # Numerical behavior
 /// Restarted generalized minimal residual with f64 arithmetic; roundoff can delay convergence
 /// or trigger breakdown. Final diagnostics recompute the true residual.
-/// Projected least-squares problems use private Sci/faer SVD kernels.
+/// Projected Krylov least-squares problems use incremental Givens QR with a
+/// private Sci/faer SVD fallback for deficient systems. Arnoldi breakdown is
+/// relative to the preconditioned operator action; convergence checks the true residual.
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
@@ -1256,7 +1325,9 @@ pub fn gmres(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<I
 /// # Numerical behavior
 /// Augmented restarted generalized minimal residual with f64 arithmetic; roundoff can delay convergence
 /// or trigger breakdown. Final diagnostics recompute the true residual.
-/// Projected least-squares problems use private Sci/faer SVD kernels.
+/// Projected Krylov least-squares problems use incremental Givens QR with a
+/// private Sci/faer SVD fallback for deficient systems. Arnoldi breakdown is
+/// relative to the preconditioned operator action; convergence checks the true residual.
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
@@ -1291,7 +1362,9 @@ pub fn lgmres(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<
 /// # Numerical behavior
 /// Recycling generalized conjugate residual with inner orthogonalization with f64 arithmetic; roundoff can delay convergence
 /// or trigger breakdown. Final diagnostics recompute the true residual.
-/// Projected least-squares problems use private Sci/faer SVD kernels.
+/// Projected Krylov least-squares problems use incremental Givens QR with a
+/// private Sci/faer SVD fallback for deficient systems. Arnoldi breakdown is
+/// relative to the preconditioned operator action; convergence checks the true residual.
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
@@ -1326,7 +1399,9 @@ pub fn gcrotmk(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result
 /// # Numerical behavior
 /// Symmetric minimum residual with f64 arithmetic; roundoff can delay convergence
 /// or trigger breakdown. Final diagnostics recompute the true residual.
-/// Projected least-squares problems use private Sci/faer SVD kernels.
+/// Projected Krylov least-squares problems use incremental Givens QR with a
+/// private Sci/faer SVD fallback for deficient systems. Arnoldi breakdown is
+/// relative to the preconditioned operator action; convergence checks the true residual.
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```

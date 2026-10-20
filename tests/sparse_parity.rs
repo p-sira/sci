@@ -306,9 +306,9 @@ fn scipy_public_api_references() {
             "cg" | "bicg" | "bicgstab" | "cgs" | "qmr" | "tfqmr" | "gmres" | "lgmres"
             | "gcrotmk" | "minres" => {
                 let opts = l::SolverOptions {
-                    rtol: 1e-11,
-                    atol: 1e-13,
-                    maxiter: 512,
+                    rtol: p.get(3).copied().unwrap_or(1e-11),
+                    atol: p.get(1).copied().unwrap_or(1e-13),
+                    maxiter: p.get(2).copied().unwrap_or(512.) as usize,
                     restart: p.first().copied().unwrap_or(30.) as usize,
                     ..Default::default()
                 };
@@ -326,6 +326,13 @@ fn scipy_public_api_references() {
                 };
                 let out = f(&a, &x, &opts).unwrap_or_else(|e| panic!("{id}: {e}"));
                 assert!(out.converged, "{id} residual {}", out.residual_norm);
+                if p.len() > 1 {
+                    let bnorm = x.iter().fold(0f64, |n, &v| n.hypot(v));
+                    let ax = s::matvec(&a, &out.x).unwrap();
+                    let residual = ax.iter().zip(&x).fold(0f64, |n, (a, b)| n.hypot(a - b));
+                    assert!(residual / bnorm <= opts.rtol, "{id}: relative residual");
+                    assert!(out.iterations <= opts.maxiter, "{id}: work limit");
+                }
                 assert_v("x", &out.x, 3e-9);
             }
             "lsqr" | "lsmr" => {
@@ -565,7 +572,7 @@ fn scipy_public_api_references() {
         }
         tested += 1;
     }
-    assert_eq!(tested, 147);
+    assert_eq!(tested, 173);
 }
 
 #[test]
@@ -963,4 +970,171 @@ fn graph_work_counts_are_checked_before_search() {
     let a = s::from_dense(&vec![vec![1.; 256]; 256]).unwrap();
     assert!(g::bellman_ford(&a, &Default::default()).is_err());
     assert!(g::yen(&a, 0, 255, 64, true, false).is_err());
+}
+
+#[test]
+fn automatic_paths_validate_selected_method() {
+    let a = s::from_coo(3, 3, &[(0, 1, 10.), (1, 2, -9.)]).unwrap();
+    let base = g::PathOptions {
+        indices: Some(vec![0]),
+        ..Default::default()
+    };
+    let paths = g::shortest_path(&a, &base).unwrap();
+    assert_eq!(paths.distances, [vec![0., 10., 1.]]);
+    assert_eq!(paths.predecessors, [vec![None, Some(0), Some(1)]]);
+    for opts in [
+        g::PathOptions {
+            limit: 5.,
+            ..base.clone()
+        },
+        g::PathOptions {
+            min_only: true,
+            ..base.clone()
+        },
+        g::PathOptions {
+            limit: 5.,
+            min_only: true,
+            ..base.clone()
+        },
+    ] {
+        assert!(matches!(
+            g::shortest_path(&a, &opts),
+            Err(sci_core::Error::InvalidInput(_))
+        ));
+        // Unweighted conversion removes negative costs before method selection.
+        let unweighted = g::PathOptions {
+            unweighted: true,
+            ..opts
+        };
+        let out = g::shortest_path(&a, &unweighted).unwrap();
+        assert_eq!(out.distances, [vec![0., 1., 2.]]);
+        assert_eq!(out.predecessors, [vec![None, Some(0), Some(1)]]);
+    }
+}
+
+#[test]
+fn transpose_action_rectangular_validation_and_overflow() {
+    let a = s::from_dense(&[vec![1., 0., 2.], vec![0., 3., -1.]]).unwrap();
+    let x = [4., 5.];
+    assert_eq!(a.transpose_apply(&x).unwrap(), [4., 15., 3.]);
+    assert_eq!(
+        a.transpose_apply(&x).unwrap(),
+        s::matvec(&s::transpose(&a).unwrap(), &x).unwrap()
+    );
+    assert!(a.transpose_apply(&[1.]).is_err());
+    assert!(a.transpose_apply(&[f64::NAN, 1.]).is_err());
+    let mut invalid = a.clone();
+    invalid.indices[0] = a.cols;
+    assert!(invalid.transpose_apply(&x).is_err());
+    let product = s::from_coo(1, 1, &[(0, 0, f64::MAX)]).unwrap();
+    assert!(product.transpose_apply(&[2.]).is_err());
+    let sum = s::from_coo(2, 1, &[(0, 0, f64::MAX), (1, 0, f64::MAX)]).unwrap();
+    assert!(sum.transpose_apply(&[1., 1.]).is_err());
+    assert_eq!(
+        s::from_coo(0, 3, &[])
+            .unwrap()
+            .transpose_apply(&[])
+            .unwrap(),
+        [0.; 3]
+    );
+    assert!(
+        s::from_coo(2, 0, &[])
+            .unwrap()
+            .transpose_apply(&[1., 2.])
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn projected_rank_loss_checks_true_residual() {
+    for f in [l::gmres, l::lgmres, l::gcrotmk, l::minres] {
+        let a = s::from_dense(&[vec![1., 0.], vec![0., 0.]]).unwrap();
+        let opts = l::SolverOptions {
+            atol: 0.,
+            rtol: 1e-10,
+            maxiter: 2,
+            restart: 2,
+            ..Default::default()
+        };
+        let out = f(&a, &[1., 1.], &opts).unwrap();
+        assert!(!out.converged);
+        assert_eq!(out.iterations, 2);
+        // Independent exact least-squares solution, with unavoidable residual 1.
+        close(&out.x, &[1., 0.], 1e-12, "deficient projection");
+        assert!((out.residual_norm - 1.).abs() < 1e-12);
+        let zero = s::from_coo(2, 2, &[]).unwrap();
+        let out = f(&zero, &[1., 1.], &opts).unwrap();
+        assert!(!out.converged);
+        assert_eq!(out.x, [0., 0.]);
+        assert_eq!(out.iterations, 2);
+    }
+}
+
+#[test]
+fn exponential_action_time_buffer_is_reinitialized() {
+    let a = s::from_dense(&[vec![0., 1.], vec![0., 0.]]).unwrap();
+    // A²=0 implies exp(t A)b = b + t A b exactly.
+    let actual = l::expm_multiply(&a, &[1., 2.], &[1., -2., 0., 1.]).unwrap();
+    assert_eq!(actual.len(), 4);
+    // Allow a few ulps for the dense Pade implementation's roundoff.
+    for (row, expected) in actual.iter().zip([[3., 2.], [-3., 2.], [1., 2.], [3., 2.]]) {
+        close(row, &expected, 4e-15, "nilpotent exponential action");
+    }
+    assert!(l::expm_multiply(&a, &[1., 2.], &[]).unwrap().is_empty());
+    let overflow = s::from_dense(&[vec![f64::MAX]]).unwrap();
+    assert!(l::expm_multiply(&overflow, &[1.], &[2.]).is_err());
+    assert!(l::expm_multiply(&a, &[1., 2.], &[0.; 65]).is_err());
+}
+
+#[test]
+fn givens_projection_with_nontrivial_preconditioning() {
+    let n = 24;
+    let expected: Vec<_> = (0..n).map(|i| (i + 1) as f64).collect();
+    let mut entries = vec![];
+    let mut b = vec![0.; n];
+    for i in 0..n {
+        let diagonal = 2. + i as f64;
+        entries.push((i, i, diagonal));
+        b[i] = diagonal * expected[i];
+        if i > 0 {
+            entries.push((i, i - 1, -0.5));
+            b[i] -= 0.5 * expected[i - 1];
+        }
+        if i + 1 < n {
+            entries.push((i, i + 1, -0.5));
+            b[i] -= 0.5 * expected[i + 1];
+        }
+    }
+    let a = s::from_coo(n, n, &entries).unwrap();
+    let diagonal_inverse = |x: &[f64]| {
+        Ok(x.iter()
+            .enumerate()
+            .map(|(i, v)| v / (2. + i as f64))
+            .collect())
+    };
+    let m = l::LinearOperator::new(n, n, diagonal_inverse, diagonal_inverse).unwrap();
+    for f in [l::gmres, l::lgmres, l::gcrotmk] {
+        for preconditioner in [None, Some(m.clone())] {
+            let opts = l::SolverOptions {
+                atol: 0.,
+                rtol: 1e-12,
+                maxiter: n,
+                restart: n,
+                x0: Some(vec![0.25; n]),
+                preconditioner,
+                ..Default::default()
+            };
+            let out = f(&a, &b, &opts).unwrap();
+            assert!(out.converged);
+            close(&out.x, &expected, 2e-10, "preconditioned projected solve");
+            let norm = b.iter().fold(0f64, |n, &v| n.hypot(v));
+            let residual = s::matvec(&a, &out.x)
+                .unwrap()
+                .iter()
+                .zip(&b)
+                .fold(0f64, |n, (a, b)| n.hypot(a - b));
+            assert!(residual / norm <= opts.rtol);
+        }
+    }
 }

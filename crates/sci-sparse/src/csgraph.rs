@@ -118,11 +118,6 @@ fn paths(a: &SparseMatrix, o: &PathOptions, method: Method) -> Result<ShortestPa
     if o.limit.is_nan() || o.limit < 0. {
         return Err(Error::InvalidInput("distance limit must be nonnegative"));
     }
-    if !matches!(method, Method::Dijkstra | Method::Auto)
-        && (o.min_only || o.limit != f64::INFINITY)
-    {
-        return Err(Error::InvalidInput("limit/min_only are Dijkstra options"));
-    }
     let sources = o.indices.clone().unwrap_or_else(|| (0..n).collect());
     if sources.len() > N {
         return Err(Error::InvalidInput("too many source vertices"));
@@ -141,6 +136,9 @@ fn paths(a: &SparseMatrix, o: &PathOptions, method: Method) -> Result<ShortestPa
         }
         m => m,
     };
+    if !matches!(method, Method::Dijkstra) && (o.min_only || o.limit != f64::INFINITY) {
+        return Err(Error::InvalidInput("limit/min_only are Dijkstra options"));
+    }
     if matches!(method, Method::Dijkstra) && negative {
         return Err(Error::InvalidInput(
             "Dijkstra requires nonnegative edge weights",

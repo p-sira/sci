@@ -3,13 +3,17 @@ use crate::*;
 use sci_complex::Complex;
 pub use sci_linalg::{EigenResult, GeneralEigenResult, SvdResult};
 
-fn dense(a: &SparseMatrix, square: bool) -> Result<Matrix> {
+fn check_shape(a: &SparseMatrix, square: bool) -> Result<()> {
     validate(a)?;
     if a.rows == 0 || a.cols == 0 || a.rows > 256 || a.cols > 256 || square && a.rows != a.cols {
         return Err(Error::InvalidInput(
             "spectral/dense fallback requires nonempty axes <=256 and a square matrix where applicable",
         ));
     }
+    Ok(())
+}
+fn dense(a: &SparseMatrix, square: bool) -> Result<Matrix> {
+    check_shape(a, square)?;
     to_dense(a)
 }
 fn symmetric(a: &SparseMatrix) -> Result<Matrix> {
@@ -160,7 +164,7 @@ fn exponential(a: &SparseMatrix) -> Result<SparseMatrix> {
     from_dense(&sci_linalg::expm(&dense(a, true)?)?)
 }
 fn exponential_action(a: &SparseMatrix, b: &[f64], times: &[f64]) -> Result<Matrix> {
-    dense(a, true)?;
+    check_shape(a, true)?;
     if b.len() != a.rows {
         return Err(Error::DimensionMismatch);
     }
@@ -171,10 +175,14 @@ fn exponential_action(a: &SparseMatrix, b: &[f64], times: &[f64]) -> Result<Matr
             "exponential action supports at most 64 times",
         ));
     }
+    let mut scaled = to_dense(a)?;
     times
         .iter()
         .map(|&t| {
-            let e = sci_linalg::expm(&dense(&scale(a, t)?, true)?)?;
+            for (r, c, v) in entries(a) {
+                scaled[r][c] = finite(t * v)?;
+            }
+            let e = sci_linalg::expm(&scaled)?;
             let mut y = vec![0.; a.rows];
             for (i, r) in e.iter().enumerate() {
                 y[i] = finite(r.iter().zip(b).map(|(x, y)| x * y).sum())?;
@@ -212,7 +220,7 @@ fn krylov<F: FnMut(Complex) -> Complex>(
     mut f: F,
     o: KrylovOptions,
 ) -> Result<Vec<Complex>> {
-    dense(a, true)?;
+    check_shape(a, true)?;
     if b.len() != a.rows {
         return Err(Error::DimensionMismatch);
     }
@@ -235,6 +243,7 @@ fn krylov<F: FnMut(Complex) -> Complex>(
     let m = o.max_basis.min(a.rows);
     let mut q = vec![b.iter().map(|v| v / beta).collect::<Vec<_>>()];
     let mut h = vec![vec![0.; m]; m + 1];
+    let matrix_scale = finite(a.data.iter().fold(0f64, |s, &v| s.hypot(v)))?;
     let mut previous: Option<Vec<Complex>> = None;
     for j in 0..m {
         let mut w = matvec(a, &q[j])?;
@@ -263,7 +272,6 @@ fn krylov<F: FnMut(Complex) -> Complex>(
             finite(y[i].re)?;
             finite(y[i].im)?;
         }
-        let matrix_scale = finite(a.data.iter().fold(0f64, |s, &v| s.hypot(v)))?;
         let happy = h[j + 1][j] <= 64. * f64::EPSILON * matrix_scale;
         if happy || j + 1 == a.rows {
             return Ok(y);

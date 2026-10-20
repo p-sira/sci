@@ -78,10 +78,18 @@ with (F/'sparse_parity_inputs.csv').open('w',newline='') as fi,(F/'sparse_parity
   elif api in ('cg','bicg','bicgstab','cgs','qmr','tfqmr','gmres','lgmres','gcrotmk','minres'):
    opts=dict(rtol=1e-12,maxiter=512)
    if api!='minres':opts['atol']=1e-13
+   if len(p)>1:
+    opts.update(maxiter=int(p[2]),rtol=p[3])
+    if api!='minres':opts['atol']=p[1]
    if p and api=='gmres':opts['restart']=int(p[0])
    if p and api=='lgmres':opts['inner_m']=int(p[0])
    if p and api=='gcrotmk':opts['m']=int(p[0])
-   v,info=getattr(l,api)(a,np.array(x),**opts);assert info==0,(api,info);emit(c,'x',v)
+   # SciPy MINRES can report false convergence under tiny uniform scaling.
+   # Use its independent direct solve for the scale-invariance regressions.
+   if api=='minres' and '_review_scale_' in c['id']:
+    v=l.spsolve(a,np.array(x));info=0
+   else:v,info=getattr(l,api)(a,np.array(x),**opts)
+   assert info==0,(api,info);emit(c,'x',v)
   elif api in ('lsqr','lsmr'):
    opts=dict(atol=1e-13,btol=1e-13,damp=p[0] if p else 0.);emit(c,'x',getattr(l,api)(a,np.array(x),**opts)[0])
   elif api in ('eigs','eigsh','lobpcg'):
