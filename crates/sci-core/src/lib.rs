@@ -125,3 +125,27 @@ pub enum Mode {
     /// `|n - m| + 1` samples with complete overlap.
     Valid,
 }
+
+/// An owned real matrix in compressed sparse row (CSR) format.
+///
+/// Row `i` stores columns `indices[indptr[i]..indptr[i+1]]` and matching
+/// `data`. Columns must be strictly increasing in each row; explicit zeros
+/// are permitted. Missing entries are zero. `indptr` starts at zero, is
+/// nondecreasing, has `rows + 1` entries, and ends at `data.len()`.
+/// `indices.len() == data.len()`, and every column is less than `cols`.
+/// Sparse numerical APIs validate these public fields, finite values, and
+/// their documented work limits before use. Use `sci_sparse::from_coo` or
+/// `sci_sparse::from_csr` to construct canonical matrices.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SparseMatrix {
+    /// Number of rows, including empty rows.
+    pub rows: usize,
+    /// Number of columns, including empty columns.
+    pub cols: usize,
+    /// Offsets of each row and the final storage length.
+    pub indptr: Vec<usize>,
+    /// Zero-based column indices, strictly increasing within each row.
+    pub indices: Vec<usize>,
+    /// Finite stored values, including any explicit zeros.
+    pub data: Vec<f64>,
+}

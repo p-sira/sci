@@ -29,7 +29,7 @@
 cargo add sci
 ```
 
-All 14 modules are enabled by default. Select only the modules you need with:
+All 15 modules are enabled by default. Select only the modules you need with:
 
 ```shell
 cargo add sci --no-default-features --features fft,complex
@@ -44,11 +44,12 @@ for the private `xsf` backend, including through transitive dependencies.
 | Area | Modules and Cargo features |
 | --- | --- |
 | Numerical methods | [`differentiate`](https://docs.rs/sci-differentiate), [`integrate`](https://docs.rs/sci-integrate), [`interpolate`](https://docs.rs/sci-interpolate), [`optimize`](https://docs.rs/sci-optimize) |
-| Data analysis | [`filter`](https://docs.rs/sci-filter), [`cluster`](https://docs.rs/sci-cluster), [`linalg`](https://docs.rs/sci-linalg), [`spatial`](https://docs.rs/sci-spatial), [`stats`](https://docs.rs/sci-stats) |
+| Data analysis | [`filter`](https://docs.rs/sci-filter), [`cluster`](https://docs.rs/sci-cluster), [`linalg`](https://docs.rs/sci-linalg), [`sparse`](https://docs.rs/sci-sparse), [`spatial`](https://docs.rs/sci-spatial), [`stats`](https://docs.rs/sci-stats) |
 | Transforms and signals | [`fft`](https://docs.rs/sci-fft), [`signal`](https://docs.rs/sci-signal) |
 | Mathematical functions | [`complex`](https://docs.rs/sci-complex), [`constants`](https://docs.rs/sci-constants), [`special`](https://docs.rs/sci-special) |
 
 Linear algebra accepts shared rows and faer, ndarray, or nalgebra storage.
+Sparse matrices use shared CSR storage, with construction, arithmetic, and sparse LU solves.
 
 ## Documentation
 

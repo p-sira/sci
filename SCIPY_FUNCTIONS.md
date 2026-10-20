@@ -86,3 +86,7 @@ Each namespace links to its section in the corresponding top-level submodule fil
 Sci omits the legacy `fftpack` namespace. Its ten distinct periodic operators
 are exported from `fft`; redundant transforms and compatibility variants are
 removed. See [FFT coverage and inventory disposition](function_coverages/FFT_COVERAGE.md).
+
+Sparse v0.1.0 supports shared CSR construction and arithmetic plus direct sparse
+linear algebra; see [sparse coverage and inventory disposition](function_coverages/SPARSE_COVERAGE.md)
+for supported adaptations and remaining gaps.

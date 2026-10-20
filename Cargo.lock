@@ -2159,6 +2159,7 @@ dependencies = [
  "sci-linalg",
  "sci-optimize",
  "sci-signal",
+ "sci-sparse",
  "sci-spatial",
  "sci-special",
  "sci-stats",
@@ -2285,6 +2286,14 @@ dependencies = [
  "sci-fft",
  "sci-special",
  "xsf",
+]
+
+[[package]]
+name = "sci-sparse"
+version = "0.1.0"
+dependencies = [
+ "faer 0.24.4",
+ "sci-core",
 ]
 
 [[package]]

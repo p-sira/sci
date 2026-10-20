@@ -22,6 +22,7 @@ on:
           - sci-linalg
           - sci-optimize
           - sci-signal
+          - sci-sparse
           - sci-spatial
           - sci-special
           - sci-stats

@@ -39,6 +39,15 @@ Conversions preserve IEEE values and library empty axes, with a limit of
 shape with `n > 0`; conversion to shared rows rejects that shape. Numerical
 algorithms retain their documented tighter limits.
 
+Sparse matrices use `sci::SparseMatrix`, an owned CSR type shared with
+`sci-core` and `sci-sparse`. Row pointers and column indices are zero-based;
+columns are sorted and unique per row. Explicit zeros are retained. Sparse
+operations validate public storage before use and reject nonfinite inputs and
+results. `sparse::from_coo`, `from_csr`, and `from_csc` canonicalize storage;
+`from_dense` and `to_dense` connect sparse data with shared row matrices and
+existing linear algebra adapters. See [sparse coverage](../function_coverages/SPARSE_COVERAGE.md)
+for supported operations and limits.
+
 ## Numerical conventions
 
 The forward FFT is unnormalized; its inverse divides by the sample count.

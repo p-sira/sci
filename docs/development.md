@@ -69,6 +69,7 @@ pins its own Python dependencies in its script metadata; run it with `uv`. For e
 uv run tests/scipy/generate_audit_regressions.py
 uv run tests/scipy/generate.py
 uv run tests/scipy/generate_cluster.py
+uv run tests/scipy/generate_sparse.py
 python tests/scipy/audit_signal.py
 ```
 
