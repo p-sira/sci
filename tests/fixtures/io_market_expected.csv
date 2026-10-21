@@ -1,0 +1,12 @@
+id,rows,cols,entries,storage,field,symmetry,values
+dense,2,3,6,array,real,general,1.0;2.0;3.0;4.0;5.0;6.0
+integer,2,3,3,coordinate,integer,general,0;0;-2;9007199254740992;0;0
+duplicates,2,3,4,coordinate,real,general,0.0;5.0;0.0;0.0;0.0;0.0
+pattern,3,3,2,coordinate,pattern,symmetric,0.0;1.0;0.0;1.0;0.0;0.0;0.0;0.0;1.0
+symmetric,3,3,9,array,real,symmetric,1.0;2.0;3.0;2.0;4.0;5.0;3.0;5.0;6.0
+skew,3,3,9,array,real,skew-symmetric,0.0;-2.0;-3.0;2.0;0.0;-5.0;3.0;5.0;0.0
+coordinate_skew,3,3,2,coordinate,real,skew-symmetric,0.0;-2.0;0.0;2.0;0.0;3.0;0.0;-3.0;0.0
+hermitian,2,2,2,coordinate,real,hermitian,2.0;-3.0;-3.0;0.0
+empty_dense,0,3,0,array,real,general,
+empty_sparse,3,0,0,coordinate,real,general,
+specials,1,5,5,array,real,general,nan;inf;-inf;0.0;1e-300

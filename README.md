@@ -29,14 +29,14 @@
 cargo add sci
 ```
 
-All 15 modules are enabled by default. Select only the modules you need with:
+All 16 modules are enabled by default. Select only the modules you need with:
 
 ```shell
 cargo add sci --no-default-features --features fft,complex
 ```
 
 Rust 1.89 or later is required. Builds enabling `fft`, `special`, `cluster`,
-`integrate`, `linalg`, `signal`, or `stats` require a C++17 compiler and libclang
+`integrate`, `io`, `linalg`, `signal`, `sparse`, or `stats` require a C++17 compiler and libclang
 for the private `xsf` backend, including through transitive dependencies.
 
 ## Modules
@@ -46,7 +46,10 @@ for the private `xsf` backend, including through transitive dependencies.
 | Numerical methods | [`differentiate`](https://docs.rs/sci-differentiate), [`integrate`](https://docs.rs/sci-integrate), [`interpolate`](https://docs.rs/sci-interpolate), [`optimize`](https://docs.rs/sci-optimize) |
 | Data analysis | [`filter`](https://docs.rs/sci-filter), [`cluster`](https://docs.rs/sci-cluster), [`linalg`](https://docs.rs/sci-linalg), [`sparse`](https://docs.rs/sci-sparse), [`spatial`](https://docs.rs/sci-spatial), [`stats`](https://docs.rs/sci-stats) |
 | Transforms and signals | [`fft`](https://docs.rs/sci-fft), [`signal`](https://docs.rs/sci-signal) |
+| Scientific file formats | [`io`](https://docs.rs/sci-io) |
 | Mathematical functions | [`complex`](https://docs.rs/sci-complex), [`constants`](https://docs.rs/sci-constants), [`special`](https://docs.rs/sci-special) |
+
+Scientific I/O supports Matrix Market, WAV and a documented dense numeric MATLAB subset.
 
 Linear algebra accepts shared rows and faer, ndarray, or nalgebra storage.
 Sparse operations use shared CSR/COO storage, with graph algorithms, direct and iterative solves, spectral routines, and NPZ interchange.
