@@ -1,0 +1,26 @@
+[package]
+name = "sci-sparse"
+version = "0.1.0"
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Sparse matrices and linear algebra for scientific computing"
+documentation = "https://docs.rs/sci-sparse"
+homepage = "https://github.com/p-sira/sci"
+repository = "https://github.com/p-sira/sci"
+categories = ["algorithms", "mathematics", "science"]
+keywords = ["sparse", "linear-algebra", "matrices", "numerics", "science"]
+include = ["src/**", "LICENSE", "SCIPY_LICENSE.txt"]
+
+[dependencies]
+sci-core.workspace = true
+faer.workspace = true
+sci-linalg.workspace = true
+sci-complex.workspace = true
+petgraph.workspace = true
+zip.workspace = true
+rand.workspace = true
+lapjv.workspace = true
+ndarray.workspace = true
+dyn-stack.workspace = true

@@ -15,6 +15,9 @@ repository = "https://github.com/p-sira/sci"
 categories = ["science", "mathematics"]
 
 [workspace.dependencies]
+petgraph = { version = "0.8.3", default-features = false, features = ["std"] }
+zip = { version = "4.6", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+rand = "0.9.2"
 smelly = "=0.1.0"
 kalman_filters = { version = "=1.0.1", default-features = false, features = ["std"] }
 basin = { version = "1.15.1", default-features = false }
@@ -47,6 +50,7 @@ sci-interpolate = { version = "0.1.0", path = "crates/sci-interpolate" }
 sci-linalg = { version = "0.1.0", path = "crates/sci-linalg", default-features = false }
 sci-optimize = { version = "0.1.0", path = "crates/sci-optimize" }
 sci-signal = { version = "0.1.0", path = "crates/sci-signal" }
+sci-sparse = { version = "0.1.0", path = "crates/sci-sparse" }
 sci-spatial = { version = "0.1.0", path = "crates/sci-spatial" }
 sci-special = { version = "0.1.0", path = "crates/sci-special" }
 sci-stats = { version = "0.1.0", path = "crates/sci-stats" }
@@ -69,7 +73,7 @@ include = ["src/**", "LICENSE"]
 autotests = false
 
 [features]
-default = ["cluster", "complex", "constants", "differentiate", "filter", "fft", "integrate", "interpolate", "linalg", "linalg-faer", "linalg-nalgebra", "linalg-ndarray", "optimize", "signal", "spatial", "special", "stats"]
+default = ["cluster", "complex", "constants", "differentiate", "filter", "fft", "integrate", "interpolate", "linalg", "linalg-faer", "linalg-nalgebra", "linalg-ndarray", "optimize", "signal", "sparse", "spatial", "special", "stats"]
 cluster = ["dep:sci-cluster"]
 complex = ["dep:sci-complex"]
 constants = ["dep:sci-constants"]
@@ -84,6 +88,7 @@ linalg-nalgebra = ["linalg", "sci-linalg/nalgebra"]
 linalg-ndarray = ["linalg", "sci-linalg/ndarray"]
 optimize = ["dep:sci-optimize"]
 signal = ["dep:sci-signal"]
+sparse = ["dep:sci-sparse"]
 spatial = ["dep:sci-spatial"]
 special = ["dep:sci-special"]
 stats = ["dep:sci-stats"]
@@ -101,6 +106,7 @@ sci-interpolate = { workspace = true, optional = true }
 sci-linalg = { workspace = true, optional = true }
 sci-optimize = { workspace = true, optional = true }
 sci-signal = { workspace = true, optional = true }
+sci-sparse = { workspace = true, optional = true }
 sci-spatial = { workspace = true, optional = true }
 sci-special = { workspace = true, optional = true }
 sci-stats = { workspace = true, optional = true }
@@ -325,6 +331,16 @@ required-features = ["optimize"]
 name = "filter"
 harness = false
 required-features = ["filter"]
+
+[[test]]
+name = "sparse"
+path = "tests/sparse.rs"
+required-features = ["sparse", "linalg"]
+
+[[test]]
+name = "sparse_parity"
+path = "tests/sparse_parity.rs"
+required-features = ["sparse", "linalg"]
 
 [[test]]
 name = "power_stability"

@@ -1,0 +1,14 @@
+{
+  "valid": [
+    {"id": "big_float32_v2", "dtype": ">f4", "index_dtype": ">i4", "version": [2, 0], "values": [[1.5, 0, -2.5], [0, 3.25, 0]]},
+    {"id": "unsigned_indices_v3", "dtype": "<i2", "index_dtype": ">u2", "version": [3, 0], "values": [[0, -7], [8, 0]]},
+    {"id": "central_metadata", "dtype": "<f8", "index_dtype": "<i8", "version": [1, 0], "values": [[1, 0], [0, -2]], "zip_metadata": true}
+  ],
+  "invalid": [
+    "magic", "version", "structured_dtype", "fortran_order", "shape_limit",
+    "payload_size", "float_indices", "member_count", "duplicate_member",
+    "duplicate_middle_member", "duplicate_last_member",
+    "format_tag", "rank", "storage_limit", "coo_lengths", "dia_shape",
+    "dia_offset", "bsr_shape", "bsr_dimensions", "unknown_format"
+  ]
+}

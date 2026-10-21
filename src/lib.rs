@@ -23,7 +23,9 @@
 #![forbid(unsafe_code)]
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]
 
-pub use sci_core::{Error, Matrix, Mode, ParametricSpline, Result, Spline, SurfaceSpline};
+pub use sci_core::{
+    Error, Matrix, Mode, ParametricSpline, Result, SparseArray, SparseMatrix, Spline, SurfaceSpline,
+};
 
 /// Clustering and hierarchy; requires the `cluster` feature.
 #[cfg(feature = "cluster")]
@@ -80,3 +82,7 @@ pub use sci_special as special;
 /// Statistics and probability distributions; requires the `stats` feature.
 #[cfg(feature = "stats")]
 pub use sci_stats as stats;
+
+/// Sparse arrays, graphs, linear algebra and NPZ interchange; requires the `sparse` feature.
+#[cfg(feature = "sparse")]
+pub use sci_sparse as sparse;
