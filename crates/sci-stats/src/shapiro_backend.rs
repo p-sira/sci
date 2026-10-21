@@ -15,6 +15,17 @@ pub(super) fn evaluate(values: &[f64]) -> Result<TestResult> {
     let mut x = values.to_vec();
     x.sort_unstable_by(f64::total_cmp);
     let n = x.len();
+    if n == 3 {
+        // For gaps l and r, W = 1/(1+u²), u=(l-r)/(sqrt(3)*(l+r)).
+        // Evaluating acos(sqrt(W)) would amplify rounding near W=1.
+        let left = x[1] - x[0];
+        let right = x[2] - x[1];
+        let u = (left - right).abs() / (x[2] - x[0]) / 3_f64.sqrt();
+        return Ok(TestResult {
+            statistic: 1. / (1. + u * u),
+            pvalue: (1. - 6. / std::f64::consts::PI * u.atan()).clamp(0., 1.),
+        });
+    }
     let an = n as f64;
     let normal = normal(0., 1.)?;
     let mut weights = vec![std::f64::consts::FRAC_1_SQRT_2; n / 2];
@@ -70,11 +81,8 @@ pub(super) fn evaluate(values: &[f64]) -> Result<TestResult> {
     }
     let norm = (aa * xx).sqrt();
     let complement = (norm - ax) * (norm + ax) / (aa * xx);
-    let mut statistic = finite(1. - complement)?;
-    let pvalue = if n == 3 {
-        statistic = statistic.clamp(0.75, 1.);
-        1. - 6. / std::f64::consts::PI * statistic.sqrt().acos()
-    } else {
+    let statistic = finite(1. - complement)?;
+    let pvalue = {
         let mut y = complement.ln();
         let (m, s) = if n <= 11 {
             let gamma = polynomial(&[-2.273, 0.459], an);

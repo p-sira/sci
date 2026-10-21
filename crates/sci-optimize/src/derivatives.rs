@@ -38,7 +38,8 @@ fn curvature(x: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
 /// Unsupported size, nonfinite inputs, or arithmetic overflow.
 /// ## Numerical behavior
 ///
-/// O(n) direct polynomial evaluation; accuracy is limited by f64 cancellation in residuals.
+/// O(n) direct polynomial evaluation. Fused multiply-add preserves the residual
+/// `x[i+1]−x[i]²` near the curved valley; binary64 rounding still applies.
 /// # Examples
 ///
 /// ```
@@ -51,7 +52,7 @@ fn curvature(x: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
 pub fn rosen(x: &[f64]) -> Result<f64> {
     point(x, 0, 1_000_000)?;
     x.windows(2).try_fold(0.0, |sum, p| {
-        finite(sum + 100.0 * (p[1] - p[0] * p[0]).powi(2) + (1.0 - p[0]).powi(2))
+        finite(sum + 100.0 * (-p[0]).mul_add(p[0], p[1]).powi(2) + (1.0 - p[0]).powi(2))
     })
 }
 
@@ -71,7 +72,8 @@ pub fn rosen(x: &[f64]) -> Result<f64> {
 /// Invalid dimensions/values or nonfinite polynomial arithmetic.
 /// ## Numerical behavior
 ///
-/// O(n) exact analytical formula evaluated in f64; no numerical differencing.
+/// O(n) analytical formula evaluated in f64 with fused multiply-add for the
+/// valley residual, shared with [`rosen`]. No numerical differencing.
 /// # Examples
 ///
 /// ```
@@ -85,7 +87,7 @@ pub fn rosen_der(x: &[f64]) -> Result<Vec<f64>> {
     point(x, 2, 1_000_000)?;
     let mut out = vec![0.0; x.len()];
     for (i, p) in x.windows(2).enumerate() {
-        let residual = finite(p[1] - p[0] * p[0])?;
+        let residual = finite((-p[0]).mul_add(p[0], p[1]))?;
         out[i] = finite(out[i] - 400.0 * p[0] * residual + 2.0 * (p[0] - 1.0))?;
         out[i + 1] = finite(out[i + 1] + 200.0 * residual)?;
     }

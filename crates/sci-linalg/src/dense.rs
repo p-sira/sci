@@ -2,6 +2,7 @@
 use super::backend::*;
 use super::structured::{circulant, toeplitz};
 use crate::{Error, Result};
+use faer::prelude::Solve;
 use faer::{Mat, Scale};
 
 pub use sci_core::Matrix;
@@ -181,7 +182,12 @@ fn pseudoinverse(d: &SvdFactors, cutoff: f64) -> Result<(Mat<f64>, usize)> {
 ///
 /// ## Numerical behavior
 ///
-/// Private faer algorithms use f64. Ill-conditioned results can lose accuracy. Iterative routines use bounded backend-specific sweep limits. Uses O(n³) pivoted LU; no condition-number warning is emitted.
+/// Uses O(n³) private faer pivoted LU, followed by at most four O(n²)
+/// refinement steps reusing the factors. Fused product residuals and compensated
+/// sums reduce cancellation in `b−Ax`; only finite updates that reduce the
+/// estimated remaining correction are retained. Refinement is skipped when residual arithmetic
+/// exceeds the finite range. Ill-conditioned systems can still lose accuracy;
+/// no condition-number warning or forward-error guarantee is supplied.
 ///
 /// # Examples
 ///
@@ -203,10 +209,58 @@ pub fn solve(
     let b = b_input.as_ref();
     let a = square(a)?;
     let b = rhs(b, a.nrows())?;
-    vector(
-        a.solve_checked(&b)
-            .ok_or(Error::NumericalFailure("singular linear system"))?,
-    )
+    let lu = a.partial_piv_lu();
+    if (0..a.nrows()).any(|i| lu.U()[(i, i)] == 0. || !lu.U()[(i, i)].is_finite()) {
+        return Err(Error::NumericalFailure("singular linear system"));
+    }
+    let mut x = lu.solve(&b);
+    let residual = solve_residual(&a, &b, &x);
+    if residual.iter().any(|r| !r.is_finite()) {
+        return vector(x);
+    }
+    let mut correction = lu.solve(&residual);
+    for _ in 0..4 {
+        let norm = correction.iter().fold(0_f64, |m, r| m.max(r.abs()));
+        if norm == 0. || correction.iter().any(|r| !r.is_finite()) {
+            break;
+        }
+        let candidate = &x + &correction;
+        if candidate.iter().any(|v| !v.is_finite()) {
+            break;
+        }
+        let residual = solve_residual(&a, &b, &candidate);
+        if residual.iter().any(|r| !r.is_finite()) {
+            break;
+        }
+        let next = lu.solve(&residual);
+        if next.iter().any(|r| !r.is_finite())
+            || next.iter().fold(0_f64, |m, r| m.max(r.abs())) >= norm
+        {
+            break;
+        }
+        x = candidate;
+        correction = next;
+    }
+    vector(x)
+}
+
+fn solve_residual(a: &Mat<f64>, b: &Mat<f64>, x: &Mat<f64>) -> Mat<f64> {
+    Mat::from_fn(a.nrows(), 1, |i, _| {
+        let mut sum = b[(i, 0)];
+        let mut correction = 0.;
+        for j in 0..a.ncols() {
+            let product = -a[(i, j)] * x[(j, 0)];
+            let error = (-a[(i, j)]).mul_add(x[(j, 0)], -product);
+            let next = sum + product;
+            correction += if sum.abs() >= product.abs() {
+                (sum - next) + product
+            } else {
+                (product - next) + sum
+            } + error;
+            sum = next;
+        }
+        sum + correction
+    })
 }
 /// Computes `A⁻¹` satisfying `A A⁻¹=I`.
 ///
