@@ -95,7 +95,8 @@ with (F/'sparse_parity_inputs.csv').open('w',newline='') as fi,(F/'sparse_parity
   elif api in ('eigs','eigsh','lobpcg'):
    # Full dense SciPy reference avoids ARPACK's small-dimension fallback restrictions.
    if api=='eigs':w=scipy.linalg.eigvals(a.toarray());idx=np.argsort(abs(w),kind='stable')[-int(p[0]):];w=w[idx];emit(c,'wre',w.real);emit(c,'wim',w.imag)
-   else:emit(c,'w',scipy.linalg.eigvalsh(a.toarray())[-int(p[0]):])
+   else:
+    w=scipy.linalg.eigvalsh(a.toarray());emit(c,'w',w[:int(p[0])] if len(p)>1 and not p[1] else w[-int(p[0]):])
   elif api=='svds':emit(c,'s',np.sort(scipy.linalg.svdvals(a.toarray())[:int(p[0])]))
   elif api=='expm':emit(c,'a',l.expm(a))
   elif api=='expm_multiply':emit(c,'a',np.array([l.expm_multiply(a*t,np.array(x)) for t in [0.,0.5,1.]]))
@@ -106,7 +107,9 @@ with (F/'sparse_parity_inputs.csv').open('w',newline='') as fi,(F/'sparse_parity
   elif api=='onenormest':emit(c,'value',scipy.linalg.norm(a.toarray(),1))
   elif api=='spilu':emit(c,'x',l.spilu(a.tocsc(),drop_tol=0.,fill_factor=20.).solve(np.array(x)))
   elif api=='aslinearoperator':emit(c,'x',l.aslinearoperator(a).matvec(np.array(x)));emit(c,'xt',l.aslinearoperator(a).rmatvec(np.array(x)))
-  elif api=='norm_axis':emit(c,'x',l.norm(a,ord=2,axis=0));emit(c,'xt',l.norm(a,ord=-1,axis=1))
+  elif api=='norm_axis':
+   if len(p)==2:emit(c,'x',l.norm(a,ord=float(p[0]),axis=int(p[1])))
+   else:emit(c,'x',l.norm(a,ord=2,axis=0));emit(c,'xt',l.norm(a,ord=-1,axis=1))
   elif api=='spectral_norm':emit(c,'value',scipy.linalg.norm(a.toarray(),2))
   elif api in ('as_array','expand_dims','permute_dims','swapaxes'):
    v=s.coo_array(a)

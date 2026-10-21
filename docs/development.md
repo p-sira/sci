@@ -71,6 +71,7 @@ uv run tests/scipy/generate.py
 uv run tests/scipy/generate_cluster.py
 uv run tests/scipy/generate_sparse.py
 uv run tests/scipy/generate_sparse_parity.py
+uv run tests/scipy/generate_sparse_npz_validation.py
 python tests/scipy/audit_sparse.py
 python tests/scipy/audit_signal.py
 ```
