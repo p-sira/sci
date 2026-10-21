@@ -44,7 +44,8 @@ All 148 inventory entries have explicit dispositions in the table below.
   SciPy matrix formats (CSR, CSC, COO, DIA, BSR), real f32/f64, integer and bool
   data can be read as CSR. Writing emits f64 CSR arrays. Signed integer data above
   2^53 may round on conversion. Rank other than two, complex/object dtypes,
-  Fortran-order data and old Unicode format tags are unsupported. Paths and file
+  Fortran-order data and old Unicode format tags are unsupported. Duplicate ZIP
+  member names are rejected before array decoding. Paths and file
   extensions are managed explicitly by callers through seekable reader/writers.
 
 ## Graph conventions
@@ -169,7 +170,10 @@ Frobenius uses hypot accumulation to avoid unnecessary overflow/underflow.
 ## Reproduction and verification
 
 Input-only cases live in `tests/scipy/sparse_cases.json` and
-`sparse_parity_cases.json`. Regenerate the separate checked-in input/expected
+`sparse_parity_cases.json`. Additional NPZ encoding and rejection cases live in
+`sparse_npz_validation_cases.json`; regenerate their deterministic archives and
+SciPy references with `generate_sparse_npz_validation.py`.
+Regenerate the separate checked-in input/expected
 CSVs and NPZ fixtures with `generate_sparse.py` and `generate_sparse_parity.py`,
 using pinned SciPy 1.18.1 and NumPy 2.5.4. Ordinary Rust tests read these fixtures
 without Python. `tests/sparse.rs` and `tests/sparse_parity.rs` exercise every

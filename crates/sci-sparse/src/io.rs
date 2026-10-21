@@ -1,6 +1,6 @@
 //! Bounded, pickle-free SciPy NPZ interchange.
 use super::*;
-use std::io::{Read, Seek, Write};
+use std::io::{Read, Seek, SeekFrom, Write};
 use zip::{ZipArchive, ZipWriter, write::SimpleFileOptions};
 
 const ARCHIVE_LIMIT: u64 = 64 * 1024 * 1024;
@@ -309,7 +309,8 @@ pub fn save_npz<W: Write + Seek>(writer: W, a: &SparseMatrix, compressed: bool) 
 /// A validated [`SparseMatrix`], independent of the archive's format tag.
 /// # Errors
 /// Malformed/unsupported NPZ/NPY, invalid indices, nonfinite data, I/O failure,
-/// rank other than two, >16 ZIP members, >64 MiB total uncompressed payload,
+/// rank other than two, duplicate ZIP member names, more than 16 ZIP members,
+/// more than 64 MiB total uncompressed payload,
 /// or crate limits. Encrypted archives and pickle data are never evaluated.
 /// # Numerical behavior
 /// Bounded decompression and allocation precede format conversion; duplicate
@@ -330,17 +331,39 @@ pub fn load_npz<R: Read + Seek>(reader: R) -> Result<SparseMatrix> {
         return Err(io_error("member count"));
     }
     let mut total = 0u64;
-    let mut names = std::collections::BTreeSet::new();
+    let mut headers = Vec::with_capacity(z.len());
     for i in 0..z.len() {
         let f = z.by_index(i).map_err(io_error)?;
         total = total
             .checked_add(f.size())
             .filter(|&v| v <= ARCHIVE_LIMIT)
             .ok_or(io_error("archive size"))?;
-        if !names.insert(f.name().to_string()) {
+        headers.push(f.central_header_start());
+    }
+    // zip indexes names with last-member-wins semantics. A replaced member
+    // leaves a gap among the retained central headers; inspecting those gaps
+    // detects duplicates even though by_index() can no longer enumerate them.
+    // Only fixed-size headers are read, with at most 16 iterations.
+    headers.sort_unstable();
+    let mut next = z.central_directory_start();
+    let mut reader = z.into_inner();
+    for start in headers {
+        if start != next {
             return Err(io_error("duplicate member"));
         }
+        reader.seek(SeekFrom::Start(start)).map_err(io_error)?;
+        let mut header = [0; 46];
+        reader.read_exact(&mut header).map_err(io_error)?;
+        // ZIP central-header name, extra-field and comment lengths.
+        let variable: u64 = [28, 30, 32]
+            .into_iter()
+            .map(|i| u64::from(u16::from_le_bytes([header[i], header[i + 1]])))
+            .sum();
+        next = start
+            .checked_add(46 + variable)
+            .ok_or(io_error("header offset"))?;
     }
+    let mut z = ZipArchive::new(reader).map_err(io_error)?;
     let format = read_npy(&mut z, "format.npy")?;
     if format.dtype != "|S3" || !format.shape.is_empty() {
         return Err(io_error("format tag"));

@@ -632,3 +632,243 @@ fn shared_sparse_interoperability_and_matrix_properties() {
         [22.0, 28.0]
     );
 }
+
+#[test]
+fn matrix_market_rejects_malformed_headers_and_expanded_storage() {
+    for text in [
+        "%%MatrixMarket vector array real general\n1 1\n0\n",
+        "%%MatrixMarket matrix unknown real general\n1 1\n0\n",
+        "%%MatrixMarket matrix array real unknown\n1 1\n0\n",
+        "%%MatrixMarket matrix array real general\n% only a comment\n",
+        "%%MatrixMarket matrix array real general\n1\n",
+        "%%MatrixMarket matrix array real general\nx 1\n",
+        "%%MatrixMarket matrix array integer general\n1 1\nx\n",
+        "%%MatrixMarket matrix array real general\n1 1\nx\n",
+        "%%MatrixMarket matrix coordinate real general\n1 1 1\n1 1\n",
+    ] {
+        assert!(io::mmread(text.as_bytes()).is_err(), "{text}");
+    }
+    for read in [
+        io::mminfo(&b"\xff"[..]).map(|_| ()),
+        io::mmread(&b"\xff"[..]).map(|_| ()),
+    ] {
+        assert!(matches!(read, Err(io::Error::InvalidData(_))));
+    }
+    let mut text = String::from("%%MatrixMarket matrix coordinate real symmetric\n2 2 500001\n");
+    for _ in 0..500001 {
+        text.push_str("2 1 1\n");
+    }
+    assert_eq!(
+        io::mmread(text.as_bytes()).unwrap_err().to_string(),
+        "expanded sparse storage exceeds 1,000,000"
+    );
+}
+
+#[test]
+fn matlab_rejects_malformed_metadata_and_aggregate_limits() {
+    let original = saved(array()).unwrap();
+    // Normal tags emitted by Sci: flags at 136, dimensions at 152, name at
+    // 168, and real payload at 184. Each mutation violates one invariant.
+    for (offset, value) in [
+        (126, 0),               // Invalid endian marker.
+        (128, 1),               // Unsupported top-level tag.
+        (136, 5),               // Wrong flags storage type.
+        (140, 4),               // Flags have the wrong byte count.
+        (144, 0x808),           // Complex integer class.
+        (152, 6),               // Wrong dimensions storage type.
+        (156, 4),               // Rank one.
+        (168, 2),               // Wrong name storage type.
+        (176, u32::from(b'1')), // Invalid identifier.
+        (184, 7),               // Payload does not match the double class.
+        (188, 8),               // Payload is shorter than the declared shape.
+    ] {
+        let mut bytes = original.clone();
+        bytes[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+        assert!(io::loadmat(bytes.as_slice()).is_err(), "offset {offset}");
+        assert!(io::whosmat(bytes.as_slice()).is_err(), "offset {offset}");
+    }
+    // Small data tags cannot contain more than four bytes.
+    let mut bytes = original.clone();
+    bytes[168..172].copy_from_slice(&0x50001u32.to_le_bytes());
+    assert!(io::whosmat(bytes.as_slice()).is_err());
+    // The outer element includes an unexpected trailing inner element.
+    let mut bytes = original.clone();
+    bytes.extend_from_slice(&[0; 8]);
+    let size = (bytes.len() - 136) as u32;
+    bytes[132..136].copy_from_slice(&size.to_le_bytes());
+    assert!(io::whosmat(bytes.as_slice()).is_err());
+
+    let a = mat::MatArray {
+        shape: vec![1, 500001],
+        real: D::U8(vec![0; 500001]),
+        imag: None,
+    };
+    let file = mat::MatFile::from([("a".into(), a.clone()), ("b".into(), a.clone())]);
+    let mut bytes = Vec::new();
+    assert_eq!(
+        io::savemat(&mut bytes, &file, false)
+            .unwrap_err()
+            .to_string(),
+        "MATLAB file exceeds 1,000,000 scalar values"
+    );
+    assert!(bytes.is_empty());
+    // Independently valid variables can exceed the aggregate reader limit.
+    let first = saved(a.clone()).unwrap();
+    let mut second = saved(a).unwrap();
+    second[176] = b'y';
+    let mut joined = first;
+    joined.extend_from_slice(&second[128..]);
+    assert_eq!(
+        io::whosmat(joined.as_slice()).unwrap_err().to_string(),
+        "MATLAB file exceeds 1,000,000 scalar values"
+    );
+
+    let mut bytes = Vec::new();
+    for i in 0..1025 {
+        let mut variable = Vec::new();
+        let file = mat::MatFile::from([(format!("x{i}"), array())]);
+        io::savemat(&mut variable, &file, false).unwrap();
+        if i == 0 {
+            bytes.extend_from_slice(&variable[..128]);
+        }
+        bytes.extend_from_slice(&variable[128..]);
+    }
+    assert_eq!(
+        io::whosmat(bytes.as_slice()).unwrap_err().to_string(),
+        "MATLAB file exceeds 1,024 variables"
+    );
+}
+
+#[test]
+fn public_error_display_and_sources() {
+    use std::error::Error as _;
+    let numerical = io::Error::from(sci::Error::DimensionMismatch);
+    assert_eq!(
+        numerical.to_string(),
+        sci::Error::DimensionMismatch.to_string()
+    );
+    assert!(numerical.source().is_some());
+    for error in [
+        io::Error::InvalidData("invalid"),
+        io::Error::Unsupported("unsupported"),
+        io::Error::Codec("codec".into()),
+    ] {
+        assert!(!error.to_string().is_empty());
+        assert!(error.source().is_none());
+    }
+}
+
+#[test]
+fn wav_rejects_invalid_chunk_structure() {
+    let original = source("i16");
+    let check = |mut bytes: Vec<u8>| {
+        let size = (bytes.len() - 8) as u32;
+        bytes[4..8].copy_from_slice(&size.to_le_bytes());
+        assert!(wav::read(bytes.as_slice()).is_err());
+    };
+    let mut bytes = original.clone();
+    bytes.extend_from_slice(b"x");
+    check(bytes); // Partial chunk header.
+    let mut bytes = original.clone();
+    bytes[40..44].copy_from_slice(&u32::MAX.to_le_bytes());
+    check(bytes); // Data chunk extends beyond the container.
+    let mut bytes = original.clone();
+    bytes.extend_from_slice(&original[12..36]);
+    check(bytes); // Duplicate format chunk.
+    let mut bytes = original.clone();
+    bytes.extend_from_slice(&original[36..]);
+    check(bytes); // Duplicate data chunk.
+    let mut bytes = original.clone();
+    bytes.drain(12..36);
+    check(bytes); // Data precedes the format.
+    let mut bytes = original.clone();
+    bytes.truncate(36);
+    check(bytes); // Missing data.
+    let mut bytes = original.clone();
+    bytes[16..20].copy_from_slice(&14u32.to_le_bytes());
+    check(bytes); // Short format chunk.
+    let mut bytes = source("f64");
+    bytes[16..20].copy_from_slice(&20u32.to_le_bytes());
+    bytes.splice(36..36, [0; 4]);
+    check(bytes); // Unsupported float64 format extension.
+}
+
+#[test]
+fn writers_propagate_failures_during_payload_and_finalization() {
+    use std::io::{self as stdio, Seek, SeekFrom, Write};
+    struct Destination {
+        inner: Cursor<Vec<u8>>,
+        remaining: usize,
+        failed: bool,
+    }
+    impl Destination {
+        fn step(&mut self) -> stdio::Result<()> {
+            if self.remaining == 0 {
+                self.failed = true;
+                Err(stdio::Error::other("injected destination failure"))
+            } else {
+                self.remaining -= 1;
+                Ok(())
+            }
+        }
+    }
+    impl Write for Destination {
+        fn write(&mut self, bytes: &[u8]) -> stdio::Result<usize> {
+            self.step()?;
+            self.inner.write(bytes)
+        }
+        fn flush(&mut self) -> stdio::Result<()> {
+            self.step()?;
+            self.inner.flush()
+        }
+    }
+    impl Seek for Destination {
+        fn seek(&mut self, pos: SeekFrom) -> stdio::Result<u64> {
+            self.step()?;
+            self.inner.seek(pos)
+        }
+    }
+    // Fail each successive stream operation, including sample writes and
+    // header patching, until a complete file can be read back successfully.
+    for id in ["u8", "i16", "i24", "i32", "f32", "f64", "dense", "sparse"] {
+        let mut completed = false;
+        for budget in 0..256 {
+            let mut destination = Destination {
+                inner: Cursor::new(Vec::new()),
+                remaining: budget,
+                failed: false,
+            };
+            let result = match id {
+                "dense" => io::mmwrite(
+                    &mut destination,
+                    &io::MarketMatrix::Dense {
+                        rows: 1,
+                        cols: 2,
+                        data: vec![1., 2.],
+                    },
+                ),
+                "sparse" => io::mmwrite(
+                    &mut destination,
+                    &io::MarketMatrix::Sparse(sci::sparse::identity(2).unwrap()),
+                ),
+                _ => wav::write(&mut destination, &wav::read(source(id).as_slice()).unwrap()),
+            };
+            if destination.failed {
+                assert!(
+                    matches!(result, Err(io::Error::Io(_))),
+                    "{id}, operation {budget}: {result:?}"
+                );
+            } else {
+                result.unwrap();
+                if matches!(id, "dense" | "sparse") {
+                    io::mmread(destination.inner.get_ref().as_slice()).unwrap();
+                } else {
+                    wav::read(destination.inner.get_ref().as_slice()).unwrap();
+                }
+                completed = true;
+                break;
+            }
+        }
+        assert!(completed, "{id} exceeded the operation bound");
+    }
+}

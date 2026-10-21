@@ -501,7 +501,9 @@ pub fn fixed_quad(f: impl Fn(f64) -> f64, a: f64, b: f64, n: usize) -> Result<f6
 /// Invalid nodes/order, singular backend solve, or nonfinite arithmetic.
 /// ## Numerical behavior
 ///
-/// A centered Vandermonde system is solved by private nalgebra LU. Cubic work
+/// Uniform rules use exact rational tabulations through order 12, rounded to
+/// binary64. Other nodes use a centered Vandermonde system solved by private
+/// nalgebra LU, with a subtracted moment for the error coefficient. Cubic work
 /// is bounded by 13 nodes. Clustered nodes are ill-conditioned and may lose
 /// accuracy; low orders are recommended. No condition estimate is returned.
 /// # Examples
@@ -523,6 +525,83 @@ pub fn newton_cotes(rn: &[f64]) -> Result<(Vec<f64>, f64)> {
     if rn[0] != 0.0 || rn[n] != n as f64 || rn.windows(2).any(|p| p[1] <= p[0]) {
         return Err(Error::InvalidInput("nodes must increase from zero to N"));
     }
+    if rn.iter().enumerate().all(|(i, x)| *x == i as f64) {
+        // Exact rational closed rules avoid a Vandermonde solve and the
+        // cancellation in the leading moment defect for uniform nodes.
+        let (factor, numerators, error): (f64, &[f64], f64) = match n {
+            1 => (1.0 / 2.0, &[1.0, 1.0], -1.0 / 12.0),
+            2 => (1.0 / 3.0, &[1.0, 4.0, 1.0], -1.0 / 90.0),
+            3 => (3.0 / 8.0, &[1.0, 3.0, 3.0, 1.0], -3.0 / 80.0),
+            4 => (2.0 / 45.0, &[7.0, 32.0, 12.0, 32.0, 7.0], -8.0 / 945.0),
+            5 => (
+                5.0 / 288.0,
+                &[19.0, 75.0, 50.0, 50.0, 75.0, 19.0],
+                -275.0 / 12096.0,
+            ),
+            6 => (
+                1.0 / 140.0,
+                &[41.0, 216.0, 27.0, 272.0, 27.0, 216.0, 41.0],
+                -9.0 / 1400.0,
+            ),
+            7 => (
+                7.0 / 17280.0,
+                &[751.0, 3577.0, 1323.0, 2989.0, 2989.0, 1323.0, 3577.0, 751.0],
+                -8183.0 / 518400.0,
+            ),
+            8 => (
+                4.0 / 14175.0,
+                &[
+                    989.0, 5888.0, -928.0, 10496.0, -4540.0, 10496.0, -928.0, 5888.0, 989.0,
+                ],
+                -2368.0 / 467775.0,
+            ),
+            9 => (
+                9.0 / 89600.0,
+                &[
+                    2857.0, 15741.0, 1080.0, 19344.0, 5778.0, 5778.0, 19344.0, 1080.0, 15741.0,
+                    2857.0,
+                ],
+                -4671.0 / 394240.0,
+            ),
+            10 => (
+                5.0 / 299376.0,
+                &[
+                    16067.0, 106300.0, -48525.0, 272400.0, -260550.0, 427368.0, -260550.0,
+                    272400.0, -48525.0, 106300.0, 16067.0,
+                ],
+                -673175.0 / 163459296.0,
+            ),
+            11 => (
+                11.0 / 87091200.0,
+                &[
+                    2171465.0, 13486539.0, -3237113.0, 25226685.0, -9595542.0, 15493566.0,
+                    15493566.0, -9595542.0, 25226685.0, -3237113.0, 13486539.0, 2171465.0,
+                ],
+                -2224234463.0 / 237758976000.0,
+            ),
+            12 => (
+                1.0 / 5255250.0,
+                &[
+                    1364651.0,
+                    9903168.0,
+                    -7587864.0,
+                    35725120.0,
+                    -51491295.0,
+                    87516288.0,
+                    -87797136.0,
+                    87516288.0,
+                    -51491295.0,
+                    35725120.0,
+                    -7587864.0,
+                    9903168.0,
+                    1364651.0,
+                ],
+                -3012.0 / 875875.0,
+            ),
+            _ => unreachable!("validated Newton–Cotes order"),
+        };
+        return Ok((numerators.iter().map(|x| factor * x).collect(), error));
+    }
     let matrix = nalgebra::DMatrix::from_fn(n + 1, n + 1, |i, j| {
         (2.0 * rn[j] / n as f64 - 1.0).powi(i as i32)
     });
@@ -542,12 +621,7 @@ pub fn newton_cotes(rn: &[f64]) -> Result<(Vec<f64>, f64)> {
         .ok_or(Error::NumericalFailure("singular Newton-Cotes system"))?;
     let weights: Vec<f64> = weights.iter().copied().collect();
     finite_slice(&weights)?;
-    let uniform = rn.iter().enumerate().all(|(i, x)| *x == i as f64);
-    let power = if uniform && n.is_multiple_of(2) {
-        n + 2
-    } else {
-        n + 1
-    };
+    let power = n + 1;
     let moment: f64 = rn
         .iter()
         .zip(&weights)

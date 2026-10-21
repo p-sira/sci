@@ -95,3 +95,7 @@ for signature adaptations, numerical conventions and bounded-work limitations.
 Scientific I/O implements nine distinct function names for Matrix Market, WAV,
 and a dense numeric MATLAB subset; five I/O function names and the other format
 classes remain deferred. See [I/O coverage and limitations](function_coverages/IO_COVERAGE.md).
+
+The [non-sparse numerical accuracy audit](function_coverages/NUMERICAL_ACCURACY_AUDIT.md)
+records corrections, independent regression references, and remaining accuracy
+limits identified from the sibling `sci-testing` measurements.

@@ -92,7 +92,8 @@ pub fn sine_signal(n: usize) -> Vec<f64> {
 }
 
 /// Runs `f` once before measuring so that one-time initialization (such as
-/// CPU cache-size detection in matrix kernels) is excluded.
+/// CPU cache-size detection in matrix kernels or building a cached FFT plan)
+/// is excluded.
 pub fn warm<T>(bencher: Bencher, mut f: impl FnMut() -> T) {
     black_box(f());
     bencher.bench_local(f);

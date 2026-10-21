@@ -390,7 +390,11 @@ fn scipy_public_api_references() {
                 let out = if api == "eigsh" {
                     l::eigsh(&a, p[0] as usize, l::Spectrum::LargestReal)
                 } else {
-                    l::lobpcg(&a, &vec![vec![1.; p[0] as usize]; m], true)
+                    l::lobpcg(
+                        &a,
+                        &vec![vec![1.; p[0] as usize]; m],
+                        p.get(1).is_none_or(|&v| v != 0.),
+                    )
                 }
                 .unwrap();
                 assert_v("w", &out.eigenvalues, 3e-11);
@@ -448,8 +452,12 @@ fn scipy_public_api_references() {
                 3e-11,
             ),
             "norm_axis" => {
-                assert_v("x", &l::norm_axis(&a, 2., 0).unwrap(), 3e-12);
-                assert_v("xt", &l::norm_axis(&a, -1., 1).unwrap(), 3e-12);
+                if p.len() == 2 {
+                    assert_v("x", &l::norm_axis(&a, p[0], p[1] as usize).unwrap(), 3e-12);
+                } else {
+                    assert_v("x", &l::norm_axis(&a, 2., 0).unwrap(), 3e-12);
+                    assert_v("xt", &l::norm_axis(&a, -1., 1).unwrap(), 3e-12);
+                }
             }
             "spilu" => assert_v(
                 "x",
@@ -572,7 +580,7 @@ fn scipy_public_api_references() {
         }
         tested += 1;
     }
-    assert_eq!(tested, 173);
+    assert_eq!(tested, 181);
 }
 
 #[test]
@@ -1136,5 +1144,368 @@ fn givens_projection_with_nontrivial_preconditioning() {
                 .fold(0f64, |n, (a, b)| n.hypot(a - b));
             assert!(residual / norm <= opts.rtol);
         }
+    }
+}
+
+#[test]
+fn graph_reconstruction_rejects_invalid_forests_and_masks() {
+    let a = s::from_coo(3, 3, &[(0, 1, 2.), (1, 2, 3.), (2, 0, 4.)]).unwrap();
+    for pred in [
+        vec![None; 2],                   // Incorrect length.
+        vec![Some(0), None, None],       // Self predecessor.
+        vec![None, Some(3), None],       // Vertex outside the graph.
+        vec![None, Some(2), None],       // Missing edge 2 -> 1.
+        vec![Some(2), Some(0), Some(1)], // Cycle consisting of valid edges.
+    ] {
+        assert!(g::reconstruct_path(&a, &pred, true).is_err());
+    }
+    // A valid forest can still contain chains that do not reach the row's source.
+    let pred = vec![vec![None, None, Some(1)], vec![None; 3], vec![None; 3]];
+    assert!(g::construct_dist_matrix(&a, &pred, true, f64::INFINITY).is_err());
+    for mask in [vec![], vec![vec![false; 2]; 3]] {
+        let masked = g::MaskedGraph {
+            values: vec![vec![0.; 3]; 3],
+            mask,
+        };
+        assert!(g::csgraph_from_masked(&masked).is_err());
+    }
+    let masked = g::MaskedGraph {
+        values: vec![vec![f64::NAN]],
+        mask: vec![vec![true]],
+    };
+    assert_eq!(g::csgraph_from_masked(&masked).unwrap().data, []);
+    let unmasked = g::MaskedGraph {
+        mask: vec![vec![false]],
+        ..masked
+    };
+    assert!(g::csgraph_from_masked(&unmasked).is_err());
+}
+
+#[test]
+fn graph_matching_and_flow_enforce_limits() {
+    let oversized = s::from_coo(257, 1, &[]).unwrap();
+    assert!(g::maximum_bipartite_matching(&oversized, false).is_err());
+    assert!(g::min_weight_full_bipartite_matching(&oversized, false).is_err());
+    for (rows, cols) in [(0, 3), (3, 0)] {
+        let empty = s::from_coo(rows, cols, &[]).unwrap();
+        assert_eq!(
+            g::min_weight_full_bipartite_matching(&empty, false).unwrap(),
+            (vec![], vec![])
+        );
+    }
+    let excessive = s::from_coo(
+        3,
+        3,
+        &[
+            (0, 1, 4_503_599_627_370_496.),
+            (1, 2, 4_503_599_627_370_496.),
+        ],
+    )
+    .unwrap();
+    assert!(g::maximum_flow(&excessive, 0, 2).is_err());
+    let negative_degree = s::from_coo(2, 2, &[(0, 1, -1.)]).unwrap();
+    assert!(g::laplacian(&negative_degree, true, false, false).is_err());
+}
+
+#[test]
+fn sparse_arrays_enforce_rank_permutation_and_storage_limits() {
+    let rank32 = s::SparseArray {
+        shape: vec![1; 32],
+        coordinates: vec![vec![0; 32]],
+        data: vec![1.],
+    };
+    assert!(s::expand_dims(&rank32, 0).is_err());
+    assert!(s::permute_dims(&rank32, &[0]).is_err());
+    let empty_indices: &[u64] = &[];
+    assert!(s::get_index_dtype(&vec![empty_indices; 1_000_001], None).is_err());
+    assert!(s::get_index_dtype(&[&vec![0; 1_000_001]], None).is_err());
+    assert!(s::random_array(&[1_000_000, 2], 1., 0).is_err());
+    assert!(s::random_array(&[1_000_000; 4], 0., 0).is_err());
+}
+
+#[test]
+fn incomplete_lu_dropping_preserves_diagonal_inverse() {
+    let a = s::from_dense(&[vec![4., 0.25], vec![0.25, 2.]]).unwrap();
+    // Both off-diagonal terms lie below the dropping thresholds, so LU = diag(A).
+    let ilu = l::spilu(&a, 0.5, 1.).unwrap();
+    assert_eq!((ilu.rows(), ilu.cols()), (2, 2));
+    assert_eq!(ilu.apply(&[8., 6.]).unwrap(), [2., 3.]);
+    assert_eq!(ilu.transpose_apply(&[8., 6.]).unwrap(), [2., 3.]);
+    assert!(ilu.solve(&[1.]).is_err());
+    assert!(ilu.solve(&[f64::NAN, 1.]).is_err());
+    for a in [
+        s::identity(0).unwrap(),
+        s::identity(257).unwrap(),
+        s::from_coo(2, 3, &[]).unwrap(),
+    ] {
+        assert!(l::spilu(&a, 0., 1.).is_err());
+    }
+}
+
+#[test]
+fn krylov_action_enforces_basis_limit_and_zero_vector_identity() {
+    let a = s::from_dense(&[vec![2., 1., 0.], vec![1., 3., 1.], vec![0., 1., 4.]]).unwrap();
+    let zero = l::funm_multiply_krylov(&a, &[0.; 3], |z| z, Default::default()).unwrap();
+    assert!(zero.iter().all(|z| z.re == 0. && z.im == 0.));
+    assert!(l::funm_multiply_krylov(&a, &[1.], |z| z, Default::default()).is_err());
+    let limited = l::KrylovOptions {
+        max_basis: 1,
+        rtol: 0.,
+        atol: 0.,
+        ..Default::default()
+    };
+    assert!(matches!(
+        l::funm_multiply_krylov(&a, &[1., 0., 0.], |z| z, limited),
+        Err(sci::Error::NumericalFailure(_))
+    ));
+    for a in [s::identity(0).unwrap(), s::identity(257).unwrap()] {
+        assert!(l::eigs(&a, 1, l::Spectrum::LargestMagnitude).is_err());
+    }
+}
+
+#[test]
+fn npz_validation_and_version_references() {
+    for line in include_str!("fixtures/sparse_npz_validation.csv")
+        .lines()
+        .skip(1)
+    {
+        let fields: Vec<_> = line.split(',').collect();
+        let path = format!(
+            "{}/tests/fixtures/{}.npz",
+            env!("CARGO_MANIFEST_DIR"),
+            fields[0]
+        );
+        let bytes = std::fs::read(path).unwrap();
+        let result = s::load_npz(std::io::Cursor::new(bytes));
+        if fields[1] == "0" {
+            assert!(result.is_err(), "{}", fields[0]);
+        } else {
+            let a = result.unwrap();
+            assert_eq!(
+                (a.rows, a.cols),
+                (fields[2].parse().unwrap(), fields[3].parse().unwrap())
+            );
+            close(
+                &flat(&s::to_dense(&a).unwrap()),
+                &nums(fields[4]),
+                0.,
+                fields[0],
+            );
+        }
+    }
+}
+
+#[test]
+fn npz_writer_propagates_write_and_seek_failures() {
+    use std::io::{self, Cursor, Seek, SeekFrom, Write};
+
+    struct FallibleWriter {
+        inner: Cursor<Vec<u8>>,
+        remaining: usize,
+        failed: bool,
+    }
+    impl FallibleWriter {
+        fn step(&mut self) -> io::Result<()> {
+            if self.remaining == 0 {
+                self.failed = true;
+                Err(io::Error::other("injected destination failure"))
+            } else {
+                self.remaining -= 1;
+                Ok(())
+            }
+        }
+    }
+    impl Write for FallibleWriter {
+        fn write(&mut self, data: &[u8]) -> io::Result<usize> {
+            self.step()?;
+            self.inner.write(data)
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            self.step()?;
+            self.inner.flush()
+        }
+    }
+    impl Seek for FallibleWriter {
+        fn seek(&mut self, position: SeekFrom) -> io::Result<u64> {
+            self.step()?;
+            self.inner.seek(position)
+        }
+    }
+    let a = s::from_coo(2, 3, &[(0, 1, 2.), (1, 2, -3.)]).unwrap();
+    for compressed in [false, true] {
+        let mut completed = false;
+        // Fail each successive destination operation, including finalization.
+        for budget in 0..512 {
+            let mut writer = FallibleWriter {
+                inner: Cursor::new(Vec::new()),
+                remaining: budget,
+                failed: false,
+            };
+            let result = s::save_npz(&mut writer, &a, compressed);
+            if writer.failed {
+                assert!(result.is_err(), "destination failure at operation {budget}");
+            } else {
+                result.unwrap();
+                writer.inner.set_position(0);
+                assert_eq!(s::load_npz(writer.inner).unwrap(), a);
+                completed = true;
+                break;
+            }
+        }
+        assert!(completed, "writer exceeded the test's operation bound");
+    }
+}
+
+#[test]
+fn iterative_operator_contracts_and_unsupported_preconditioning() {
+    let a = s::from_dense(&[vec![4., 1.], vec![1., 3.]]).unwrap();
+    let op = l::aslinearoperator(&a).unwrap();
+    let debug = format!("{op:?}");
+    assert!(debug.contains("LinearOperator"));
+    assert!(debug.contains("rows: 2"));
+    assert!(debug.contains("cols: 2"));
+    assert!(matches!(
+        op.apply(&[1.]),
+        Err(sci::Error::DimensionMismatch)
+    ));
+    assert!(matches!(
+        op.transpose_apply(&[1.]),
+        Err(sci::Error::DimensionMismatch)
+    ));
+    for options in [
+        l::SolverOptions {
+            x0: Some(vec![0.]),
+            ..Default::default()
+        },
+        l::SolverOptions {
+            preconditioner: Some(l::aslinearoperator(&s::identity(1).unwrap()).unwrap()),
+            ..Default::default()
+        },
+    ] {
+        assert!(matches!(
+            l::cg(&a, &[1., 2.], &options),
+            Err(sci::Error::DimensionMismatch)
+        ));
+    }
+    let options = l::SolverOptions {
+        preconditioner: Some(op),
+        ..Default::default()
+    };
+    for solver in [l::qmr, l::tfqmr, l::minres] {
+        assert!(matches!(
+            solver(&a, &[1., 2.], &options),
+            Err(sci::Error::InvalidInput(_))
+        ));
+    }
+    let nonsymmetric = s::from_dense(&[vec![2., 1.], vec![0., 3.]]).unwrap();
+    assert!(matches!(
+        l::minres(&nonsymmetric, &[1., 2.], &Default::default()),
+        Err(sci::Error::InvalidInput(_))
+    ));
+    let indefinite = s::diags(2, 2, &[vec![-1., -2.]], &[0]).unwrap();
+    assert!(matches!(
+        l::cg(&indefinite, &[1., 2.], &Default::default()),
+        Err(sci::Error::NumericalFailure(_))
+    ));
+
+    // Solvers must also validate direct third-party trait implementations.
+    struct InvalidMap;
+    impl l::LinearMap for InvalidMap {
+        fn rows(&self) -> usize {
+            2
+        }
+        fn cols(&self) -> usize {
+            2
+        }
+        fn apply(&self, _: &[f64]) -> sci::Result<Vec<f64>> {
+            Ok(vec![0.])
+        }
+        fn transpose_apply(&self, _: &[f64]) -> sci::Result<Vec<f64>> {
+            Ok(vec![0.])
+        }
+    }
+    assert!(matches!(
+        l::cg(&InvalidMap, &[1., 2.], &Default::default()),
+        Err(sci::Error::DimensionMismatch)
+    ));
+}
+
+#[test]
+fn singular_preconditioners_report_residual_breakdown() {
+    let a = s::identity(2).unwrap();
+    let zero = s::from_coo(2, 2, &[]).unwrap();
+    let options = l::SolverOptions {
+        preconditioner: Some(l::aslinearoperator(&zero).unwrap()),
+        ..Default::default()
+    };
+    for solver in [l::bicg, l::gmres, l::lgmres, l::gcrotmk] {
+        assert!(matches!(
+            solver(&a, &[1., 2.], &options),
+            Err(sci::Error::NumericalFailure(_))
+        ));
+    }
+}
+
+#[test]
+fn sparse_construction_checks_storage_before_assembly() {
+    let oversized_rows = vec![vec![]; 1_000_001];
+    let offsets = vec![0; oversized_rows.len()];
+    assert!(s::spdiags(&oversized_rows, &offsets, 1, 1).is_err());
+    assert!(s::diags(1, 1, &oversized_rows, &offsets).is_err());
+    assert!(s::spdiags(&[vec![1.]], &[], 1, 1).is_err());
+    assert!(s::spdiags(&[vec![1.], vec![]], &[0, 1], 1, 1).is_err());
+    assert!(s::spdiags(&[vec![0.; 500_001], vec![0.; 500_001]], &[0, 1], 1, 1).is_err());
+    assert!(s::from_coo(1, 1, &vec![(0, 0, 1.); 1_000_001]).is_err());
+    assert!(
+        s::diags(
+            500_001,
+            500_001,
+            &[vec![1.; 500_001], vec![1.; 500_000]],
+            &[0, 1]
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn graph_source_and_yen_edge_cases() {
+    let a = s::from_coo(2, 2, &[(0, 1, 1.)]).unwrap();
+    let too_many = g::PathOptions {
+        indices: Some(vec![0; 257]),
+        ..Default::default()
+    };
+    assert!(g::shortest_path(&a, &too_many).is_err());
+    let out = g::yen(&a, 0, 1, 0, true, false).unwrap();
+    assert!(out.paths.is_empty() && out.distances.is_empty() && out.predecessors.is_empty());
+    let excessive = s::from_coo(2, 2, &[(0, 1, f64::MAX)]).unwrap();
+    assert!(g::yen(&excessive, 0, 1, 1, true, false).is_err());
+    // Weighted matching treats a stored zero as an absent edge.
+    let zero_edge = s::from_coo(2, 2, &[(0, 0, 0.), (0, 1, 2.), (1, 0, 3.)]).unwrap();
+    assert_eq!(
+        g::min_weight_full_bipartite_matching(&zero_edge, false).unwrap(),
+        (vec![0, 1], vec![1, 0])
+    );
+}
+
+#[test]
+fn spectral_selection_and_empty_norm_conventions() {
+    // The real rotation has eigenvalues +/-i, independently of the backend.
+    let rotation = s::from_dense(&[vec![0., -1.], vec![1., 0.]]).unwrap();
+    for (which, sign) in [
+        (l::Spectrum::LargestImaginary, 1.),
+        (l::Spectrum::SmallestImaginary, -1.),
+    ] {
+        let out = l::eigs(&rotation, 1, which).unwrap();
+        assert_eq!(out.eigenvalues.len(), 1);
+        assert!(out.eigenvalues[0].re.abs() < 2e-15);
+        assert!((out.eigenvalues[0].im - sign).abs() < 2e-15);
+    }
+    for (rows, cols, axis) in [(0, 3, 0), (3, 0, 1)] {
+        let empty = s::from_coo(rows, cols, &[]).unwrap();
+        for p in [-1., f64::INFINITY, f64::NEG_INFINITY] {
+            assert!(l::norm_axis(&empty, p, axis).is_err());
+        }
+        assert_eq!(l::norm_axis(&empty, 0., axis).unwrap(), [0.; 3]);
+        assert_eq!(l::norm_axis(&empty, 2., axis).unwrap(), [0.; 3]);
     }
 }
