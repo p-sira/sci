@@ -59,3 +59,17 @@ Distribution parameters and units are specified per function. Variance uses
 `ddof = 0` for population variance and `ddof = 1` for unbiased sample variance.
 
 [Back to README](../README.md).
+
+## Scientific file interchange
+
+The `io` module preserves source scalar types in `NumericData`. File records
+retain shapes and audio metadata; explicit conversions produce shared f64 rows
+or normalized signal channels. MATLAB arrays use column-major storage, dense
+Matrix Market records use row-major storage, and audio interleaves channels
+within frames. CSR uses the shared `SparseMatrix` type. File data can retain
+nonfinite floating values even where numerical modules reject them.
+
+I/O returns `io::Result` with `io::Error`, retaining underlying stream failures
+and distinguishing malformed files, unsupported features, codec failures and
+shared numerical validation errors. See the [I/O crate documentation](../crates/sci-io/README.md)
+for supported subsets, precision conversions and allocation limits.

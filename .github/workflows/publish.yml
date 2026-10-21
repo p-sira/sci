@@ -19,6 +19,7 @@ on:
           - sci-filter
           - sci-integrate
           - sci-interpolate
+          - sci-io
           - sci-linalg
           - sci-optimize
           - sci-signal

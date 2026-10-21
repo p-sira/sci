@@ -86,3 +86,7 @@ pub use sci_stats as stats;
 /// Sparse arrays, graphs, linear algebra and NPZ interchange; requires the `sparse` feature.
 #[cfg(feature = "sparse")]
 pub use sci_sparse as sparse;
+
+/// Scientific file interchange; requires the `io` feature.
+#[cfg(feature = "io")]
+pub use sci_io as io;

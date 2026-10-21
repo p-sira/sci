@@ -15,6 +15,9 @@ repository = "https://github.com/p-sira/sci"
 categories = ["science", "mathematics"]
 
 [workspace.dependencies]
+hound = "3.5.1"
+matrw = "=0.1.4"
+flate2 = { version = "1.1", default-features = false, features = ["rust_backend"] }
 petgraph = { version = "0.8.3", default-features = false, features = ["std"] }
 zip = { version = "4.6", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 rand = "0.9.2"
@@ -38,6 +41,7 @@ kodama = "0.3.0"
 rustdct = "0.7.1"
 splinefit = "0.4.1"
 delaunator = "1.1.0"
+sci-io = { version = "0.1.0", path = "crates/sci-io" }
 sci-core = { version = "0.1.0", path = "crates/sci-core" }
 sci-cluster = { version = "0.1.0", path = "crates/sci-cluster" }
 sci-complex = { version = "0.1.0", path = "crates/sci-complex" }
@@ -73,13 +77,14 @@ include = ["src/**", "LICENSE"]
 autotests = false
 
 [features]
-default = ["cluster", "complex", "constants", "differentiate", "filter", "fft", "integrate", "interpolate", "linalg", "linalg-faer", "linalg-nalgebra", "linalg-ndarray", "optimize", "signal", "sparse", "spatial", "special", "stats"]
+default = ["cluster", "complex", "constants", "differentiate", "filter", "fft", "integrate", "interpolate", "io", "linalg", "linalg-faer", "linalg-nalgebra", "linalg-ndarray", "optimize", "signal", "sparse", "spatial", "special", "stats"]
 cluster = ["dep:sci-cluster"]
 complex = ["dep:sci-complex"]
 constants = ["dep:sci-constants"]
 differentiate = ["dep:sci-differentiate"]
 filter = ["dep:sci-filter"]
 fft = ["dep:sci-fft"]
+io = ["dep:sci-io"]
 integrate = ["dep:sci-integrate"]
 interpolate = ["dep:sci-interpolate"]
 linalg = ["dep:sci-linalg"]
@@ -94,6 +99,7 @@ special = ["dep:sci-special"]
 stats = ["dep:sci-stats"]
 
 [dependencies]
+sci-io = { workspace = true, optional = true }
 sci-filter = { workspace = true, optional = true }
 sci-core.workspace = true
 sci-cluster = { workspace = true, optional = true }
@@ -341,6 +347,11 @@ required-features = ["sparse", "linalg"]
 name = "sparse_parity"
 path = "tests/sparse_parity.rs"
 required-features = ["sparse", "linalg"]
+
+[[test]]
+name = "io"
+path = "tests/io.rs"
+required-features = ["io", "sparse", "signal"]
 
 [[test]]
 name = "power_stability"
