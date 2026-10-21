@@ -86,3 +86,7 @@ Each namespace links to its section in the corresponding top-level submodule fil
 Sci omits the legacy `fftpack` namespace. Its ten distinct periodic operators
 are exported from `fft`; redundant transforms and compatibility variants are
 removed. See [FFT coverage and inventory disposition](function_coverages/FFT_COVERAGE.md).
+
+The [non-sparse numerical accuracy audit](function_coverages/NUMERICAL_ACCURACY_AUDIT.md)
+records corrections, independent regression references, and remaining accuracy
+limits identified from the sibling `sci-testing` measurements.
