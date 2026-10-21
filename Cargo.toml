@@ -320,3 +320,8 @@ required-features = ["optimize"]
 name = "filter"
 harness = false
 required-features = ["filter"]
+
+[[test]]
+name = "power_stability"
+path = "tests/power_stability.rs"
+required-features = ["stats", "special"]
