@@ -13,9 +13,39 @@ permissions:
   id-token: write # for OpenID Connect authentication with CodSpeed
 
 jobs:
-  codspeed:
-    name: Run benchmarks
+  shards:
+    name: Select benchmark shards
     runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Pull requests only run the shards whose sci-* crates (or their
+      # dependencies) changed; CodSpeed reuses baseline results for the rest.
+      # Pushes and manual runs measure every shard.
+      - name: Select shards
+        id: select
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            matrix=$(python3 .github/scripts/codspeed_shards.py "$(git merge-base "$BASE_SHA" HEAD)" HEAD)
+          else
+            matrix=$(python3 .github/scripts/codspeed_shards.py --all)
+          fi
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  codspeed:
+    name: Run benchmarks (${{ matrix.bench }})
+    needs: shards
+    if: needs.shards.outputs.matrix != '{"include":[]}'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.shards.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v7
 
@@ -28,11 +58,14 @@ jobs:
           cache-target: release
           bins: cargo-codspeed
 
-      - name: Build the benchmark target(s)
-        run: cargo codspeed build -m simulation -p sci --locked
+      - name: Build the benchmark target
+        run: >-
+          cargo codspeed build -m simulation -p sci --locked
+          --no-default-features --features "${{ matrix.features }}"
+          --bench ${{ matrix.bench }}
 
       - name: Run the benchmarks
         uses: CodSpeedHQ/action@v5
         with:
           mode: simulation
-          run: cargo codspeed run -p sci
+          run: cargo codspeed run -p sci --bench ${{ matrix.bench }}

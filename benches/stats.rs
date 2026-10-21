@@ -503,10 +503,10 @@ mod transformation_benches {
         bencher.bench(|| stats::yeojohnson_llf(0.5, black_box(&x)).unwrap());
     }
 
-    #[divan::bench]
-    fn pmean(bencher: Bencher) {
+    #[divan::bench(args = [1.5, 1e-18])]
+    fn pmean(bencher: Bencher, power: f64) {
         let x = positive_values(N, 1);
-        bencher.bench(|| stats::pmean(black_box(&x), 1.5).unwrap());
+        bencher.bench(|| stats::pmean(black_box(&x), black_box(power)).unwrap());
     }
 
     #[divan::bench]

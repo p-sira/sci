@@ -91,3 +91,7 @@ Sparse v0.1.0 covers all 83 modern sparse function names through documented Rust
 adaptations, excluding legacy matrix predicates, `rand`, `use_solver` and deprecated
 compatibility namespaces. See [sparse coverage and inventory disposition](function_coverages/SPARSE_COVERAGE.md)
 for signature adaptations, numerical conventions and bounded-work limitations.
+
+The [non-sparse numerical accuracy audit](function_coverages/NUMERICAL_ACCURACY_AUDIT.md)
+records corrections, independent regression references, and remaining accuracy
+limits identified from the sibling `sci-testing` measurements.

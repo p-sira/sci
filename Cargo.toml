@@ -218,6 +218,11 @@ name = "core"
 path = "tests/core.rs"
 
 [[test]]
+name = "numerical_accuracy"
+path = "tests/numerical_accuracy.rs"
+required-features = ["integrate", "linalg", "optimize", "special", "stats"]
+
+[[test]]
 name = "statistics_coverage"
 path = "tests/statistics_coverage.rs"
 required-features = ["stats"]
@@ -336,3 +341,8 @@ required-features = ["sparse", "linalg"]
 name = "sparse_parity"
 path = "tests/sparse_parity.rs"
 required-features = ["sparse", "linalg"]
+
+[[test]]
+name = "power_stability"
+path = "tests/power_stability.rs"
+required-features = ["stats", "special"]

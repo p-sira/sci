@@ -393,7 +393,10 @@ pub fn alexandergovern(groups: &[&[f64]]) -> Result<TestResult> {
 /// Native shifted/scaled centering followed by private BSD-licensed SciPy AS R94
 /// evaluation; O(n log n) sorting and O(n) memory. Scaling avoids overflow in ordered differences.
 /// Normal weights and tails reuse statrs, matching SciPy 1.18.1 normal quantiles.
-/// Rounding near W=1 can affect p-values. Samples larger than 5000 are rejected because
+/// Three-point samples use the exact gap-ratio formula
+/// `u=|x[1]−x[0]−(x[2]−x[1])|/(sqrt(3)*(x[2]−x[0]))`,
+/// `W=1/(1+u²)`, `p=1−6 atan(u)/π`, avoiding cancellation near W=1.
+/// Rounding near W=1 can affect larger-sample p-values. Samples larger than 5000 are rejected because
 /// this calibration is unreliable beyond that range.
 ///
 /// ## Examples

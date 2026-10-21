@@ -395,10 +395,18 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
         Distribution::Chi { df } => newton_continuous(&make(Chi::new(count(df)?))?, x, op)?,
         Distribution::StudentT { df } => {
             let d = make(StudentsT::new(0., 1., shape(df)?))?;
-            if matches!(op, Operation::Ppf) && x == 0.5 {
-                0.
-            } else {
-                continuous(&d, x, op)?
+            match op {
+                // Reuse the central beta branches in the shared module.
+                Operation::Cdf if df == 1. || df == 2. || x.abs() <= df.sqrt() => {
+                    sci_special::stdtr(df, x)
+                }
+                Operation::Sf if df == 1. || df == 2. || x.abs() <= df.sqrt() => {
+                    sci_special::stdtr(df, -x)
+                }
+                Operation::Ppf if df == 1. || df == 2. || (x > 0.25 && x < 0.75) => {
+                    sci_special::stdtrit(df, x)
+                }
+                _ => continuous(&d, x, op)?,
             }
         }
         Distribution::F {
@@ -938,7 +946,11 @@ pub fn logpdf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> 
 ///
 /// ## Numerical behavior
 ///
-/// Uses statrs privately. Quantiles use bounded bracketing and bisection
+/// Uses statrs privately. Central Student-t probabilities and quantiles reuse
+/// [`sci_special::stdtr`] and [`sci_special::stdtrit`] to preserve small deviations
+/// from the median. The df=1 and df=2 cases also reuse stable elementary tails;
+/// other degrees retain the statrs tail formulas.
+/// Other quantiles use bounded bracketing and bisection
 /// (at most 6144 continuous evaluations or 106 discrete evaluations).
 /// Tail accuracy is limited by the backend probability functions and binary64.
 ///
@@ -981,7 +993,11 @@ pub fn cdf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses statrs privately. Quantiles use bounded bracketing and bisection
+/// Uses statrs privately. Central Student-t probabilities and quantiles reuse
+/// [`sci_special::stdtr`] and [`sci_special::stdtrit`] to preserve small deviations
+/// from the median. The df=1 and df=2 cases also reuse stable elementary tails;
+/// other degrees retain the statrs tail formulas.
+/// Other quantiles use bounded bracketing and bisection
 /// (at most 6144 continuous evaluations or 106 discrete evaluations).
 /// Tail accuracy is limited by the backend probability functions and binary64.
 ///
@@ -1025,7 +1041,11 @@ pub fn sf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses statrs privately. Quantiles use bounded bracketing and bisection
+/// Uses statrs privately. Central Student-t probabilities and quantiles reuse
+/// [`sci_special::stdtr`] and [`sci_special::stdtrit`] to preserve small deviations
+/// from the median. The df=1 and df=2 cases also reuse stable elementary tails;
+/// other degrees retain the statrs tail formulas.
+/// Other quantiles use bounded bracketing and bisection
 /// (at most 6144 continuous evaluations or 106 discrete evaluations).
 /// Chi and inverse-gamma first use statrs' safeguarded Newton solver with at
 /// most 1076 bracket steps and 100 Newton iterations; a smaller-tail residual

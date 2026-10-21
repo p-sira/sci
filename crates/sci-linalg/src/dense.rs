@@ -2,6 +2,7 @@
 use super::backend::*;
 use super::structured::{circulant, toeplitz};
 use crate::{Error, Result};
+use faer::prelude::Solve;
 use faer::{Mat, Scale};
 
 pub use sci_core::Matrix;
@@ -181,7 +182,13 @@ fn pseudoinverse(d: &SvdFactors, cutoff: f64) -> Result<(Mat<f64>, usize)> {
 ///
 /// ## Numerical behavior
 ///
-/// Private faer algorithms use f64. Ill-conditioned results can lose accuracy. Iterative routines use bounded backend-specific sweep limits. Uses O(n³) pivoted LU; no condition-number warning is emitted.
+/// Uses O(n³) private faer pivoted LU, followed by at most four O(n²)
+/// refinement steps reusing the factors. Fused product residuals and compensated
+/// sums reduce cancellation in `b−Ax`; only finite updates that reduce the
+/// estimated remaining correction are retained, and refinement stops once a
+/// correction falls below one ulp of `‖x‖∞`. Refinement is skipped when residual arithmetic
+/// exceeds the finite range. Ill-conditioned systems can still lose accuracy;
+/// no condition-number warning or forward-error guarantee is supplied.
 ///
 /// # Examples
 ///
@@ -203,10 +210,126 @@ pub fn solve(
     let b = b_input.as_ref();
     let a = square(a)?;
     let b = rhs(b, a.nrows())?;
-    vector(
-        a.solve_checked(&b)
-            .ok_or(Error::NumericalFailure("singular linear system"))?,
-    )
+    let lu = a.partial_piv_lu();
+    if (0..a.nrows()).any(|i| lu.U()[(i, i)] == 0. || !lu.U()[(i, i)].is_finite()) {
+        return Err(Error::NumericalFailure("singular linear system"));
+    }
+    let mut x = lu.solve(&b);
+    let mut correction = solve_residual(&a, &b, &x);
+    if correction.iter().any(|r| !r.is_finite()) {
+        return vector(x);
+    }
+    lu.solve_in_place(correction.as_mut());
+    for _ in 0..4 {
+        let norm = correction.iter().fold(0_f64, |m, r| m.max(r.abs()));
+        if norm == 0. || correction.iter().any(|r| !r.is_finite()) {
+            break;
+        }
+        let candidate = &x + &correction;
+        if candidate.iter().any(|v| !v.is_finite()) {
+            break;
+        }
+        // A correction below one ulp of ‖x‖∞ has converged; verifying it would
+        // cost another residual and triangular solve without changing `x`
+        // beyond rounding.
+        if norm <= f64::EPSILON * x.iter().fold(0_f64, |m, v| m.max(v.abs())) {
+            x = candidate;
+            break;
+        }
+        let mut next = solve_residual(&a, &b, &candidate);
+        if next.iter().any(|r| !r.is_finite()) {
+            break;
+        }
+        lu.solve_in_place(next.as_mut());
+        if next.iter().any(|r| !r.is_finite())
+            || next.iter().fold(0_f64, |m, r| m.max(r.abs())) >= norm
+        {
+            break;
+        }
+        x = candidate;
+        correction = next;
+    }
+    vector(x)
+}
+
+fn solve_residual(a: &Mat<f64>, b: &Mat<f64>, x: &Mat<f64>) -> Mat<f64> {
+    let n = a.nrows();
+    let mut residual = b.to_owned();
+    let mut correction = vec![0.; n];
+    let sum = residual
+        .col_mut(0)
+        .try_as_col_major_mut()
+        .expect("owned faer columns are contiguous")
+        .as_slice_mut();
+    // Column-major traversal over contiguous columns; each row still
+    // accumulates its products in column order.
+    for j in 0..a.ncols() {
+        let xj = x[(j, 0)];
+        let column = a.col(j);
+        let column = column
+            .try_as_col_major()
+            .expect("owned faer columns are contiguous")
+            .as_slice();
+        let split_x = split(xj);
+        for ((s, c), &aij) in sum.iter_mut().zip(&mut correction).zip(column) {
+            let (product, error) = two_product(-aij, xj, split_x);
+            let next = *s + product;
+            let back = next - *s;
+            *c += ((*s - (next - back)) + (product - back)) + error;
+            *s = next;
+        }
+    }
+    for (s, c) in sum.iter_mut().zip(correction) {
+        *s += c;
+    }
+    #[cfg(not(target_feature = "fma"))]
+    if residual.col(0).iter().any(|r| !r.is_finite()) {
+        // Dekker splitting overflows only for entries near the finite limit;
+        // recompute those residuals with library FMA.
+        return Mat::from_fn(n, 1, |i, _| {
+            let mut sum = b[(i, 0)];
+            let mut correction = 0.;
+            for j in 0..a.ncols() {
+                let product = -a[(i, j)] * x[(j, 0)];
+                let error = (-a[(i, j)]).mul_add(x[(j, 0)], -product);
+                let next = sum + product;
+                let back = next - sum;
+                correction += ((sum - (next - back)) + (product - back)) + error;
+                sum = next;
+            }
+            sum + correction
+        });
+    }
+    residual
+}
+
+/// Veltkamp split `v = hi + lo` with 26-bit halves for Dekker's product.
+#[inline]
+fn split(v: f64) -> (f64, f64) {
+    let scaled = 134_217_729.0 * v;
+    let hi = scaled - (scaled - v);
+    (hi, v - hi)
+}
+
+/// Returns `(fl(a·b), a·b − fl(a·b))`, given `split_b = split(b)`.
+///
+/// Uses hardware FMA when the target enables it; otherwise Dekker's product
+/// avoids the library `fma` call that `f64::mul_add` lowers to.
+#[inline]
+fn two_product(a: f64, b: f64, split_b: (f64, f64)) -> (f64, f64) {
+    let product = a * b;
+    #[cfg(target_feature = "fma")]
+    let error = {
+        let _ = split_b;
+        a.mul_add(b, -product)
+    };
+    #[cfg(not(target_feature = "fma"))]
+    let error = {
+        let (a_hi, a_lo) = split(a);
+        let (b_hi, b_lo) = split_b;
+        ((a_hi * b_hi - product) + a_hi * b_lo + a_lo * b_hi) + a_lo * b_lo
+    };
+    (product, error)
 }
 /// Computes `A⁻¹` satisfying `A A⁻¹=I`.
 ///
