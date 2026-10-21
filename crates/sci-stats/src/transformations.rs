@@ -245,7 +245,10 @@ pub(super) fn probabilities(values: &[f64]) -> Result<Vec<f64>> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses expm1 to reduce cancellation near lambda zero.
+/// Reuses the shared Sci special-function Box–Cox kernel, with a logarithmic
+/// limit for tiny lambda and a scaled exponential for large powers. This avoids
+/// premature underflow and intermediate overflow when the result is finite.
+/// True result overflow is reported explicitly; binary64 rounding remains.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -266,13 +269,7 @@ pub fn boxcox(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
             "Box-Cox requires positive observations",
         ));
     }
-    transform(values, |x| {
-        if lambda == 0. {
-            x.ln()
-        } else {
-            (lambda * x.ln()).exp_m1() / lambda
-        }
-    })
+    transform(values, |x| sci_special::boxcox(x, lambda))
 }
 /// Yeo–Johnson transform: Box–Cox of x+1 for x≥0; minus Box–Cox of 1−x with exponent 2−λ for x<0.
 ///
@@ -296,7 +293,10 @@ pub fn boxcox(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
 ///
 /// ## Numerical behavior
 ///
-/// Direct binary64 formula; overflow is reported explicitly.
+/// Reuses the shared Sci special-function Box–Cox kernels, including their
+/// logarithmic limits and scaled exponentials. Tiny parameters and subnormal
+/// observations avoid premature intermediate underflow. True result overflow
+/// is reported explicitly; binary64 rounding and underflow remain.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -314,18 +314,9 @@ pub fn yeojohnson(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
     finite(lambda)?;
     transform(values, |x| {
         if x >= 0. {
-            if lambda == 0. {
-                x.ln_1p()
-            } else {
-                (lambda * x.ln_1p()).exp_m1() / lambda
-            }
+            sci_special::boxcox1p(x, lambda)
         } else {
-            let l = 2. - lambda;
-            if l == 0. {
-                -(-x).ln_1p()
-            } else {
-                -(l * (-x).ln_1p()).exp_m1() / l
-            }
+            -sci_special::boxcox1p(-x, 2. - lambda)
         }
     })
 }
@@ -447,7 +438,12 @@ pub fn yeojohnson_llf(lambda: f64, values: &[f64]) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Log-sum-exp avoids power overflow; powers very close to zero can lose precision.
+/// Log-sum-exp avoids power overflow and reuses a single scratch vector.
+/// For |p| < 1e-4, centered logarithms with expm1/log1p preserve the correction
+/// to the geometric mean. For |p| < 1e-150, that correction is below binary64
+/// precision over the supported positive finite domain, so the geometric limit
+/// is used. Constant data return their stored value exactly. Linear work and
+/// storage; binary64 rounding and subnormal underflow remain.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -468,14 +464,34 @@ pub fn pmean(values: &[f64], power: f64) -> Result<f64> {
             "power mean needs positive values and |power|<=64",
         ));
     }
+    if values.iter().all(|&x| x == values[0]) {
+        return Ok(values[0]);
+    }
     if power == 0. {
         return gmean(values);
     }
-    let logs = values.iter().map(|x| power * x.ln()).collect::<Vec<_>>();
+    if power.abs() < 1e-4 {
+        let mut logs: Vec<_> = values.iter().map(|x| x.ln()).collect();
+        let center = mean(&logs)?;
+        // The largest binary64 log spread is below 1455. At this power the
+        // correction to the geometric mean is far below one output ulp, and
+        // forming power * log(x) can underflow.
+        if power.abs() < 1e-150 {
+            return finite(center.exp());
+        }
+        // Centering keeps the exponent below 0.15 in magnitude. expm1/log1p
+        // retain the small correction that exp/log would round away near p=0.
+        for log in &mut logs {
+            *log = (power * (*log - center)).exp_m1();
+        }
+        return finite((center + mean(&logs)?.ln_1p() / power).exp());
+    }
+    let mut logs: Vec<_> = values.iter().map(|x| power * x.ln()).collect();
     let m = logs.iter().copied().fold(f64::NEG_INFINITY, f64::max);
-    finite(
-        ((m + mean(&logs.iter().map(|v| (v - m).exp()).collect::<Vec<_>>())?.ln()) / power).exp(),
-    )
+    for log in &mut logs {
+        *log = (*log - m).exp();
+    }
+    finite(((m + mean(&logs)?.ln()) / power).exp())
 }
 /// Expectile minimizes `Σ |alpha−I(x_i≤t)|*(x_i−t)²`.
 ///

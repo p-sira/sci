@@ -4138,55 +4138,87 @@ pub fn powm1(x: f64, y: f64) -> f64 {
     }
 }
 
-/// Box–Cox transformation (x^lambda−1)/lambda, with ln(x) at lambda=0.
+/// Computes `B(x, λ) = (x^λ − 1)/λ`, with `B(x, 0) = ln(x)`.
 ///
-/// ## Parameters and domain
+/// ## Parameters and conventions
 ///
-/// x≥0; zero gives −∞ when lambda≤0 and −1/lambda otherwise.
-/// NaN propagates; divergent values and overflow use IEEE infinities.
+/// `x` is dimensionless; `lambda` is the real power parameter λ.
+///
+/// ## Domain and special values
+///
+/// `x >= 0`. Zero returns `−1/λ` for positive λ and `−∞` otherwise.
+/// Negative x and NaN inputs return NaN. Infinite arguments follow IEEE
+/// arithmetic; indeterminate combinations can return NaN.
+///
+/// ## Returns
+///
+/// The scalar Box–Cox transform. This infallible API reports domain errors as NaN.
+///
+/// ## Numerical behavior
+///
+/// Uses the private xsf backend's logarithmic limit for tiny λ and scaled
+/// exponential for large powers, preserving representable results when x^λ
+/// overflows. `boxcox1p` also preserves tiny x using `log1p`. Constant work;
+/// true overflow, underflow, and binary64 rounding remain. Correct rounding
+/// is not guaranteed. Endpoint values are handled before the limiting formula.
 ///
 /// # Examples
 ///
 /// ```
-/// assert!(sci_special::boxcox(2.0,0.3).is_finite());
+/// assert_eq!(sci_special::boxcox(4.0, 0.0), 4.0_f64.ln());
 /// ```
 ///
 /// # References
 ///
-/// - [SciPy boxcox](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.boxcox.html).
+/// [SciPy boxcox](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.boxcox.html).
 pub fn boxcox(x: f64, lambda: f64) -> f64 {
-    if x < 0.0 {
-        f64::NAN
-    } else if lambda == 0.0 {
-        x.ln()
+    // Preserve the exact endpoint even when the backend takes its tiny-lambda
+    // logarithmic limit, which is valid only for strictly positive x.
+    if x == 0.0 && lambda > 0.0 {
+        -1.0 / lambda
     } else {
-        (lambda * x.ln()).exp_m1() / lambda
+        xsf::boxcox(x, lambda)
     }
 }
 
-/// Box–Cox transformation of 1+x, stable near zero.
+/// Computes `((1+x)^λ − 1)/λ`, with `ln(1+x)` at `λ = 0`.
 ///
-/// ## Parameters and domain
+/// ## Parameters and conventions
 ///
-/// x≥−1; endpoint behavior follows boxcox.
-/// NaN propagates; divergent values and overflow use IEEE infinities.
+/// `x` is dimensionless; `lambda` is the real power parameter λ.
+///
+/// ## Domain and special values
+///
+/// `x >= −1`. At x = −1, returns `−1/λ` for positive λ and `−∞`
+/// otherwise. Smaller x and NaN inputs return NaN. Infinite arguments follow
+/// IEEE arithmetic; indeterminate combinations can return NaN.
+///
+/// ## Returns
+///
+/// The scalar Box–Cox transform. This infallible API reports domain errors as NaN.
+///
+/// ## Numerical behavior
+///
+/// Uses the private xsf backend's logarithmic limit for tiny λ and scaled
+/// exponential for large powers, preserving representable results when x^λ
+/// overflows. `boxcox1p` also preserves tiny x using `log1p`. Constant work;
+/// true overflow, underflow, and binary64 rounding remain. Correct rounding
+/// is not guaranteed. Endpoint values are handled before the limiting formula.
 ///
 /// # Examples
 ///
 /// ```
-/// assert!(sci_special::boxcox1p(0.000001,0.3).is_finite());
+/// assert_eq!(sci_special::boxcox1p(3.0, 0.0), 4.0_f64.ln());
 /// ```
 ///
 /// # References
 ///
-/// - [SciPy boxcox1p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.boxcox1p.html).
+/// [SciPy boxcox1p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.boxcox1p.html).
 pub fn boxcox1p(x: f64, lambda: f64) -> f64 {
-    if x < -1.0 {
-        f64::NAN
-    } else if lambda == 0.0 {
-        x.ln_1p()
+    if x == -1.0 && lambda > 0.0 {
+        -1.0 / lambda
     } else {
-        (lambda * x.ln_1p()).exp_m1() / lambda
+        xsf::boxcox1p(x, lambda)
     }
 }
 

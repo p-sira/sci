@@ -36,7 +36,11 @@ fn range(n: usize, m: usize, mode: Mode) -> (usize, usize) {
 ///
 /// ## Numerical behavior
 ///
-/// Uses f64 arithmetic. Cancellation and poorly conditioned filters or polynomial fits can reduce accuracy; no uniform relative-error guarantee is made. FFT routines use RustFFT, polynomial fits and DPSS use bounded private nalgebra solvers.
+/// Direct binary64 accumulation visits only products retained by the requested
+/// output mode, in increasing input-index order. Cropping preserves the full
+/// convolution's summation order. Cancellation, intermediate overflow and
+/// underflow remain possible; no uniform relative-error guarantee is made.
+/// The conservative n*m work limit still applies before evaluating products.
 ///
 /// # Examples
 ///
@@ -57,10 +61,12 @@ pub fn convolve(x: &[f64], h: &[f64], mode: Mode) -> Result<Vec<f64>> {
     let (start, len) = range(x.len(), h.len(), mode);
     let mut y = vec![0.; len];
     for (i, &a) in x.iter().enumerate() {
-        for (j, &b) in h.iter().enumerate() {
-            let k = i + j;
-            if k >= start && k - start < len {
-                y[k - start] += a * b;
+        let first = start.saturating_sub(i);
+        let end = (start + len).saturating_sub(i).min(h.len());
+        if first < end {
+            let output = &mut y[i + first - start..i + end - start];
+            for (value, &b) in output.iter_mut().zip(&h[first..end]) {
+                *value += a * b;
             }
         }
     }

@@ -1,0 +1,95 @@
+mod common;
+use sci::{Result, special, stats};
+
+#[test]
+fn power_transforms_match_independent_references() -> Result<()> {
+    let inputs = common::lines(include_str!("fixtures/power_stability_inputs.csv"));
+    let expected: Vec<_> =
+        common::lines(include_str!("fixtures/power_stability_expected.csv")).collect();
+    assert_eq!(inputs.clone().count(), expected.len());
+    for (input, expected) in inputs.zip(expected) {
+        let row = common::fields(input);
+        let reference = common::fields(expected);
+        assert_eq!(row[0], reference[0]);
+        let x = common::vector(row[2]);
+        let p = row[3].parse().unwrap();
+        let actual = match row[1] {
+            "pmean" => vec![stats::pmean(&x, p)?],
+            "yeojohnson" => stats::yeojohnson(&x, p)?,
+            api => {
+                let function = match api {
+                    "boxcox" => special::boxcox,
+                    "boxcox1p" => special::boxcox1p,
+                    _ => panic!("unknown API"),
+                };
+                let values: Vec<_> = x.iter().map(|&v| function(v, p)).collect();
+                if api == "boxcox" && values.iter().all(|v| v.is_finite()) {
+                    assert_eq!(stats::boxcox(&x, p)?, values);
+                }
+                values
+            }
+        };
+        let expected = common::vector(reference[1]);
+        assert_eq!(actual.len(), expected.len());
+        let rtol: f64 = reference[2].parse().unwrap();
+        let atol: f64 = reference[3].parse().unwrap();
+        for (a, b) in actual.into_iter().zip(expected) {
+            if b.is_infinite() || b.is_nan() {
+                assert!(a == b || (a.is_nan() && b.is_nan()), "{input}: {a} != {b}");
+            } else {
+                assert!(
+                    a.is_finite() && (a - b).abs() <= atol + rtol * b.abs(),
+                    "{input}: {a} != {b}"
+                );
+                if b != 0. {
+                    assert_ne!(a, 0., "{input}: lost nonzero value");
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn power_means_preserve_limits_bounds_and_scale() -> Result<()> {
+    let x = [0.25, 1., 4., 16.];
+    let mut previous = 0.;
+    for p in [-64., -2., -1e-8, -1e-18, 0., 1e-18, 1e-8, 1.5, 64.] {
+        let m = stats::pmean(&x, p)?;
+        assert!((x[0]..=x[3]).contains(&m));
+        assert!(m >= previous - 2e-14);
+        previous = m;
+        for scale in [1e-200, 1e200] {
+            let scaled: Vec<_> = x.iter().map(|v| v * scale).collect();
+            assert!((stats::pmean(&scaled, p)? / scale - m).abs() < 3e-12 * m);
+        }
+    }
+    for p in [-64., -1e-18, 0., 1e-18, 64.] {
+        assert_eq!(stats::pmean(&[3.; 4], p)?, 3.);
+    }
+    Ok(())
+}
+
+#[test]
+fn power_transform_domains_remain_explicit() {
+    for p in [-1., 0., 1e-20, 1.] {
+        let expected = if p > 0. { -1. / p } else { f64::NEG_INFINITY };
+        assert_eq!(special::boxcox(0., p), expected);
+        assert_eq!(special::boxcox1p(-1., p), expected);
+        assert!(special::boxcox(-1., p).is_nan());
+        assert!(special::boxcox1p(-2., p).is_nan());
+    }
+    for value in [f64::NAN, f64::INFINITY, 0., -1.] {
+        assert!(stats::pmean(&[value], 1.).is_err());
+        assert!(stats::boxcox(&[value], 1.).is_err());
+    }
+    for p in [f64::NAN, f64::INFINITY, 65.] {
+        assert!(stats::pmean(&[1.], p).is_err());
+    }
+    assert!(stats::pmean(&[], 1.).is_err());
+    assert!(stats::boxcox(&[100.], 200.).is_err());
+    assert!(special::boxcox(2., f64::NAN).is_nan());
+    assert!(special::boxcox1p(1., f64::NAN).is_nan());
+    assert!(stats::yeojohnson(&[f64::INFINITY], 1.).is_err());
+    assert_eq!(stats::yeojohnson(&[], 1.).unwrap(), Vec::<f64>::new());
+}

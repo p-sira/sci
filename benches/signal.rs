@@ -78,6 +78,13 @@ mod convolution_benches {
         bencher.bench(|| signal::convolve(black_box(&x), black_box(&h), Mode::Full).unwrap());
     }
 
+    #[divan::bench(args = [32, 1024])]
+    fn convolve_valid(bencher: Bencher, kernel_len: usize) {
+        let x = sine_signal(N);
+        let h = values(kernel_len, 3);
+        bencher.bench(|| signal::convolve(black_box(&x), black_box(&h), Mode::Valid).unwrap());
+    }
+
     #[divan::bench]
     fn correlate(bencher: Bencher) {
         let x = sine_signal(N);
