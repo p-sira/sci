@@ -9,6 +9,35 @@ fn point(x: &[f64], min: usize, max: usize) -> Result<()> {
     finite_slice(x)
 }
 
+/// Returns the valley residual `y − x²` with the square's rounding error removed.
+///
+/// Equivalent to `(-x).mul_add(x, y)` near the valley, where `y − fl(x²)` is
+/// exact. Without hardware FMA, `f64::mul_add` lowers to a library call, so
+/// the exact square is recovered with Dekker's split, only when the
+/// subtraction cancels.
+#[inline]
+fn valley_residual(x: f64, y: f64) -> f64 {
+    #[cfg(target_feature = "fma")]
+    {
+        (-x).mul_add(x, y)
+    }
+    #[cfg(not(target_feature = "fma"))]
+    {
+        let square = x * x;
+        let residual = y - square;
+        // Without cancellation, the plain residual is already within about
+        // one ulp of the fused result.
+        if residual.abs() >= 0.5 * square {
+            return residual;
+        }
+        let split = 134_217_729.0 * x;
+        let hi = split - (split - x);
+        let lo = x - hi;
+        let error = ((hi * hi - square) + 2.0 * hi * lo) + lo * lo;
+        residual - error
+    }
+}
+
 fn curvature(x: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
     let n = x.len();
     let mut diagonal = vec![0.0; n];
@@ -52,7 +81,7 @@ fn curvature(x: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
 pub fn rosen(x: &[f64]) -> Result<f64> {
     point(x, 0, 1_000_000)?;
     x.windows(2).try_fold(0.0, |sum, p| {
-        finite(sum + 100.0 * (-p[0]).mul_add(p[0], p[1]).powi(2) + (1.0 - p[0]).powi(2))
+        finite(sum + 100.0 * valley_residual(p[0], p[1]).powi(2) + (1.0 - p[0]).powi(2))
     })
 }
 
@@ -87,7 +116,7 @@ pub fn rosen_der(x: &[f64]) -> Result<Vec<f64>> {
     point(x, 2, 1_000_000)?;
     let mut out = vec![0.0; x.len()];
     for (i, p) in x.windows(2).enumerate() {
-        let residual = finite((-p[0]).mul_add(p[0], p[1]))?;
+        let residual = finite(valley_residual(p[0], p[1]))?;
         out[i] = finite(out[i] - 400.0 * p[0] * residual + 2.0 * (p[0] - 1.0))?;
         out[i + 1] = finite(out[i + 1] + 200.0 * residual)?;
     }
