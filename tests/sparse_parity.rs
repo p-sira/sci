@@ -1138,3 +1138,119 @@ fn givens_projection_with_nontrivial_preconditioning() {
         }
     }
 }
+
+#[test]
+fn graph_reconstruction_rejects_invalid_forests_and_masks() {
+    let a = s::from_coo(3, 3, &[(0, 1, 2.), (1, 2, 3.), (2, 0, 4.)]).unwrap();
+    for pred in [
+        vec![None; 2],                   // Incorrect length.
+        vec![Some(0), None, None],       // Self predecessor.
+        vec![None, Some(3), None],       // Vertex outside the graph.
+        vec![None, Some(2), None],       // Missing edge 2 -> 1.
+        vec![Some(2), Some(0), Some(1)], // Cycle consisting of valid edges.
+    ] {
+        assert!(g::reconstruct_path(&a, &pred, true).is_err());
+    }
+    // A valid forest can still contain chains that do not reach the row's source.
+    let pred = vec![vec![None, None, Some(1)], vec![None; 3], vec![None; 3]];
+    assert!(g::construct_dist_matrix(&a, &pred, true, f64::INFINITY).is_err());
+    for mask in [vec![], vec![vec![false; 2]; 3]] {
+        let masked = g::MaskedGraph {
+            values: vec![vec![0.; 3]; 3],
+            mask,
+        };
+        assert!(g::csgraph_from_masked(&masked).is_err());
+    }
+    let masked = g::MaskedGraph {
+        values: vec![vec![f64::NAN]],
+        mask: vec![vec![true]],
+    };
+    assert_eq!(g::csgraph_from_masked(&masked).unwrap().data, []);
+    let unmasked = g::MaskedGraph {
+        mask: vec![vec![false]],
+        ..masked
+    };
+    assert!(g::csgraph_from_masked(&unmasked).is_err());
+}
+
+#[test]
+fn graph_matching_and_flow_enforce_limits() {
+    let oversized = s::from_coo(257, 1, &[]).unwrap();
+    assert!(g::maximum_bipartite_matching(&oversized, false).is_err());
+    assert!(g::min_weight_full_bipartite_matching(&oversized, false).is_err());
+    for (rows, cols) in [(0, 3), (3, 0)] {
+        let empty = s::from_coo(rows, cols, &[]).unwrap();
+        assert_eq!(
+            g::min_weight_full_bipartite_matching(&empty, false).unwrap(),
+            (vec![], vec![])
+        );
+    }
+    let excessive = s::from_coo(
+        3,
+        3,
+        &[
+            (0, 1, 4_503_599_627_370_496.),
+            (1, 2, 4_503_599_627_370_496.),
+        ],
+    )
+    .unwrap();
+    assert!(g::maximum_flow(&excessive, 0, 2).is_err());
+    let negative_degree = s::from_coo(2, 2, &[(0, 1, -1.)]).unwrap();
+    assert!(g::laplacian(&negative_degree, true, false, false).is_err());
+}
+
+#[test]
+fn sparse_arrays_enforce_rank_permutation_and_storage_limits() {
+    let rank32 = s::SparseArray {
+        shape: vec![1; 32],
+        coordinates: vec![vec![0; 32]],
+        data: vec![1.],
+    };
+    assert!(s::expand_dims(&rank32, 0).is_err());
+    assert!(s::permute_dims(&rank32, &[0]).is_err());
+    let empty_indices: &[u64] = &[];
+    assert!(s::get_index_dtype(&vec![empty_indices; 1_000_001], None).is_err());
+    assert!(s::get_index_dtype(&[&vec![0; 1_000_001]], None).is_err());
+    assert!(s::random_array(&[1_000_000, 2], 1., 0).is_err());
+    assert!(s::random_array(&[1_000_000; 4], 0., 0).is_err());
+}
+
+#[test]
+fn incomplete_lu_dropping_preserves_diagonal_inverse() {
+    let a = s::from_dense(&[vec![4., 0.25], vec![0.25, 2.]]).unwrap();
+    // Both off-diagonal terms lie below the dropping thresholds, so LU = diag(A).
+    let ilu = l::spilu(&a, 0.5, 1.).unwrap();
+    assert_eq!((ilu.rows(), ilu.cols()), (2, 2));
+    assert_eq!(ilu.apply(&[8., 6.]).unwrap(), [2., 3.]);
+    assert_eq!(ilu.transpose_apply(&[8., 6.]).unwrap(), [2., 3.]);
+    assert!(ilu.solve(&[1.]).is_err());
+    assert!(ilu.solve(&[f64::NAN, 1.]).is_err());
+    for a in [
+        s::identity(0).unwrap(),
+        s::identity(257).unwrap(),
+        s::from_coo(2, 3, &[]).unwrap(),
+    ] {
+        assert!(l::spilu(&a, 0., 1.).is_err());
+    }
+}
+
+#[test]
+fn krylov_action_enforces_basis_limit_and_zero_vector_identity() {
+    let a = s::from_dense(&[vec![2., 1., 0.], vec![1., 3., 1.], vec![0., 1., 4.]]).unwrap();
+    let zero = l::funm_multiply_krylov(&a, &[0.; 3], |z| z, Default::default()).unwrap();
+    assert!(zero.iter().all(|z| z.re == 0. && z.im == 0.));
+    assert!(l::funm_multiply_krylov(&a, &[1.], |z| z, Default::default()).is_err());
+    let limited = l::KrylovOptions {
+        max_basis: 1,
+        rtol: 0.,
+        atol: 0.,
+        ..Default::default()
+    };
+    assert!(matches!(
+        l::funm_multiply_krylov(&a, &[1., 0., 0.], |z| z, limited),
+        Err(sci::Error::NumericalFailure(_))
+    ));
+    for a in [s::identity(0).unwrap(), s::identity(257).unwrap()] {
+        assert!(l::eigs(&a, 1, l::Spectrum::LargestMagnitude).is_err());
+    }
+}
