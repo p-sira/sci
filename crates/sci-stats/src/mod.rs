@@ -480,3 +480,6 @@ fn continuous_null(reference: Distribution) -> Result<()> {
     cdf(reference, 0.)?;
     Ok(())
 }
+
+mod shapiro_backend;
+mod studentized_range;

@@ -107,6 +107,31 @@ pub enum Distribution {
         /// Scale, as specified in the variant definition.
         scale: f64,
     },
+    /// Lévy: `sqrt(c/(2π))*exp(−c/(2(x−μ)))/(x−μ)^(3/2)` for `x>μ`.
+    ///
+    /// Finite location μ and positive finite scale c, both in observation units;
+    /// these match SciPy `levy(loc=μ, scale=c)`. Density and CDF are zero at
+    /// and below μ, log density is −∞, and survival is one. At +∞ the density
+    /// and survival are zero, log density is −∞, and CDF is one. Quantile
+    /// endpoints are μ and +∞. NaN arguments and invalid parameters are errors.
+    /// Interior quantiles outside the finite range return an evaluation error.
+    /// Evaluation uses statrs 0.19's closed-form Lévy distribution privately;
+    /// its error-function approximations limit ordinary absolute accuracy to about
+    /// 1e-10, and underflow/rounding near the support boundary can lose accuracy.
+    ///
+    /// ```
+    /// let d = sci_stats::Distribution::Levy { location: 0., scale: 1. };
+    /// assert!((sci_stats::cdf(d, sci_stats::ppf(d, 0.5)?)? - 0.5).abs() < 2e-10);
+    /// # Ok::<(), sci_core::Error>(())
+    /// ```
+    ///
+    /// [SciPy Lévy distribution](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.levy.html).
+    Levy {
+        /// Support lower bound μ in observation units.
+        location: f64,
+        /// Positive scale c in observation units.
+        scale: f64,
+    },
     /// Gumbel: `exp(−z−exp(−z))/β, z=(x−μ)/β, on R`. Finite location μ and positive scale β; SciPy gumbel_r.
     Gumbel {
         /// Location, as specified in the variant definition.
@@ -250,6 +275,99 @@ fn normal_value(mean: f64, std_dev: f64, x: f64, op: Operation) -> Result<f64> {
     }
 }
 
+fn levy_value(location: f64, scale: f64, x: f64, op: Operation) -> Result<f64> {
+    // Quantiles return before observation evaluation; encode that distinction
+    // so the observation matches have no impossible quantile branch.
+    enum Observation {
+        Cdf,
+        Sf,
+        LogDensity,
+        Density,
+    }
+    finite(location)?;
+    positive(scale)?;
+    let standard = make(Levy::new(0., 1.))?;
+    let observation = match op {
+        Operation::Ppf => {
+            if x == 0. {
+                return Ok(location);
+            }
+            if x == 1. {
+                return Ok(f64::INFINITY);
+            }
+            return finite(scale.mul_add(standard.inverse_cdf(x), location));
+        }
+        Operation::Cdf => Observation::Cdf,
+        Operation::Sf => Observation::Sf,
+        Operation::LogDensity => Observation::LogDensity,
+        Operation::Density => Observation::Density,
+    };
+    let delta = x - location;
+    let z = if delta.is_finite() || x.is_infinite() {
+        delta / scale
+    } else {
+        x / scale - location / scale
+    };
+    if z == f64::INFINITY && x.is_finite() {
+        // The standardized coordinate can overflow while its log density or
+        // survival remains representable for a tiny scale.
+        let log_delta = if delta.is_finite() {
+            delta.ln()
+        } else {
+            (x / 2. - location / 2.).ln() + std::f64::consts::LN_2
+        };
+        let log_z = log_delta - scale.ln();
+        let root = (-0.5 * (std::f64::consts::LN_2 + log_z)).exp();
+        let log_density =
+            -0.5 * (2. * std::f64::consts::PI).ln() - 1.5 * log_delta + 0.5 * scale.ln();
+        return match observation {
+            Observation::Cdf => Ok(statrs::function::erf::erfc(root)),
+            Observation::Sf => Ok(statrs::function::erf::erf(root)),
+            Observation::LogDensity => Ok(log_density),
+            Observation::Density => finite(log_density.exp()),
+        };
+    }
+    match observation {
+        Observation::Cdf => Ok(standard.cdf(z)),
+        Observation::Sf => Ok(standard.sf(z)),
+        Observation::LogDensity => Ok(standard.ln_pdf(z) - scale.ln()),
+        Observation::Density => finite((standard.ln_pdf(z) - scale.ln()).exp()),
+    }
+}
+
+// Chi and inverse-gamma use statrs 0.19.1's safeguarded Newton solver.
+// Its multiplicative brackets take at most 1076 floating-point steps before
+// reaching zero/infinity; the Newton phase is capped at 100 iterations. Verify
+// the smaller-tail residual and retain Sci's bounded inversion as a fallback.
+fn newton_continuous<D: Continuous<f64, f64> + ContinuousCDF<f64, f64>>(
+    d: &D,
+    x: f64,
+    op: Operation,
+) -> Result<f64> {
+    if !matches!(op, Operation::Ppf) {
+        return continuous(d, x, op);
+    }
+    if x == 0. {
+        return Ok(d.min());
+    }
+    if x == 1. {
+        return Ok(d.max());
+    }
+    let quantile = d.inverse_cdf(x);
+    if quantile.is_finite() && quantile > d.min() {
+        let target = x.min(1. - x);
+        let probability = if x <= 0.5 {
+            d.cdf(quantile)
+        } else {
+            d.sf(quantile)
+        };
+        if probability.is_finite() && (probability - target).abs() <= 2e-12 * target {
+            return Ok(quantile);
+        }
+    }
+    inverse(d, x)
+}
+
 pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Result<f64> {
     if x.is_nan() {
         return Err(Error::InvalidInput("distribution argument must not be NaN"));
@@ -274,13 +392,21 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
             op,
         )?,
         Distribution::ChiSquared { df } => continuous(&make(ChiSquared::new(shape(df)?))?, x, op)?,
-        Distribution::Chi { df } => continuous(&make(Chi::new(count(df)?))?, x, op)?,
+        Distribution::Chi { df } => newton_continuous(&make(Chi::new(count(df)?))?, x, op)?,
         Distribution::StudentT { df } => {
             let d = make(StudentsT::new(0., 1., shape(df)?))?;
-            if matches!(op, Operation::Ppf) && x == 0.5 {
-                0.
-            } else {
-                continuous(&d, x, op)?
+            match op {
+                // Reuse the central beta branches in the shared module.
+                Operation::Cdf if df == 1. || df == 2. || x.abs() <= df.sqrt() => {
+                    sci_special::stdtr(df, x)
+                }
+                Operation::Sf if df == 1. || df == 2. || x.abs() <= df.sqrt() => {
+                    sci_special::stdtr(df, -x)
+                }
+                Operation::Ppf if df == 1. || df == 2. || (x > 0.25 && x < 0.75) => {
+                    sci_special::stdtrit(df, x)
+                }
+                _ => continuous(&d, x, op)?,
             }
         }
         Distribution::F {
@@ -353,7 +479,7 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
             x,
             op,
         )?,
-        Distribution::InverseGamma { shape_value, scale } => continuous(
+        Distribution::InverseGamma { shape_value, scale } => newton_continuous(
             &{
                 positive(scale)?;
                 make(InverseGamma::new(shape(shape_value)?, scale))?
@@ -361,6 +487,7 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
             x,
             op,
         )?,
+        Distribution::Levy { location, scale } => levy_value(location, scale, x, op)?,
         Distribution::Gumbel { location, scale } => continuous(
             &{
                 finite(location)?;
@@ -485,15 +612,17 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
             }
         },
         Distribution::Poisson { rate } => discrete(&make(Poisson::new(shape(rate)?))?, x, op)?,
-        Distribution::Geometric { probability } => discrete(
-            &{
-                probability_check(probability)?;
-                positive(probability)?;
-                make(Geometric::new(probability))?
-            },
-            x,
-            op,
-        )?,
+        Distribution::Geometric { probability } => {
+            probability_check(probability)?;
+            positive(probability)?;
+            let d = make(Geometric::new(probability))?;
+            // SciPy retains the nominal unbounded support even when p = 1.
+            if matches!(op, Operation::Ppf) && x == 1. {
+                f64::INFINITY
+            } else {
+                discrete(&d, x, op)?
+            }
+        }
         Distribution::NegativeBinomial {
             successes,
             probability,
@@ -567,8 +696,8 @@ fn continuous<D: Continuous<f64, f64> + ContinuousCDF<f64, f64>>(
     Ok(value)
 }
 
-// The default statrs inverse uses only 16 bisections. Keep its probability
-// evaluation, but bound and refine the inversion to binary64 resolution.
+// Keep Sci's bounded inversion for distributions without a verified specialized
+// inverse and as a fallback when backend quantile residuals are too large.
 fn inverse<D: ContinuousCDF<f64, f64>>(d: &D, p: f64) -> Result<f64> {
     if p == 0. {
         return Ok(d.min());
@@ -817,7 +946,11 @@ pub fn logpdf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> 
 ///
 /// ## Numerical behavior
 ///
-/// Uses statrs privately. Quantiles use bounded bracketing and bisection
+/// Uses statrs privately. Central Student-t probabilities and quantiles reuse
+/// [`sci_special::stdtr`] and [`sci_special::stdtrit`] to preserve small deviations
+/// from the median. The df=1 and df=2 cases also reuse stable elementary tails;
+/// other degrees retain the statrs tail formulas.
+/// Other quantiles use bounded bracketing and bisection
 /// (at most 6144 continuous evaluations or 106 discrete evaluations).
 /// Tail accuracy is limited by the backend probability functions and binary64.
 ///
@@ -860,7 +993,11 @@ pub fn cdf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses statrs privately. Quantiles use bounded bracketing and bisection
+/// Uses statrs privately. Central Student-t probabilities and quantiles reuse
+/// [`sci_special::stdtr`] and [`sci_special::stdtrit`] to preserve small deviations
+/// from the median. The df=1 and df=2 cases also reuse stable elementary tails;
+/// other degrees retain the statrs tail formulas.
+/// Other quantiles use bounded bracketing and bisection
 /// (at most 6144 continuous evaluations or 106 discrete evaluations).
 /// Tail accuracy is limited by the backend probability functions and binary64.
 ///
@@ -890,7 +1027,8 @@ pub fn sf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 ///
 /// ## Domain
 ///
-/// NaN arguments are errors. p is in \[0,1\]. Continuous endpoints return support bounds; discrete p=0 returns support minimum minus one, following SciPy. Unbounded p=1 returns infinity.
+/// NaN arguments are errors. p is in \[0,1\]. Continuous endpoints return support bounds; discrete p=0 returns support minimum minus one, following SciPy. Unbounded p=1 returns infinity. The geometric distribution retains this endpoint
+/// convention even when its success probability is one, matching SciPy.
 ///
 /// ## Returns
 ///
@@ -903,8 +1041,16 @@ pub fn sf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses statrs privately. Quantiles use bounded bracketing and bisection
+/// Uses statrs privately. Central Student-t probabilities and quantiles reuse
+/// [`sci_special::stdtr`] and [`sci_special::stdtrit`] to preserve small deviations
+/// from the median. The df=1 and df=2 cases also reuse stable elementary tails;
+/// other degrees retain the statrs tail formulas.
+/// Other quantiles use bounded bracketing and bisection
 /// (at most 6144 continuous evaluations or 106 discrete evaluations).
+/// Chi and inverse-gamma first use statrs' safeguarded Newton solver with at
+/// most 1076 bracket steps and 100 Newton iterations; a smaller-tail residual
+/// check falls back to bounded bisection when necessary. Lévy uses statrs'
+/// closed-form inverse. Unrepresentable interior Lévy quantiles return errors.
 /// Tail accuracy is limited by the backend probability functions and binary64.
 ///
 /// # Examples

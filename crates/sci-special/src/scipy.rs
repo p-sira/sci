@@ -2187,10 +2187,23 @@ pub fn pdtri(k: i32, p: f64) -> f64 {
 }
 
 /// Student t CDF with df degrees of freedom.
+/// `F(t)=P(T_df ≤ t)` for the standard, zero-location Student distribution.
 ///
 /// ## Parameters and domain
 ///
 /// df>0; all real t.
+/// NaN inputs and invalid degrees of freedom return NaN; infinite t gives
+/// zero or one, and positive infinite df gives the standard-normal limit.
+///
+/// ## Numerical behavior
+///
+/// Uses elementary Cauchy and df=2 formulas, with reciprocal tails to avoid
+/// cancellation and overflow. Other degrees use private XSF incomplete-beta
+/// evaluation. For `|t|≤sqrt(df)` and finite
+/// positive df, evaluates `F(t)=1/2+sign(t) I_q(1/2,df/2)/2`,
+/// `q=(t/sqrt(df))²/(1+(t/sqrt(df))²)`, preserving variation near the median.
+/// The backend tail formula handles other arguments. Binary64 rounding,
+/// underflow, and extreme shape parameters limit accuracy.
 ///
 /// ## Returns
 ///
@@ -2208,14 +2221,57 @@ pub fn pdtri(k: i32, p: f64) -> f64 {
 ///
 /// - [SciPy stdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.stdtr.html).
 pub fn stdtr(df: f64, t: f64) -> f64 {
-    xsf::stdtr(df, t)
+    if df.is_nan() || df <= 0.0 || t.is_nan() {
+        f64::NAN
+    } else if t == f64::NEG_INFINITY {
+        0.0
+    } else if t == f64::INFINITY {
+        1.0
+    } else if t == 0.0 {
+        0.5
+    } else if df == 1.0 {
+        if t.abs() <= 1.0 {
+            0.5 + t.atan() / std::f64::consts::PI
+        } else {
+            let tail = (1.0 / t.abs()).atan() / std::f64::consts::PI;
+            if t < 0.0 { tail } else { 1.0 - tail }
+        }
+    } else if df == 2.0 {
+        let norm = t.hypot(std::f64::consts::SQRT_2);
+        if t.abs() <= std::f64::consts::SQRT_2 {
+            0.5 + 0.5 * (t / norm)
+        } else {
+            let tail = ((1.0 / norm) / (1.0 + t.abs() / norm)) / norm;
+            if t < 0.0 { tail } else { 1.0 - tail }
+        }
+    } else if df.is_finite() && t.abs() <= df.sqrt() {
+        let ratio = (t / df.sqrt()).powi(2);
+        let probability = 0.5 * xsf::betainc(0.5, 0.5 * df, ratio / (1.0 + ratio));
+        0.5 + probability.copysign(t)
+    } else {
+        xsf::stdtr(df, t)
+    }
 }
 
 /// Inverse Student t CDF with respect to t.
+/// Solves `P(T_df ≤ t)=p` for the standard, zero-location Student distribution.
 ///
 /// ## Parameters and domain
 ///
 /// df>0 and p in `[0,1]`.
+/// NaN and invalid parameters return NaN; endpoint probabilities return signed
+/// infinities and the median returns zero.
+///
+/// ## Numerical behavior
+///
+/// Uses elementary Cauchy and df=2 formulas, with reciprocal tangents and
+/// separate square roots for extreme probabilities. Other degrees use private
+/// XSF incomplete-beta inversion. For `0.25 < p < 0.75`,
+/// `q=I⁻¹_(|2p−1|)(1/2,df/2)` and `t=sign(p−1/2) sqrt(df*q/(1−q))`
+/// avoid subtracting an inverse-beta value close to one. If q exceeds 1/2,
+/// or for other probabilities, the backend tail formula avoids cancellation
+/// in `1−q` at small degrees of freedom. Binary64 rounding and backend convergence
+/// limit accuracy, particularly for extreme parameters.
 ///
 /// ## Returns
 ///
@@ -2233,7 +2289,34 @@ pub fn stdtr(df: f64, t: f64) -> f64 {
 ///
 /// - [SciPy stdtrit](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.stdtrit.html).
 pub fn stdtrit(df: f64, p: f64) -> f64 {
-    xsf::stdtri(df, p)
+    if df.is_nan() || df <= 0.0 || !(0.0..=1.0).contains(&p) {
+        f64::NAN
+    } else if p == 0.0 {
+        f64::NEG_INFINITY
+    } else if p == 1.0 {
+        f64::INFINITY
+    } else if p == 0.5 {
+        0.0
+    } else if df == 1.0 {
+        if p < 0.25 {
+            -1.0 / (std::f64::consts::PI * p).tan()
+        } else if p > 0.75 {
+            1.0 / (std::f64::consts::PI * (1.0 - p)).tan()
+        } else {
+            (std::f64::consts::PI * (p - 0.5)).tan()
+        }
+    } else if df == 2.0 {
+        ((p - 0.5) * std::f64::consts::SQRT_2 / p.sqrt()) / (1.0 - p).sqrt()
+    } else if df.is_finite() && p > 0.25 && p < 0.75 {
+        let q = xsf::betaincinv(0.5, 0.5 * df, (2.0 * p - 1.0).abs());
+        if q <= 0.5 {
+            (df * q / (1.0 - q)).sqrt().copysign(p - 0.5)
+        } else {
+            xsf::stdtri(df, p)
+        }
+    } else {
+        xsf::stdtri(df, p)
+    }
 }
 
 /// Limiting two-sided Kolmogorov survival probability 2Σₖ₌₁^∞ (−1)^(k−1) exp(−2k²x²).
@@ -4138,55 +4221,87 @@ pub fn powm1(x: f64, y: f64) -> f64 {
     }
 }
 
-/// Box–Cox transformation (x^lambda−1)/lambda, with ln(x) at lambda=0.
+/// Computes `B(x, λ) = (x^λ − 1)/λ`, with `B(x, 0) = ln(x)`.
 ///
-/// ## Parameters and domain
+/// ## Parameters and conventions
 ///
-/// x≥0; zero gives −∞ when lambda≤0 and −1/lambda otherwise.
-/// NaN propagates; divergent values and overflow use IEEE infinities.
+/// `x` is dimensionless; `lambda` is the real power parameter λ.
+///
+/// ## Domain and special values
+///
+/// `x >= 0`. Zero returns `−1/λ` for positive λ and `−∞` otherwise.
+/// Negative x and NaN inputs return NaN. Infinite arguments follow IEEE
+/// arithmetic; indeterminate combinations can return NaN.
+///
+/// ## Returns
+///
+/// The scalar Box–Cox transform. This infallible API reports domain errors as NaN.
+///
+/// ## Numerical behavior
+///
+/// Uses the private xsf backend's logarithmic limit for tiny λ and scaled
+/// exponential for large powers, preserving representable results when x^λ
+/// overflows. `boxcox1p` also preserves tiny x using `log1p`. Constant work;
+/// true overflow, underflow, and binary64 rounding remain. Correct rounding
+/// is not guaranteed. Endpoint values are handled before the limiting formula.
 ///
 /// # Examples
 ///
 /// ```
-/// assert!(sci_special::boxcox(2.0,0.3).is_finite());
+/// assert_eq!(sci_special::boxcox(4.0, 0.0), 4.0_f64.ln());
 /// ```
 ///
 /// # References
 ///
-/// - [SciPy boxcox](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.boxcox.html).
+/// [SciPy boxcox](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.boxcox.html).
 pub fn boxcox(x: f64, lambda: f64) -> f64 {
-    if x < 0.0 {
-        f64::NAN
-    } else if lambda == 0.0 {
-        x.ln()
+    // Preserve the exact endpoint even when the backend takes its tiny-lambda
+    // logarithmic limit, which is valid only for strictly positive x.
+    if x == 0.0 && lambda > 0.0 {
+        -1.0 / lambda
     } else {
-        (lambda * x.ln()).exp_m1() / lambda
+        xsf::boxcox(x, lambda)
     }
 }
 
-/// Box–Cox transformation of 1+x, stable near zero.
+/// Computes `((1+x)^λ − 1)/λ`, with `ln(1+x)` at `λ = 0`.
 ///
-/// ## Parameters and domain
+/// ## Parameters and conventions
 ///
-/// x≥−1; endpoint behavior follows boxcox.
-/// NaN propagates; divergent values and overflow use IEEE infinities.
+/// `x` is dimensionless; `lambda` is the real power parameter λ.
+///
+/// ## Domain and special values
+///
+/// `x >= −1`. At x = −1, returns `−1/λ` for positive λ and `−∞`
+/// otherwise. Smaller x and NaN inputs return NaN. Infinite arguments follow
+/// IEEE arithmetic; indeterminate combinations can return NaN.
+///
+/// ## Returns
+///
+/// The scalar Box–Cox transform. This infallible API reports domain errors as NaN.
+///
+/// ## Numerical behavior
+///
+/// Uses the private xsf backend's logarithmic limit for tiny λ and scaled
+/// exponential for large powers, preserving representable results when x^λ
+/// overflows. `boxcox1p` also preserves tiny x using `log1p`. Constant work;
+/// true overflow, underflow, and binary64 rounding remain. Correct rounding
+/// is not guaranteed. Endpoint values are handled before the limiting formula.
 ///
 /// # Examples
 ///
 /// ```
-/// assert!(sci_special::boxcox1p(0.000001,0.3).is_finite());
+/// assert_eq!(sci_special::boxcox1p(3.0, 0.0), 4.0_f64.ln());
 /// ```
 ///
 /// # References
 ///
-/// - [SciPy boxcox1p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.boxcox1p.html).
+/// [SciPy boxcox1p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.boxcox1p.html).
 pub fn boxcox1p(x: f64, lambda: f64) -> f64 {
-    if x < -1.0 {
-        f64::NAN
-    } else if lambda == 0.0 {
-        x.ln_1p()
+    if x == -1.0 && lambda > 0.0 {
+        -1.0 / lambda
     } else {
-        (lambda * x.ln_1p()).exp_m1() / lambda
+        xsf::boxcox1p(x, lambda)
     }
 }
 

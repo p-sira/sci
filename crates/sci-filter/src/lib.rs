@@ -30,12 +30,12 @@
 //! ## Acknowledgments
 //!
 //! We thank `smelly`, `kalman_filters`, and
-//! `nalgebra-filter` for their state-estimation algorithms.
+//! `nalgebra` for their state-estimation algorithms.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]
 
-use nalgebra_filter::{DMatrix, DVector};
+use nalgebra::{DMatrix, DVector};
 pub use sci_core::{Error, Matrix, Result};
 
 mod kalman;
@@ -123,6 +123,15 @@ fn matrix(a: &[Vec<f64>], rows: usize, cols: usize) -> Result<DMatrix<f64>> {
 // Scale the eigensystem so that covariance validation itself cannot overflow.
 // Tiny negative eigenvalues from roundoff are tolerated, never projected away.
 fn covariance(a: &[Vec<f64>], n: usize) -> Result<DMatrix<f64>> {
+    covariance_with_iterations(a, n, 10_000)
+}
+
+// Keep the solver's work bound explicit so exhaustion is reproducibly testable.
+fn covariance_with_iterations(
+    a: &[Vec<f64>],
+    n: usize,
+    max_iterations: usize,
+) -> Result<DMatrix<f64>> {
     let mut a = matrix(a, n, n)?;
     let scale = a.iter().map(|v| v.abs()).fold(0., f64::max);
     if scale == 0. {
@@ -139,7 +148,7 @@ fn covariance(a: &[Vec<f64>], n: usize) -> Result<DMatrix<f64>> {
             a[(j, i)] = average;
         }
     }
-    let eigen = nalgebra_filter::linalg::SymmetricEigen::try_new(&a / scale, f64::EPSILON, 10_000)
+    let eigen = nalgebra::linalg::SymmetricEigen::try_new(&a / scale, f64::EPSILON, max_iterations)
         .ok_or(Error::NumericalFailure(
             "covariance validation did not converge",
         ))?;
@@ -194,5 +203,22 @@ fn backend(e: smelly::FilterError) -> Error {
         }
         InvalidSigmaPointScaling => Error::InvalidInput("invalid sigma-point scaling"),
         PredictRequired => Error::NumericalFailure("unscented prediction is missing"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn covariance_reports_exhausted_eigensolver_work() {
+        let matrix = vec![vec![4., 1., 1.], vec![1., 3., 0.5], vec![1., 0.5, 2.]];
+        assert_eq!(
+            covariance_with_iterations(&matrix, 3, 1),
+            Err(Error::NumericalFailure(
+                "covariance validation did not converge"
+            ))
+        );
+        assert!(covariance(&matrix, 3).is_ok());
     }
 }

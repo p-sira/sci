@@ -1,0 +1,21 @@
+[
+  {"id":"boxcox_subnormal_lambda","api":"boxcox","x":[0.5,1,2,4],"p":5e-324},
+  {"id":"boxcox_negative_tiny_lambda","api":"boxcox","x":[0.5,2,1e300],"p":-1e-320},
+  {"id":"boxcox_overflowing_power","api":"boxcox","x":[100,1e100],"p":3.1},
+  {"id":"boxcox_finite_scaled_power","api":"boxcox","x":[100],"p":155},
+  {"id":"boxcox1p_subnormal_input","api":"boxcox1p","x":[5e-324,-5e-324,1e-310,-1e-310],"p":0.1},
+  {"id":"boxcox1p_tiny_lambda","api":"boxcox1p","x":[-0.5,0,1,3],"p":5e-324},
+  {"id":"boxcox1p_finite_scaled_power","api":"boxcox1p","x":[99],"p":155},
+  {"id":"yeojohnson_tiny_lambda","api":"yeojohnson","x":[0,1,3,1e100],"p":5e-324},
+  {"id":"yeojohnson_subnormal_input","api":"yeojohnson","x":[5e-324,-5e-324,1e-310,-1e-310],"p":0.1},
+  {"id":"pmean_near_zero_positive","api":"pmean","x":[1,4],"p":1e-18},
+  {"id":"pmean_near_zero_negative","api":"pmean","x":[1,4],"p":-1e-18},
+  {"id":"pmean_subnormal_power","api":"pmean","x":[1,4,16],"p":5e-324},
+  {"id":"pmean_small_power_wide_range","api":"pmean","x":[1e-300,1,1e300],"p":1e-8},
+  {"id":"pmean_small_negative_wide_range","api":"pmean","x":[1e-300,1,1e300],"p":-1e-8},
+  {"id":"pmean_constant_large","api":"pmean","x":[1e300,1e300],"p":64},
+  {"id":"pmean_constant_small","api":"pmean","x":[1e-300,1e-300],"p":-64},
+  {"id":"pmean_regular","api":"pmean","x":[0.1,1,4,100],"p":1.5},
+  {"id":"pmean_negative","api":"pmean","x":[0.1,1,4,100],"p":-3},
+  {"id":"pmean_wide_range","api":"pmean","x":[1e-300,1,1e300],"p":64}
+]

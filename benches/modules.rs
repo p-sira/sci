@@ -62,17 +62,18 @@ fn sine_signal(n: usize) -> Vec<f64> {
         .collect()
 }
 
+/// Runs `f` once before measuring so that one-time initialization (such as
+/// CPU cache-size detection in the matrix kernels or building a cached FFT
+/// plan) is excluded.
+fn warm<T>(bencher: Bencher, mut f: impl FnMut() -> T) {
+    black_box(f());
+    bencher.bench_local(f);
+}
+
 mod linalg_benches {
     use super::*;
 
     const SIZES: [usize; 2] = [16, 64];
-
-    /// Runs `f` once before measuring so that one-time backend initialization
-    /// (such as CPU cache-size detection in the matrix kernels) is excluded.
-    fn warm<T>(bencher: Bencher, mut f: impl FnMut() -> T) {
-        black_box(f());
-        bencher.bench_local(f);
-    }
 
     #[divan::bench(args = SIZES)]
     fn matmul(bencher: Bencher, n: usize) {
@@ -129,19 +130,21 @@ mod fft_benches {
             .zip(values(n, 6))
             .map(|(re, im)| Complex { re: re[0], im })
             .collect();
-        bencher.bench(|| fft::fft(black_box(&input)));
+        warm(bencher, || fft::fft(black_box(&input)));
     }
 
     #[divan::bench(args = SIZES)]
     fn rfft(bencher: Bencher, n: usize) {
         let input = values(n, 5);
-        bencher.bench(|| fft::rfft(black_box(&input)));
+        warm(bencher, || fft::rfft(black_box(&input)));
     }
 
     #[divan::bench(args = SIZES)]
     fn dct_ii(bencher: Bencher, n: usize) {
         let input = values(n, 5);
-        bencher.bench(|| fft::dct(black_box(&input), fft::RealTransformType::II).unwrap());
+        warm(bencher, || {
+            fft::dct(black_box(&input), fft::RealTransformType::II).unwrap()
+        });
     }
 }
 

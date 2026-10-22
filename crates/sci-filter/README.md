@@ -32,4 +32,4 @@ fn main() -> Result<(), sci_filter::Error> {
 ## Acknowledgments
 
 We thank `smelly`, `kalman_filters`, and
-`nalgebra-filter` for their state-estimation algorithms.
+`nalgebra` for their state-estimation algorithms.

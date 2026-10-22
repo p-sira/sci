@@ -14,6 +14,20 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      scope: ${{ steps.select.outputs.scope }}
+      active: ${{ steps.select.outputs.active }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/ci-scope
+        id: select
+      - name: Test CI selection
+        run: python -m unittest discover -s .github/scripts -p 'test_*.py'
+
   format:
     runs-on: ubuntu-latest
     steps:
@@ -31,14 +45,25 @@ jobs:
           done
 
   features:
+    needs: scope
+    if: needs.scope.outputs.active == 'true'
     runs-on: ubuntu-latest
+    env:
+      CI_SCOPE: ${{ needs.scope.outputs.scope }}
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
       - uses: ./.github/actions/setup-native
       - name: Check isolated modules and adapters
-        run: python tests/check_features.py
+        run: python .github/scripts/ci_scope.py features
 
   test:
+    needs: scope
+    if: needs.scope.outputs.active == 'true'
+    env:
+      CI_SCOPE: ${{ needs.scope.outputs.scope }}
     strategy:
       fail-fast: false
       matrix:
@@ -46,6 +71,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
       - uses: actions/cache@v6
         with:
           path: |
@@ -58,14 +86,15 @@ jobs:
 
       - uses: ./.github/actions/setup-native
       - name: Run clippy
-        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+        run: python .github/scripts/ci_scope.py clippy
       - name: Run tests
-        run: cargo test --workspace --locked
+        run: python .github/scripts/ci_scope.py test
       - name: Check core-only facade
         run: cargo check -p sci --no-default-features --locked
       - name: Check special-only facade
+        if: fromJSON(env.CI_SCOPE).full || contains(fromJSON(env.CI_SCOPE).features, 'special')
         run: cargo check -p sci --no-default-features --features special --locked
       - name: Check docs
         env:
           RUSTDOCFLAGS: -D warnings
-        run: cargo doc --workspace --no-deps --locked
+        run: python .github/scripts/ci_scope.py doc

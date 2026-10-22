@@ -69,6 +69,10 @@ pins its own Python dependencies in its script metadata; run it with `uv`. For e
 uv run tests/scipy/generate_audit_regressions.py
 uv run tests/scipy/generate.py
 uv run tests/scipy/generate_cluster.py
+uv run tests/scipy/generate_sparse.py
+uv run tests/scipy/generate_sparse_parity.py
+uv run tests/scipy/generate_sparse_npz_validation.py
+python tests/scipy/audit_sparse.py
 python tests/scipy/audit_signal.py
 ```
 
@@ -137,4 +141,15 @@ and both sides of SciPy's 1,000-observation normal-posterior approximation switc
 It documents two SciPy degenerate-case defects and uses equivalent independently
 evaluated Poisson point-mass identities for those references.
 
+After `cargo test --test sparse_parity`, run
+`uv run tests/scipy/check_sparse_npz.py` to verify the Rust-written archive with SciPy.
+To limit build memory, run Cargo commands serially with `CARGO_BUILD_JOBS=1`.
+
 [Back to README](../README.md).
+
+Scientific I/O fixtures use SciPy 1.18.1 / NumPy 2.5.4. Regenerate with
+`uv run tests/scipy/generate_io.py`, then run `cargo test --test io` and
+`uv run tests/scipy/check_io_writes.py` to verify Rust-written files with SciPy.
+Run `python tests/scipy/audit_io.py` to check inventory disposition and API tests.
+The [I/O coverage report](../function_coverages/IO_COVERAGE.md) documents exact
+comparison rules and two SciPy Matrix Market reference limitations.

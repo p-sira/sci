@@ -1437,3 +1437,34 @@ fn remaining_functions_reject_invalid_domains_and_shapes() {
         ))
     ));
 }
+
+#[test]
+fn cropped_convolutions_match_scipy_for_both_length_orderings() {
+    let inputs = common::lines(include_str!("fixtures/cropped_convolution_inputs.csv"));
+    let expected: Vec<_> =
+        common::lines(include_str!("fixtures/cropped_convolution_expected.csv")).collect();
+    assert_eq!(inputs.clone().count(), expected.len());
+    for (input, expected) in inputs.zip(expected) {
+        let row = common::fields(input);
+        let reference = common::fields(expected);
+        assert_eq!(row[0], reference[0]);
+        let x = common::vector(row[2]);
+        let h = common::vector(row[3]);
+        let mode = match row[4] {
+            "full" => sci::signal::Mode::Full,
+            "same" => sci::signal::Mode::Same,
+            "valid" => sci::signal::Mode::Valid,
+            _ => panic!("unknown mode"),
+        };
+        let function = if row[1] == "convolve" {
+            sci::signal::convolve
+        } else {
+            sci::signal::correlate
+        };
+        assert_eq!(
+            function(&x, &h, mode).unwrap(),
+            common::vector(reference[1]),
+            "{input}"
+        );
+    }
+}

@@ -1,0 +1,22 @@
+name: Select CI scope
+description: Select changed crates and their affected public API tests
+outputs:
+  scope:
+    description: JSON check selection
+    value: ${{ steps.select.outputs.scope }}
+  active:
+    description: Whether numerical checks are needed
+    value: ${{ steps.select.outputs.active }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.13'
+    - id: select
+      shell: bash
+      run: |
+        scope=$(python .github/scripts/ci_scope.py select)
+        echo "$scope"
+        echo "scope=$scope" >> "$GITHUB_OUTPUT"
+        echo "active=$(python -c 'import json,sys; print(str(json.load(sys.stdin)["active"]).lower())' <<< "$scope")" >> "$GITHUB_OUTPUT"

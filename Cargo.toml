@@ -15,19 +15,23 @@ repository = "https://github.com/p-sira/sci"
 categories = ["science", "mathematics"]
 
 [workspace.dependencies]
+hound = "3.5.1"
+matrw = "=0.1.4"
+flate2 = { version = "1.1", default-features = false, features = ["rust_backend"] }
+petgraph = { version = "0.8.3", default-features = false, features = ["std"] }
+zip = { version = "4.6", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+rand = "0.9.2"
 smelly = "=0.1.0"
 kalman_filters = { version = "=1.0.1", default-features = false, features = ["std"] }
-nalgebra-filter = { package = "nalgebra", version = "0.35", default-features = false, features = ["std"] }
 basin = { version = "1.15.1", default-features = false }
 ellip = "1.2.2"
 ndarray = "0.16.1"
-nalgebra = { version = "0.33.2", default-features = false, features = ["std"] }
+nalgebra = { version = "0.35", default-features = false, features = ["std"] }
 num-complex = "0.4.6"
 rustfft = "6.4.0"
 realfft = "3.5.0"
 special = "0.11.4"
-statrs = "0.18.0"
-anofox-statistics = { version = "=0.4.8", default-features = false }
+statrs = "0.19.1"
 lapjv = "0.3.0"
 xsf = "0.6.0"
 pm-remez = { version = "=0.2.1", default-features = false, features = ["faer-backend"] }
@@ -37,6 +41,7 @@ kodama = "0.3.0"
 rustdct = "0.7.1"
 splinefit = "0.4.1"
 delaunator = "1.1.0"
+sci-io = { version = "0.1.0", path = "crates/sci-io" }
 sci-core = { version = "0.1.0", path = "crates/sci-core" }
 sci-cluster = { version = "0.1.0", path = "crates/sci-cluster" }
 sci-complex = { version = "0.1.0", path = "crates/sci-complex" }
@@ -49,6 +54,7 @@ sci-interpolate = { version = "0.1.0", path = "crates/sci-interpolate" }
 sci-linalg = { version = "0.1.0", path = "crates/sci-linalg", default-features = false }
 sci-optimize = { version = "0.1.0", path = "crates/sci-optimize" }
 sci-signal = { version = "0.1.0", path = "crates/sci-signal" }
+sci-sparse = { version = "0.1.0", path = "crates/sci-sparse" }
 sci-spatial = { version = "0.1.0", path = "crates/sci-spatial" }
 sci-special = { version = "0.1.0", path = "crates/sci-special" }
 sci-stats = { version = "0.1.0", path = "crates/sci-stats" }
@@ -71,13 +77,14 @@ include = ["src/**", "LICENSE"]
 autotests = false
 
 [features]
-default = ["cluster", "complex", "constants", "differentiate", "filter", "fft", "integrate", "interpolate", "linalg", "linalg-faer", "linalg-nalgebra", "linalg-ndarray", "optimize", "signal", "spatial", "special", "stats"]
+default = ["cluster", "complex", "constants", "differentiate", "filter", "fft", "integrate", "interpolate", "io", "linalg", "linalg-faer", "linalg-nalgebra", "linalg-ndarray", "optimize", "signal", "sparse", "spatial", "special", "stats"]
 cluster = ["dep:sci-cluster"]
 complex = ["dep:sci-complex"]
 constants = ["dep:sci-constants"]
 differentiate = ["dep:sci-differentiate"]
 filter = ["dep:sci-filter"]
 fft = ["dep:sci-fft"]
+io = ["dep:sci-io"]
 integrate = ["dep:sci-integrate"]
 interpolate = ["dep:sci-interpolate"]
 linalg = ["dep:sci-linalg"]
@@ -86,11 +93,13 @@ linalg-nalgebra = ["linalg", "sci-linalg/nalgebra"]
 linalg-ndarray = ["linalg", "sci-linalg/ndarray"]
 optimize = ["dep:sci-optimize"]
 signal = ["dep:sci-signal"]
+sparse = ["dep:sci-sparse"]
 spatial = ["dep:sci-spatial"]
 special = ["dep:sci-special"]
 stats = ["dep:sci-stats"]
 
 [dependencies]
+sci-io = { workspace = true, optional = true }
 sci-filter = { workspace = true, optional = true }
 sci-core.workspace = true
 sci-cluster = { workspace = true, optional = true }
@@ -103,6 +112,7 @@ sci-interpolate = { workspace = true, optional = true }
 sci-linalg = { workspace = true, optional = true }
 sci-optimize = { workspace = true, optional = true }
 sci-signal = { workspace = true, optional = true }
+sci-sparse = { workspace = true, optional = true }
 sci-spatial = { workspace = true, optional = true }
 sci-special = { workspace = true, optional = true }
 sci-stats = { workspace = true, optional = true }
@@ -214,6 +224,11 @@ name = "core"
 path = "tests/core.rs"
 
 [[test]]
+name = "numerical_accuracy"
+path = "tests/numerical_accuracy.rs"
+required-features = ["integrate", "linalg", "optimize", "special", "stats"]
+
+[[test]]
 name = "statistics_coverage"
 path = "tests/statistics_coverage.rs"
 required-features = ["stats"]
@@ -242,3 +257,103 @@ required-features = ["complex", "special"]
 name = "modules"
 harness = false
 required-features = ["cluster", "complex", "differentiate", "fft", "integrate", "interpolate", "linalg", "optimize", "signal", "spatial", "special", "stats"]
+
+[[bench]]
+name = "special"
+harness = false
+required-features = ["complex", "special"]
+
+[[bench]]
+name = "special_scipy"
+harness = false
+required-features = ["special"]
+
+[[bench]]
+name = "stats"
+harness = false
+required-features = ["stats"]
+
+[[bench]]
+name = "stats_tests"
+harness = false
+required-features = ["stats"]
+
+[[bench]]
+name = "signal"
+harness = false
+required-features = ["complex", "signal"]
+
+[[bench]]
+name = "linalg"
+harness = false
+required-features = ["complex", "linalg", "linalg-faer", "linalg-nalgebra", "linalg-ndarray"]
+
+[[bench]]
+name = "fft"
+harness = false
+required-features = ["fft", "complex"]
+
+[[bench]]
+name = "complex"
+harness = false
+required-features = ["complex"]
+
+[[bench]]
+name = "integrate"
+harness = false
+required-features = ["integrate"]
+
+[[bench]]
+name = "differentiate"
+harness = false
+required-features = ["differentiate"]
+
+[[bench]]
+name = "constants"
+harness = false
+required-features = ["constants"]
+
+[[bench]]
+name = "interpolate"
+harness = false
+required-features = ["interpolate"]
+
+[[bench]]
+name = "spatial"
+harness = false
+required-features = ["spatial"]
+
+[[bench]]
+name = "cluster"
+harness = false
+required-features = ["cluster", "spatial"]
+
+[[bench]]
+name = "optimize"
+harness = false
+required-features = ["optimize"]
+
+[[bench]]
+name = "filter"
+harness = false
+required-features = ["filter"]
+
+[[test]]
+name = "sparse"
+path = "tests/sparse.rs"
+required-features = ["sparse", "linalg"]
+
+[[test]]
+name = "sparse_parity"
+path = "tests/sparse_parity.rs"
+required-features = ["sparse", "linalg"]
+
+[[test]]
+name = "io"
+path = "tests/io.rs"
+required-features = ["io", "sparse", "signal"]
+
+[[test]]
+name = "power_stability"
+path = "tests/power_stability.rs"
+required-features = ["stats", "special"]

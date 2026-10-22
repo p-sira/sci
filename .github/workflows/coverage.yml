@@ -4,19 +4,38 @@ on:
   push:
     branches: [main, dev]
   pull_request:
-    branches: [main, dev]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  coverage:
+  scope:
     runs-on: ubuntu-latest
-    env:
-      CARGO_TERM_COLOR: always
+    outputs:
+      scope: ${{ steps.select.outputs.scope }}
+      active: ${{ steps.select.outputs.active }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/ci-scope
+        id: select
+
+  coverage:
+    needs: scope
+    if: needs.scope.outputs.active == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      flags: ${{ steps.coverage.outputs.flags }}
+    env:
+      CARGO_TERM_COLOR: always
+      CI_SCOPE: ${{ needs.scope.outputs.scope }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
       - uses: ./.github/actions/setup-native
       - name: Install Rust
         run: |
@@ -25,16 +44,41 @@ jobs:
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
       - name: Generate code coverage
+        id: coverage
         # Measure library code, excluding integration tests and their helpers.
         run: |
           mkdir -p target/coverage
-          cargo +stable llvm-cov --workspace --all-features --locked \
-          --lcov --output-path target/coverage/lcov.info \
-          --ignore-filename-regex '(^|/)tests/'
+          python .github/scripts/ci_scope.py coverage
+      - name: Save per-crate coverage reports
+        if: steps.coverage.outputs.flags != '[]'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-flags
+          path: target/coverage/flags/*.info
+          if-no-files-found: error
+          retention-days: 1
+
+  upload:
+    name: Upload coverage (${{ matrix.flag }})
+    needs: coverage
+    if: needs.coverage.outputs.flags != '' && needs.coverage.outputs.flags != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        flag: ${{ fromJSON(needs.coverage.outputs.flags) }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage-flags
+          path: target/coverage/flags
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: target/coverage/lcov.info
+          files: target/coverage/flags/${{ matrix.flag }}.info
+          flags: ${{ matrix.flag }}
+          name: ${{ matrix.flag }}
           disable_search: true
           fail_ci_if_error: true

@@ -1,0 +1,42 @@
+{
+  "market": [
+    {"id":"dense", "text":"%%MatrixMarket matrix array real general\n% rectangular column-major\n2 3\n1\n4\n2\n5\n3\n6\n"},
+    {"id":"integer", "text":"%%MatrixMarket matrix coordinate integer general\n2 3 3\n1 3 -2\n2 1 9007199254740992\n2 2 0\n"},
+    {"id":"duplicates", "text":"%%MatrixMarket matrix coordinate real general\n2 3 4\n1 2 2\n1 2 3\n2 3 -1\n2 3 1\n"},
+    {"id":"pattern", "text":"%%MatrixMarket matrix coordinate pattern symmetric\n3 3 2\n2 1\n3 3\n"},
+    {"id":"symmetric", "text":"%%MatrixMarket matrix array real symmetric\n3 3\n1\n2\n3\n4\n5\n6\n"},
+    {"id":"skew", "text":"%%MatrixMarket matrix array real skew-symmetric\n3 3\n2\n3\n5\n"},
+    {"id":"coordinate_skew", "text":"%%MatrixMarket matrix coordinate real skew-symmetric\n3 3 2\n2 1 2\n3 2 -3\n"},
+    {"id":"hermitian", "text":"%%MatrixMarket matrix coordinate real hermitian\n2 2 2\n1 1 2\n2 1 -3\n"},
+    {"id":"empty_dense", "text":"%%MatrixMarket matrix array real general\n0 3\n"},
+    {"id":"empty_sparse", "text":"%%MatrixMarket matrix coordinate real general\n3 0 0\n"},
+    {"id":"specials", "text":"%%MatrixMarket matrix array real general\n1 5\nnan\ninf\n-inf\n-0.0\n1e-300\n"}
+  ],
+  "wav": [
+    {"id":"u8", "dtype":"uint8", "channels":1, "rate":8000, "bits":8, "samples":[0,128,255]},
+    {"id":"i16", "dtype":"int16", "channels":2, "rate":44100, "bits":16, "samples":[-32768,32767,0,1,-100,200]},
+    {"id":"i24", "dtype":"int32", "channels":2, "rate":48000, "bits":24, "samples":[-2147483648,2147483392,-256,0,256,123456000]},
+    {"id":"i32", "dtype":"int32", "channels":1, "rate":16000, "bits":32, "samples":[-2147483648,2147483647,0,-1]},
+    {"id":"f32", "dtype":"float32", "channels":2, "rate":22050, "bits":32, "samples":[-2.0,0.5,-0.0,1.5,0.1,-0.3]},
+    {"id":"float_specials", "dtype":"float32", "channels":1, "rate":8000, "bits":32, "samples":["nan","inf","-inf",-0.0]},
+    {"id":"f64", "dtype":"float64", "channels":2, "rate":48000, "bits":64, "samples":[0.1,-0.3,-0.0,1e-300,"nan","inf"]},
+    {"id":"empty_audio", "dtype":"int16", "channels":2, "rate":8000, "bits":16, "samples":[]}
+  ],
+  "matlab": [
+    {"id":"double", "dtype":"float64", "shape":[2,3], "real":[1,2,3,4,5,6]},
+    {"id":"single", "dtype":"float32", "shape":[2,1,2], "real":[1.25,-0.0,0.1,-0.3]},
+    {"id":"complex", "dtype":"float64", "shape":[2,2], "real":[1,2,3,4], "imag":[-1,0,2,3]},
+    {"id":"complex_single", "dtype":"float32", "shape":[1,2], "real":[1.25,-2.5], "imag":[3.5,-4.75]},
+    {"id":"int8", "dtype":"int8", "shape":[1,3], "real":[-128,0,127]},
+    {"id":"uint8", "dtype":"uint8", "shape":[3,1], "real":[0,128,255]},
+    {"id":"int16", "dtype":"int16", "shape":[1,3], "real":[-32768,0,32767]},
+    {"id":"uint16", "dtype":"uint16", "shape":[1,3], "real":[0,32768,65535]},
+    {"id":"int32", "dtype":"int32", "shape":[1,3], "real":[-2147483648,0,2147483647]},
+    {"id":"uint32", "dtype":"uint32", "shape":[1,3], "real":[0,2147483648,4294967295]},
+    {"id":"int64", "dtype":"int64", "shape":[1,3], "real":[-9223372036854775808,9007199254740993,9223372036854775807]},
+    {"id":"uint64", "dtype":"uint64", "shape":[1,3], "real":[0,9007199254740993,18446744073709551615]},
+    {"id":"empty", "dtype":"float64", "shape":[0,3], "real":[]},
+    {"id":"empty_complex", "dtype":"float64", "shape":[2,0], "real":[], "imag":[]},
+    {"id":"specials", "dtype":"float64", "shape":[1,5], "real":["nan","inf","-inf",-0.0,1e-300]}
+  ]
+}

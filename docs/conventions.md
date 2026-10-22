@@ -39,6 +39,18 @@ Conversions preserve IEEE values and library empty axes, with a limit of
 shape with `n > 0`; conversion to shared rows rejects that shape. Numerical
 algorithms retain their documented tighter limits.
 
+Sparse matrices use `sci::SparseMatrix`, an owned CSR type shared with
+`sci-core` and `sci-sparse`. Row pointers and column indices are zero-based;
+columns are sorted and unique per row. Explicit zeros are retained. Sparse
+operations validate public storage before use and reject nonfinite inputs and
+results. `sparse::from_coo`, `from_csr`, and `from_csc` canonicalize storage;
+`from_dense` and `to_dense` connect sparse data with shared row matrices and
+existing linear algebra adapters. `sci::SparseArray` supplies rank-1..32 COO
+coordinates for sparse axis operations. Graphs distinguish unstored non-edges
+from explicitly stored zero-weight edges; unreachable graph distances and
+caller-selected null fills may be nonfinite. See [sparse coverage](../function_coverages/SPARSE_COVERAGE.md)
+for supported operations and limits.
+
 ## Numerical conventions
 
 The forward FFT is unnormalized; its inverse divides by the sample count.
@@ -47,3 +59,17 @@ Distribution parameters and units are specified per function. Variance uses
 `ddof = 0` for population variance and `ddof = 1` for unbiased sample variance.
 
 [Back to README](../README.md).
+
+## Scientific file interchange
+
+The `io` module preserves source scalar types in `NumericData`. File records
+retain shapes and audio metadata; explicit conversions produce shared f64 rows
+or normalized signal channels. MATLAB arrays use column-major storage, dense
+Matrix Market records use row-major storage, and audio interleaves channels
+within frames. CSR uses the shared `SparseMatrix` type. File data can retain
+nonfinite floating values even where numerical modules reject them.
+
+I/O returns `io::Result` with `io::Error`, retaining underlying stream failures
+and distinguishing malformed files, unsupported features, codec failures and
+shared numerical validation errors. See the [I/O crate documentation](../crates/sci-io/README.md)
+for supported subsets, precision conversions and allocation limits.

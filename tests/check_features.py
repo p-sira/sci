@@ -2,10 +2,12 @@
 
 Run with Python 3.11 or newer from any directory. Numerical reference tests
 remain in the Rust suite; this checks Cargo feature wiring and documentation.
+Optional arguments select features to check; use `core` for the core-only facade.
 """
 
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 import tomllib
@@ -31,7 +33,13 @@ for adapter in adapters:
     domain = tomllib.loads((ROOT / f"crates/sci-{module}/Cargo.toml").read_text())
     assert name in domain["features"]
 
-for module in [None, *modules, *adapters]:
+selected = sys.argv[1:] or ["core", *modules, *adapters]
+unknown = set(selected) - {"core", *modules, *adapters}
+if unknown:
+    raise SystemExit(f"Unknown features: {', '.join(sorted(unknown))}")
+
+for feature in selected:
+    module = None if feature == "core" else feature
     args = ["-p", "sci", "--no-default-features", "--locked"]
     if module:
         args += ["--features", module]
@@ -44,6 +52,4 @@ for module in [None, *modules, *adapters]:
         check=True,
     )
 
-print(
-    f"All {len(modules)} modules, {len(adapters)} adapters and the core-only facade passed."
-)
+print(f"All {len(selected)} selected feature checks passed.")

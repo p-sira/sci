@@ -19,9 +19,11 @@ on:
           - sci-filter
           - sci-integrate
           - sci-interpolate
+          - sci-io
           - sci-linalg
           - sci-optimize
           - sci-signal
+          - sci-sparse
           - sci-spatial
           - sci-special
           - sci-stats

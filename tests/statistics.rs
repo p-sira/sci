@@ -27,6 +27,10 @@ fn distribution(name: &str, p: &[f64]) -> Distribution {
             low: p[0],
             high: p[1],
         },
+        "Levy" => Distribution::Levy {
+            location: p[0],
+            scale: p[1],
+        },
         "Normal" => Distribution::Normal {
             mean: p[0],
             std_dev: p[1],
@@ -932,10 +936,6 @@ fn scipy_references() {
                     // 1.4e8: NumPy SVD and direct solves differ by ~3e-9.
                     "epps_singleton_2samp" => 2e-9,
                     "dunnett" if i >= fields[5].split('/').count() - 1 => 5e-5,
-                    // The R studentized-range quadrature differs from SciPy
-                    // by up to 3.3e-7 at df=3; retain the ordinary tolerance
-                    // for mean differences and widen only adjusted p-values.
-                    "tukey_hsd" if i >= fields[5].split('/').count().pow(2) => 5e-7,
                     _ => 2e-10,
                 };
                 a.is_finite() && approx::abs_diff_eq!(a, b, epsilon = tolerance * (1. + b.abs()))
@@ -953,6 +953,45 @@ fn scipy_references() {
         failures.len(),
         failures.join("\n")
     );
+}
+
+#[test]
+fn studentized_range_scipy_references() -> Result<()> {
+    let inputs = common::lines(include_str!("fixtures/range_inputs.csv"));
+    let expected = common::lines(include_str!("fixtures/range_expected.csv"));
+    assert_eq!(inputs.clone().count(), expected.clone().count());
+    for (input, expected) in inputs.zip(expected) {
+        let fields = common::fields(input);
+        let reference = common::fields(expected);
+        assert_eq!(fields[0], reference[0]);
+        let sizes = numbers(fields[1]);
+        let locations = numbers(fields[2]);
+        let groups: Vec<Vec<f64>> = sizes
+            .iter()
+            .zip(locations)
+            .map(|(n, loc)| {
+                (0..*n as usize)
+                    .map(|i| loc + if i % 2 == 0 { -1. } else { 1. })
+                    .collect()
+            })
+            .collect();
+        let slices: Vec<_> = groups.iter().map(Vec::as_slice).collect();
+        let result = tukey_hsd(&slices)?;
+        for (actual, expected) in [
+            (&result.statistic, reference[1]),
+            (&result.pvalue, reference[2]),
+        ] {
+            assert_eq!(actual.len(), groups.len());
+            assert!(actual.iter().all(|row| row.len() == groups.len()));
+            for (a, b) in actual.iter().flatten().zip(numbers(expected)) {
+                assert!(
+                    (a - b).abs() <= 2e-10 * (1. + b.abs()),
+                    "case {input}: {a:e} vs {b:e}"
+                );
+            }
+        }
+    }
+    Ok(())
 }
 
 #[test]
@@ -1167,6 +1206,26 @@ fn distribution_validation() {
             shape_value: 1.,
             scale: 0.,
         },
+        Distribution::Levy {
+            location: f64::NAN,
+            scale: 1.,
+        },
+        Distribution::Levy {
+            location: f64::INFINITY,
+            scale: 1.,
+        },
+        Distribution::Levy {
+            location: 0.,
+            scale: 0.,
+        },
+        Distribution::Levy {
+            location: 0.,
+            scale: -1.,
+        },
+        Distribution::Levy {
+            location: 0.,
+            scale: f64::INFINITY,
+        },
         Distribution::Gumbel {
             location: 0.,
             scale: 0.,
@@ -1214,6 +1273,178 @@ fn distribution_validation() {
     assert!(sf(d, f64::NAN).is_err());
     assert!(logpdf(d, f64::NAN).is_err());
     assert!(ppf(d, -0.1).is_err());
+}
+
+#[test]
+fn levy_identities_and_distribution_interoperability() -> Result<()> {
+    for scale in [1e-200, 1., 1e200] {
+        let levy = Distribution::Levy {
+            location: 0.,
+            scale,
+        };
+        // Lévy(0,c) equals inverse-gamma(shape=1/2, scale=c/2).
+        let inverse_gamma = Distribution::InverseGamma {
+            shape_value: 0.5,
+            scale: scale / 2.,
+        };
+        let x = 2. * scale;
+        let a = sf(levy, x)?;
+        let b = sf(inverse_gamma, x)?;
+        assert!(
+            // statrs erf and incomplete-gamma use different approximations;
+            // their ~5e-11 discrepancy is within the ordinary fixture tolerance.
+            a > 0. && (a - b).abs() <= 2e-10 * b,
+            "scale={scale:e}, sf={a:e}, inverse_gamma_sf={b:e}"
+        );
+        assert!((logpdf(levy, x)? - logpdf(inverse_gamma, x)?).abs() < 2e-12);
+    }
+    // For c/x << 1, SF = sqrt(2*c/(π*x)) * (1 + O(c/x)).
+    // This independently checks a subnormal scale without the rounding loss
+    // from forming c/(2*x) in the inverse-gamma backend.
+    let tiny = Distribution::Levy {
+        location: 0.,
+        scale: 1e-320,
+    };
+    let reference = 1e-320_f64.sqrt() * (2. / (10. * std::f64::consts::PI)).sqrt();
+    assert!((sf(tiny, 10.)? / reference - 1.).abs() < 2e-12);
+    let levy = Distribution::Levy {
+        location: -3.,
+        scale: 2.,
+    };
+    for p in [0.001, 0.2, 0.5, 0.9, 0.999] {
+        let x = ppf(levy, p)?;
+        assert!((cdf(levy, x)? - p).abs() < 2e-10);
+        assert!((cdf(levy, x)? + sf(levy, x)? - 1.).abs() < 2e-12);
+    }
+    let conditional = truncate(levy, -2., 10.)?;
+    let ordered = order_statistic(levy, 2, 5)?;
+    for d in [conditional, ordered] {
+        assert!((cdf(d, ppf(d, 0.6)?)? - 0.6).abs() < 2e-10);
+    }
+    assert!(
+        ppf(
+            Distribution::Levy {
+                location: 0.,
+                scale: f64::MAX
+            },
+            0.99
+        )
+        .is_err()
+    );
+    assert!(pdf(levy, f64::NAN).is_err());
+    assert!(ppf(levy, 1.1).is_err());
+    Ok(())
+}
+
+#[test]
+fn specialized_quantiles_preserve_smaller_tail_probabilities() -> Result<()> {
+    for d in [
+        Distribution::Chi { df: 1. },
+        Distribution::Chi { df: 1000. },
+        Distribution::Chi { df: 100000. },
+        Distribution::InverseGamma {
+            shape_value: 1.,
+            scale: 1e-200,
+        },
+        Distribution::InverseGamma {
+            shape_value: 0.1,
+            scale: 1.,
+        },
+        Distribution::InverseGamma {
+            shape_value: 0.2,
+            scale: 1.,
+        },
+        Distribution::InverseGamma {
+            shape_value: 1000.,
+            scale: 0.01,
+        },
+    ] {
+        for p in [
+            1e-100,
+            1e-12,
+            0.01,
+            0.5,
+            0.99,
+            1. - 1e-12,
+            1. - f64::EPSILON,
+        ] {
+            let x = ppf(d, p)?;
+            let (actual, expected) = if p <= 0.5 {
+                (cdf(d, x)?, p)
+            } else {
+                (sf(d, x)?, 1. - p)
+            };
+            assert!(x.is_finite() && x > 0.);
+            assert!(
+                (actual / expected - 1.).abs() < 2e-10,
+                "{d:?}, p={p:e}: {actual:e} vs {expected:e}"
+            );
+        }
+        assert_eq!(ppf(d, 0.)?, 0.);
+        assert_eq!(ppf(d, 1.)?, f64::INFINITY);
+    }
+    assert_eq!(
+        ppf(
+            Distribution::InverseGamma {
+                shape_value: 0.01,
+                scale: 1e200,
+            },
+            0.99,
+        ),
+        Err(sci::Error::NumericalFailure(
+            "quantile outside finite range"
+        ))
+    );
+    Ok(())
+}
+
+#[test]
+fn levy_overflow_paths_preserve_location_scale_identities() -> Result<()> {
+    let standard = Distribution::Levy {
+        location: 0.,
+        scale: 1.,
+    };
+    let large = Distribution::Levy {
+        location: -f64::MAX,
+        scale: f64::MAX,
+    };
+    // x-location overflows, but (x-location)/scale is exactly two.
+    assert_eq!(cdf(large, f64::MAX)?, cdf(standard, 2.)?);
+    assert_eq!(sf(large, f64::MAX)?, sf(standard, 2.)?);
+    assert!((logpdf(large, f64::MAX)? + f64::MAX.ln() - logpdf(standard, 2.)?).abs() < 2e-13);
+    assert!((pdf(large, f64::MAX)? * f64::MAX / pdf(standard, 2.)? - 1.).abs() < 2e-13);
+
+    // At huge positive separations, exp(-c/(2*(x-location))) rounds to one.
+    // The independent leading terms are SF=sqrt(2*c/(pi*delta)) and
+    // PDF=SF/(2*delta), with relative error O(c/delta), here below 1e-308.
+    // Both finite and overflowing delta must preserve representable tails.
+    for (location, x, log_delta) in [
+        (0., 10., 10_f64.ln()),
+        (-f64::MAX, f64::MAX, f64::MAX.ln() + 2_f64.ln()),
+    ] {
+        let d = Distribution::Levy {
+            location,
+            scale: 1e-320,
+        };
+        let log_survival =
+            0.5 * (2_f64.ln() + 1e-320_f64.ln() - std::f64::consts::PI.ln() - log_delta);
+        let log_density = log_survival - 2_f64.ln() - log_delta;
+        let expected_survival = log_survival.exp();
+        // Subnormal survival probabilities also incur binary64 quantization.
+        assert!(
+            (sf(d, x)? - expected_survival).abs()
+                <= 3e-13 * expected_survival + 2. * f64::from_bits(1)
+        );
+        assert_eq!(cdf(d, x)?, 1.);
+        assert!((logpdf(d, x)? - log_density).abs() < 5e-13);
+        let density = pdf(d, x)?;
+        if log_density.exp() == 0. {
+            assert_eq!(density.to_bits(), 0_f64.to_bits());
+        } else {
+            assert!((density / log_density.exp() - 1.).abs() < 3e-13);
+        }
+    }
+    Ok(())
 }
 
 #[test]

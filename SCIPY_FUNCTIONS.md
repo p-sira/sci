@@ -86,3 +86,16 @@ Each namespace links to its section in the corresponding top-level submodule fil
 Sci omits the legacy `fftpack` namespace. Its ten distinct periodic operators
 are exported from `fft`; redundant transforms and compatibility variants are
 removed. See [FFT coverage and inventory disposition](function_coverages/FFT_COVERAGE.md).
+
+Sparse v0.1.0 covers all 83 modern sparse function names through documented Rust
+adaptations, excluding legacy matrix predicates, `rand`, `use_solver` and deprecated
+compatibility namespaces. See [sparse coverage and inventory disposition](function_coverages/SPARSE_COVERAGE.md)
+for signature adaptations, numerical conventions and bounded-work limitations.
+
+Scientific I/O implements nine distinct function names for Matrix Market, WAV,
+and a dense numeric MATLAB subset; five I/O function names and the other format
+classes remain deferred. See [I/O coverage and limitations](function_coverages/IO_COVERAGE.md).
+
+The [non-sparse numerical accuracy audit](function_coverages/NUMERICAL_ACCURACY_AUDIT.md)
+records corrections, independent regression references, and remaining accuracy
+limits identified from the sibling `sci-testing` measurements.

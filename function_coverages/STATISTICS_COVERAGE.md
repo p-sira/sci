@@ -1,14 +1,14 @@
 # `stats` coverage and SciPy adaptations
 
-Native implementations use private statrs 0.18, Basin 1.15.1, nalgebra,
-shared Sci special functions, anofox-statistics 0.4.8 and lapjv 0.3.0 backends.
-Anofox and lapjv are new dependencies; their transitive dependencies were already
-in the workspace lockfile. No Python runtime is used. **Main-namespace function
+Native implementations use private statrs 0.19.1, Basin 1.15.1, nalgebra 0.35,
+shared Sci special functions and lapjv 0.3.0 backends. Shapiro and Tukey use
+private adaptations of BSD-licensed SciPy algorithms and mixture integrals;
+the retained license is `crates/sci-stats/SCIPY_LICENSE.txt`. No Python runtime is used. **Main-namespace function
 coverage is complete for the documented Rust signatures; full SciPy statistics
 parity is not complete.** The audit against `SCIPY_FUNCTIONS.md` and
 `scipy-func-list/scipy.stats.md` covers **137 of 137 scipy.stats function names**,
 all **7 contingency names**, and all **4 QMC utility function names**.
-Distribution coverage is **29 of 149 callable families** with evaluation methods;
+Distribution coverage is **30 of 149 callable families** with evaluation methods;
 this does not claim their entire object-oriented SciPy method surface.
 
 The coverage audit fails for exported functions without committed reference
@@ -20,6 +20,21 @@ lists no Cython-only statistics namespace. Masked statistics are not implemented
 overlapping mstats names can use the canonical finite, unmasked APIs, while
 mask-specific functions and missing-data dispatch remain gaps. Right-censoring
 is supported through explicit logrank event flags.
+
+Statrs 0.19.1 additions used by Sci:
+
+- `Distribution::Levy` evaluates SciPy `levy` density/log-density, CDF/SF and
+  quantiles with native location/scale parameters; it also works with existing
+  truncation, order-statistic and continuous-null APIs. Moments, sampling and
+  fitting remain unsupported.
+- Chi and inverse-gamma quantiles first use the new safeguarded Newton inverses.
+  Sci validates the smaller-tail probability residual before accepting a result;
+  its bounded bisection remains the fallback. Endpoints and domains are unchanged.
+- The new generic inverse remains unsuitable as a blanket replacement for Sci's
+  inversion, because it does not report convergence and has different work limits.
+- New upstream hypothesis tests overlap Sci's existing APIs; their direct moment
+  sums and CDF-subtracted tails do not preserve Sci's extreme-scale/tail behavior.
+  KDE and online accumulators are not exposed by this change.
 
 ## Supported native groups
 
@@ -54,12 +69,12 @@ never invoke Python. Their use of existing external libraries is explicit:
 | Functions | Existing private backend use |
 | --- | --- |
 | `normaltest`, `obrientransform`, `siegelslopes` | None: standard library and native Sci helpers only |
-| `skewtest`, `kurtosistest`, `ansari`, `mood`, `mannwhitneyu`, `wilcoxon`, `kendalltau`, `page_trend_test` | statrs 0.18 normal tails |
-| `brunnermunzel` | statrs 0.18 Student-t or normal tails |
-| `alexandergovern`, `median_test` | statrs 0.18 chi-square tails |
-| `fligner` | statrs 0.18 normal quantiles and chi-square tails |
+| `skewtest`, `kurtosistest`, `ansari`, `mood`, `mannwhitneyu`, `wilcoxon`, `kendalltau`, `page_trend_test` | statrs 0.19.1 normal tails |
+| `brunnermunzel` | statrs 0.19.1 Student-t or normal tails |
+| `alexandergovern`, `median_test` | statrs 0.19.1 chi-square tails |
+| `fligner` | statrs 0.19.1 normal quantiles and chi-square tails |
 | `theilslopes`, `boxcox_normplot`, `yeojohnson_normplot` | Existing normal quantile APIs backed by shared XSF special functions |
-| `quantile_test` | statrs 0.18 binomial tails |
+| `quantile_test` | statrs 0.19.1 binomial tails |
 
 No new algorithm calls sci-special or nalgebra. Those remain existing statistics
 module dependencies for other functions. Public results expose native Sci types;
@@ -131,7 +146,7 @@ The additional 36 supported signatures complete main-namespace coverage from
   evaluations and rejection fractions from fallible tests on supplied alternative
   draws. Multi-output sensitivity, sampling engines, bootstrap result objects,
   vectorization and sample-size grids are absent.
-- `shapiro`, `tukey_hsd`: private anofox AS R94 and studentized-range algorithms.
+- `shapiro`, `tukey_hsd`: private SciPy-based AS R94 and studentized-range algorithms.
   Shapiro accepts 3..=5000 samples after shared shifted/scaled normalization;
   constants return NaN, matching SciPy 1.18.1. Tukey returns Sci matrices of signed
   mean differences and adjusted p-values for 2..=16 groups, equal-variance only.
@@ -263,7 +278,7 @@ the backend. Multivariate matrices use one Vec per row, interoperable with algeb
 
 `tests/scipy/statistics_cases.json` contains inputs separately from expected
 results. `generate_statistics.py` pins SciPy 1.18.1 and NumPy 2.5.4 and emits
-4890 cases into `stats_inputs.csv` and `stats_expected.csv`. Ordinary Rust tests
+5116 cases into `stats_inputs.csv` and `stats_expected.csv`. Ordinary Rust tests
 read the CSV files; they require no Python. The fixture generator explicitly
 identifies independent mathematical references for the documented corner
 adaptations and KS limiting probabilities. References never use Sci/statrs.
@@ -275,10 +290,27 @@ investigated before accepting these tolerances. Bounded transform searches use
 2e-6 and PPCC maxima 2e-5 combined tolerances because flat binary64 objectives
 limit position agreement. Epps–Singleton uses 2e-9: a tested covariance condition
 number of 1.4e8 produces about 3e-9 differences between NumPy SVD and direct solves.
-Tukey adjusted probabilities alone use 5e-7, reflecting the private R-style
-studentized-range quadrature's observed 3.3e-7 discrepancy at three residual
-degrees of freedom; mean differences retain the ordinary tolerance. Shapiro
-passes the ordinary tolerance, including n=3,11,12,25,100,5000 and extreme units.
+Tukey adjusted probabilities use the ordinary 2e-10 absolute/relative tolerance.
+The direct survival mixture integral uses composite Gaussian orders 32 and 64
+with a 2e-10 absolute convergence check and at most 358400 integrand evaluations
+per pair. Truncation tails are below 1e-16 over the supported domain; the order
+comparison is an error estimate, not a rigorous accuracy bound. Additional
+`range_inputs.csv` and `range_expected.csv` fixtures cover residual degrees of
+freedom through 65533 and the 16-group and combined-count boundaries. Shapiro
+passes the ordinary tolerance, including n=3,11,12,25,100,5000, single-outlier
+samples for every n=4..11, and extreme units. The uncensored Shapiro backend
+omits AS R94's unreachable small-sample p-value floor: for n>=5 gamma is
+positive while log(1-W)<=0; at n=4 the ordered-sample lower bound
+W>=4*a[0]^2/3>0.62 also keeps log(1-W) below gamma. Constant Tukey groups
+exercise infinite statistics and preserve SciPy's zero/NaN p-value conventions.
+Private guard tests deterministically reject unconverged quadrature estimates;
+filter eigensolver exhaustion is tested with a reduced private iteration budget.
+Lévy properties cover overflowing differences and standardized coordinates,
+including direct log-density and survival asymptotics when c/(x-location)
+is below 1e-308 and the relative remainder is negligible in binary64.
+Specialized quantile tests cover rejected Newton results and bounded fallback
+inversion for Chi with 100000 degrees of freedom, inverse-gamma upper tails
+at 1-epsilon, tiny inverse-gamma scales, and unrepresentable interior quantiles.
 Dunnett probabilities use 5e-5 for fixed-order mixture quadrature; statistics
 retain the ordinary tolerance. References use SciPy multivariate-t CDF with
 one million integration points and a fixed RNG seed, reducing SciPy's default
