@@ -2383,7 +2383,7 @@ dependencies = [
 
 [[package]]
 name = "sci"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "approx",
  "codspeed-divan-compat",
@@ -2411,7 +2411,7 @@ dependencies = [
 
 [[package]]
 name = "sci-cluster"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "kodama",
  "sci-core",
@@ -2421,7 +2421,7 @@ dependencies = [
 
 [[package]]
 name = "sci-complex"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "num-complex",
  "sci-core",
@@ -2431,7 +2431,7 @@ dependencies = [
 
 [[package]]
 name = "sci-constants"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "sci-core",
 ]
@@ -2442,7 +2442,7 @@ version = "0.2.0"
 
 [[package]]
 name = "sci-differentiate"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "sci-core",
  "sci-linalg",
@@ -2451,7 +2451,7 @@ dependencies = [
 
 [[package]]
 name = "sci-fft"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "num-complex",
  "realfft",
@@ -2464,7 +2464,7 @@ dependencies = [
 
 [[package]]
 name = "sci-filter"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "kalman_filters",
  "nalgebra 0.35.0",
@@ -2474,7 +2474,7 @@ dependencies = [
 
 [[package]]
 name = "sci-integrate"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "nalgebra 0.35.0",
  "sci-core",
@@ -2483,7 +2483,7 @@ dependencies = [
 
 [[package]]
 name = "sci-interpolate"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "delaunator",
  "nalgebra 0.35.0",
@@ -2504,7 +2504,7 @@ dependencies = [
 
 [[package]]
 name = "sci-linalg"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "dyn-stack",
  "faer 0.24.4",
@@ -2520,7 +2520,7 @@ dependencies = [
 
 [[package]]
 name = "sci-optimize"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "basin",
  "sci-core",
@@ -2530,7 +2530,7 @@ dependencies = [
 
 [[package]]
 name = "sci-signal"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "nalgebra 0.35.0",
  "num-complex",
@@ -2561,7 +2561,7 @@ dependencies = [
 
 [[package]]
 name = "sci-spatial"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "nalgebra 0.35.0",
  "sci-core",
@@ -2570,7 +2570,7 @@ dependencies = [
 
 [[package]]
 name = "sci-special"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ellip",
  "nalgebra 0.35.0",
@@ -2583,7 +2583,7 @@ dependencies = [
 
 [[package]]
 name = "sci-stats"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "basin",
  "lapjv",

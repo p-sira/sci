@@ -11,7 +11,7 @@ homepage = "https://github.com/p-sira/sci"
 repository = "https://github.com/p-sira/sci"
 categories = ["algorithms", "mathematics", "science"]
 keywords = ["sparse", "linear-algebra", "matrices", "numerics", "science"]
-include = ["src/**", "LICENSE", "SCIPY_LICENSE.txt"]
+include = ["CHANGELOG.md", "src/**", "LICENSE", "SCIPY_LICENSE.txt"]
 
 [dependencies]
 sci-core.workspace = true

@@ -43,25 +43,25 @@ splinefit = "0.4.1"
 delaunator = "1.1.0"
 sci-io = { version = "0.1.0", path = "crates/sci-io" }
 sci-core = { version = "0.2.0", path = "crates/sci-core" }
-sci-cluster = { version = "0.1.0", path = "crates/sci-cluster" }
-sci-complex = { version = "0.1.0", path = "crates/sci-complex" }
-sci-constants = { version = "0.1.0", path = "crates/sci-constants" }
-sci-differentiate = { version = "0.1.0", path = "crates/sci-differentiate" }
-sci-fft = { version = "0.1.0", path = "crates/sci-fft" }
-sci-filter = { version = "0.1.0", path = "crates/sci-filter" }
-sci-integrate = { version = "0.1.0", path = "crates/sci-integrate" }
-sci-interpolate = { version = "0.1.0", path = "crates/sci-interpolate" }
-sci-linalg = { version = "0.1.0", path = "crates/sci-linalg", default-features = false }
-sci-optimize = { version = "0.1.0", path = "crates/sci-optimize" }
-sci-signal = { version = "0.1.0", path = "crates/sci-signal" }
+sci-cluster = { version = "0.2.0", path = "crates/sci-cluster" }
+sci-complex = { version = "0.2.0", path = "crates/sci-complex" }
+sci-constants = { version = "0.2.0", path = "crates/sci-constants" }
+sci-differentiate = { version = "0.2.0", path = "crates/sci-differentiate" }
+sci-fft = { version = "0.2.0", path = "crates/sci-fft" }
+sci-filter = { version = "0.2.0", path = "crates/sci-filter" }
+sci-integrate = { version = "0.2.0", path = "crates/sci-integrate" }
+sci-interpolate = { version = "0.2.0", path = "crates/sci-interpolate" }
+sci-linalg = { version = "0.2.0", path = "crates/sci-linalg", default-features = false }
+sci-optimize = { version = "0.2.0", path = "crates/sci-optimize" }
+sci-signal = { version = "0.2.0", path = "crates/sci-signal" }
 sci-sparse = { version = "0.1.0", path = "crates/sci-sparse" }
-sci-spatial = { version = "0.1.0", path = "crates/sci-spatial" }
-sci-special = { version = "0.1.0", path = "crates/sci-special" }
-sci-stats = { version = "0.1.0", path = "crates/sci-stats" }
+sci-spatial = { version = "0.2.0", path = "crates/sci-spatial" }
+sci-special = { version = "0.2.0", path = "crates/sci-special" }
+sci-stats = { version = "0.2.0", path = "crates/sci-stats" }
 
 [package]
 name = "sci"
-version = "0.1.0"
+version = "0.2.0"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -73,7 +73,7 @@ repository = "https://github.com/p-sira/sci"
 categories = ["mathematics", "science"]
 keywords = ["scientific-computing", "numerics", "mathematics", "optimization", "statistics"]
 readme = "README.md"
-include = ["src/**", "LICENSE"]
+include = ["CHANGELOG.md", "src/**", "LICENSE"]
 autotests = false
 
 [features]

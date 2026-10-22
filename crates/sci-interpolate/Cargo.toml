@@ -1,6 +1,6 @@
 [package]
 name = "sci-interpolate"
-version = "0.1.0"
+version = "0.2.0"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -11,7 +11,7 @@ homepage = "https://github.com/p-sira/sci"
 repository = "https://github.com/p-sira/sci"
 categories = ["mathematics", "science"]
 keywords = ["interpolation", "splines", "triangulation", "numerics", "scientific-computing"]
-include = ["src/**", "LICENSE"]
+include = ["CHANGELOG.md", "src/**", "LICENSE"]
 
 [dependencies]
 sci-core.workspace = true

@@ -1,0 +1,8 @@
+# Changelog
+
+## 0.1.0
+
+- Initial release, added after the repository tag `v0.1.0`.
+- Add bounded Matrix Market reading, writing, and metadata inspection for real dense and sparse matrices.
+- Add WAV reading and writing and a dense numeric MATLAB subset with explicit format and size limits.
+- Provide independent `matrix-market`, `wav`, and `matlab` features, enabled by default; use shared `sci-core 0.2` matrix types.
