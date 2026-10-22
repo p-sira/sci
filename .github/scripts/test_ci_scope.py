@@ -26,6 +26,7 @@ class ScopeTests(unittest.TestCase):
     def test_isolated_module(self):
         scope = self.select("crates/sci-filter/src/lib.rs")
         self.assertEqual(scope["packages"], ["sci-filter"])
+        self.assertEqual(scope["coverage"], ["sci-filter"])
         self.assertIn("filter", scope["test"])
         self.assertIn("filter_interop", scope["test"])
         self.assertNotIn("interpolation", scope["test"])
@@ -51,11 +52,13 @@ class ScopeTests(unittest.TestCase):
                 self.assertEqual(scope["test"], ["interpolation"])
                 self.assertEqual(scope["features"], ["interpolate"])
                 self.assertEqual(scope["packages"], [])
+                self.assertEqual(scope["coverage"], ["sci-interpolate"])
 
     def test_shared_and_unknown_fixture_fallback(self):
         for path in [
             "Cargo.lock",
             "Cargo.toml",
+            "codecov.yml",
             "build.rs",
             "src/lib.rs",
             ".github/workflows/test.yml",
@@ -151,15 +154,65 @@ class ScopeTests(unittest.TestCase):
         ci_scope.run(self.select("README.md"), "test")
         run.assert_not_called()
 
-    @patch("ci_scope.subprocess.run")
-    def test_coverage_accumulates_before_reporting(self, run):
-        ci_scope.run(self.select("crates/sci-filter/src/lib.rs"), "coverage")
-        commands = [call.args[0] for call in run.call_args_list]
-        self.assertEqual(
-            commands[0], ["cargo", "+stable", "llvm-cov", "clean", "--workspace"]
-        )
-        self.assertTrue(all("--no-report" in c for c in commands[1:-1]))
-        self.assertEqual(commands[-1][3], "report")
+    def test_coverage_accumulates_before_reporting(self):
+        with (
+            patch("ci_scope.subprocess.run") as run,
+            patch("ci_scope.metadata", return_value=self.meta),
+            patch("ci_scope.write_reports", return_value=["sci-filter"]) as reports,
+            patch("ci_scope.output_flags") as output,
+        ):
+            ci_scope.run(self.select("crates/sci-filter/src/lib.rs"), "coverage")
+            commands = [call.args[0] for call in run.call_args_list]
+            self.assertEqual(
+                commands[0], ["cargo", "+stable", "llvm-cov", "clean", "--workspace"]
+            )
+            self.assertTrue(all("--no-report" in c for c in commands[1:-1]))
+            self.assertEqual(commands[-1][3], "report")
+            self.assertEqual(reports.call_args.args[2], {"sci-filter"})
+            output.assert_called_once_with(["sci-filter"])
+
+    def test_fixture_change_refreshes_complete_module_suite(self):
+        with (
+            patch("ci_scope.subprocess.run") as run,
+            patch("ci_scope.metadata", return_value=self.meta),
+            patch(
+                "ci_scope.write_reports", return_value=["sci-interpolate"]
+            ) as reports,
+            patch("ci_scope.output_flags"),
+        ):
+            # The interpolation crate also has coverage in numerics and coverage.
+            scope = self.select("tests/fixtures/interpolation_expected.csv")
+            self.assertEqual(scope["test"], ["interpolation"])
+            ci_scope.run(scope, "coverage")
+            commands = [call.args[0] for call in run.call_args_list]
+            facade = next(c for c in commands if "sci" in c)
+            for target in ["interpolation", "numerics", "coverage"]:
+                self.assertIn(target, facade)
+            self.assertEqual(reports.call_args.args[2], {"sci-interpolate"})
+
+    def test_full_coverage_reports_every_package(self):
+        with (
+            patch("ci_scope.subprocess.run") as run,
+            patch("ci_scope.metadata", return_value=self.meta),
+            patch("ci_scope.write_reports", return_value=["sci-core"]) as reports,
+            patch("ci_scope.output_flags"),
+        ):
+            ci_scope.run({"full": True, "active": True}, "coverage")
+            self.assertIn("--workspace", run.call_args_list[1].args[0])
+            self.assertIn("--all-features", run.call_args_list[1].args[0])
+            self.assertEqual(
+                reports.call_args.args[2], {p["name"] for p in self.meta["packages"]}
+            )
+
+    def test_benchmark_only_changes_do_not_refresh_coverage(self):
+        with (
+            patch("ci_scope.subprocess.run") as run,
+            patch("ci_scope.metadata", return_value=self.meta),
+            patch("ci_scope.output_flags") as output,
+        ):
+            ci_scope.run(self.select("benches/filter.rs"), "coverage")
+            run.assert_not_called()
+            output.assert_called_once_with([])
 
 
 class EventTests(unittest.TestCase):

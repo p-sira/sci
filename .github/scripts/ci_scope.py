@@ -11,11 +11,23 @@ import subprocess
 import sys
 from pathlib import Path
 
+from coverage_reports import write_reports
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def git(*args):
     return subprocess.check_output(["git", *args], cwd=ROOT, text=True)
+
+
+def metadata():
+    return json.loads(
+        subprocess.check_output(
+            ["cargo", "metadata", "--no-deps", "--format-version", "1", "--locked"],
+            cwd=ROOT,
+            text=True,
+        )
+    )
 
 
 def select(meta, files):
@@ -37,6 +49,7 @@ def select(meta, files):
             "build.rs",
             "clippy.toml",
             ".clippy.toml",
+            "codecov.yml",
             "tests/check_features.py",
         }
         or f.startswith((*shared, "rust-toolchain"))
@@ -75,6 +88,7 @@ def select(meta, files):
         affected |= dependents
 
     targets = {"test": [], "bench": []}
+    coverage = set(affected)
     consumed_inputs = set()
     features = {n.removeprefix("sci-") for n in affected} - {"core"}
     features.update(
@@ -99,6 +113,8 @@ def select(meta, files):
             and Path(f).name in source
         }
         consumed_inputs.update(inputs)
+        if kind == "test" and (relative in files or inputs):
+            coverage.update(target_crates or {"sci-core"})
         if (
             "sci-core" in affected
             or target_crates & affected
@@ -115,6 +131,7 @@ def select(meta, files):
         "full": False,
         "active": bool(affected or any(targets.values())),
         "packages": sorted(affected),
+        "coverage": sorted(coverage),
         "features": sorted(features),
         **targets,
     }
@@ -143,6 +160,27 @@ def changed_files():
 def run(scope, mode):
     if not scope["active"]:
         return
+    if mode == "coverage":
+        meta = metadata()
+        report_packages = (
+            {p["name"] for p in meta["packages"]}
+            if scope["full"]
+            else set(scope["coverage"])
+        )
+        if not report_packages:
+            output_flags([])
+            return
+        if not scope["full"]:
+            # Refresh each flag with every test that can exercise its crate,
+            # even when the change only touched one test or reference fixture.
+            scope = select(
+                meta,
+                [
+                    Path(p["manifest_path"]).relative_to(ROOT).as_posix()
+                    for p in meta["packages"]
+                    if p["name"] in report_packages
+                ],
+            )
     full = scope["full"]
     if mode == "features":
         modules = [] if full else ["core", *scope["features"]]
@@ -208,18 +246,27 @@ def run(scope, mode):
             cwd=ROOT,
             check=True,
         )
+        flags = write_reports(
+            ROOT,
+            meta,
+            report_packages,
+            ROOT / "target/coverage/lcov.info",
+            ROOT / "target/coverage/flags",
+        )
+        output_flags(flags)
+
+
+def output_flags(flags):
+    value = json.dumps(flags, separators=(",", ":"))
+    print("Coverage flags:", value, flush=True)
+    if "GITHUB_OUTPUT" in os.environ:
+        with Path(os.environ["GITHUB_OUTPUT"]).open("a") as output:
+            output.write(f"flags={value}\n")
 
 
 def main():
     if sys.argv[1] == "select":
-        meta = json.loads(
-            subprocess.check_output(
-                ["cargo", "metadata", "--no-deps", "--format-version", "1", "--locked"],
-                cwd=ROOT,
-                text=True,
-            )
-        )
-        scope = select(meta, changed_files())
+        scope = select(metadata(), changed_files())
         print(json.dumps(scope, separators=(",", ":")))
     else:
         run(json.loads(os.environ["CI_SCOPE"]), sys.argv[1])
