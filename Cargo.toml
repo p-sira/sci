@@ -42,7 +42,7 @@ rustdct = "0.7.1"
 splinefit = "0.4.1"
 delaunator = "1.1.0"
 sci-io = { version = "0.1.0", path = "crates/sci-io" }
-sci-core = { version = "0.1.0", path = "crates/sci-core" }
+sci-core = { version = "0.2.0", path = "crates/sci-core" }
 sci-cluster = { version = "0.1.0", path = "crates/sci-cluster" }
 sci-complex = { version = "0.1.0", path = "crates/sci-complex" }
 sci-constants = { version = "0.1.0", path = "crates/sci-constants" }
