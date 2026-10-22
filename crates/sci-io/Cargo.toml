@@ -7,7 +7,7 @@ license.workspace = true
 rust-version.workspace = true
 description = "Bounded scientific file interchange for Sci"
 repository.workspace = true
-include = ["src/**", "LICENSE", "README.md"]
+include = ["src/**", "LICENSE"]
 
 [features]
 default = ["matrix-market", "wav", "matlab"]
