@@ -10,12 +10,30 @@ permissions:
   contents: read
 
 jobs:
+  scope:
+    runs-on: ubuntu-latest
+    outputs:
+      scope: ${{ steps.select.outputs.scope }}
+      active: ${{ steps.select.outputs.active }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/ci-scope
+        id: select
+
   coverage:
+    needs: scope
+    if: needs.scope.outputs.active == 'true'
     runs-on: ubuntu-latest
     env:
       CARGO_TERM_COLOR: always
+      CI_SCOPE: ${{ needs.scope.outputs.scope }}
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
       - uses: ./.github/actions/setup-native
       - name: Install Rust
         run: |
@@ -27,9 +45,7 @@ jobs:
         # Measure library code, excluding integration tests and their helpers.
         run: |
           mkdir -p target/coverage
-          cargo +stable llvm-cov --workspace --all-features --locked \
-          --lcov --output-path target/coverage/lcov.info \
-          --ignore-filename-regex '(^|/)tests/'
+          python .github/scripts/ci_scope.py coverage
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v7
         with:
