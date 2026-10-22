@@ -11,7 +11,7 @@ homepage = "https://github.com/p-sira/sci"
 repository = "https://github.com/p-sira/sci"
 categories = ["algorithms", "mathematics", "science"]
 keywords = ["kalman-filter", "bayesian", "state-estimation", "signal-processing", "numerics"]
-include = ["CHANGELOG.md", "src/**", "LICENSE"]
+include = ["/CHANGELOG.md", "/src/**", "/LICENSE"]
 
 [dependencies]
 sci-core.workspace = true

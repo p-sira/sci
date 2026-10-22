@@ -13,6 +13,8 @@ Changes since the repository tag `v0.1.0`.
   Each crate records its changes in `crates/<crate>/CHANGELOG.md`.
 - Update statrs to 0.19.1, unify nalgebra on 0.35, and replace
   anofox-statistics with private SciPy adaptations in statistics.
+- Anchor package include patterns to the crate root so local environments'
+  license and changelog files are excluded from release archives.
 
 ## 0.1.0
 

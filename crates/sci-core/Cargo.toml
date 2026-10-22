@@ -11,4 +11,4 @@ homepage = "https://github.com/p-sira/sci"
 repository = "https://github.com/p-sira/sci"
 categories = ["mathematics", "science"]
 keywords = ["numerics", "scientific-computing", "mathematics", "data-types", "errors"]
-include = ["CHANGELOG.md", "src/**", "LICENSE"]
+include = ["/CHANGELOG.md", "/src/**", "/LICENSE"]

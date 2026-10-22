@@ -73,7 +73,7 @@ repository = "https://github.com/p-sira/sci"
 categories = ["mathematics", "science"]
 keywords = ["scientific-computing", "numerics", "mathematics", "optimization", "statistics"]
 readme = "README.md"
-include = ["CHANGELOG.md", "src/**", "LICENSE"]
+include = ["/CHANGELOG.md", "/src/**", "/LICENSE"]
 autotests = false
 
 [features]
