@@ -237,6 +237,9 @@ def run(scope, mode):
                 "+stable",
                 "llvm-cov",
                 "report",
+                # Reporting has its own package selection; it does not inherit
+                # the packages selected by the preceding --no-report runs.
+                *[arg for p in sorted(report_packages) for arg in ["--package", p]],
                 "--lcov",
                 "--output-path",
                 "target/coverage/lcov.info",

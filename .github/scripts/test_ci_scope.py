@@ -168,6 +168,7 @@ class ScopeTests(unittest.TestCase):
             )
             self.assertTrue(all("--no-report" in c for c in commands[1:-1]))
             self.assertEqual(commands[-1][3], "report")
+            self.assertEqual(commands[-1][4:6], ["--package", "sci-filter"])
             self.assertEqual(reports.call_args.args[2], {"sci-filter"})
             output.assert_called_once_with(["sci-filter"])
 
@@ -189,6 +190,7 @@ class ScopeTests(unittest.TestCase):
             for target in ["interpolation", "numerics", "coverage"]:
                 self.assertIn(target, facade)
             self.assertEqual(reports.call_args.args[2], {"sci-interpolate"})
+            self.assertEqual(commands[-1][4:6], ["--package", "sci-interpolate"])
 
     def test_full_coverage_reports_every_package(self):
         with (
@@ -203,6 +205,11 @@ class ScopeTests(unittest.TestCase):
             self.assertEqual(
                 reports.call_args.args[2], {p["name"] for p in self.meta["packages"]}
             )
+            command = run.call_args_list[-1].args[0]
+            reported = {
+                command[i + 1] for i, arg in enumerate(command) if arg == "--package"
+            }
+            self.assertEqual(reported, {p["name"] for p in self.meta["packages"]})
 
     def test_benchmark_only_changes_do_not_refresh_coverage(self):
         with (
