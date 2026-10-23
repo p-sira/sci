@@ -440,7 +440,10 @@ pub fn eig_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> Resul
 ///
 /// ## Numerical behavior
 ///
-/// Uses f64 and the shared private backend, with bounded backend-specific SVD/eigen sweep limits. Ill-conditioned inputs can lose accuracy. Reuses the bounded dense symmetric eigensolver.
+/// Expands to a dense matrix and uses the scaled O(n³) faer eigenvalues-only
+/// solver without computing eigenvectors. Backend sweep limits bound iteration.
+/// Results can differ from [`eig_banded`] by roundoff, especially near zero or
+/// repeated eigenvalues. Banded inputs retain dense storage and work costs.
 ///
 /// # Examples
 ///
@@ -456,7 +459,7 @@ pub fn eig_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> Resul
 pub fn eigvals_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<Vec<f64>> {
     let ab_input = super::input::matrix_rows(ab)?;
     let ab = ab_input.as_ref();
-    Ok(eig_banded(ab, lower)?.eigenvalues)
+    eigvalsh(&symmetric_band(ab, lower)?, lower)
 }
 /// Computes principal angles between column spaces: `cos(θi)=si(QAᵀ QB)`.
 ///

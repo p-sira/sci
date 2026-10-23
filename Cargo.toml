@@ -51,7 +51,7 @@ sci-fft = { version = "0.2.0", path = "crates/sci-fft" }
 sci-filter = { version = "0.2.0", path = "crates/sci-filter" }
 sci-integrate = { version = "0.2.0", path = "crates/sci-integrate" }
 sci-interpolate = { version = "0.2.0", path = "crates/sci-interpolate" }
-sci-linalg = { version = "0.2.0", path = "crates/sci-linalg", default-features = false }
+sci-linalg = { version = "0.2.1", path = "crates/sci-linalg", default-features = false }
 sci-optimize = { version = "0.2.0", path = "crates/sci-optimize" }
 sci-signal = { version = "0.2.0", path = "crates/sci-signal" }
 sci-sparse = { version = "0.1.0", path = "crates/sci-sparse" }

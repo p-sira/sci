@@ -19,6 +19,46 @@ const N: usize = 16;
 /// Order for expensive algorithms (matrix functions, Riccati, QZ).
 const SMALL: usize = 8;
 
+/// Size sweeps for allocation overhead and eigenvalues-only computation.
+mod performance_benches {
+    use super::*;
+
+    #[divan::bench(args = [16, 64, 256])]
+    fn eigvalsh(bencher: Bencher, n: usize) {
+        let a = symmetric_matrix(n);
+        warm(bencher, || linalg::eigvalsh(black_box(&a), true).unwrap());
+    }
+
+    #[divan::bench(args = [16, 64, 256])]
+    fn eigvalsh_tridiagonal(bencher: Bencher, n: usize) {
+        let d = values(n, 1);
+        let e = values(n - 1, 2);
+        warm(bencher, || {
+            linalg::eigvalsh_tridiagonal(black_box(&d), black_box(&e)).unwrap()
+        });
+    }
+
+    #[divan::bench(args = [16, 64, 256])]
+    fn eigvals_banded(bencher: Bencher, n: usize) {
+        let ab = vec![values(n, 1), values(n, 2)];
+        warm(bencher, || {
+            linalg::eigvals_banded(black_box(&ab), true).unwrap()
+        });
+    }
+
+    #[divan::bench(args = [16, 64, 256])]
+    fn transpose(bencher: Bencher, n: usize) {
+        let a = square_matrix(n);
+        warm(bencher, || linalg::transpose(black_box(&a)).unwrap());
+    }
+
+    #[divan::bench(args = [16, 64, 256])]
+    fn eigh(bencher: Bencher, n: usize) {
+        let a = symmetric_matrix(n);
+        warm(bencher, || linalg::eigh(black_box(&a), true).unwrap());
+    }
+}
+
 /// Matrix with diagonal entries of alternating sign, eigenvalues away from the
 /// imaginary axis on both half planes.
 fn mixed_matrix(n: usize) -> Vec<Vec<f64>> {

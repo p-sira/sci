@@ -5,10 +5,15 @@ use faer::{Mat, Scale, mat::AsMatRef, prelude::Solve, traits::ComplexField};
 use num_complex::Complex64 as C;
 pub(super) const MAX_DIM: usize = 256;
 pub(super) const MAX_ENTRIES: usize = 1_000_000;
-pub(super) fn scaled(a: Mat<f64>) -> (Mat<f64>, f64) {
+pub(super) fn scaled(mut a: Mat<f64>) -> (Mat<f64>, f64) {
     let scale = a.iter().fold(0.0_f64, |s, &x| s.max(x.abs()));
     let scale = if scale == 0.0 { 1.0 } else { scale };
-    (a.map(|x| x / scale), scale)
+    for col in a.col_iter_mut() {
+        for x in col.iter_mut() {
+            *x /= scale;
+        }
+    }
+    (a, scale)
 }
 pub(super) fn shape(a: &[Vec<f64>]) -> Result<(usize, usize)> {
     let n = a.first().map_or(0, Vec::len);
