@@ -72,8 +72,8 @@ homepage = "https://github.com/p-sira/sci"
 repository = "https://github.com/p-sira/sci"
 categories = ["mathematics", "science"]
 keywords = ["scientific-computing", "numerics", "mathematics", "optimization", "statistics"]
-readme = "README.md"
-include = ["/CHANGELOG.md", "/src/**", "/LICENSE"]
+readme = false
+include = ["/src/**", "/LICENSE"]
 autotests = false
 
 [features]

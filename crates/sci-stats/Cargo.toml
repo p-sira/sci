@@ -11,7 +11,8 @@ homepage = "https://github.com/p-sira/sci"
 repository = "https://github.com/p-sira/sci"
 categories = ["algorithms", "mathematics", "science"]
 keywords = ["statistics", "probability", "distributions", "numerics", "data-analysis"]
-include = ["/CHANGELOG.md", "/src/**", "/LICENSE", "/SCIPY_LICENSE.txt"]
+readme = false
+include = ["/src/**", "/LICENSE", "/SCIPY_LICENSE.txt"]
 
 [dependencies]
 sci-core.workspace = true

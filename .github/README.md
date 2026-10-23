@@ -38,27 +38,3 @@ Run selector regression tests with:
 ```sh
 python -m unittest discover -s .github/scripts -p 'test_*.py'
 ```
-
-Each crate has a packaged `CHANGELOG.md`. The `0.2.0` entries describe changes
-since the repository tag `v0.1.0`; the newly added `sci-sparse` and `sci-io`
-start at `0.1.0`. Existing crates move together to `0.2.0` because their public
-types now come from `sci-core 0.2`.
-
-Publish dependencies before dependents. For this release, publish these groups
-in order (crates within a group can be published in any order):
-
-1. `sci-core 0.2.0` (already published).
-2. `sci-complex`, `sci-constants`, `sci-differentiate`, `sci-filter`,
-   `sci-interpolate`, `sci-optimize`, and `sci-spatial`, all at `0.2.0`.
-3. `sci-fft` and `sci-special`, both at `0.2.0`.
-4. `sci-integrate`, `sci-linalg`, `sci-signal`, and `sci-stats`, all at `0.2.0`.
-5. `sci-cluster 0.2.0` and `sci-sparse 0.1.0`.
-6. `sci-io 0.1.0`.
-7. `sci 0.2.0`.
-
-Run `cargo package --workspace --allow-dirty` to verify the release set before
-committing, then `cargo publish --workspace --exclude sci-core` from the clean
-commit. Cargo stages selected workspace packages and verifies their tarballs
-together, then publishes in dependency order. Publishing `sci-sparse` alone
-requires the new complex and linear algebra releases to be available first;
-older releases use a different core error type and cannot satisfy its APIs.

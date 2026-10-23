@@ -11,7 +11,8 @@ homepage = "https://github.com/p-sira/sci"
 repository = "https://github.com/p-sira/sci"
 categories = ["mathematics", "science"]
 keywords = ["interpolation", "splines", "triangulation", "numerics", "scientific-computing"]
-include = ["/CHANGELOG.md", "/src/**", "/LICENSE"]
+readme = false
+include = ["/src/**", "/LICENSE"]
 
 [dependencies]
 sci-core.workspace = true
