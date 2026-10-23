@@ -11,4 +11,5 @@ homepage = "https://github.com/p-sira/sci"
 repository = "https://github.com/p-sira/sci"
 categories = ["mathematics", "science"]
 keywords = ["numerics", "scientific-computing", "mathematics", "data-types", "errors"]
-include = ["src/**", "LICENSE"]
+readme = false
+include = ["/src/**", "/LICENSE"]
