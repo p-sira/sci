@@ -129,6 +129,16 @@ fn eigendecomposition(a: Mat<f64>) -> Result<EigenResult> {
         eigenvectors: rows(&d.U())?,
     })
 }
+fn eigenvalues(a: Mat<f64>) -> Result<Vec<f64>> {
+    let (a, scale) = scaled(a);
+    let mut values = a
+        .self_adjoint_eigenvalues(faer::Side::Lower)
+        .map_err(|_| Error::NumericalFailure("symmetric eigensolver did not converge"))?;
+    for value in &mut values {
+        *value = crate::error::finite(*value * scale)?;
+    }
+    Ok(values)
+}
 fn rhs(b: &[f64], n: usize) -> Result<Mat<f64>> {
     if b.len() != n {
         return Err(Error::DimensionMismatch);
@@ -1278,7 +1288,9 @@ pub fn eigh(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<Eigen
 ///
 /// ## Numerical behavior
 ///
-/// Private faer algorithms use f64. Ill-conditioned results can lose accuracy. Iterative routines use bounded backend-specific sweep limits. Reuses the bounded symmetric eigensolver; computes vectors internally.
+/// Uses the scaled O(n³) faer symmetric eigenvalues-only solver without
+/// computing eigenvectors. Backend sweep limits bound iteration. Results can
+/// differ from [`eigh`] by roundoff, especially near zero or repeated eigenvalues.
 ///
 /// # Examples
 ///
@@ -1293,7 +1305,7 @@ pub fn eigh(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<Eigen
 pub fn eigvalsh(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<Vec<f64>> {
     let a_input = super::input::matrix_rows(a)?;
     let a = a_input.as_ref();
-    Ok(eigh(a, lower)?.eigenvalues)
+    eigenvalues(symmetric(a, lower)?)
 }
 /// Computes `A⁺=V diag(w⁺) Vᵀ`, retaining eigenvalues with `|w|>atol+rtol*max|w|`.
 ///
@@ -1401,6 +1413,10 @@ pub fn eigh_tridiagonal(
     let d = d_input.as_ref();
     let e_input = super::input::vector_slice(e)?;
     let e = e_input.as_ref();
+    eigendecomposition(tridiagonal(d, e)?)
+}
+
+fn tridiagonal(d: &[f64], e: &[f64]) -> Result<Mat<f64>> {
     let n = d.len();
     if n == 0 || n > MAX_DIM {
         return Err(Error::InvalidInput("tridiagonal order must be 1..=256"));
@@ -1410,7 +1426,7 @@ pub fn eigh_tridiagonal(
     }
     crate::error::finite_slice(d)?;
     crate::error::finite_slice(e)?;
-    eigendecomposition(Mat::from_fn(n, n, |i, j| {
+    Ok(Mat::from_fn(n, n, |i, j| {
         if i == j {
             d[i]
         } else if i.abs_diff(j) == 1 {
@@ -1440,7 +1456,10 @@ pub fn eigh_tridiagonal(
 ///
 /// ## Numerical behavior
 ///
-/// Private faer algorithms use f64. Ill-conditioned results can lose accuracy. Iterative routines use bounded backend-specific sweep limits. Reuses the bounded dense symmetric eigensolver.
+/// Expands to a dense matrix and uses the scaled O(n³) faer eigenvalues-only
+/// solver without computing eigenvectors. Backend sweep limits bound iteration.
+/// Results can differ from [`eigh_tridiagonal`] by roundoff, especially near zero
+/// or repeated eigenvalues. Tridiagonal inputs retain dense storage and work costs.
 ///
 /// # Examples
 ///
@@ -1460,7 +1479,7 @@ pub fn eigvalsh_tridiagonal(
     let d = d_input.as_ref();
     let e_input = super::input::vector_slice(e)?;
     let e = e_input.as_ref();
-    Ok(eigh_tridiagonal(d, e)?.eigenvalues)
+    eigenvalues(tridiagonal(d, e)?)
 }
 /// Computes `A=Q H Qᵀ`, where H is upper Hessenberg (zero below the first subdiagonal).
 ///

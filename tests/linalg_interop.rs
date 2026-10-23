@@ -121,6 +121,11 @@ fn mutable_views_are_read_only_and_fixed_storage_is_supported() {
 #[test]
 fn conversions_preserve_ieee_values_and_empty_axes() {
     let a = [[-0.0, f64::NAN], [f64::INFINITY, f64::NEG_INFINITY]];
+    let transposed = l::transpose(&a).unwrap();
+    assert_eq!(transposed[0][0].to_bits(), (-0.0_f64).to_bits());
+    assert_eq!(transposed[0][1], f64::INFINITY);
+    assert!(transposed[1][0].is_nan());
+    assert_eq!(transposed[1][1], f64::NEG_INFINITY);
     for converted in [
         a.to_ndarray().unwrap().to_matrix().unwrap(),
         a.to_nalgebra().unwrap().to_matrix().unwrap(),
@@ -148,6 +153,7 @@ fn conversions_preserve_ieee_values_and_empty_axes() {
         assert_eq!(na.matrix_shape().unwrap(), (m, n));
         assert_eq!(fa.matrix_shape().unwrap(), (m, n));
         assert_eq!(l::matvec(&fa, &vec![0.0; n]).unwrap(), vec![0.0; m]);
+        assert_eq!(l::transpose(&fa).unwrap(), vec![vec![0.0; m]; n]);
         assert_eq!(l::transpose(&na).unwrap(), vec![vec![0.0; m]; n]);
         if m == 0 && n > 0 {
             assert_eq!(fa.to_matrix(), Err(Error::DimensionMismatch));

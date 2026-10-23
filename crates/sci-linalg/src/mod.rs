@@ -181,6 +181,11 @@ pub fn matmul(
 /// transpose to an empty matrix, whose representation cannot retain a column count.
 /// Returns [`Error::InvalidInput`] when the input exceeds the work bound.
 ///
+/// ## Numerical behavior
+///
+/// Copies logical entries directly into output rows in O(rows × columns) work,
+/// without an intermediate backend matrix or floating-point arithmetic.
+///
 /// # Examples
 ///
 /// ```
@@ -189,13 +194,8 @@ pub fn matmul(
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 pub fn transpose(matrix: &(impl MatrixInput + ?Sized)) -> Result<Vec<Vec<f64>>> {
-    let matrix = input::faer_matrix(matrix)?;
-    let transposed = matrix.transpose();
-    Ok((0..transposed.nrows())
-        .map(|i| {
-            (0..transposed.ncols())
-                .map(|j| transposed[(i, j)])
-                .collect()
-        })
+    let (m, n) = input::checked_shape(matrix)?;
+    Ok((0..n)
+        .map(|j| (0..m).map(|i| matrix.matrix_entry(i, j)).collect())
         .collect())
 }

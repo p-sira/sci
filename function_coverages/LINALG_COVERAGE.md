@@ -3,7 +3,7 @@
 The `linalg` namespace exports **96 of 96** top-level
 `scipy.linalg` inventory function names. The nine
 `scipy.linalg.interpolative` names are also exported in their own namespace.
-Every name has at least two independent reference cases, for **570 cases**
+Every name has at least two independent reference cases, for **587 cases**
 total across 105 qualified APIs. These APIs have documented functional
 signatures and limitations; name coverage does not establish full SciPy
 behavioral parity. There are no placeholder implementations.
@@ -54,7 +54,7 @@ logical shapes directly. Shared output rows retain this representation limit.
 Input conversions and basic helpers bound each axis and entry count at
 1,000,000; numerical algorithms retain their existing tighter bounds.
 
-All **570 cases** run through shared, ndarray, nalgebra, and faer storage.
+All **587 cases** run through shared, ndarray, nalgebra, and faer storage.
 Additional independently generated SciPy BLAS fixtures test basic products,
 transpose, and dot products. Rust tests exercise mixed libraries, strided and
 mutable views, fixed storage, empty axes, IEEE conversion, cross-module results,
@@ -120,6 +120,11 @@ option are unsupported. `rsf2csf` separately converts real Schur factors,
 and `qz`/`ordqz` return complex generalized Schur factors. Eigenvalues
 from symmetric problems are ascending; SVD values are descending; general
 eigenvalues are in unspecified Schur order. Eigenvectors are columns.
+
+`eigvalsh`, `eigvalsh_tridiagonal`, and `eigvals_banded` use the scaled
+eigenvalues-only backend path. They do not form eigenvectors; results may
+differ from vector-producing routines by roundoff. Banded and tridiagonal
+inputs still expand to dense storage and retain the 256-axis work bound.
 
 Pseudoinverses always return `(matrix, rank)` and retain values strictly above
 `atol + rtol*largest_magnitude`. Optional pseudoinverse/range/null-space relative

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1
+
+- Compute symmetric eigenvalues without eigenvectors in `eigvalsh`, `eigvalsh_tridiagonal`, and `eigvals_banded`. Preserve scaling, ascending order, finite-value validation, and existing work limits; results may differ from eigenvector-producing routines by roundoff.
+- Scale owned backend matrices in place, removing a temporary matrix allocation from decompositions and related algorithms while retaining division for very small scales.
+- Transpose directly from logical input entries into shared output rows, removing a temporary backend matrix while preserving strided inputs, empty axes, and IEEE values.
+- Add size-sweep performance benchmarks and independent SciPy regression cases for extreme scales and repeated eigenvalues.
+
 ## 0.2.0
 
 Changes since the repository tag `v0.1.0`.

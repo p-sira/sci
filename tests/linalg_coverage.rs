@@ -4,6 +4,62 @@ mod common;
 use common::matrix_close;
 use sci::{Error, linalg as l};
 
+#[test]
+fn eigenvalues_only_paths_preserve_order_trace_and_validation() {
+    // The analytic spectrum of this tridiagonal Toeplitz matrix is
+    // 2 + 2 cos(k pi/(n+1)); exercise the inclusive dense order limit.
+    for n in [1, 16, 256] {
+        let d = vec![2.0; n];
+        let e = vec![1.0; n - 1];
+        let values = l::eigvalsh_tridiagonal(&d, &e).unwrap();
+        assert_eq!(values.len(), n);
+        assert!(values.windows(2).all(|w| w[0] <= w[1]));
+        for (i, &value) in values.iter().enumerate() {
+            let expected =
+                2.0 - 2.0 * (((i + 1) as f64 * std::f64::consts::PI) / (n + 1) as f64).cos();
+            // An absolute bound handles eigenvalues close to zero.
+            assert!((value - expected).abs() < 2e-13);
+        }
+        assert!((values.iter().sum::<f64>() - 2.0 * n as f64).abs() < 2e-11);
+    }
+    assert!(l::eigvalsh_tridiagonal(&[1.0, 2.0], &[]).is_err());
+    assert!(l::eigvalsh_tridiagonal(&vec![1.0; 257], &vec![0.0; 256]).is_err());
+    for nonfinite in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert!(l::eigvalsh_tridiagonal(&[nonfinite], &[]).is_err());
+        assert!(l::eigvalsh_tridiagonal(&[1.0, 2.0], &[nonfinite]).is_err());
+        for lower in [false, true] {
+            // Validate even the triangle not selected for computation.
+            assert!(l::eigvalsh(&[[1.0, nonfinite], [nonfinite, 2.0]], lower).is_err());
+            assert!(l::eigvals_banded(&[[nonfinite]], lower).is_err());
+        }
+    }
+}
+
+#[test]
+fn eigenvalues_only_paths_scale_extreme_inputs_without_losing_relative_accuracy() {
+    // A symmetric 2x2 matrix with diagonal 2s and off-diagonal s has
+    // eigenvalues s and 3s. Normalize before comparing to test tiny scales.
+    for scale in [1e-320, 1e-200, 1.0, 1e200, 1e307] {
+        let a = [[2.0 * scale, scale], [scale, 2.0 * scale]];
+        for lower in [false, true] {
+            let ab = if lower {
+                [[2.0 * scale, 2.0 * scale], [scale, 0.0]]
+            } else {
+                [[0.0, scale], [2.0 * scale, 2.0 * scale]]
+            };
+            for values in [
+                l::eigvalsh(&a, lower).unwrap(),
+                l::eigvals_banded(&ab, lower).unwrap(),
+                l::eigvalsh_tridiagonal(&[2.0 * scale; 2], &[scale]).unwrap(),
+            ] {
+                for (value, expected) in values.into_iter().zip([1.0, 3.0]) {
+                    assert!((value / scale - expected).abs() < 2e-14);
+                }
+            }
+        }
+    }
+}
+
 fn identity(n: usize) -> l::Matrix {
     (0..n)
         .map(|i| (0..n).map(|j| f64::from(i == j)).collect())
