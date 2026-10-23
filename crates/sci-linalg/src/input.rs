@@ -15,8 +15,11 @@ use std::borrow::Cow;
 /// Conversions copy IEEE values without arithmetic or finite-value validation.
 /// All conversions bound each axis and the entry count at 1,000,000; numerical
 /// operations retain their own tighter bounds and finite-value requirements.
-/// External inputs are copied to shared rows once per numerical call; existing
-/// shared rows are borrowed. Computations use the private faer backend.
+/// Numerical calls pass logical entries directly to the private faer backend.
+/// Faer matrices/views, fixed arrays, and contiguous C/F-order ndarray storage
+/// can be borrowed. Other layouts and shared row vectors are copied directly
+/// into backend storage, without intermediate shared rows. Algorithms that
+/// scale or overwrite their working matrices still make an owned copy.
 ///
 /// # Examples
 ///
@@ -50,6 +53,14 @@ pub trait MatrixInput {
     /// Implementors returning `Some` must match the reported shape and entries.
     #[doc(hidden)]
     fn shared_rows(&self) -> Option<&[Vec<f64>]> {
+        None
+    }
+
+    /// Borrows native faer-compatible storage when available. This storage hook
+    /// must match the reported shape and logical entries, including strides.
+    /// Numerical backends and their decomposition objects remain private.
+    #[doc(hidden)]
+    fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
         None
     }
 
@@ -186,6 +197,14 @@ impl<const N: usize> MatrixInput for [Vec<f64>; N] {
 }
 
 impl<const N: usize> MatrixInput for [[f64; N]] {
+    fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
+        Some(faer::MatRef::from_row_major_slice(
+            self.as_flattened(),
+            self.len(),
+            N,
+        ))
+    }
+
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         Ok((self.len(), N))
     }
@@ -195,6 +214,14 @@ impl<const N: usize> MatrixInput for [[f64; N]] {
 }
 
 impl<const M: usize, const N: usize> MatrixInput for [[f64; N]; M] {
+    fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
+        Some(faer::MatRef::from_row_major_slice(
+            self.as_flattened(),
+            self.len(),
+            N,
+        ))
+    }
+
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         Ok((M, N))
     }
@@ -207,6 +234,20 @@ impl<const M: usize, const N: usize> MatrixInput for [[f64; N]; M] {
 impl<S: ndarray::Data<Elem = f64>> MatrixInput for ndarray::ArrayBase<S, ndarray::Ix2> {
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         Ok(self.dim())
+    }
+    fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
+        let (m, n) = self.dim();
+        if let Some(slice) = self.as_slice() {
+            Some(faer::MatRef::from_row_major_slice(slice, m, n))
+        } else if self.t().is_standard_layout() {
+            Some(faer::MatRef::from_column_major_slice(
+                self.as_slice_memory_order()?,
+                m,
+                n,
+            ))
+        } else {
+            None
+        }
     }
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self[(row, column)]
@@ -233,6 +274,9 @@ impl<R: faer::Shape, C: faer::Shape> MatrixInput for faer::Mat<f64, R, C> {
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self.as_ref().as_dyn()[(row, column)]
     }
+    fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
+        Some(self.as_ref().as_dyn().as_dyn_stride())
+    }
 }
 
 #[cfg(feature = "faer")]
@@ -244,6 +288,9 @@ impl<R: faer::Shape, C: faer::Shape, RS: faer::Stride, CS: faer::Stride> MatrixI
     }
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self.as_ref().as_dyn()[(row, column)]
+    }
+    fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
+        Some(self.as_ref().as_dyn().as_dyn_stride())
     }
 }
 
@@ -257,6 +304,9 @@ impl<R: faer::Shape, C: faer::Shape, RS: faer::Stride, CS: faer::Stride> MatrixI
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self.as_ref().as_dyn()[(row, column)]
     }
+    fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
+        Some(self.as_ref().as_dyn().as_dyn_stride())
+    }
 }
 
 impl<M: MatrixInput + ?Sized> MatrixInput for &M {
@@ -268,6 +318,9 @@ impl<M: MatrixInput + ?Sized> MatrixInput for &M {
     }
     fn shared_rows(&self) -> Option<&[Vec<f64>]> {
         (**self).shared_rows()
+    }
+    fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
+        (**self).faer_view()
     }
 }
 
@@ -495,7 +548,48 @@ impl<D: faer::Shape, S: faer::Stride> VectorInput for faer::RowMut<'_, f64, D, S
     }
 }
 
+#[cfg(feature = "faer")]
 pub(super) fn faer_matrix(a: &(impl MatrixInput + ?Sized)) -> Result<faer::Mat<f64>> {
     let (m, n) = checked_shape(a)?;
     Ok(faer::Mat::from_fn(m, n, |i, j| a.matrix_entry(i, j)))
+}
+
+/// Borrow compatible storage, owning only the fallback conversion.
+pub(super) enum FaerInput<'a> {
+    Borrowed(faer::MatRef<'a, f64>),
+    Owned(faer::Mat<f64>),
+}
+impl FaerInput<'_> {
+    pub(super) fn as_ref(&self) -> faer::MatRef<'_, f64> {
+        match self {
+            Self::Borrowed(a) => *a,
+            Self::Owned(a) => a.as_ref(),
+        }
+    }
+    pub(super) fn into_owned(self) -> faer::Mat<f64> {
+        match self {
+            Self::Borrowed(a) => a.to_owned(),
+            Self::Owned(a) => a,
+        }
+    }
+}
+pub(super) fn faer_input(a: &(impl MatrixInput + ?Sized)) -> Result<FaerInput<'_>> {
+    let (m, n) = checked_shape(a)?;
+    Ok(match a.faer_view() {
+        Some(view) => FaerInput::Borrowed(view),
+        None => FaerInput::Owned(faer::Mat::from_fn(m, n, |i, j| a.matrix_entry(i, j))),
+    })
+}
+
+impl MatrixInput for FaerInput<'_> {
+    fn matrix_shape(&self) -> Result<(usize, usize)> {
+        let a = self.as_ref();
+        Ok((a.nrows(), a.ncols()))
+    }
+    fn matrix_entry(&self, row: usize, column: usize) -> f64 {
+        self.as_ref()[(row, column)]
+    }
+    fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
+        Some(self.as_ref())
+    }
 }

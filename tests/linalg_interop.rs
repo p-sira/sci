@@ -271,3 +271,108 @@ fn conversion_work_is_bounded_before_reading_or_allocating() {
         .is_err()
     );
 }
+
+#[test]
+fn borrowed_storage_bypasses_element_conversion_and_preserves_inputs() {
+    struct ViewOnly<'a>(faer::MatRef<'a, f64>);
+    impl MatrixInput for ViewOnly<'_> {
+        fn matrix_shape(&self) -> Result<(usize, usize)> {
+            Ok((self.0.nrows(), self.0.ncols()))
+        }
+        fn matrix_entry(&self, _: usize, _: usize) -> f64 {
+            panic!("compatible storage should be borrowed directly")
+        }
+        fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
+            Some(self.0)
+        }
+    }
+    // An asymmetric matrix detects row/column confusion during refinement.
+    let a = [[4.0, 1.0], [2.0, 3.0]].to_faer().unwrap();
+    for view in [
+        a.as_ref(),
+        a.as_ref().transpose(),
+        a.as_ref().reverse_rows(),
+    ] {
+        let expected = view.to_matrix().unwrap();
+        let borrowed = ViewOnly(view);
+        check_matrix(
+            &l::matmul(&borrowed, &[[1., 0.], [0., 1.]]).unwrap(),
+            &expected,
+        );
+        check_vector(
+            &l::matvec(&borrowed, &[1., 0.]).unwrap(),
+            &[expected[0][0], expected[1][0]],
+        );
+        let rhs = [
+            expected[0][0] + expected[0][1],
+            expected[1][0] + expected[1][1],
+        ];
+        check_vector(&l::solve(&borrowed, &rhs).unwrap(), &[1., 1.]);
+        relative_close(
+            l::det(&borrowed).unwrap(),
+            if view.row_stride() < 0 { -10. } else { 10. },
+            2e-14,
+        );
+        relative_close(
+            l::norm(&borrowed, l::MatrixNorm::One).unwrap(),
+            l::norm(&expected, l::MatrixNorm::One).unwrap(),
+            2e-14,
+        );
+        assert_eq!(view.to_matrix().unwrap(), expected);
+    }
+    assert_eq!(a.to_matrix().unwrap(), vec![vec![4., 1.], vec![2., 3.]]);
+}
+
+#[test]
+fn zero_rank_projection_validates_native_column_count() {
+    let indices = [0, 1, 2];
+    let valid = ndarray::Array2::<f64>::zeros((0, 3));
+    let invalid = ndarray::Array2::<f64>::zeros((0, 2));
+    assert!(
+        l::interpolative::reconstruct_interp_matrix(&indices, &valid)
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(
+        l::interpolative::reconstruct_interp_matrix(&indices, &invalid),
+        Err(Error::DimensionMismatch)
+    );
+}
+
+#[test]
+fn triangular_backend_handles_all_flags_on_reversed_storage() {
+    let a = faer::Mat::from_fn(
+        9,
+        9,
+        |i, j| if i == j { 4.0 } else { (i + j) as f64 / 50.0 },
+    );
+    let view = a.as_ref().reverse_rows().reverse_cols();
+    let solution: Vec<_> = (0..9).map(|i| (i as f64 + 1.0) / 3.0).collect();
+    for lower in [true, false] {
+        for unit in [true, false] {
+            for transpose in [true, false] {
+                let rhs: Vec<_> = (0..9)
+                    .map(|i| {
+                        (0..9)
+                            .map(|j| {
+                                let (r, c) = if transpose { (j, i) } else { (i, j) };
+                                let value = if unit && r == c {
+                                    1.0
+                                } else if (lower && r >= c) || (!lower && r <= c) {
+                                    view[(r, c)]
+                                } else {
+                                    0.0
+                                };
+                                value * solution[j]
+                            })
+                            .sum()
+                    })
+                    .collect();
+                check_vector(
+                    &l::solve_triangular(&view, &rhs, lower, unit, transpose).unwrap(),
+                    &solution,
+                );
+            }
+        }
+    }
+}

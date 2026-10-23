@@ -29,14 +29,16 @@
 //!
 //! ## Input conventions
 //!
-//! Shared rows are borrowed; library matrices are copied into shared rows once
-//! at the API boundary. Required real vector arguments also accept library
-//! vectors; optional vectors retain slice signatures. Typed BLAS/LAPACK function
-//! pointers retain shared slice/row signatures. Complex inputs to `cdf2rdf`
-//! retain shared complex vectors/rows. A `0 × n` input with `n > 0` is accepted
-//! by basic products, transpose, and matrix collections, but rejected by APIs
-//! that convert to shared rows, since those rows cannot retain its column count.
-//! Shared output rows have the same limitation. Library-to-library conversions
+//! Numerical calls adapt storage directly to faer without intermediate shared
+//! rows. Faer matrices/views, fixed arrays, and contiguous C/F-order ndarray
+//! storage can be borrowed; other layouts copy directly into backend storage.
+//! Scaling and destructive algorithms retain owned working copies. Required real
+//! vector arguments also accept library vectors; optional vectors retain slice
+//! signatures. Typed BLAS/LAPACK function pointers retain shared slice/row
+//! signatures. Complex inputs to `cdf2rdf` retain shared complex vectors/rows.
+//! Basic products, transpose, and matrix collections support empty axes; dense
+//! numerical algorithms require nonempty axes.
+//! Shared output rows cannot retain a column count for zero-row matrices. Other conversions
 //! preserve empty axes. Untyped empty matrix literals/collections may need a
 //! type annotation; generic function items used as pointers need a concrete
 //! signature. See [`MatrixInput`] and [`VectorInput`] for runnable examples.

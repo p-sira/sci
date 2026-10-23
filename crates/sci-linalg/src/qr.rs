@@ -3,7 +3,10 @@ use super::backend::*;
 use super::dense::{Matrix, QrResult, qr};
 use crate::{Error, Result};
 use faer::{Mat, Scale};
-fn reconstructed(q: &[Vec<f64>], r: &[Vec<f64>]) -> Result<Mat<f64>> {
+fn reconstructed(
+    q: &(impl super::MatrixInput + ?Sized),
+    r: &(impl super::MatrixInput + ?Sized),
+) -> Result<Mat<f64>> {
     let q = dense(q)?;
     let r = dense(r)?;
     if q.ncols() != r.nrows() {
@@ -51,10 +54,6 @@ pub fn khatri_rao(
     a: &(impl super::MatrixInput + ?Sized),
     b: &(impl super::MatrixInput + ?Sized),
 ) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let b_input = super::input::matrix_rows(b)?;
-    let b = b_input.as_ref();
     let a = dense(a)?;
     let b = dense(b)?;
     if a.ncols() != b.ncols() {
@@ -102,8 +101,6 @@ pub fn khatri_rao(
 ///
 /// [SciPy `rq`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.rq.html).
 pub fn rq(a: &(impl super::MatrixInput + ?Sized)) -> Result<(Matrix, Matrix)> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = dense(a)?;
     let (m, n) = (a.nrows(), a.ncols());
     let k = m.min(n);
@@ -154,10 +151,6 @@ pub fn qr_multiply(
     c: &(impl super::MatrixInput + ?Sized),
     left: bool,
 ) -> Result<(Matrix, Matrix)> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let c_input = super::input::matrix_rows(c)?;
-    let c = c_input.as_ref();
     let f = qr(a)?;
     let q = dense(&f.q)?;
     let c = dense(c)?;
@@ -213,10 +206,6 @@ pub fn qr_update(
     u: &(impl super::VectorInput + ?Sized),
     v: &(impl super::VectorInput + ?Sized),
 ) -> Result<QrResult> {
-    let q_input = super::input::matrix_rows(q)?;
-    let q = q_input.as_ref();
-    let r_input = super::input::matrix_rows(r)?;
-    let r = r_input.as_ref();
     let u_input = super::input::vector_slice(u)?;
     let u = u_input.as_ref();
     let v_input = super::input::vector_slice(v)?;
@@ -232,7 +221,7 @@ pub fn qr_update(
             a[(i, j)] += u * v;
         }
     }
-    qr(&rows(&a)?)
+    qr(&native(&a))
 }
 /// Computes QR factors after inserting consecutive rows or columns into `A=Q R`.
 ///
@@ -274,12 +263,6 @@ pub fn qr_insert(
     index: usize,
     insert_rows: bool,
 ) -> Result<QrResult> {
-    let q_input = super::input::matrix_rows(q)?;
-    let q = q_input.as_ref();
-    let r_input = super::input::matrix_rows(r)?;
-    let r = r_input.as_ref();
-    let values_input = super::input::matrix_rows(values)?;
-    let values = values_input.as_ref();
     let a = reconstructed(q, r)?;
     let v = dense(values)?;
     let (m, n) = (a.nrows(), a.ncols());
@@ -314,7 +297,7 @@ pub fn qr_insert(
             a[(i, j - v.ncols())]
         }
     });
-    qr(&rows(&out)?)
+    qr(&native(&out))
 }
 /// Computes QR factors after deleting consecutive rows or columns from `A=Q R`.
 ///
@@ -356,10 +339,6 @@ pub fn qr_delete(
     count: usize,
     delete_rows: bool,
 ) -> Result<QrResult> {
-    let q_input = super::input::matrix_rows(q)?;
-    let q = q_input.as_ref();
-    let r_input = super::input::matrix_rows(r)?;
-    let r = r_input.as_ref();
     let a = reconstructed(q, r)?;
     let (m, n) = (a.nrows(), a.ncols());
     let axis = if delete_rows { m } else { n };
@@ -385,5 +364,5 @@ pub fn qr_delete(
             },
         )]
     });
-    qr(&rows(&out)?)
+    qr(&native(&out))
 }

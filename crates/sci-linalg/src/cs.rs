@@ -93,8 +93,6 @@ fn complete(columns: Vec<Mat<f64>>, n: usize) -> Result<(Mat<f64>, usize)> {
 ///
 /// [SciPy `cossin`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cossin.html).
 pub fn cossin(x: &(impl super::MatrixInput + ?Sized), p: usize, q: usize) -> Result<CsResult> {
-    let x_input = super::input::matrix_rows(x)?;
-    let x = x_input.as_ref();
     let x = square(x)?;
     let n = x.nrows();
     if p == 0 || q == 0 || p >= n || q >= n {

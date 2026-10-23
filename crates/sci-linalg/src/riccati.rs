@@ -9,10 +9,10 @@ fn validate_symmetric(a: &Mat<f64>) -> Result<()> {
     Ok(())
 }
 fn riccati(
-    a: &[Vec<f64>],
-    b: &[Vec<f64>],
-    q: &[Vec<f64>],
-    r: &[Vec<f64>],
+    a: &(impl super::MatrixInput + ?Sized),
+    b: &(impl super::MatrixInput + ?Sized),
+    q: &(impl super::MatrixInput + ?Sized),
+    r: &(impl super::MatrixInput + ?Sized),
     discrete: bool,
 ) -> Result<Matrix> {
     let a = square(a)?;
@@ -62,7 +62,7 @@ fn riccati(
     } else {
         Mat::identity(2 * n, 2 * n)
     };
-    let f = super::ordqz(&rows(&h)?, &rows(&pencil)?, |alpha, beta| {
+    let f = super::ordqz(&native(&h), &native(&pencil), |alpha, beta| {
         if discrete {
             alpha.re.hypot(alpha.im) < beta.re.hypot(beta.im)
         } else {
@@ -126,7 +126,7 @@ fn riccati(
             "Riccati residual exceeds numerical bound",
         ));
     }
-    let eigen = super::eigvals(&rows(&closed)?)?;
+    let eigen = super::eigvals(&native(&closed))?;
     if eigen.iter().any(|z| {
         if discrete {
             z.re.hypot(z.im) >= 1.
@@ -190,14 +190,6 @@ pub fn solve_continuous_are(
     q: &(impl super::MatrixInput + ?Sized),
     r: &(impl super::MatrixInput + ?Sized),
 ) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let b_input = super::input::matrix_rows(b)?;
-    let b = b_input.as_ref();
-    let q_input = super::input::matrix_rows(q)?;
-    let q = q_input.as_ref();
-    let r_input = super::input::matrix_rows(r)?;
-    let r = r_input.as_ref();
     riccati(a, b, q, r, false)
 }
 /// Solves the stabilizing Riccati equation `Aᵀ X A-X-Aᵀ X B (R+Bᵀ X B)⁻¹ Bᵀ X A+Q=0`.
@@ -250,13 +242,5 @@ pub fn solve_discrete_are(
     q: &(impl super::MatrixInput + ?Sized),
     r: &(impl super::MatrixInput + ?Sized),
 ) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let b_input = super::input::matrix_rows(b)?;
-    let b = b_input.as_ref();
-    let q_input = super::input::matrix_rows(q)?;
-    let q = q_input.as_ref();
-    let r_input = super::input::matrix_rows(r)?;
-    let r = r_input.as_ref();
     riccati(a, b, q, r, true)
 }

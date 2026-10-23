@@ -5,6 +5,12 @@ use faer::{Mat, Scale, mat::AsMatRef, prelude::Solve, traits::ComplexField};
 use num_complex::Complex64 as C;
 pub(super) const MAX_DIM: usize = 256;
 pub(super) const MAX_ENTRIES: usize = 1_000_000;
+/// Adapts internal real matrices without exposing computational backend APIs.
+pub(super) fn native(
+    a: &(impl AsMatRef<T = f64, Rows = usize, Cols = usize> + ?Sized),
+) -> super::input::FaerInput<'_> {
+    super::input::FaerInput::Borrowed(a.as_mat_ref())
+}
 pub(super) fn scaled(mut a: Mat<f64>) -> (Mat<f64>, f64) {
     let scale = a.iter().fold(0.0_f64, |s, &x| s.max(x.abs()));
     let scale = if scale == 0.0 { 1.0 } else { scale };
@@ -15,13 +21,8 @@ pub(super) fn scaled(mut a: Mat<f64>) -> (Mat<f64>, f64) {
     }
     (a, scale)
 }
-pub(super) fn shape(a: &[Vec<f64>]) -> Result<(usize, usize)> {
-    let n = a.first().map_or(0, Vec::len);
-    if a.iter().any(|row| row.len() != n) {
-        return Err(Error::DimensionMismatch);
-    }
-    size(a.len(), n)?;
-    Ok((a.len(), n))
+pub(super) fn shape(a: &(impl super::MatrixInput + ?Sized)) -> Result<(usize, usize)> {
+    super::input::checked_shape(a)
 }
 pub(super) fn size(m: usize, n: usize) -> Result<()> {
     if m > MAX_ENTRIES || n > MAX_ENTRIES || m.checked_mul(n).is_none_or(|s| s > MAX_ENTRIES) {
@@ -31,21 +32,36 @@ pub(super) fn size(m: usize, n: usize) -> Result<()> {
     }
     Ok(())
 }
-pub(super) fn dense(a: &[Vec<f64>]) -> Result<Mat<f64>> {
+pub(super) fn dense(a: &(impl super::MatrixInput + ?Sized)) -> Result<Mat<f64>> {
+    Ok(dense_ref(a)?.into_owned())
+}
+pub(super) fn dense_ref(
+    a: &(impl super::MatrixInput + ?Sized),
+) -> Result<super::input::FaerInput<'_>> {
     let (m, n) = shape(a)?;
     if m == 0 || n == 0 || m > MAX_DIM || n > MAX_DIM {
         return Err(Error::InvalidInput(
             "dense algorithms require axes in 1..=256",
         ));
     }
-    for row in a {
-        crate::error::finite_slice(row)?;
+    let a = super::input::faer_input(a)?;
+    if a.as_ref()
+        .col_iter()
+        .flat_map(|c| c.iter())
+        .any(|x| !x.is_finite())
+    {
+        return Err(Error::InvalidInput("coordinates must be finite"));
     }
-    Ok(Mat::from_fn(m, n, |i, j| a[i][j]))
+    Ok(a)
 }
-pub(super) fn square(a: &[Vec<f64>]) -> Result<Mat<f64>> {
-    let a = dense(a)?;
-    if !a.is_square() {
+pub(super) fn square(a: &(impl super::MatrixInput + ?Sized)) -> Result<Mat<f64>> {
+    Ok(square_ref(a)?.into_owned())
+}
+pub(super) fn square_ref(
+    a: &(impl super::MatrixInput + ?Sized),
+) -> Result<super::input::FaerInput<'_>> {
+    let a = dense_ref(a)?;
+    if a.as_ref().nrows() != a.as_ref().ncols() {
         return Err(Error::DimensionMismatch);
     }
     Ok(a)
@@ -78,7 +94,7 @@ pub(super) fn tolerance(v: f64) -> Result<f64> {
 pub(super) fn relative(v: Option<f64>, m: usize, n: usize) -> Result<f64> {
     tolerance(v.unwrap_or(f64::EPSILON * m.max(n) as f64))
 }
-pub(super) fn symmetric(a: &[Vec<f64>], lower: bool) -> Result<Mat<f64>> {
+pub(super) fn symmetric(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<Mat<f64>> {
     let mut a = square(a)?;
     for i in 0..a.nrows() {
         for j in 0..i {
@@ -95,7 +111,6 @@ pub(super) trait Entries<T: Copy> {
     fn iter<'a>(&'a self) -> impl Iterator<Item = &'a T>
     where
         T: 'a;
-    fn is_square(&self) -> bool;
     fn solve_checked(&self, rhs: &Mat<T>) -> Option<Mat<T>>;
     fn inverse_checked(&self) -> Option<Mat<T>>;
     fn qr_factors(&self) -> (Mat<T>, Mat<T>);
@@ -108,9 +123,6 @@ impl<T: ComplexField + Copy + PartialEq> Entries<T> for Mat<T> {
         T: 'a,
     {
         self.col_iter().flat_map(|c| c.iter())
-    }
-    fn is_square(&self) -> bool {
-        self.nrows() == self.ncols()
     }
     fn solve_checked(&self, rhs: &Mat<T>) -> Option<Mat<T>> {
         let lu = self.partial_piv_lu();

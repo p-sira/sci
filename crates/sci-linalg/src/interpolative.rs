@@ -33,8 +33,9 @@ fn permutation(indices: &[usize]) -> Result<()> {
     }
     Ok(())
 }
-fn rank(a: &[Vec<f64>], selection: Rank) -> Result<usize> {
-    let a = dense(a)?;
+fn rank(a: &(impl super::MatrixInput + ?Sized), selection: Rank) -> Result<usize> {
+    let a_input = dense_ref(a)?;
+    let a = a_input.as_ref();
     match selection {
         Rank::Fixed(k) if k <= a.nrows().min(a.ncols()) => Ok(k),
         Rank::Fixed(_) => Err(Error::InvalidInput("rank exceeds the smaller matrix axis")),
@@ -42,7 +43,7 @@ fn rank(a: &[Vec<f64>], selection: Rank) -> Result<usize> {
             if !eps.is_finite() || !(0.0..1.0).contains(&eps) {
                 return Err(Error::InvalidInput("relative precision must be in [0,1)"));
             }
-            let values = super::svdvals(&rows(&a)?)?;
+            let values = super::svdvals(&native(&a))?;
             Ok(values.iter().filter(|&&s| s > eps * values[0]).count())
         }
     }
@@ -91,8 +92,6 @@ pub fn interp_decomp(
     a: &(impl super::MatrixInput + ?Sized),
     selection: Rank,
 ) -> Result<InterpolativeResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let k = rank(a, selection)?;
     let a = dense(a)?;
     let (m, n) = a.shape();
@@ -102,7 +101,7 @@ pub fn interp_decomp(
     let skeleton = Mat::from_fn(m, k, |i, j| a[(i, indices[j])]);
     let mut projection = vec![vec![0.; n - k]; k];
     if k > 0 && k < n {
-        let (inverse, _) = super::pinv(&rows(&skeleton)?, 0., None)?;
+        let (inverse, _) = super::pinv(&native(&skeleton), 0., None)?;
         let inverse = dense(&inverse)?;
         let remaining = Mat::from_fn(m, n - k, |i, j| a[(i, indices[k + j])]);
         projection = rows(&(inverse * remaining))?;
@@ -155,22 +154,21 @@ pub fn reconstruct_interp_matrix(
     indices: &[usize],
     projection: &(impl super::MatrixInput + ?Sized),
 ) -> Result<Matrix> {
-    let projection_input = super::input::matrix_rows(projection)?;
-    let projection = projection_input.as_ref();
     permutation(indices)?;
     let n = indices.len();
-    let k = projection.len();
-    if k > n || projection.iter().any(|r| r.len() != n - k) {
+    let (k, columns) = shape(projection)?;
+    if k > n || (columns != n - k && !(k == 0 && columns == 0)) {
         return Err(Error::DimensionMismatch);
-    }
-    for r in projection {
-        crate::error::finite_slice(r)?;
     }
     let mut p = vec![vec![0.; n]; k];
     for i in 0..k {
         p[i][indices[i]] = 1.;
         for j in k..n {
-            p[i][indices[j]] = projection[i][j - k];
+            let value = projection.matrix_entry(i, j - k);
+            if !value.is_finite() {
+                return Err(Error::InvalidInput("coordinates must be finite"));
+            }
+            p[i][indices[j]] = value;
         }
     }
     Ok(p)
@@ -217,8 +215,6 @@ pub fn reconstruct_skel_matrix(
     k: usize,
     indices: &[usize],
 ) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = dense(a)?;
     permutation(indices)?;
     if indices.len() != a.ncols() || k > indices.len() {
@@ -271,23 +267,24 @@ pub fn reconstruct_matrix_from_id(
     indices: &[usize],
     projection: &(impl super::MatrixInput + ?Sized),
 ) -> Result<Matrix> {
-    let b_input = super::input::matrix_rows(b)?;
-    let b = b_input.as_ref();
-    let projection_input = super::input::matrix_rows(projection)?;
-    let projection = projection_input.as_ref();
     let (m, k) = shape(b)?;
-    if m == 0 || m > MAX_DIM || k > MAX_DIM || k != projection.len() {
+    if m == 0 || m > MAX_DIM || k > MAX_DIM || k != shape(projection)?.0 {
         return Err(Error::DimensionMismatch);
     }
-    for r in b {
-        crate::error::finite_slice(r)?;
+    for i in 0..m {
+        for j in 0..k {
+            if !b.matrix_entry(i, j).is_finite() {
+                return Err(Error::InvalidInput("coordinates must be finite"));
+            }
+        }
     }
     let p = reconstruct_interp_matrix(indices, projection)?;
     let mut a = vec![vec![0.; indices.len()]; m];
-    for i in 0..m {
+    for (i, output) in a.iter_mut().enumerate() {
         for (j, row) in p.iter().enumerate() {
-            for (h, &v) in row.iter().enumerate() {
-                a[i][h] += b[i][j] * v;
+            let value = b.matrix_entry(i, j);
+            for (out, &coefficient) in output.iter_mut().zip(row) {
+                *out += value * coefficient;
             }
         }
     }
@@ -332,8 +329,6 @@ pub fn reconstruct_matrix_from_id(
 ///
 /// [SciPy `interpolative.svd`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.interpolative.svd.html).
 pub fn svd(a: &(impl super::MatrixInput + ?Sized), selection: Rank) -> Result<SvdResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let k = rank(a, selection)?;
     let mut f = super::svd(a)?;
     for row in &mut f.u {
@@ -386,12 +381,8 @@ pub fn id_to_svd(
     indices: &[usize],
     projection: &(impl super::MatrixInput + ?Sized),
 ) -> Result<SvdResult> {
-    let b_input = super::input::matrix_rows(b)?;
-    let b = b_input.as_ref();
-    let projection_input = super::input::matrix_rows(projection)?;
-    let projection = projection_input.as_ref();
     let a = reconstruct_matrix_from_id(b, indices, projection)?;
-    svd(&a, Rank::Fixed(projection.len()))
+    svd(&a, Rank::Fixed(shape(projection)?.0))
 }
 /// Returns numerical rank `#{sᵢ > epsilon s₀}`.
 ///
@@ -430,8 +421,6 @@ pub fn id_to_svd(
 ///
 /// [SciPy `interpolative.estimate_rank`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.interpolative.estimate_rank.html).
 pub fn estimate_rank(a: &(impl super::MatrixInput + ?Sized), epsilon: f64) -> Result<usize> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     rank(a, Rank::Relative(epsilon))
 }
 /// Returns spectral norm `||A||₂ = s₀`.
@@ -471,8 +460,6 @@ pub fn estimate_rank(a: &(impl super::MatrixInput + ?Sized), epsilon: f64) -> Re
 ///
 /// [SciPy `interpolative.estimate_spectral_norm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.interpolative.estimate_spectral_norm.html).
 pub fn estimate_spectral_norm(a: &(impl super::MatrixInput + ?Sized)) -> Result<f64> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     Ok(super::svdvals(a)?[0])
 }
 /// Returns spectral norm `||A-B||₂ = s₀(A-B)`.
@@ -515,14 +502,10 @@ pub fn estimate_spectral_norm_diff(
     a: &(impl super::MatrixInput + ?Sized),
     b: &(impl super::MatrixInput + ?Sized),
 ) -> Result<f64> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let b_input = super::input::matrix_rows(b)?;
-    let b = b_input.as_ref();
     let a = dense(a)?;
     let b = dense(b)?;
     if a.shape() != b.shape() {
         return Err(Error::DimensionMismatch);
     }
-    estimate_spectral_norm(&rows(&(a - b))?)
+    estimate_spectral_norm(&native(&(a - b)))
 }

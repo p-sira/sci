@@ -59,6 +59,44 @@ mod performance_benches {
     }
 }
 
+/// Native storage sweeps exercise borrowing and adapter overhead separately
+/// from the row-vector API. The same harness can run against the parent commit.
+mod borrowed_input_benches {
+    use super::*;
+    use linalg::MatrixInput;
+
+    #[divan::bench(args = [16, 64, 256])]
+    fn matmul_faer(bencher: Bencher, n: usize) {
+        let a = square_matrix(n).to_faer().unwrap();
+        warm(bencher, || {
+            linalg::matmul(black_box(&a), black_box(&a)).unwrap()
+        });
+    }
+
+    #[divan::bench(args = [16, 64, 256])]
+    fn solve_faer(bencher: Bencher, n: usize) {
+        let a = square_matrix(n).to_faer().unwrap();
+        let b = values(n, 3);
+        warm(bencher, || {
+            linalg::solve(black_box(&a), black_box(&b)).unwrap()
+        });
+    }
+
+    #[divan::bench(args = [16, 64, 256])]
+    fn norm_ndarray(bencher: Bencher, n: usize) {
+        let a = square_matrix(n).to_ndarray().unwrap();
+        warm(bencher, || {
+            linalg::norm(black_box(&a), linalg::MatrixNorm::One).unwrap()
+        });
+    }
+
+    #[divan::bench(args = [16, 64, 256])]
+    fn cholesky_nalgebra(bencher: Bencher, n: usize) {
+        let a = spd_matrix(n).to_nalgebra().unwrap();
+        warm(bencher, || linalg::cholesky(black_box(&a), true).unwrap());
+    }
+}
+
 /// Matrix with diagonal entries of alternating sign, eigenvalues away from the
 /// imaginary axis on both half planes.
 fn mixed_matrix(n: usize) -> Vec<Vec<f64>> {
