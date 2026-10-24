@@ -357,3 +357,13 @@ required-features = ["io", "sparse", "signal"]
 name = "power_stability"
 path = "tests/power_stability.rs"
 required-features = ["stats", "special"]
+
+[[bench]]
+name = "linalg_triangular"
+harness = false
+required-features = ["linalg", "linalg-faer", "linalg-ndarray"]
+
+[[bench]]
+name = "linalg_triangular_allocs"
+harness = false
+required-features = ["linalg", "linalg-faer", "linalg-ndarray"]
