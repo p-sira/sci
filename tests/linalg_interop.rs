@@ -341,37 +341,48 @@ fn zero_rank_projection_validates_native_column_count() {
 
 #[test]
 fn triangular_backend_handles_all_flags_on_reversed_storage() {
-    let a = faer::Mat::from_fn(
-        9,
-        9,
-        |i, j| if i == j { 4.0 } else { (i + j) as f64 / 50.0 },
-    );
-    let view = a.as_ref().reverse_rows().reverse_cols();
+    // Asymmetric entries detect a triangle or transpose mix-up.
+    let a = faer::Mat::from_fn(9, 9, |i, j| {
+        if i == j {
+            4.0 + i as f64 / 10.0
+        } else {
+            (i + 2 * j) as f64 / 50.0
+        }
+    });
+    // The same logical matrix over reversed column-major and row-major storage.
+    let row_major = a.transpose().to_owned();
+    let views = [
+        a.as_ref().reverse_rows().reverse_cols(),
+        row_major.as_ref().transpose().reverse_rows().reverse_cols(),
+    ];
+    assert_eq!(views[0].to_matrix(), views[1].to_matrix());
     let solution: Vec<_> = (0..9).map(|i| (i as f64 + 1.0) / 3.0).collect();
-    for lower in [true, false] {
-        for unit in [true, false] {
-            for transpose in [true, false] {
-                let rhs: Vec<_> = (0..9)
-                    .map(|i| {
-                        (0..9)
-                            .map(|j| {
-                                let (r, c) = if transpose { (j, i) } else { (i, j) };
-                                let value = if unit && r == c {
-                                    1.0
-                                } else if (lower && r >= c) || (!lower && r <= c) {
-                                    view[(r, c)]
-                                } else {
-                                    0.0
-                                };
-                                value * solution[j]
-                            })
-                            .sum()
-                    })
-                    .collect();
-                check_vector(
-                    &l::solve_triangular(&view, &rhs, lower, unit, transpose).unwrap(),
-                    &solution,
-                );
+    for view in views {
+        for lower in [true, false] {
+            for unit in [true, false] {
+                for transpose in [true, false] {
+                    let rhs: Vec<_> = (0..9)
+                        .map(|i| {
+                            (0..9)
+                                .map(|j| {
+                                    let (r, c) = if transpose { (j, i) } else { (i, j) };
+                                    let value = if unit && r == c {
+                                        1.0
+                                    } else if (lower && r >= c) || (!lower && r <= c) {
+                                        view[(r, c)]
+                                    } else {
+                                        0.0
+                                    };
+                                    value * solution[j]
+                                })
+                                .sum()
+                        })
+                        .collect();
+                    check_vector(
+                        &l::solve_triangular(&view, &rhs, lower, unit, transpose).unwrap(),
+                        &solution,
+                    );
+                }
             }
         }
     }

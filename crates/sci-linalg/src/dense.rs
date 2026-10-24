@@ -481,20 +481,30 @@ pub(super) fn substitute(
     if !unit_diagonal && (0..n).any(|i| a[(i, i)] == 0.0) {
         return Err(Error::NumericalFailure("zero triangular pivot"));
     }
+    // A view with both strides negative is A = J B J for the forward view B,
+    // where J reverses order: solve op(B) (J x) = J b on B, whose triangle is
+    // the opposite one, instead of copying A.
+    let reversed = n > 1 && a.row_stride() < 0 && a.col_stride() < 0;
+    let a = if reversed {
+        a.reverse_rows_and_cols()
+    } else {
+        a
+    };
+    let effective_lower = (lower != transpose) != reversed;
+    if reversed {
+        x.reverse();
+    }
     if a.row_stride() == 1 {
-        substitute_col_major(a, x, lower != transpose, unit_diagonal, transpose);
+        substitute_col_major(a, x, effective_lower, unit_diagonal, transpose);
     } else if a.col_stride() == 1 {
         // Row-major storage is the column-major transpose; op(A) is unchanged.
-        substitute_col_major(
-            a.transpose(),
-            x,
-            lower != transpose,
-            unit_diagonal,
-            !transpose,
-        );
+        substitute_col_major(a.transpose(), x, effective_lower, unit_diagonal, !transpose);
     } else {
         let a = a.to_owned();
-        substitute_col_major(a.as_ref(), x, lower != transpose, unit_diagonal, transpose);
+        substitute_col_major(a.as_ref(), x, effective_lower, unit_diagonal, transpose);
+    }
+    if reversed {
+        x.reverse();
     }
     Ok(())
 }
