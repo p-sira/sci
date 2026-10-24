@@ -45,11 +45,7 @@ pub(super) fn dense_ref(
         ));
     }
     let a = super::input::faer_input(a)?;
-    if a.as_ref()
-        .col_iter()
-        .flat_map(|c| c.iter())
-        .any(|x| !x.is_finite())
-    {
+    if !all_finite(a.as_ref()) {
         return Err(Error::InvalidInput("coordinates must be finite"));
     }
     Ok(a)
@@ -70,12 +66,28 @@ pub(super) fn rows(
     a: &(impl AsMatRef<T = f64, Rows = usize, Cols = usize> + ?Sized),
 ) -> Result<Vec<Vec<f64>>> {
     let a = a.as_mat_ref();
-    if a.col_iter().flat_map(|c| c.iter()).any(|v| !v.is_finite()) {
-        return Err(Error::NonFiniteEvaluation);
-    }
+    finite_output(a)?;
     Ok((0..a.nrows())
         .map(|i| (0..a.ncols()).map(|j| a[(i, j)]).collect())
         .collect())
+}
+/// Checks every entry, scanning contiguous columns as slices.
+pub(super) fn all_finite(a: faer::MatRef<'_, f64>) -> bool {
+    (0..a.ncols()).all(|j| {
+        let c = a.col(j);
+        match c.try_as_col_major() {
+            Some(c) => c.as_slice().iter().all(|x| x.is_finite()),
+            None => c.iter().all(|x| x.is_finite()),
+        }
+    })
+}
+/// Rejects nonfinite computed entries without materializing shared rows.
+pub(super) fn finite_output(a: faer::MatRef<'_, f64>) -> Result<()> {
+    if all_finite(a) {
+        Ok(())
+    } else {
+        Err(Error::NonFiniteEvaluation)
+    }
 }
 pub(super) fn output(a: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>> {
     if a.iter().flatten().any(|v| !v.is_finite()) {

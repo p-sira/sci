@@ -429,8 +429,8 @@ pub fn matrix_balance(
                     }
                     t[(j, i)] *= factor;
                 }
-                rows(&a)?;
-                rows(&t)?;
+                finite_output(a.as_ref())?;
+                finite_output(t.as_ref())?;
                 if t.col(i).norm_max() == 0. {
                     return Err(Error::NumericalFailure(
                         "balancing transformation underflowed",

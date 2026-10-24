@@ -164,7 +164,8 @@ pub fn lu_solve(
 ) -> Result<Vec<f64>> {
     let b_input = super::input::vector_slice(b)?;
     let b = b_input.as_ref();
-    let a = square(&factor.packed)?;
+    let a_input = square_ref(&factor.packed)?;
+    let a = a_input.as_ref();
     let n = a.nrows();
     if factor.row_permutation.len() != n || b.len() != n {
         return Err(Error::DimensionMismatch);
@@ -179,18 +180,31 @@ pub fn lu_solve(
         }
         seen[p] = true;
     }
+    let finite = |x: &[f64]| {
+        if x.iter().all(|v| v.is_finite()) {
+            Ok(())
+        } else {
+            Err(Error::NonFiniteEvaluation)
+        }
+    };
     if transpose {
-        let y = solve_triangular(&factor.packed, b, false, false, true)?;
-        let z = solve_triangular(&factor.packed, &y, true, true, true)?;
+        let mut z = b.to_vec();
+        substitute(a, &mut z, false, false, true)?;
+        finite(&z)?;
+        substitute(a, &mut z, true, true, true)?;
+        finite(&z)?;
         let mut x = vec![0.0; n];
         for (i, &p) in factor.row_permutation.iter().enumerate() {
             x[p] = z[i];
         }
         Ok(x)
     } else {
-        let pb: Vec<_> = factor.row_permutation.iter().map(|&i| b[i]).collect();
-        let y = solve_triangular(&factor.packed, &pb, true, true, false)?;
-        solve_triangular(&factor.packed, &y, false, false, false)
+        let mut x: Vec<_> = factor.row_permutation.iter().map(|&i| b[i]).collect();
+        substitute(a, &mut x, true, true, false)?;
+        finite(&x)?;
+        substitute(a, &mut x, false, false, false)?;
+        finite(&x)?;
+        Ok(x)
     }
 }
 /// Solves `A x=b` using general band storage `ab[u+i-j,j]=A[i,j]`.

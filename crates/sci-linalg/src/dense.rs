@@ -430,7 +430,7 @@ pub fn det(a: &(impl super::MatrixInput + ?Sized)) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Private faer algorithms use f64. Ill-conditioned results can lose accuracy. Iterative routines use bounded backend-specific sweep limits. O(n²) faer triangular substitution on a borrowed input view. Ignored triangle and unit diagonal still require finite supplied entries.
+/// Private faer algorithms use f64. Ill-conditioned results can lose accuracy. Iterative routines use bounded backend-specific sweep limits. O(n²) substitution on a borrowed input view. Ignored triangle and unit diagonal still require finite supplied entries.
 ///
 /// # Examples
 ///
@@ -453,18 +453,92 @@ pub fn solve_triangular(
     let b = b_input.as_ref();
     let a_input = square_ref(a)?;
     let a = a_input.as_ref();
-    let mut b = rhs(b, a.nrows())?;
-    if !unit_diagonal && (0..a.nrows()).any(|i| a[(i, i)] == 0.0) {
+    if b.len() != a.nrows() {
+        return Err(Error::DimensionMismatch);
+    }
+    crate::error::finite_slice(b)?;
+    let mut x = b.to_vec();
+    substitute(a, &mut x, lower, unit_diagonal, transpose)?;
+    if x.iter().any(|v| !v.is_finite()) {
+        return Err(Error::NonFiniteEvaluation);
+    }
+    Ok(x)
+}
+/// Overwrites `x` with the solution of `op(A) x = x` for triangular A.
+///
+/// Small systems dominate this crate's workloads, so a direct substitution
+/// over contiguous columns avoids the dispatch and recursion overhead of the
+/// blocked backend kernels.
+pub(super) fn substitute(
+    a: faer::MatRef<'_, f64>,
+    x: &mut [f64],
+    lower: bool,
+    unit_diagonal: bool,
+    transpose: bool,
+) -> Result<()> {
+    let n = a.nrows();
+    debug_assert_eq!(x.len(), n);
+    if !unit_diagonal && (0..n).any(|i| a[(i, i)] == 0.0) {
         return Err(Error::NumericalFailure("zero triangular pivot"));
     }
-    let a = if transpose { a.transpose() } else { a };
-    match (lower != transpose, unit_diagonal) {
-        (true, false) => a.solve_lower_triangular_in_place(b.as_mut()),
-        (false, false) => a.solve_upper_triangular_in_place(b.as_mut()),
-        (true, true) => a.solve_unit_lower_triangular_in_place(b.as_mut()),
-        (false, true) => a.solve_unit_upper_triangular_in_place(b.as_mut()),
+    if a.row_stride() == 1 {
+        substitute_col_major(a, x, lower != transpose, unit_diagonal, transpose);
+    } else if a.col_stride() == 1 {
+        // Row-major storage is the column-major transpose; op(A) is unchanged.
+        substitute_col_major(
+            a.transpose(),
+            x,
+            lower != transpose,
+            unit_diagonal,
+            !transpose,
+        );
+    } else {
+        let a = a.to_owned();
+        substitute_col_major(a.as_ref(), x, lower != transpose, unit_diagonal, transpose);
     }
-    vector(b)
+    Ok(())
+}
+fn substitute_col_major(
+    a: faer::MatRef<'_, f64>,
+    x: &mut [f64],
+    effective_lower: bool,
+    unit_diagonal: bool,
+    transpose: bool,
+) {
+    let n = a.nrows();
+    let column = |j: usize| {
+        a.col(j)
+            .try_as_col_major()
+            .expect("unit row stride gives contiguous columns")
+            .as_slice()
+    };
+    if transpose {
+        // Row i of Aᵀ is column i of A: contiguous dot products.
+        for k in 0..n {
+            let i = if effective_lower { k } else { n - 1 - k };
+            let c = column(i);
+            let range = if effective_lower { 0..i } else { i + 1..n };
+            let mut value = x[i];
+            for (&aji, &xj) in c[range.clone()].iter().zip(&x[range]) {
+                value -= aji * xj;
+            }
+            x[i] = if unit_diagonal { value } else { value / c[i] };
+        }
+    } else {
+        // Column-oriented elimination keeps every update contiguous.
+        for k in 0..n {
+            let j = if effective_lower { k } else { n - 1 - k };
+            let c = column(j);
+            if !unit_diagonal {
+                x[j] /= c[j];
+            }
+            let xj = x[j];
+            let range = if effective_lower { j + 1..n } else { 0..j };
+            for (xi, &aij) in x[range.clone()].iter_mut().zip(&c[range]) {
+                *xi -= aij * xj;
+            }
+        }
+    }
 }
 /// Solves `T(c,r) x=b`, with the diagonals defined by [`toeplitz`].
 ///

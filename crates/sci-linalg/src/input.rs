@@ -52,6 +52,7 @@ pub trait MatrixInput {
     /// Borrows shared rows, when available, to avoid an input copy.
     /// Implementors returning `Some` must match the reported shape and entries.
     #[doc(hidden)]
+    #[inline]
     fn shared_rows(&self) -> Option<&[Vec<f64>]> {
         None
     }
@@ -60,6 +61,7 @@ pub trait MatrixInput {
     /// must match the reported shape and logical entries, including strides.
     /// Numerical backends and their decomposition objects remain private.
     #[doc(hidden)]
+    #[inline]
     fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
         None
     }
@@ -157,6 +159,7 @@ pub(super) fn matrix_rows(a: &(impl MatrixInput + ?Sized)) -> Result<Cow<'_, [Ve
 }
 
 impl MatrixInput for [Vec<f64>] {
+    #[inline]
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         let n = self.first().map_or(0, Vec::len);
         if self.iter().any(|row| row.len() != n) {
@@ -164,39 +167,48 @@ impl MatrixInput for [Vec<f64>] {
         }
         Ok((self.len(), n))
     }
+    #[inline]
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self[row][column]
     }
+    #[inline]
     fn shared_rows(&self) -> Option<&[Vec<f64>]> {
         Some(self)
     }
 }
 
 impl MatrixInput for Vec<Vec<f64>> {
+    #[inline]
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         self.as_slice().matrix_shape()
     }
+    #[inline]
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self[row][column]
     }
+    #[inline]
     fn shared_rows(&self) -> Option<&[Vec<f64>]> {
         Some(self)
     }
 }
 
 impl<const N: usize> MatrixInput for [Vec<f64>; N] {
+    #[inline]
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         self.as_slice().matrix_shape()
     }
+    #[inline]
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self[row][column]
     }
+    #[inline]
     fn shared_rows(&self) -> Option<&[Vec<f64>]> {
         Some(self)
     }
 }
 
 impl<const N: usize> MatrixInput for [[f64; N]] {
+    #[inline]
     fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
         Some(faer::MatRef::from_row_major_slice(
             self.as_flattened(),
@@ -205,15 +217,18 @@ impl<const N: usize> MatrixInput for [[f64; N]] {
         ))
     }
 
+    #[inline]
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         Ok((self.len(), N))
     }
+    #[inline]
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self[row][column]
     }
 }
 
 impl<const M: usize, const N: usize> MatrixInput for [[f64; N]; M] {
+    #[inline]
     fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
         Some(faer::MatRef::from_row_major_slice(
             self.as_flattened(),
@@ -222,9 +237,11 @@ impl<const M: usize, const N: usize> MatrixInput for [[f64; N]; M] {
         ))
     }
 
+    #[inline]
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         Ok((M, N))
     }
+    #[inline]
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self[row][column]
     }
@@ -232,9 +249,11 @@ impl<const M: usize, const N: usize> MatrixInput for [[f64; N]; M] {
 
 #[cfg(feature = "ndarray")]
 impl<S: ndarray::Data<Elem = f64>> MatrixInput for ndarray::ArrayBase<S, ndarray::Ix2> {
+    #[inline]
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         Ok(self.dim())
     }
+    #[inline]
     fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
         let (m, n) = self.dim();
         if let Some(slice) = self.as_slice() {
@@ -249,6 +268,7 @@ impl<S: ndarray::Data<Elem = f64>> MatrixInput for ndarray::ArrayBase<S, ndarray
             None
         }
     }
+    #[inline]
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self[(row, column)]
     }
@@ -258,9 +278,11 @@ impl<S: ndarray::Data<Elem = f64>> MatrixInput for ndarray::ArrayBase<S, ndarray
 impl<R: nalgebra::Dim, C: nalgebra::Dim, S: nalgebra::Storage<f64, R, C>> MatrixInput
     for nalgebra::Matrix<f64, R, C, S>
 {
+    #[inline]
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         Ok(self.shape())
     }
+    #[inline]
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self[(row, column)]
     }
@@ -268,12 +290,15 @@ impl<R: nalgebra::Dim, C: nalgebra::Dim, S: nalgebra::Storage<f64, R, C>> Matrix
 
 #[cfg(feature = "faer")]
 impl<R: faer::Shape, C: faer::Shape> MatrixInput for faer::Mat<f64, R, C> {
+    #[inline]
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         Ok((self.nrows().unbound(), self.ncols().unbound()))
     }
+    #[inline]
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self.as_ref().as_dyn()[(row, column)]
     }
+    #[inline]
     fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
         Some(self.as_ref().as_dyn().as_dyn_stride())
     }
@@ -283,12 +308,15 @@ impl<R: faer::Shape, C: faer::Shape> MatrixInput for faer::Mat<f64, R, C> {
 impl<R: faer::Shape, C: faer::Shape, RS: faer::Stride, CS: faer::Stride> MatrixInput
     for faer::MatRef<'_, f64, R, C, RS, CS>
 {
+    #[inline]
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         Ok((self.nrows().unbound(), self.ncols().unbound()))
     }
+    #[inline]
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self.as_ref().as_dyn()[(row, column)]
     }
+    #[inline]
     fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
         Some(self.as_ref().as_dyn().as_dyn_stride())
     }
@@ -298,27 +326,34 @@ impl<R: faer::Shape, C: faer::Shape, RS: faer::Stride, CS: faer::Stride> MatrixI
 impl<R: faer::Shape, C: faer::Shape, RS: faer::Stride, CS: faer::Stride> MatrixInput
     for faer::MatMut<'_, f64, R, C, RS, CS>
 {
+    #[inline]
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         Ok((self.nrows().unbound(), self.ncols().unbound()))
     }
+    #[inline]
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self.as_ref().as_dyn()[(row, column)]
     }
+    #[inline]
     fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
         Some(self.as_ref().as_dyn().as_dyn_stride())
     }
 }
 
 impl<M: MatrixInput + ?Sized> MatrixInput for &M {
+    #[inline]
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         (**self).matrix_shape()
     }
+    #[inline]
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         (**self).matrix_entry(row, column)
     }
+    #[inline]
     fn shared_rows(&self) -> Option<&[Vec<f64>]> {
         (**self).shared_rows()
     }
+    #[inline]
     fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
         (**self).faer_view()
     }
@@ -353,6 +388,7 @@ pub trait VectorInput {
     /// Borrows entries in logical order when contiguous.
     /// Implementors returning `Some` must match the reported length and entries.
     #[doc(hidden)]
+    #[inline]
     fn shared_slice(&self) -> Option<&[f64]> {
         None
     }
@@ -421,46 +457,58 @@ pub(super) fn vector_slice(x: &(impl VectorInput + ?Sized)) -> Result<Cow<'_, [f
 }
 
 impl VectorInput for [f64] {
+    #[inline]
     fn vector_len(&self) -> usize {
         self.len()
     }
+    #[inline]
     fn vector_entry(&self, index: usize) -> f64 {
         self[index]
     }
+    #[inline]
     fn shared_slice(&self) -> Option<&[f64]> {
         Some(self)
     }
 }
 impl VectorInput for Vec<f64> {
+    #[inline]
     fn vector_len(&self) -> usize {
         self.len()
     }
+    #[inline]
     fn vector_entry(&self, index: usize) -> f64 {
         self[index]
     }
+    #[inline]
     fn shared_slice(&self) -> Option<&[f64]> {
         Some(self)
     }
 }
 impl<const N: usize> VectorInput for [f64; N] {
+    #[inline]
     fn vector_len(&self) -> usize {
         N
     }
+    #[inline]
     fn vector_entry(&self, index: usize) -> f64 {
         self[index]
     }
+    #[inline]
     fn shared_slice(&self) -> Option<&[f64]> {
         Some(self)
     }
 }
 #[cfg(feature = "ndarray")]
 impl<S: ndarray::Data<Elem = f64>> VectorInput for ndarray::ArrayBase<S, ndarray::Ix1> {
+    #[inline]
     fn vector_len(&self) -> usize {
         self.len()
     }
+    #[inline]
     fn vector_entry(&self, index: usize) -> f64 {
         self[index]
     }
+    #[inline]
     fn shared_slice(&self) -> Option<&[f64]> {
         self.as_slice()
     }
@@ -469,20 +517,25 @@ impl<S: ndarray::Data<Elem = f64>> VectorInput for ndarray::ArrayBase<S, ndarray
 impl<R: nalgebra::Dim, S: nalgebra::Storage<f64, R>> VectorInput
     for nalgebra::Matrix<f64, R, nalgebra::U1, S>
 {
+    #[inline]
     fn vector_len(&self) -> usize {
         self.nrows()
     }
+    #[inline]
     fn vector_entry(&self, index: usize) -> f64 {
         self[index]
     }
 }
 impl<V: VectorInput + ?Sized> VectorInput for &V {
+    #[inline]
     fn vector_len(&self) -> usize {
         (**self).vector_len()
     }
+    #[inline]
     fn vector_entry(&self, index: usize) -> f64 {
         (**self).vector_entry(index)
     }
+    #[inline]
     fn shared_slice(&self) -> Option<&[f64]> {
         (**self).shared_slice()
     }
@@ -490,9 +543,11 @@ impl<V: VectorInput + ?Sized> VectorInput for &V {
 
 #[cfg(feature = "faer")]
 impl<D: faer::Shape> VectorInput for faer::Col<f64, D> {
+    #[inline]
     fn vector_len(&self) -> usize {
         self.nrows().unbound()
     }
+    #[inline]
     fn vector_entry(&self, index: usize) -> f64 {
         self.as_ref().as_dyn_rows()[index]
     }
@@ -500,9 +555,11 @@ impl<D: faer::Shape> VectorInput for faer::Col<f64, D> {
 
 #[cfg(feature = "faer")]
 impl<D: faer::Shape, S: faer::Stride> VectorInput for faer::ColRef<'_, f64, D, S> {
+    #[inline]
     fn vector_len(&self) -> usize {
         self.nrows().unbound()
     }
+    #[inline]
     fn vector_entry(&self, index: usize) -> f64 {
         self.as_ref().as_dyn_rows()[index]
     }
@@ -510,9 +567,11 @@ impl<D: faer::Shape, S: faer::Stride> VectorInput for faer::ColRef<'_, f64, D, S
 
 #[cfg(feature = "faer")]
 impl<D: faer::Shape, S: faer::Stride> VectorInput for faer::ColMut<'_, f64, D, S> {
+    #[inline]
     fn vector_len(&self) -> usize {
         self.nrows().unbound()
     }
+    #[inline]
     fn vector_entry(&self, index: usize) -> f64 {
         self.as_ref().as_dyn_rows()[index]
     }
@@ -520,9 +579,11 @@ impl<D: faer::Shape, S: faer::Stride> VectorInput for faer::ColMut<'_, f64, D, S
 
 #[cfg(feature = "faer")]
 impl<D: faer::Shape> VectorInput for faer::Row<f64, D> {
+    #[inline]
     fn vector_len(&self) -> usize {
         self.ncols().unbound()
     }
+    #[inline]
     fn vector_entry(&self, index: usize) -> f64 {
         self.as_ref().as_dyn_cols()[index]
     }
@@ -530,9 +591,11 @@ impl<D: faer::Shape> VectorInput for faer::Row<f64, D> {
 
 #[cfg(feature = "faer")]
 impl<D: faer::Shape, S: faer::Stride> VectorInput for faer::RowRef<'_, f64, D, S> {
+    #[inline]
     fn vector_len(&self) -> usize {
         self.ncols().unbound()
     }
+    #[inline]
     fn vector_entry(&self, index: usize) -> f64 {
         self.as_ref().as_dyn_cols()[index]
     }
@@ -540,9 +603,11 @@ impl<D: faer::Shape, S: faer::Stride> VectorInput for faer::RowRef<'_, f64, D, S
 
 #[cfg(feature = "faer")]
 impl<D: faer::Shape, S: faer::Stride> VectorInput for faer::RowMut<'_, f64, D, S> {
+    #[inline]
     fn vector_len(&self) -> usize {
         self.ncols().unbound()
     }
+    #[inline]
     fn vector_entry(&self, index: usize) -> f64 {
         self.as_ref().as_dyn_cols()[index]
     }
@@ -582,13 +647,16 @@ pub(super) fn faer_input(a: &(impl MatrixInput + ?Sized)) -> Result<FaerInput<'_
 }
 
 impl MatrixInput for FaerInput<'_> {
+    #[inline]
     fn matrix_shape(&self) -> Result<(usize, usize)> {
         let a = self.as_ref();
         Ok((a.nrows(), a.ncols()))
     }
+    #[inline]
     fn matrix_entry(&self, row: usize, column: usize) -> f64 {
         self.as_ref()[(row, column)]
     }
+    #[inline]
     fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
         Some(self.as_ref())
     }
