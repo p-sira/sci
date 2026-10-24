@@ -64,8 +64,6 @@ pub struct LdlResult {
 ///
 /// [SciPy `eig`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eig.html).
 pub fn eig(a: &(impl super::MatrixInput + ?Sized)) -> Result<GeneralEigenResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let (a, scale) = scaled(square(a)?);
     let n = a.nrows();
     let f = faer::Mat::from_fn(n, n, |i, j| a[(i, j)])
@@ -130,8 +128,6 @@ pub fn eig(a: &(impl super::MatrixInput + ?Sized)) -> Result<GeneralEigenResult>
 ///
 /// [SciPy `ldl`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.ldl.html).
 pub fn ldl(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<LdlResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let mut a = symmetric(a, lower)?;
     let n = a.nrows();
     // Reversing both axes turns an upper factor into a lower one.
@@ -311,8 +307,6 @@ pub fn clarkson_woodruff_transform(
     buckets: &[usize],
     signs: &(impl super::VectorInput + ?Sized),
 ) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let signs_input = super::input::vector_slice(signs)?;
     let signs = signs_input.as_ref();
     let a = dense(a)?;
@@ -375,8 +369,6 @@ pub fn matrix_balance(
     permute: bool,
     scale: bool,
 ) -> Result<(Matrix, Matrix)> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let mut a = square(a)?;
     let n = a.nrows();
     let mut t = Mat::identity(n, n);
@@ -437,8 +429,8 @@ pub fn matrix_balance(
                     }
                     t[(j, i)] *= factor;
                 }
-                rows(&a)?;
-                rows(&t)?;
+                finite_output(a.as_ref())?;
+                finite_output(t.as_ref())?;
                 if t.col(i).norm_max() == 0. {
                     return Err(Error::NumericalFailure(
                         "balancing transformation underflowed",

@@ -85,10 +85,6 @@ pub fn qz(
     a: &(impl super::MatrixInput + ?Sized),
     b: &(impl super::MatrixInput + ?Sized),
 ) -> Result<QzResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let b_input = super::input::matrix_rows(b)?;
-    let b = b_input.as_ref();
     let a = square(a)?;
     let b = square(b)?;
     if a.shape() != b.shape() {
@@ -290,10 +286,6 @@ pub fn ordqz<F: FnMut(Complex, Complex) -> bool>(
     b: &(impl super::MatrixInput + ?Sized),
     mut select: F,
 ) -> Result<QzResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let b_input = super::input::matrix_rows(b)?;
-    let b = b_input.as_ref();
     let f = qz(a, b)?;
     let n = f.alpha.len();
     let mut flags: Vec<_> = f

@@ -108,7 +108,7 @@ fn logarithm(a: Mat<C>) -> Result<Mat<C>> {
     value *= Scale(C::new(2.0_f64.powi(count), 0.));
     Ok(&q * value * q.adjoint())
 }
-fn input(a: &[Vec<f64>]) -> Result<(Mat<C>, f64)> {
+fn input(a: &(impl super::MatrixInput + ?Sized)) -> Result<(Mat<C>, f64)> {
     let (a, scale) = scaled(square(a)?);
     Ok((a.map(|x| C::new(*x, 0.)), scale))
 }
@@ -154,8 +154,6 @@ fn input(a: &[Vec<f64>]) -> Result<(Mat<C>, f64)> {
 ///
 /// [SciPy `sqrtm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.sqrtm.html).
 pub fn sqrtm(a: &(impl super::MatrixInput + ?Sized)) -> Result<ComplexMatrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let (a, scale) = input(a)?;
     complex_rows(&(root(a)? * Scale(C::new(scale.sqrt(), 0.))))
 }
@@ -202,8 +200,6 @@ pub fn sqrtm(a: &(impl super::MatrixInput + ?Sized)) -> Result<ComplexMatrix> {
 ///
 /// [SciPy `logm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.logm.html).
 pub fn logm(a: &(impl super::MatrixInput + ?Sized)) -> Result<ComplexMatrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let (a, scale) = input(a)?;
     let mut value = logarithm(a)?;
     for i in 0..value.nrows() {
@@ -259,8 +255,6 @@ pub fn fractional_matrix_power(
     a: &(impl super::MatrixInput + ?Sized),
     t: f64,
 ) -> Result<ComplexMatrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     if !t.is_finite() || t.abs() > 4_294_967_296. {
         return Err(Error::InvalidInput(
             "exponent must be finite with magnitude at most 2^32",
@@ -351,8 +345,6 @@ pub fn funm<F: FnMut(Complex) -> Complex>(
     a: &(impl super::MatrixInput + ?Sized),
     mut function: F,
 ) -> Result<ComplexMatrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = square(a)?.map(|x| C::new(*x, 0.));
     let (q, t) = schur(a)?;
     let n = t.nrows();
@@ -426,8 +418,6 @@ pub fn funm<F: FnMut(Complex) -> Complex>(
 ///
 /// [SciPy `signm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.signm.html).
 pub fn signm(a: &(impl super::MatrixInput + ?Sized)) -> Result<ComplexMatrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let (a, _) = input(a)?;
     let (_, t) = schur(a.clone())?;
     if (0..t.nrows()).any(|i| t[(i, i)].re.abs() <= f64::EPSILON * t[(i, i)].norm()) {
@@ -486,10 +476,6 @@ pub fn rsf2csf(
     t: &(impl super::MatrixInput + ?Sized),
     z: &(impl super::MatrixInput + ?Sized),
 ) -> Result<(ComplexMatrix, ComplexMatrix)> {
-    let t_input = super::input::matrix_rows(t)?;
-    let t = t_input.as_ref();
-    let z_input = super::input::matrix_rows(z)?;
-    let z = z_input.as_ref();
     let t = square(t)?;
     let z = square(z)?;
     let n = t.nrows();
