@@ -351,9 +351,15 @@ fn triangular_backend_handles_all_flags_on_reversed_storage() {
     });
     // The same logical matrix over reversed column-major and row-major storage.
     let row_major = a.transpose().to_owned();
+    let reversed_rows = a.as_ref().reverse_rows().to_owned();
+    let reversed_columns = row_major.as_ref().reverse_rows().to_owned();
     let views = [
         a.as_ref().reverse_rows().reverse_cols(),
         row_major.as_ref().transpose().reverse_rows().reverse_cols(),
+        // One reversed axis has neither unit stride, requiring the owned
+        // triangular workspace. Keep both orientations and transpose paths.
+        reversed_rows.as_ref().reverse_rows(),
+        reversed_columns.as_ref().transpose().reverse_cols(),
     ];
     assert_eq!(views[0].to_matrix(), views[1].to_matrix());
     let solution: Vec<_> = (0..9).map(|i| (i as f64 + 1.0) / 3.0).collect();
@@ -386,4 +392,16 @@ fn triangular_backend_handles_all_flags_on_reversed_storage() {
             }
         }
     }
+}
+
+#[test]
+fn fixed_slices_and_nested_references_preserve_rectangular_layout() {
+    let a = [[1., 2., 3.], [4., 5., 6.]];
+    let slice = a.as_slice();
+    let reference = &slice;
+    let identity = [[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]];
+    let expected = a.map(Vec::from);
+    assert_eq!(l::matmul(slice, &identity).unwrap(), expected);
+    assert_eq!(l::matmul(&reference, &identity).unwrap(), expected);
+    assert_eq!(reference.to_matrix().unwrap(), expected);
 }

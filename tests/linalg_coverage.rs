@@ -323,3 +323,43 @@ fn qz_selection_runs_once_per_eigenvalue_and_reports_inseparable_pairs() {
     assert_eq!(calls, 2);
     assert!(matches!(result, Err(Error::NumericalFailure(_))));
 }
+
+#[test]
+fn triangular_and_reusable_lu_solves_reject_arithmetic_overflow() {
+    // Finite, nonsingular inputs can overflow during either substitution.
+    // The reciprocal of the smallest positive subnormal exceeds f64::MAX.
+    let tiny = f64::from_bits(1);
+    for transpose in [false, true] {
+        assert_eq!(
+            l::solve_triangular(&[[tiny]], &[1.], true, false, transpose),
+            Err(Error::NonFiniteEvaluation)
+        );
+        let factor = l::LuFactor {
+            packed: vec![vec![tiny]],
+            row_permutation: vec![0],
+        };
+        assert_eq!(
+            l::lu_solve(&factor, &[1.], transpose),
+            Err(Error::NonFiniteEvaluation)
+        );
+        // A unit lower factor can overflow before the upper solve, too.
+        let factor = l::LuFactor {
+            packed: vec![vec![1., f64::MAX], vec![f64::MAX, 1.]],
+            row_permutation: vec![0, 1],
+        };
+        assert_eq!(
+            l::lu_solve(&factor, &[2., 2.], transpose),
+            Err(Error::NonFiniteEvaluation)
+        );
+    }
+}
+
+#[test]
+fn interpolative_projection_rejects_nonfinite_coefficients() {
+    for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert_eq!(
+            l::interpolative::reconstruct_interp_matrix(&[1, 0], &[[value]]),
+            Err(Error::InvalidInput("coordinates must be finite"))
+        );
+    }
+}
