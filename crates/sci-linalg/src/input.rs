@@ -661,3 +661,24 @@ impl MatrixInput for FaerInput<'_> {
         Some(self.as_ref())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{FaerInput, MatrixInput};
+
+    #[test]
+    fn native_matrix_entries_preserve_logical_order_and_signed_zero() {
+        let entries = [[-0.0, 2.0, 3.0], [4.0, 5.0, 6.0]];
+        let matrix = faer::Mat::from_fn(2, 3, |i, j| entries[i][j]);
+        let view = matrix.as_ref().transpose().reverse_rows();
+        let expected: [[f64; 2]; 3] = [[3.0, 6.0], [2.0, 5.0], [-0.0, 4.0]];
+        for input in [FaerInput::Borrowed(view), FaerInput::Owned(view.to_owned())] {
+            assert_eq!(input.matrix_shape().unwrap(), (3, 2));
+            for (i, row) in expected.iter().enumerate() {
+                for (j, value) in row.iter().enumerate() {
+                    assert_eq!(input.matrix_entry(i, j).to_bits(), value.to_bits());
+                }
+            }
+        }
+    }
+}
