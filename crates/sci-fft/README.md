@@ -1,5 +1,7 @@
 # Sci-FFT
 
+The default `hankel` feature enables `fht`, `ifht`, and `fhtoffset` with the private Rust gamma backend. All transforms build without XSF, C++ compilation, or libclang. Use `default-features = false` to omit FFTLog. The Sci facade selects this capability with `fft-hankel`.
+
 Fourier transforms on shared real and complex data.
 
 Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
@@ -20,4 +22,4 @@ forward sign and return the nonnegative-frequency half-spectrum.
 ## Acknowledgments
 
 We thank `num-complex`, `rustfft`, `realfft`, `rustdct`,
-and `xsf` for their valuable numerical building blocks.
+and `special` for their valuable numerical building blocks.

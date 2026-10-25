@@ -1,9 +1,11 @@
 use crate::error::{finite, finite_slice};
 mod fourier;
+#[cfg(feature = "hankel")]
 mod hankel;
 mod periodic;
 use crate::{Error, Result, complex::Complex};
 pub use fourier::{fft, ifft, rfft};
+#[cfg(feature = "hankel")]
 pub use hankel::{fht, fhtoffset, ifht};
 pub use periodic::{
     cc_diff, cs_diff, diff, hilbert, ihilbert, itilbert, sc_diff, shift, ss_diff, tilbert,

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The default `npz` feature enables `load_npz` and `save_npz`. Use `default-features = false` to retain sparse numerical operations without ZIP and compression dependencies. The Sci facade selects NPZ with `sparse-npz`.
+
 ## 0.1.0
 
 - Initial release, added after the repository tag `v0.1.0`.

@@ -12,6 +12,10 @@
 //! accept finite real samples and reuse the shared Fourier kernels. Their sign,
 //! endpoint, and Nyquist conventions are documented per function.
 //! Signal processing reuses [`fft`], [`ifft`], and [`rfft`] from this crate.
+//! The default `hankel` feature adds FFTLog transforms and their private Rust
+//! gamma backend. All transforms compile without XSF, C++ compilation, or
+//! libclang. Disable default features to omit FFTLog. Through the Sci
+//! facade, enable `fft-hankel` to include FFTLog.
 //!
 //! For a length-`n` sequence, the forward transform is
 //! `X[k] = Σ x[j] exp(-2π i j k/n)` and the inverse is
@@ -21,7 +25,7 @@
 //! ## Acknowledgments
 //!
 //! We thank `num-complex`, `rustfft`, `realfft`, `rustdct`,
-//! and `xsf` for their valuable numerical building blocks.
+//! and `special` for their valuable numerical building blocks.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]

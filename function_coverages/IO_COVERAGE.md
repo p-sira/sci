@@ -1,5 +1,7 @@
 # Scientific I/O coverage
 
+With facade defaults disabled, formats are selected independently by `io-matrix-market`, `io-wav`, and `io-matlab`; `io` alone exposes shared I/O types. Domain features remain enabled by default. Matrix Market does not enable sparse NPZ; MATLAB and NPZ share flate2’s Rust/miniz backend. Supported functions, numerical conventions, and reference fixtures are unchanged.
+
 Scope: Matrix Market, WAV, and a dense numeric MATLAB subset. The source
 [inventory](scipy_function_list/scipy.io.md) lists 28 qualified function entries
 across 18 namespaces, including deprecated aliases. The public namespaces contain

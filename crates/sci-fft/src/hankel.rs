@@ -1,7 +1,8 @@
-//! FFTLog composition using private XSF gamma and RustFFT backends.
+//! FFTLog composition using private Rust gamma and RustFFT backends.
 //!
 //! Coefficient and grid adaptations follow SciPy; license retained in
 //! `LICENSES/scipy-fftlog.txt`.
+mod gamma;
 use super::{irfft, length, rfft};
 use crate::error::{finite, finite_slice};
 use crate::{
@@ -19,12 +20,6 @@ fn parameters(dln: f64, mu: f64, offset: f64, bias: f64) -> Result<(f64, f64)> {
         finite((mu + 1.0 + bias) / 2.0)?,
         finite((mu + 1.0 - bias) / 2.0)?,
     ))
-}
-fn gamma(x: f64, y: f64) -> Result<num_complex::Complex64> {
-    let z = xsf::loggamma(num_complex::Complex64::new(x, y));
-    finite(z.re)?;
-    finite(z.im)?;
-    Ok(z)
 }
 fn scale(value: f64, exponent: f64) -> Result<f64> {
     let factor = finite(finite(exponent)?.exp())?;
@@ -65,15 +60,15 @@ fn transform(
     let mut spectrum = rfft(&biased);
     for (k, v) in spectrum.iter_mut().enumerate() {
         let mut coefficient = if k == 0 {
-            let value = finite((LN_2 * bias).exp() * xsf::pow_rising(xm, xp - xm))?;
+            let value = finite((LN_2 * bias).exp() * gamma::rising(xm, xp - xm)?)?;
             if value == 0.0 {
                 return Err(Error::NumericalFailure("singular FFTLog coefficients"));
             }
             num_complex::Complex64::new(value, 0.0)
         } else {
             let y = finite((PI * k as f64 / n as f64) / dln)?;
-            let zp = gamma(xp, y)?;
-            let zm = gamma(xm, y)?;
+            let zp = gamma::loggamma(xp, y)?;
+            let zm = gamma::loggamma(xm, y)?;
             let log = num_complex::Complex64::new(
                 finite(zp.re - zm.re + LN_2 * bias)?,
                 finite(zp.im + zm.im + 2.0 * y * (LN_2 - offset))?,
@@ -146,12 +141,17 @@ fn transform(
 /// to explicit shared errors.
 /// ## Numerical behavior
 ///
-/// Private RustFFT and XSF backends perform O(n log n) Fourier work and O(n)
+/// Private RustFFT and Rust gamma backends perform O(n log n) Fourier work and O(n)
 /// complex log-gamma evaluations. Gamma coefficients use the principal log-gamma
 /// branch and the SciPy FFTLog convention. Even Nyquist coefficients are projected
 /// onto the real axis. Periodic extension, logarithmic discretization, endpoint
 /// ringing, and f64 roundoff limit continuous-integral accuracy. This is not an
 /// adaptive quadrature and supplies no integral error estimate.
+/// Complex gamma evaluation uses Taylor/Stirling expansions, at most eight
+/// recurrence steps, and one reflection. Real gamma ratios use at most 64
+/// recurrence steps followed by a log-gamma fallback. Large orders can lose
+/// precision when subtracting nearby log-gamma values; agreement with SciPy
+/// can fall to about 1e-10 for orders around 20,000 or larger.
 /// # Examples
 ///
 /// ```
@@ -227,7 +227,7 @@ pub fn ifht(input: &[f64], dln: f64, mu: f64, offset: f64, bias: f64) -> Result<
 /// Invalid inputs, gamma evaluation failure, or nonfinite arithmetic.
 /// ## Numerical behavior
 ///
-/// Two private XSF complex log-gamma evaluations. Reduces even-length Nyquist
+/// Two private Rust complex log-gamma evaluations. Reduces even-length Nyquist
 /// phase mismatch; it does not remove all ringing or guarantee integral accuracy.
 /// Extreme phases can lose fractional bits before rounding.
 /// # Examples
@@ -244,8 +244,8 @@ pub fn ifht(input: &[f64], dln: f64, mu: f64, offset: f64, bias: f64) -> Result<
 pub fn fhtoffset(dln: f64, mu: f64, initial: f64, bias: f64) -> Result<f64> {
     let (xp, xm) = parameters(dln, mu, initial, bias)?;
     let y = finite((PI / 2.0) / dln)?;
-    let zp = gamma(xp, y)?;
-    let zm = gamma(xm, y)?;
+    let zp = gamma::loggamma(xp, y)?;
+    let zm = gamma::loggamma(xm, y)?;
     let phase = finite((LN_2 - initial) / dln + (zp.im + zm.im) / PI)?;
     finite(initial + (phase - phase.round_ties_even()) * dln)
 }

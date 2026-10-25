@@ -2,7 +2,8 @@
 
 Run with Python 3.11 or newer from any directory. Numerical reference tests
 remain in the Rust suite; this checks Cargo feature wiring and documentation.
-Optional arguments select features to check; use `core` for the core-only facade.
+Optional arguments select features to check; use `core` for the core-only facade
+and `default` for all default capabilities.
 """
 
 import os
@@ -32,9 +33,26 @@ for adapter in adapters:
     assert features[adapter] == [module, f"sci-{module}/{name}"]
     domain = tomllib.loads((ROOT / f"crates/sci-{module}/Cargo.toml").read_text())
     assert name in domain["features"]
+    assert not manifest["workspace"]["dependencies"][f"sci-{module}"].get(
+        "default-features", True
+    )
 
-selected = sys.argv[1:] or ["core", *modules, *adapters]
-unknown = set(selected) - {"core", *modules, *adapters}
+# Check the resolved build graph: compiling successfully alone does not prove
+# that a reduced feature avoids its optional backends.
+backend_rules = {
+    "default": ({"zip", "flate2", "miniz_oxide"}, {"zlib-rs"}),
+    "fft": ({"rustfft"}, {"xsf", "bindgen", "clang-sys"}),
+    "fft-hankel": ({"special"}, {"xsf", "bindgen", "clang-sys"}),
+    "sparse": ({"sci-sparse"}, {"zip", "flate2", "zlib-rs"}),
+    "sparse-npz": ({"zip", "flate2", "miniz_oxide"}, {"zlib-rs"}),
+    "io": ({"sci-io"}, {"sci-sparse", "hound", "matrw", "zip", "flate2"}),
+    "io-matrix-market": ({"sci-sparse"}, {"hound", "matrw", "zip", "flate2"}),
+    "io-wav": ({"hound"}, {"sci-sparse", "matrw", "zip", "flate2", "xsf"}),
+    "io-matlab": ({"matrw", "flate2", "miniz_oxide"}, {"sci-sparse", "hound", "zip", "zlib-rs", "xsf"}),
+}
+
+selected = sys.argv[1:] or ["default", "core", *modules, *adapters]
+unknown = set(selected) - {"default", "core", *modules, *adapters}
 if unknown:
     raise SystemExit(f"Unknown features: {', '.join(sorted(unknown))}")
 
@@ -44,6 +62,16 @@ for feature in selected:
     if module:
         args += ["--features", module]
     print(f"Checking {module or 'core only'}", flush=True)
+    if feature in backend_rules:
+        tree = subprocess.check_output(
+            ["cargo", "tree", *args, "-e", "normal,build", "--prefix", "none", "--format", "{p}"],
+            cwd=ROOT,
+            text=True,
+        )
+        packages = {line.split()[0] for line in tree.splitlines()}
+        required, forbidden = backend_rules[feature]
+        assert required <= packages, (feature, "missing", required - packages)
+        assert not forbidden & packages, (feature, "unexpected", forbidden & packages)
     subprocess.run(["cargo", "check", "--lib", *args], cwd=ROOT, check=True)
     subprocess.run(
         ["cargo", "doc", "--no-deps", *args],

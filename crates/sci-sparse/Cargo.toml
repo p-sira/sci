@@ -14,13 +14,19 @@ keywords = ["sparse", "linear-algebra", "matrices", "numerics", "science"]
 readme = false
 include = ["/src/**", "/LICENSE", "/SCIPY_LICENSE.txt"]
 
+[features]
+default = ["npz"]
+# Select the same flate2 backend as MATLAB, including NPZ-only builds.
+npz = ["dep:zip", "dep:flate2"]
+
 [dependencies]
 sci-core.workspace = true
 faer.workspace = true
 sci-linalg.workspace = true
 sci-complex.workspace = true
 petgraph.workspace = true
-zip.workspace = true
+zip = { workspace = true, optional = true }
+flate2 = { workspace = true, optional = true }
 rand.workspace = true
 lapjv.workspace = true
 ndarray.workspace = true

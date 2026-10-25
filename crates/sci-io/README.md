@@ -1,5 +1,7 @@
 # sci-io
 
+The Sci facade exposes each format through `io-matrix-market`, `io-wav`, and `io-matlab`. With facade defaults disabled, `io` alone provides shared I/O types without codecs. Matrix Market avoids sparse NPZ dependencies. MATLAB and NPZ share the Rust/miniz compression backend.
+
 Scientific file interchange with typed values, explicit shapes, bounded parsing,
 and conversions into Sci's shared matrix and signal types.
 

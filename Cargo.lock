@@ -1973,7 +1973,7 @@ dependencies = [
  "rustfft",
  "sci-complex",
  "sci-core",
- "xsf",
+ "special",
 ]
 
 [[package]]
@@ -2063,6 +2063,7 @@ version = "0.1.0"
 dependencies = [
  "dyn-stack",
  "faer",
+ "flate2",
  "lapjv",
  "ndarray 0.16.1",
  "petgraph",

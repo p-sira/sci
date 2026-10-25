@@ -4,6 +4,9 @@
 //! selected independently. Readers accept Rust byte streams and writers accept
 //! byte destinations. Paths are opened by callers; extensions are never added.
 //! Backend types remain private. I/O errors retain their original source.
+//! Through the Sci facade, select `io-matrix-market`, `io-wav`, or `io-matlab`.
+//! With facade defaults disabled, `io` alone exposes shared I/O types without
+//! file codecs. Matrix Market does not enable sparse NPZ interchange.
 //!
 //! File data may contain NaN, infinities, and signed zeros. Conversion into a
 //! numerical Sci module remains subject to that module's domain validation.

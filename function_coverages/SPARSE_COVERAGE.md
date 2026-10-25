@@ -1,5 +1,7 @@
 # Sparse v0.1.0 coverage and numerical conventions
 
+The default API still covers all 83 supported names. With facade defaults disabled, NPZ requires `sparse-npz`; direct `sci-sparse` users select the default-enabled `npz` feature. Other sparse operations compile without ZIP or compression. NPZ uses the same flate2 Rust/miniz backend as MATLAB; numerical behavior and reference fixtures are unchanged.
+
 `sci-sparse` is exposed as `sci::sparse` through the default-enabled `sparse`
 feature. The modern inventory is **83/83 function names**: construction and
 utilities **27/27**, graph algorithms **25/25**, and linear algebra **31/31**.
