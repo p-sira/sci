@@ -63,6 +63,38 @@ fn small_sequences_and_native_work_limits_are_safe() {
 }
 
 #[test]
+fn lambert_real_branches_preserve_domains_and_inverse_identity() {
+    let branch_point = -1.0 / std::f64::consts::E;
+    assert_eq!(s::lambertw(branch_point), -1.0);
+    assert_eq!(s::lambertwm1(branch_point), -1.0);
+    for x in [f64::NAN, f64::NEG_INFINITY, -0.5] {
+        assert!(s::lambertw(x).is_nan());
+        assert!(s::lambertwm1(x).is_nan());
+    }
+    assert_eq!(s::lambertw(f64::INFINITY), f64::INFINITY);
+    for x in [0.1, f64::INFINITY] {
+        assert!(s::lambertwm1(x).is_nan());
+    }
+    for x in [0.0_f64, -0.0] {
+        assert_eq!(s::lambertw(x).to_bits(), x.to_bits());
+        assert_eq!(s::lambertwm1(x), f64::NEG_INFINITY);
+    }
+    for x in [-0.36, -1e-3, -1e-12, 1e-300, 1e-3, 0.5, 1e100, 1e300] {
+        let w = s::lambertw(x);
+        assert!(w >= -1.0);
+        // The relative condition number of w * exp(w) is |1 + w|.
+        let rtol = 8.0 * f64::EPSILON * (1.0 + w.abs());
+        finite_close(w * w.exp(), x, 0.0, rtol);
+    }
+    for x in [-0.36, -1e-12, -1e-100, -1e-300] {
+        let w = s::lambertwm1(x);
+        assert!(w <= -1.0);
+        let rtol = 8.0 * f64::EPSILON * (1.0 + w.abs());
+        finite_close(w * w.exp(), x, 0.0, rtol);
+    }
+}
+
+#[test]
 fn distribution_inverses_round_trip() {
     for p in [0.01, 0.2, 0.5, 0.9, 0.99] {
         for nc in [0.0, 0.5, 5.0] {

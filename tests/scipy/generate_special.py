@@ -7,6 +7,9 @@
 Run with ``uv run tests/scipy/generate_special.py``. Each CSV record stores
 the function, semicolon-separated arguments, and flattened real results.
 The JSON contains input cases only; expected results always come from SciPy.
+Real Lambert W comparisons use 8e-15 relative and zero absolute tolerance so
+tiny arguments are checked proportionally; inverse identities separately
+check the defining equation and real branch domains.
 """
 
 import csv
@@ -129,8 +132,10 @@ def generate():
                 ),
                 ";".join(map(str, result)),
                 1e-4 if case["name"] in {"ncfdtridfd", "ncfdtridfn", "ncfdtrinc"}
-                else 5e-6 if case["name"].startswith("nctdtr") else 2e-11,
-                1e-7 if case["name"].startswith("nctdtr") else 2e-11,
+                else 5e-6 if case["name"].startswith("nctdtr")
+                else 8e-15 if case["name"] in {"lambertw", "lambertwm1"} else 2e-11,
+                1e-7 if case["name"].startswith("nctdtr")
+                else 0.0 if case["name"] in {"lambertw", "lambertwm1"} else 2e-11,
             ])
 
 

@@ -4580,5 +4580,83 @@
     "args": [
       5
     ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      -0.36
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      -1e-12
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      0.0
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      1e-300
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      1.0
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      1e+100
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      1e+300
+    ]
+  },
+  {
+    "name": "lambertwm1",
+    "args": [
+      -0.36
+    ]
+  },
+  {
+    "name": "lambertwm1",
+    "args": [
+      -1e-12
+    ]
+  },
+  {
+    "name": "lambertwm1",
+    "args": [
+      -1e-100
+    ]
+  },
+  {
+    "name": "lambertwm1",
+    "args": [
+      -1e-300
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      -0.001
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      0.001
+    ]
   }
 ]

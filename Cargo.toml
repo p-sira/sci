@@ -30,7 +30,7 @@ nalgebra = { version = "0.35", default-features = false, features = ["std"] }
 num-complex = "0.4.6"
 rustfft = "6.4.0"
 realfft = "3.5.0"
-special = "0.11.4"
+special = { version = "0.14.2", default-features = false, features = ["std"] }
 statrs = "0.19.1"
 lapjv = "0.3.0"
 xsf = "0.6.0"
@@ -56,7 +56,7 @@ sci-optimize = { version = "0.2.0", path = "crates/sci-optimize" }
 sci-signal = { version = "0.2.1", path = "crates/sci-signal" }
 sci-sparse = { version = "0.1.0", path = "crates/sci-sparse", default-features = false }
 sci-spatial = { version = "0.2.0", path = "crates/sci-spatial" }
-sci-special = { version = "0.2.0", path = "crates/sci-special" }
+sci-special = { version = "0.2.1", path = "crates/sci-special" }
 sci-stats = { version = "0.2.0", path = "crates/sci-stats" }
 
 [package]

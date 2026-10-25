@@ -1117,9 +1117,9 @@ checksum = "f868feceed4703c842925c14232667c5f29c8059d0354154b2d06ec3bf9daf82"
 
 [[package]]
 name = "lambert_w"
-version = "1.2.34"
+version = "2.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f5f0846ee4f0299ca4c5b9ca06ff55cf88b3430a763bf591474cc734479c9b24"
+checksum = "4fccf1a9389068de7b108802dc091e10b7e2c0d34023ff9d25b1087b6edd77de"
 dependencies = [
  "num-complex",
  "num-traits",
@@ -2085,7 +2085,7 @@ dependencies = [
 
 [[package]]
 name = "sci-special"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "ellip",
  "nalgebra 0.35.0",
@@ -2220,10 +2220,11 @@ dependencies = [
 
 [[package]]
 name = "special"
-version = "0.11.4"
+version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2037227570e0bedf82a7f866a3e7cebe218ec9cd0d5399151942ee7358f90bb6"
+checksum = "432921d6969f9b886a7cb0214e60bd31067831a3df49e082e10dbedb9725eda6"
 dependencies = [
+ "ellip",
  "lambert_w",
  "libm",
 ]
