@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Borrow explicit distance weights until normalization requires owned storage; inline private bounds and result validation.
+
 ## 0.2.0
 
 Changes since the repository tag `v0.1.0`.

@@ -55,6 +55,7 @@ fn shape(rows: usize, cols: usize) -> Result<()> {
     Ok(())
 }
 
+#[inline]
 fn finite(value: f64) -> Result<f64> {
     sci_core::finite(value)
 }

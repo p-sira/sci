@@ -42,9 +42,11 @@ use sci_core as error;
 pub use sci_core::{Error, Result};
 mod complex {
     pub use sci_complex::*;
+    #[inline]
     pub(crate) fn native(z: Complex) -> num_complex::Complex64 {
         num_complex::Complex64::new(z.re, z.im)
     }
+    #[inline]
     pub(crate) fn owned(z: num_complex::Complex64) -> Complex {
         Complex { re: z.re, im: z.im }
     }

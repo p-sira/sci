@@ -487,7 +487,9 @@ pub fn kaiser_bessel_derived(m: usize, beta: f64, symmetric: bool) -> Result<Vec
         cumulative += v;
         result.push((cumulative / sum).sqrt());
     }
-    result.extend(result.clone().into_iter().rev());
+    for i in (0..result.len()).rev() {
+        result.push(result[i]);
+    }
     checked(result)
 }
 /// Constructs the Dolph-Chebyshev window from `T_(n-1)(beta cos(π k/n))`, `beta=cosh(acosh(10^(|attenuation|/20))/(n-1))`.

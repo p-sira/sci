@@ -1897,7 +1897,7 @@ dependencies = [
 
 [[package]]
 name = "sci"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "approx",
  "codspeed-divan-compat",
@@ -1935,7 +1935,7 @@ dependencies = [
 
 [[package]]
 name = "sci-complex"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "num-complex",
  "sci-core",
@@ -1952,11 +1952,11 @@ dependencies = [
 
 [[package]]
 name = "sci-core"
-version = "0.2.0"
+version = "0.2.1"
 
 [[package]]
 name = "sci-differentiate"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "sci-core",
  "sci-linalg",
@@ -1965,7 +1965,7 @@ dependencies = [
 
 [[package]]
 name = "sci-fft"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "num-complex",
  "realfft",
@@ -1988,7 +1988,7 @@ dependencies = [
 
 [[package]]
 name = "sci-integrate"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "nalgebra 0.35.0",
  "sci-core",
@@ -1997,7 +1997,7 @@ dependencies = [
 
 [[package]]
 name = "sci-interpolate"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "delaunator",
  "nalgebra 0.35.0",
@@ -2059,7 +2059,7 @@ dependencies = [
 
 [[package]]
 name = "sci-sparse"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "dyn-stack",
  "faer",
@@ -2076,7 +2076,7 @@ dependencies = [
 
 [[package]]
 name = "sci-spatial"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "nalgebra 0.35.0",
  "sci-core",
@@ -2098,7 +2098,7 @@ dependencies = [
 
 [[package]]
 name = "sci-stats"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "basin",
  "lapjv",

@@ -1,4 +1,4 @@
-use super::{Mode, checked, nonempty, samples, size, work};
+use super::{Mode, nonempty, samples, size, work};
 use crate::{
     Error, Result,
     complex::{Complex, native, owned},
@@ -27,6 +27,7 @@ fn shape(x: &[Vec<f64>]) -> Result<(usize, usize)> {
     }
     Ok((x.len(), columns))
 }
+#[inline]
 fn index(i: isize, n: usize, boundary: Boundary) -> Option<usize> {
     let n = n as isize;
     match boundary {
@@ -44,6 +45,7 @@ fn index(i: isize, n: usize, boundary: Boundary) -> Option<usize> {
         }
     }
 }
+#[inline]
 fn crop(n: usize, m: usize, mode: Mode, correlation: bool) -> (usize, usize) {
     match mode {
         Mode::Full => (0, n + m - 1),
@@ -100,7 +102,7 @@ fn convolution(
                 }
             }
         }
-        checked(row.clone())?;
+        super::check_real(row)?;
     }
     Ok(out)
 }
@@ -378,7 +380,7 @@ pub fn hilbert2(x: &[Vec<f64>]) -> Result<Vec<Vec<Complex>>> {
     }
     let output: Vec<_> = spectrum.iter().map(|row| super::ifft(row)).collect();
     for row in &output {
-        super::complex_checked(row.clone())?;
+        super::check_complex(row)?;
     }
     Ok(output)
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Reuse spline knots and coefficient buffers during tensor-product surface evaluation.
+
 ## 0.2.0
 
 Changes since the repository tag `v0.1.0`.

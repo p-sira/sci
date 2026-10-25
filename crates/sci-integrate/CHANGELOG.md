@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Inline private scaling and interval arithmetic helpers.
+
 ## 0.2.0
 
 Changes since the repository tag `v0.1.0`.

@@ -709,7 +709,7 @@ pub fn leslie(
     crate::error::finite_slice(f)?;
     crate::error::finite_slice(s)?;
     let mut a = vec![vec![0.0; n]; n];
-    a[0] = f.to_vec();
+    a[0].copy_from_slice(f);
     for (i, &v) in s.iter().enumerate() {
         a[i + 1][i] = v;
     }

@@ -26,6 +26,7 @@ fn validate_step(step: f64) -> Result<()> {
     }
 }
 
+#[inline]
 fn neighbors(value: f64, step: f64) -> Result<(f64, f64)> {
     let upper = value + step;
     let lower = value - step;
@@ -42,6 +43,7 @@ fn neighbors(value: f64, step: f64) -> Result<(f64, f64)> {
     Ok((upper, lower))
 }
 
+#[inline]
 fn difference(upper: f64, lower: f64, coordinates: (f64, f64)) -> Result<f64> {
     difference_with_factor(upper, lower, coordinates, 1.0)
 }

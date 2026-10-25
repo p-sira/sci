@@ -873,7 +873,9 @@ pub fn trimboth(values: &[f64], proportion: f64) -> Result<Vec<f64>> {
     let mut x = values.to_vec();
     x.sort_by(f64::total_cmp);
     let k = (x.len() as f64 * proportion).floor() as usize;
-    Ok(x[k..x.len() - k].to_vec())
+    x.truncate(x.len() - k);
+    x.drain(..k);
+    Ok(x)
 }
 
 /// Trimmed mean of the middle `n−2 floor(n*proportion)` observations.

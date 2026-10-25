@@ -356,10 +356,13 @@ pub fn trim1(values: &[f64], proportion: f64, tail: Tail) -> Result<Vec<f64>> {
     let mut x = values.to_vec();
     x.sort_by(f64::total_cmp);
     let k = (x.len() as f64 * proportion).floor() as usize;
-    Ok(match tail {
-        Tail::Lower => x[k..].to_vec(),
-        Tail::Upper => x[..x.len() - k].to_vec(),
-    })
+    match tail {
+        Tail::Lower => {
+            x.drain(..k);
+        }
+        Tail::Upper => x.truncate(x.len() - k),
+    }
+    Ok(x)
 }
 /// Unbiased cumulant estimates k₁ through k₄.
 ///

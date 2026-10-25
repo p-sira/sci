@@ -240,12 +240,15 @@ pub struct IterativeResult {
     /// Euclidean norm of the final true residual.
     pub residual_norm: f64,
 }
+#[inline]
 fn dot(x: &[f64], y: &[f64]) -> Result<f64> {
     finite(x.iter().zip(y).map(|(a, b)| a * b).sum())
 }
+#[inline]
 fn length(x: &[f64]) -> Result<f64> {
     finite(x.iter().fold(0f64, |s, &v| s.hypot(v)))
 }
+#[inline]
 fn axpy(y: &mut [f64], a: f64, x: &[f64]) -> Result<()> {
     for (y, &x) in y.iter_mut().zip(x) {
         *y = finite(*y + a * x)?;
@@ -255,6 +258,7 @@ fn axpy(y: &mut [f64], a: f64, x: &[f64]) -> Result<()> {
 fn times(x: &[f64], a: f64) -> Result<Vec<f64>> {
     x.iter().map(|v| finite(v * a)).collect()
 }
+#[inline]
 fn ratio(a: f64, b: f64) -> Result<f64> {
     if b == 0. {
         return Err(Error::NumericalFailure("iterative solver breakdown"));
@@ -487,8 +491,8 @@ fn short(
             }
             Short::Cgs => {
                 if iter == 0 {
-                    u = r.clone();
-                    p = r.clone();
+                    u.copy_from_slice(&r);
+                    p.copy_from_slice(&r);
                 } else {
                     let beta = ratio(rho, rho_prev)?;
                     for i in 0..n {
@@ -548,8 +552,8 @@ fn qmr_inner(
         let w = times(&wt, ratio(1., xi)?)?;
         let delta = dot(&w, &v)?;
         if iter == 0 {
-            p = v.clone();
-            q = w.clone();
+            p.copy_from_slice(&v);
+            q.copy_from_slice(&w);
         } else {
             let cp = ratio(xi * delta, epsilon)?;
             let cq = ratio(rho * delta, epsilon)?;
@@ -561,7 +565,7 @@ fn qmr_inner(
         let ap = mv(a, &p, false)?;
         epsilon = dot(&q, &ap)?;
         let beta = ratio(epsilon, delta)?;
-        vt = ap.clone();
+        vt.copy_from_slice(&ap);
         axpy(&mut vt, -beta, &v)?;
         let rho_prev = rho;
         rho = length(&vt)?;
@@ -622,7 +626,7 @@ fn tfqmr_inner(
         let even = iter % 2 == 0;
         if even {
             alpha = ratio(rho, dot(&shadow, &v)?)?;
-            next = u.clone();
+            next.copy_from_slice(&u);
             axpy(&mut next, -alpha, &v)?;
         }
         axpy(&mut w, -alpha, &uh)?;
@@ -649,7 +653,7 @@ fn tfqmr_inner(
             axpy(&mut v, 1., &uh)?;
         } else {
             uh = mv(a, &next, false)?;
-            u = next.clone();
+            std::mem::swap(&mut u, &mut next);
             rho_last = rho;
         }
     }
@@ -787,7 +791,7 @@ fn projected(
                     }
                     y
                 };
-                x = base.clone();
+                x.copy_from_slice(&base);
                 for (zi, &c) in z.iter().zip(&y) {
                     axpy(&mut x, c, zi)?;
                 }

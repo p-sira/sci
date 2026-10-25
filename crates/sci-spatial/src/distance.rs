@@ -5,6 +5,8 @@
 //! Jaccard, which converts every nonzero coordinate to true. This deliberately
 //! excludes SciPy's arithmetic extensions of boolean metrics to arbitrary reals.
 
+use std::borrow::Cow;
+
 use super::{MAX_ENTRIES, MAX_WORK, bound, evaluated, pair, points};
 use crate::{Error, Result, error::finite_slice};
 
@@ -54,9 +56,9 @@ pub enum Metric<'a> {
     JensenShannon(Option<f64>),
 }
 
-fn weights(w: Option<&[f64]>, n: usize) -> Result<Vec<f64>> {
+fn weights(w: Option<&[f64]>, n: usize) -> Result<Cow<'_, [f64]>> {
     let Some(w) = w else {
-        return Ok(vec![1.0; n]);
+        return Ok(Cow::Owned(vec![1.0; n]));
     };
     if w.len() != n {
         return Err(Error::DimensionMismatch);
@@ -69,7 +71,7 @@ fn weights(w: Option<&[f64]>, n: usize) -> Result<Vec<f64>> {
     if scale == 0.0 {
         return Err(Error::InvalidInput("weights must have positive total"));
     }
-    Ok(w.to_vec())
+    Ok(Cow::Borrowed(w))
 }
 
 fn lp(u: &[f64], v: &[f64], p: f64, w: &[f64]) -> Result<f64> {
@@ -170,7 +172,7 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
     ) {
         let scale = w.iter().copied().fold(0.0, f64::max);
         if scale > 0.0 {
-            for weight in &mut w {
+            for weight in w.to_mut() {
                 *weight /= scale;
             }
         }
@@ -178,7 +180,7 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
     let sum = |f: &dyn Fn(f64, f64) -> f64| -> f64 {
         u.iter()
             .zip(v)
-            .zip(&w)
+            .zip(w.iter())
             .filter(|(_, w)| **w > 0.0)
             .map(|((&a, &b), &w)| w * f(a, b))
             .sum()

@@ -55,8 +55,8 @@ fn result(zpk: Zpk) -> Result<Zpk> {
     if !zpk.gain.is_finite() {
         return Err(Error::NonFiniteEvaluation);
     }
-    complex_checked(zpk.zeros.clone())?;
-    complex_checked(zpk.poles.clone())?;
+    super::check_complex(&zpk.zeros)?;
+    super::check_complex(&zpk.poles)?;
     Ok(zpk)
 }
 fn sorted_result(mut zpk: Zpk) -> Result<Zpk> {

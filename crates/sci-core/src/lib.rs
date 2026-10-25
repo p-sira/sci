@@ -55,6 +55,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Checks a finite numerical result.
 #[doc(hidden)]
+#[inline]
 pub fn finite(value: f64) -> Result<f64> {
     if value.is_finite() {
         Ok(value)
@@ -65,6 +66,7 @@ pub fn finite(value: f64) -> Result<f64> {
 
 /// Checks that coordinates are finite.
 #[doc(hidden)]
+#[inline]
 pub fn finite_slice(values: &[f64]) -> Result<()> {
     if values.iter().all(|value| value.is_finite()) {
         Ok(())

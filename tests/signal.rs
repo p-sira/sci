@@ -1001,6 +1001,15 @@ fn multidimensional_and_resampling_validation_and_interoperability() {
     );
     let ragged = [vec![1.], vec![]];
     for f in [convolve2d, correlate2d] {
+        assert_eq!(
+            f(
+                &[vec![f64::MAX]],
+                &[vec![2.]],
+                Mode::Full,
+                Boundary::Fill(0.)
+            ),
+            Err(Error::NonFiniteEvaluation)
+        );
         assert!(f(&ragged, &image, Mode::Full, Boundary::Fill(0.)).is_err());
         assert!(f(&image, &image, Mode::Same, Boundary::Fill(f64::NAN)).is_err());
         assert!(
