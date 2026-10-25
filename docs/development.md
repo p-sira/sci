@@ -46,11 +46,38 @@ cargo codspeed build -m simulation -p sci
 cargo codspeed run -p sci
 ```
 
-## Build footprint follow-ups
+## Build footprint
 
-- TODO: Make Hankel transforms, facade I/O formats, and sparse NPZ interchange
-  independently selectable so basic operations avoid their heavier dependencies.
-- TODO: Unify the compression backend used by MATLAB and NPZ interchange.
+All capabilities remain enabled by default. For smaller dependency graphs,
+set `default-features = false` and select facade module features plus any
+required capabilities: `fft-hankel`, `io-matrix-market`, `io-wav`, `io-matlab`,
+and `sparse-npz`. The domain crates keep these capabilities in their defaults;
+the workspace disables domain defaults on shared dependencies to prevent
+signal processing or Matrix Market from enabling Hankel or NPZ transitively.
+Cargo still combines features requested elsewhere in a consumer's graph.
+
+`tests/check_features.py` checks each facade feature in isolation and asserts
+that reduced builds omit the expected backends. The FFT extended reference
+suite and benchmark require `fft-hankel`; sparse parity requires `sparse-npz`;
+the I/O integration suite requires all three format features. Numerical
+APIs retain their existing conventions. FFTLog now uses private Rust translations
+of SciPy/XSF's complex log-gamma and Cephes gamma-ratio algorithms, with the
+existing `special` crate supplying real log-gamma. The gamma work is bounded
+independently of order and bias. This removes XSF from every FFT build.
+Expanded independent SciPy fixtures exercise reflection, Taylor and asymptotic
+regions, negative spacing, gamma poles, and the bounded ratio fallback.
+Large-order comparisons have explicit tolerances for log-gamma cancellation.
+`uv run tests/scipy/generate_fftlog_accuracy.py` regenerates 16 independent
+discrete FFTLog references using mpmath dense DFTs at 100 and 160 digits. Their
+inputs and tolerances are stored in `fft_cases.json`; ordinary Rust tests read
+the committed CSV. These measure the discrete mapping's roundoff, rather than
+the discretization error of the continuous Hankel integral.
+
+MATLAB and NPZ share flate2's Rust/miniz backend. `matrw` already enables that
+backend, so ZIP selects `deflate-flate2` and sparse NPZ explicitly enables the
+workspace flate2 backend even when MATLAB is absent. This avoids compiling
+zlib-rs alongside miniz. Archive bytes may differ while decoded values and
+format compatibility remain the same.
 
 ## Pre-commit formatting
 
@@ -111,7 +138,8 @@ The `core`, `coverage`, `linalg_coverage`, and `statistics_coverage` integration
 targets supplement the module reference suites with validation, overflow,
 support, callback, and independent property checks. `core` runs without optional features;
 `linalg_coverage` requires only `linalg`; `statistics_coverage` requires only
-`stats`; `coverage` requires all numerical module features except `stats`.
+`stats`; `coverage` requires all numerical module features except `stats`,
+plus `fft-hankel`.
 
 Install cargo-llvm-cov and LLVM tools, then run the same workspace coverage
 command as CI. Integration tests and their helpers are excluded from the report

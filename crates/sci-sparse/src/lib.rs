@@ -16,6 +16,9 @@
 //! deprecated compatibility namespaces and legacy solver controls are excluded.
 //! Private faer, petgraph, lapjv, RNG and ZIP backends do not appear in the API.
 //! See the repository's sparse coverage report for signature and work limits.
+//! NPZ reading and writing require the default-enabled `npz` feature
+//! (`sparse-npz` through the Sci facade). Disable default features to omit ZIP
+//! and compression dependencies while retaining sparse numerical operations.
 //!
 //! ```
 //! use sci_sparse::{from_coo, matvec, linalg::spsolve};
@@ -34,10 +37,12 @@ use std::collections::BTreeMap;
 mod array;
 /// Algorithms for weighted graphs represented by CSR matrices.
 pub mod csgraph;
+#[cfg(feature = "npz")]
 mod io;
 /// Sparse linear algebra using finite real matrices.
 pub mod linalg;
 pub use array::*;
+#[cfg(feature = "npz")]
 pub use io::{load_npz, save_npz};
 
 const LIMIT: usize = 1_000_000;

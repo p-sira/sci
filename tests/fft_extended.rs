@@ -20,8 +20,16 @@ fn rows<T: Clone>(x: &[T], n: usize) -> Vec<Vec<T>> {
 fn public_fft_inventory_matches_scipy() {
     let inputs: Vec<_> = common::lines(include_str!("fixtures/fft_inputs.csv")).collect();
     let expected: Vec<_> = common::lines(include_str!("fixtures/fft_expected.csv")).collect();
+    let accuracy: std::collections::BTreeMap<_, _> =
+        common::lines(include_str!("fixtures/fftlog_accuracy.csv"))
+            .map(|line| {
+                let fields = common::fields(line);
+                (fields[0], fields)
+            })
+            .collect();
     assert_eq!(inputs.len(), expected.len());
     let mut covered = std::collections::BTreeSet::new();
+    let mut accuracy_covered = std::collections::BTreeSet::new();
     for (input, expected) in inputs.iter().zip(expected) {
         let c: Vec<_> = common::fields(input);
         let e: Vec<_> = common::fields(expected);
@@ -174,12 +182,30 @@ fn public_fft_inventory_matches_scipy() {
         assert_eq!(got_shape, sizes(e[1]), "{} shape", c[0]);
         let want = complex(&vector(e[2]), &vector(e[3]));
         assert_eq!(got.len(), want.len(), "{} length", c[0]);
+        if let Some(reference) = accuracy.get(c[0]) {
+            accuracy_covered.insert(c[0]);
+            let values = vector(reference[1]);
+            assert_eq!(got.len(), values.len(), "{} high-precision length", c[0]);
+            let atol = reference[2].parse().unwrap();
+            let rtol = reference[3].parse().unwrap();
+            for (a, b) in got.iter().zip(values) {
+                finite_close(a.re, b, atol, rtol);
+            }
+        }
+        let tolerance: f64 = c[15].parse().unwrap();
         for (a, b) in got.into_iter().zip(want) {
-            finite_close(a.re, b.re, 3e-12, 3e-12);
-            finite_close(a.im, b.im, 3e-12, 3e-12);
+            assert!(
+                (a.re - b.re).abs() <= tolerance * (1.0 + b.re.abs()),
+                "{}: expected {}, got {}",
+                c[0],
+                b.re,
+                a.re
+            );
+            finite_close(a.im, b.im, tolerance, tolerance);
         }
     }
     assert_eq!(covered.len(), 35);
+    assert_eq!(accuracy_covered.len(), accuracy.len());
 }
 #[test]
 fn inverse_and_interoperability_properties() {
@@ -367,4 +393,22 @@ fn fftlog_round_trips_and_domains() {
     assert!(f::ifht(&[1.0, 2.0], 0.1, 0.0, 0.0, 1.0).is_err());
     assert!(f::fht(&[1.0, 2.0], 1000.0, 0.0, 0.0, 2.0).is_err());
     assert!(f::ifht(&[1.0, 2.0], 1000.0, 0.0, 0.0, 2.0).is_err());
+}
+
+#[test]
+fn fftlog_dc_coefficients_obey_gamma_recurrence() {
+    // At n=1 and offset=0, the transform is multiplication by
+    // 2^q Gamma((mu+1+q)/2) / Gamma((mu+1-q)/2).
+    for mu in [-6.0, -2.0, -0.5, 0.5, 2.0, 6.0, 1e6] {
+        for (bias, coefficient) in [(1.0, mu), (2.0, mu * mu - 1.0)] {
+            let value = f::fht(&[1.0], 0.1, mu, 0.0, bias).unwrap();
+            finite_close(value[0], coefficient, 2e-14, 2e-14);
+            let inverse = f::ifht(&[coefficient], 0.1, mu, 0.0, bias).unwrap();
+            finite_close(inverse[0], 1.0, 2e-14, 2e-14);
+        }
+    }
+    // Extreme finite parameters must finish within the fixed coefficient work
+    // limits and report arithmetic failure rather than entering long recurrences.
+    assert!(f::fht(&[1.0], 0.1, 0.0, 0.0, 1e300).is_err());
+    assert!(f::fhtoffset(f64::from_bits(1), 0.0, 0.0, 0.0).is_err());
 }

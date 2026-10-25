@@ -35,8 +35,25 @@ All 16 modules are enabled by default. Select only the modules you need with:
 cargo add sci --no-default-features --features fft,complex
 ```
 
-Rust 1.89 or later is required. Builds enabling `fft`, `special`, `cluster`,
-`integrate`, `io`, `linalg`, `signal`, `sparse`, or `stats` require a C++17 compiler and libclang
+The default feature set includes Hankel transforms, all I/O formats, and sparse
+NPZ interchange. With `default-features = false`, select these separately:
+
+| Feature | Additional capability |
+| --- | --- |
+| `fft-hankel` | `fft::{fht, ifht, fhtoffset}` using FFTLog |
+| `io-matrix-market` | Matrix Market files |
+| `io-wav` | WAV audio |
+| `io-matlab` | Dense numeric MATLAB Level-5 files |
+| `sparse-npz` | Sparse NPZ reading and writing |
+
+Each feature enables its parent module. All FFT transforms avoid XSF; `io` provides
+shared I/O types without codecs; `sparse` avoids ZIP and compression. Domain
+crates retain their full default APIs; use their `hankel`, `matrix-market`,
+`wav`, `matlab`, and `npz` features for the same selection. Cargo combines
+features requested by all dependencies in a build.
+
+Rust 1.89 or later is required. Builds enabling `special`, `cluster`,
+`integrate`, `io-matrix-market`, `linalg`, `signal`, `sparse`, or `stats` require a C++17 compiler and libclang
 for the private `xsf` backend, including through transitive dependencies.
 
 ## Modules
