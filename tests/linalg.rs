@@ -1598,6 +1598,23 @@ fn ndarray_inputs_match_scipy_references() {
 }
 
 #[test]
+#[cfg(feature = "linalg-ndarray")]
+fn column_major_ndarray_inputs_match_scipy_references() {
+    use l::{MatrixInput, VectorInput};
+    check_scipy_references(
+        |a| {
+            a.to_ndarray()
+                .unwrap()
+                .reversed_axes()
+                .as_standard_layout()
+                .into_owned()
+                .reversed_axes()
+        },
+        |x| x.to_ndarray_vector().unwrap(),
+    );
+}
+
+#[test]
 #[cfg(feature = "linalg-nalgebra")]
 fn nalgebra_inputs_match_scipy_references() {
     use l::{MatrixInput, VectorInput};
@@ -1662,4 +1679,38 @@ fn hyperbolic_extreme_scales_match_independent_references() {
             }
         }
     }
+}
+
+/// Keep a reversed backend allocation and expose its original logical order.
+/// Reject row materialization so the complete reference suite guards against
+/// reintroducing the public-input -> shared-rows -> backend round trip.
+#[cfg(feature = "linalg-faer")]
+struct ReversedInput(faer::Mat<f64>);
+
+#[cfg(feature = "linalg-faer")]
+impl l::MatrixInput for ReversedInput {
+    fn matrix_shape(&self) -> sci::Result<(usize, usize)> {
+        Ok((self.0.nrows(), self.0.ncols()))
+    }
+    fn matrix_entry(&self, i: usize, j: usize) -> f64 {
+        self.0[(self.0.nrows() - 1 - i, self.0.ncols() - 1 - j)]
+    }
+    fn shared_rows(&self) -> Option<&[Vec<f64>]> {
+        panic!("numerical input must not be materialized as shared rows")
+    }
+    fn faer_view(&self) -> Option<faer::MatRef<'_, f64>> {
+        Some(self.0.as_ref().reverse_rows().reverse_cols())
+    }
+}
+
+#[test]
+#[cfg(feature = "linalg-faer")]
+fn reversed_borrowed_inputs_match_scipy_references() {
+    check_scipy_references(
+        |a| {
+            let (m, n) = (a.len(), a.first().map_or(0, Vec::len));
+            ReversedInput(faer::Mat::from_fn(m, n, |i, j| a[m - 1 - i][n - 1 - j]))
+        },
+        <[f64]>::to_vec,
+    );
 }

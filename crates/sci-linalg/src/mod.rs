@@ -87,11 +87,12 @@ pub fn matvec(
 ) -> Result<Vec<f64>> {
     let vector_input = input::vector_slice(vector)?;
     let vector = vector_input.as_ref();
-    let matrix = input::faer_matrix(matrix)?;
+    let matrix = input::faer_input(matrix)?;
+    let matrix = matrix.as_ref();
     if matrix.ncols() != vector.len() {
         return Err(Error::DimensionMismatch);
     }
-    Ok((&matrix * faer::ColRef::from_slice(vector))
+    Ok((matrix * faer::ColRef::from_slice(vector))
         .iter()
         .copied()
         .collect())
@@ -127,8 +128,9 @@ pub fn matvec(
 /// ## Numerical behavior
 ///
 /// Private faer multiplication takes O(rows × inner_dimension × columns)
-/// work. Inputs are copied into contiguous storage; reductions use f64 and
-/// can lose accuracy through cancellation or overflow.
+/// work. Compatible native storage is borrowed, including strided faer views;
+/// other inputs copy directly to backend storage. Reductions use f64 and can
+/// lose accuracy through cancellation or overflow.
 ///
 /// # Examples
 ///
@@ -156,9 +158,9 @@ pub fn matmul(
             "matrix multiplication work exceeds 16777216",
         ));
     }
-    let left = input::faer_matrix(left)?;
-    let right = input::faer_matrix(right)?;
-    let product = &left * &right;
+    let left = input::faer_input(left)?;
+    let right = input::faer_input(right)?;
+    let product = left.as_ref() * right.as_ref();
     Ok((0..m)
         .map(|i| (0..n).map(|j| product[(i, j)]).collect())
         .collect())

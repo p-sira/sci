@@ -44,6 +44,15 @@ vectors/views, and faer rows/columns/views. Matrix collections also accept these
 types, including mixed libraries through `&dyn MatrixInput`. Existing aliases
 reuse the same adapters. Faer is the private computational backend independently of
 input storage; inputs are read-only and results retain shared Sci types.
+Numerical entry points pass storage directly to private backend adapters,
+without converting through shared rows. Faer views (including negative strides),
+fixed arrays, and contiguous C/F-order ndarray matrices can be borrowed.
+Shared rows, nalgebra storage, and other ndarray layouts copy directly to faer.
+Algorithms that scale or overwrite working matrices retain an owned copy.
+Internal real backend matrices are passed between algorithms through private
+borrowed adapters, including with interoperability features disabled.
+Cholesky reads the selected input triangle directly; output conversion reads
+backend views without temporary transposes or submatrix copies.
 
 The traits provide owned conversions to shared rows/vectors and each library.
 Logical indexing preserves row/column order for strided and transposed views,

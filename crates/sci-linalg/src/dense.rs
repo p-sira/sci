@@ -214,18 +214,17 @@ pub fn solve(
     a: &(impl super::MatrixInput + ?Sized),
     b: &(impl super::VectorInput + ?Sized),
 ) -> Result<Vec<f64>> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let b_input = super::input::vector_slice(b)?;
     let b = b_input.as_ref();
-    let a = square(a)?;
+    let a_input = square_ref(a)?;
+    let a = a_input.as_ref();
     let b = rhs(b, a.nrows())?;
     let lu = a.partial_piv_lu();
     if (0..a.nrows()).any(|i| lu.U()[(i, i)] == 0. || !lu.U()[(i, i)].is_finite()) {
         return Err(Error::NumericalFailure("singular linear system"));
     }
     let mut x = lu.solve(&b);
-    let mut correction = solve_residual(&a, &b, &x);
+    let mut correction = solve_residual(a, &b, &x);
     if correction.iter().any(|r| !r.is_finite()) {
         return vector(x);
     }
@@ -246,7 +245,7 @@ pub fn solve(
             x = candidate;
             break;
         }
-        let mut next = solve_residual(&a, &b, &candidate);
+        let mut next = solve_residual(a, &b, &candidate);
         if next.iter().any(|r| !r.is_finite()) {
             break;
         }
@@ -262,7 +261,7 @@ pub fn solve(
     vector(x)
 }
 
-fn solve_residual(a: &Mat<f64>, b: &Mat<f64>, x: &Mat<f64>) -> Mat<f64> {
+fn solve_residual(a: faer::MatRef<'_, f64>, b: &Mat<f64>, x: &Mat<f64>) -> Mat<f64> {
     let n = a.nrows();
     let mut residual = b.to_owned();
     let mut correction = vec![0.; n];
@@ -271,17 +270,13 @@ fn solve_residual(a: &Mat<f64>, b: &Mat<f64>, x: &Mat<f64>) -> Mat<f64> {
         .try_as_col_major_mut()
         .expect("owned faer columns are contiguous")
         .as_slice_mut();
-    // Column-major traversal over contiguous columns; each row still
+    // Column traversal over borrowed or owned storage; each row still
     // accumulates its products in column order.
     for j in 0..a.ncols() {
         let xj = x[(j, 0)];
         let column = a.col(j);
-        let column = column
-            .try_as_col_major()
-            .expect("owned faer columns are contiguous")
-            .as_slice();
         let split_x = split(xj);
-        for ((s, c), &aij) in sum.iter_mut().zip(&mut correction).zip(column) {
+        for ((s, c), &aij) in sum.iter_mut().zip(&mut correction).zip(column.iter()) {
             let (product, error) = two_product(-aij, xj, split_x);
             let next = *s + product;
             let back = next - *s;
@@ -374,8 +369,6 @@ fn two_product(a: f64, b: f64, split_b: (f64, f64)) -> (f64, f64) {
 ///
 /// [SciPy `inv`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.inv.html).
 pub fn inv(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     rows(
         &square(a)?
             .inverse_checked()
@@ -415,9 +408,7 @@ pub fn inv(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 ///
 /// [SciPy `det`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.det.html).
 pub fn det(a: &(impl super::MatrixInput + ?Sized)) -> Result<f64> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    crate::error::finite(square(a)?.determinant())
+    crate::error::finite(square_ref(a)?.as_ref().determinant())
 }
 /// Solves `T x=b` or `Tᵀ x=b` for a triangular matrix T.
 ///
@@ -439,7 +430,7 @@ pub fn det(a: &(impl super::MatrixInput + ?Sized)) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Private faer algorithms use f64. Ill-conditioned results can lose accuracy. Iterative routines use bounded backend-specific sweep limits. O(n²) substitution. Ignored triangle and unit diagonal still require finite supplied entries.
+/// Private faer algorithms use f64. Ill-conditioned results can lose accuracy. Iterative routines use bounded backend-specific sweep limits. O(n²) substitution on a borrowed input view. Ignored triangle and unit diagonal still require finite supplied entries.
 ///
 /// # Examples
 ///
@@ -458,27 +449,106 @@ pub fn solve_triangular(
     unit_diagonal: bool,
     transpose: bool,
 ) -> Result<Vec<f64>> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let b_input = super::input::vector_slice(b)?;
     let b = b_input.as_ref();
-    let a = square(a)?;
-    let mut b = rhs(b, a.nrows())?;
-    let n = a.nrows();
-    let effective_lower = lower != transpose;
-    for k in 0..n {
-        let i = if effective_lower { k } else { n - 1 - k };
-        let diagonal = if unit_diagonal { 1.0 } else { a[(i, i)] };
-        if diagonal == 0.0 {
-            return Err(Error::NumericalFailure("zero triangular pivot"));
-        }
-        let mut value = b[(i, 0)];
-        for j in if effective_lower { 0..i } else { i + 1..n } {
-            value -= if transpose { a[(j, i)] } else { a[(i, j)] } * b[(j, 0)];
-        }
-        b[(i, 0)] = value / diagonal;
+    let a_input = square_ref(a)?;
+    let a = a_input.as_ref();
+    if b.len() != a.nrows() {
+        return Err(Error::DimensionMismatch);
     }
-    vector(b)
+    crate::error::finite_slice(b)?;
+    let mut x = b.to_vec();
+    substitute(a, &mut x, lower, unit_diagonal, transpose)?;
+    if x.iter().any(|v| !v.is_finite()) {
+        return Err(Error::NonFiniteEvaluation);
+    }
+    Ok(x)
+}
+/// Overwrites `x` with the solution of `op(A) x = x` for triangular A.
+///
+/// Small systems dominate this crate's workloads, so a direct substitution
+/// over contiguous columns avoids the dispatch and recursion overhead of the
+/// blocked backend kernels.
+pub(super) fn substitute(
+    a: faer::MatRef<'_, f64>,
+    x: &mut [f64],
+    lower: bool,
+    unit_diagonal: bool,
+    transpose: bool,
+) -> Result<()> {
+    let n = a.nrows();
+    debug_assert_eq!(x.len(), n);
+    if !unit_diagonal && (0..n).any(|i| a[(i, i)] == 0.0) {
+        return Err(Error::NumericalFailure("zero triangular pivot"));
+    }
+    // A view with both strides negative is A = J B J for the forward view B,
+    // where J reverses order: solve op(B) (J x) = J b on B, whose triangle is
+    // the opposite one, instead of copying A.
+    let reversed = n > 1 && a.row_stride() < 0 && a.col_stride() < 0;
+    let a = if reversed {
+        a.reverse_rows_and_cols()
+    } else {
+        a
+    };
+    let effective_lower = (lower != transpose) != reversed;
+    if reversed {
+        x.reverse();
+    }
+    if a.row_stride() == 1 {
+        substitute_col_major(a, x, effective_lower, unit_diagonal, transpose);
+    } else if a.col_stride() == 1 {
+        // Row-major storage is the column-major transpose; op(A) is unchanged.
+        substitute_col_major(a.transpose(), x, effective_lower, unit_diagonal, !transpose);
+    } else {
+        let a = a.to_owned();
+        substitute_col_major(a.as_ref(), x, effective_lower, unit_diagonal, transpose);
+    }
+    if reversed {
+        x.reverse();
+    }
+    Ok(())
+}
+fn substitute_col_major(
+    a: faer::MatRef<'_, f64>,
+    x: &mut [f64],
+    effective_lower: bool,
+    unit_diagonal: bool,
+    transpose: bool,
+) {
+    let n = a.nrows();
+    let column = |j: usize| {
+        a.col(j)
+            .try_as_col_major()
+            .expect("unit row stride gives contiguous columns")
+            .as_slice()
+    };
+    if transpose {
+        // Row i of Aᵀ is column i of A: contiguous dot products.
+        for k in 0..n {
+            let i = if effective_lower { k } else { n - 1 - k };
+            let c = column(i);
+            let range = if effective_lower { 0..i } else { i + 1..n };
+            let mut value = x[i];
+            for (&aji, &xj) in c[range.clone()].iter().zip(&x[range]) {
+                value -= aji * xj;
+            }
+            x[i] = if unit_diagonal { value } else { value / c[i] };
+        }
+    } else {
+        // Column-oriented elimination keeps every update contiguous.
+        for k in 0..n {
+            let j = if effective_lower { k } else { n - 1 - k };
+            let c = column(j);
+            if !unit_diagonal {
+                x[j] /= c[j];
+            }
+            let xj = x[j];
+            let range = if effective_lower { j + 1..n } else { 0..j };
+            for (xi, &aij) in x[range.clone()].iter_mut().zip(&c[range]) {
+                *xi -= aij * xj;
+            }
+        }
+    }
 }
 /// Solves `T(c,r) x=b`, with the diagonals defined by [`toeplitz`].
 ///
@@ -565,8 +635,6 @@ pub fn matmul_toeplitz(
 ) -> Result<Matrix> {
     let c_input = super::input::vector_slice(c)?;
     let c = c_input.as_ref();
-    let x_input = super::input::matrix_rows(x)?;
-    let x = x_input.as_ref();
     if c.len() > MAX_DIM || r.is_some_and(|r| r.len() > MAX_DIM) {
         return Err(Error::InvalidInput("Toeplitz product axes exceed 256"));
     }
@@ -655,15 +723,16 @@ pub fn solve_circulant(
 ///
 /// [SciPy `cholesky`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cholesky.html).
 pub fn cholesky(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let l = symmetric(a, lower)?
+    let a = square_ref(a)?;
+    let a = a.as_ref();
+    let d = (if lower { a } else { a.transpose() })
         .llt(faer::Side::Lower)
-        .ok()
-        .ok_or(Error::NumericalFailure("matrix is not positive definite"))?
-        .L()
-        .to_owned();
-    rows(&if lower { l } else { l.transpose().to_owned() })
+        .map_err(|_| Error::NumericalFailure("matrix is not positive definite"))?;
+    if lower {
+        rows(&d.L())
+    } else {
+        rows(&d.L().transpose())
+    }
 }
 /// Factors `A=L Lᵀ` or `A=Uᵀ U` for reuse by [`cho_solve`].
 ///
@@ -699,8 +768,6 @@ pub fn cholesky(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<M
 ///
 /// [SciPy `cho_factor`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cho_factor.html).
 pub fn cho_factor(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<CholeskyFactor> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     Ok(CholeskyFactor {
         factor: cholesky(a, lower)?,
         lower,
@@ -743,15 +810,22 @@ pub fn cho_solve(
     factor: &CholeskyFactor,
     b: &(impl super::VectorInput + ?Sized),
 ) -> Result<Vec<f64>> {
-    let b_input = super::input::vector_slice(b)?;
-    let b = b_input.as_ref();
-    let a = square(&factor.factor)?;
+    solve_cholesky(&factor.factor, b, factor.lower)
+}
+pub(super) fn solve_cholesky(
+    factor: &(impl super::MatrixInput + ?Sized),
+    b: &(impl super::VectorInput + ?Sized),
+    lower: bool,
+) -> Result<Vec<f64>> {
+    let a = square_ref(factor)?;
+    let a = a.as_ref();
     if (0..a.nrows()).any(|i| a[(i, i)] <= 0.0) {
         return Err(Error::InvalidInput("Cholesky diagonal must be positive"));
     }
-    let y = solve_triangular(&factor.factor, b, factor.lower, false, !factor.lower)?;
-    solve_triangular(&factor.factor, &y, factor.lower, false, factor.lower)
+    let y = solve_triangular(&native(&a), b, lower, false, !lower)?;
+    solve_triangular(&native(&a), &y, lower, false, lower)
 }
+
 /// Computes the pivoted decomposition `A=P L U`.
 ///
 /// ## Parameters
@@ -786,8 +860,6 @@ pub fn cho_solve(
 ///
 /// [SciPy `lu`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu.html).
 pub fn lu(a: &(impl super::MatrixInput + ?Sized)) -> Result<LuResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = dense(a)?;
     let m = a.nrows();
     let d = lu_factors(a)?;
@@ -833,8 +905,6 @@ pub fn lu(a: &(impl super::MatrixInput + ?Sized)) -> Result<LuResult> {
 ///
 /// [SciPy `qr`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.qr.html).
 pub fn qr(a: &(impl super::MatrixInput + ?Sized)) -> Result<QrResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let (a, scale) = scaled(dense(a)?);
     let (q, mut r) = a.qr_factors();
     r *= Scale(scale);
@@ -877,12 +947,10 @@ pub fn qr(a: &(impl super::MatrixInput + ?Sized)) -> Result<QrResult> {
 ///
 /// [SciPy `svd`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.svd.html).
 pub fn svd(a: &(impl super::MatrixInput + ?Sized)) -> Result<SvdResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let d = decomposition(dense(a)?, true)?;
     Ok(SvdResult {
         u: rows(d.u.as_ref().unwrap())?,
-        singular_values: d.singular_values.as_slice().to_vec(),
+        singular_values: d.singular_values,
         vh: rows(d.v_t.as_ref().unwrap())?,
     })
 }
@@ -919,12 +987,7 @@ pub fn svd(a: &(impl super::MatrixInput + ?Sized)) -> Result<SvdResult> {
 ///
 /// [SciPy `svdvals`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.svdvals.html).
 pub fn svdvals(a: &(impl super::MatrixInput + ?Sized)) -> Result<Vec<f64>> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    Ok(decomposition(dense(a)?, false)?
-        .singular_values
-        .as_slice()
-        .to_vec())
+    Ok(decomposition(dense(a)?, false)?.singular_values)
 }
 /// Computes the Moore–Penrose inverse `A⁺=V diag(s⁺) Uᵀ`, retaining singular values `s>atol+rtol*smax`.
 ///
@@ -964,8 +1027,6 @@ pub fn pinv(
     atol: f64,
     rtol: Option<f64>,
 ) -> Result<(Matrix, usize)> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = dense(a)?;
     let rtol = relative(rtol, a.nrows(), a.ncols())?;
     tolerance(atol)?;
@@ -1012,8 +1073,6 @@ pub fn lstsq(
     b: &(impl super::VectorInput + ?Sized),
     cond: Option<f64>,
 ) -> Result<LeastSquaresResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let b_input = super::input::vector_slice(b)?;
     let b = b_input.as_ref();
     let a = dense(a)?;
@@ -1032,7 +1091,7 @@ pub fn lstsq(
         solution: vector(x)?,
         residuals,
         rank,
-        singular_values: d.singular_values.as_slice().to_vec(),
+        singular_values: d.singular_values,
     })
 }
 /// Constructs an orthonormal basis Q for `range(A)`, retaining `s>rcond*smax`.
@@ -1069,14 +1128,12 @@ pub fn lstsq(
 ///
 /// [SciPy `orth`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.orth.html).
 pub fn orth(a: &(impl super::MatrixInput + ?Sized), rcond: Option<f64>) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = dense(a)?;
     let r = relative(rcond, a.nrows(), a.ncols())?;
     let d = decomposition(a, true)?;
     let cutoff = crate::error::finite(r * d.singular_values[0])?;
     let rank = d.singular_values.iter().filter(|&&s| s > cutoff).count();
-    rows(&d.u.as_ref().unwrap().subcols(0, rank).to_owned())
+    rows(&d.u.as_ref().unwrap().subcols(0, rank))
 }
 /// Constructs an orthonormal basis Z for `null(A)`, where `A Z≈0`, discarding `s<=rcond*smax`.
 ///
@@ -1112,8 +1169,6 @@ pub fn orth(a: &(impl super::MatrixInput + ?Sized), rcond: Option<f64>) -> Resul
 ///
 /// [SciPy `null_space`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.null_space.html).
 pub fn null_space(a: &(impl super::MatrixInput + ?Sized), rcond: Option<f64>) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = dense(a)?;
     let (m, n) = (a.nrows(), a.ncols());
     let r = relative(rcond, m, n)?;
@@ -1158,8 +1213,6 @@ pub fn null_space(a: &(impl super::MatrixInput + ?Sized), rcond: Option<f64>) ->
 ///
 /// [SciPy `polar`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.polar.html).
 pub fn polar(a: &(impl super::MatrixInput + ?Sized), right: bool) -> Result<(Matrix, Matrix)> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let d = decomposition(dense(a)?, true)?;
     let u = d.u.unwrap();
     let vt = d.v_t.unwrap();
@@ -1211,10 +1264,6 @@ pub fn orthogonal_procrustes(
     a: &(impl super::MatrixInput + ?Sized),
     b: &(impl super::MatrixInput + ?Sized),
 ) -> Result<(Matrix, f64)> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let b_input = super::input::matrix_rows(b)?;
-    let b = b_input.as_ref();
     let a = dense(a)?;
     let b = dense(b)?;
     if a.shape() != b.shape() {
@@ -1264,8 +1313,6 @@ pub fn orthogonal_procrustes(
 ///
 /// [SciPy `eigh`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigh.html).
 pub fn eigh(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<EigenResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     eigendecomposition(symmetric(a, lower)?)
 }
 /// Computes ascending real eigenvalues of the selected symmetric matrix A.
@@ -1303,8 +1350,6 @@ pub fn eigh(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<Eigen
 ///
 /// [SciPy `eigvalsh`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigvalsh.html).
 pub fn eigvalsh(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<Vec<f64>> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     eigenvalues(symmetric(a, lower)?)
 }
 /// Computes `A⁺=V diag(w⁺) Vᵀ`, retaining eigenvalues with `|w|>atol+rtol*max|w|`.
@@ -1346,8 +1391,6 @@ pub fn pinvh(
     rtol: Option<f64>,
     lower: bool,
 ) -> Result<(Matrix, usize)> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let d = eigh(a, lower)?;
     let n = d.eigenvalues.len();
     let r = relative(rtol, n, n)?;
@@ -1515,8 +1558,6 @@ pub fn eigvalsh_tridiagonal(
 ///
 /// [SciPy `hessenberg`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.hessenberg.html).
 pub fn hessenberg(a: &(impl super::MatrixInput + ?Sized)) -> Result<(Matrix, Matrix)> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = square(a)?;
     if a.nrows() == 1 {
         return Ok((rows(&a)?, vec![vec![1.0]]));
@@ -1559,8 +1600,6 @@ pub fn hessenberg(a: &(impl super::MatrixInput + ?Sized)) -> Result<(Matrix, Mat
 ///
 /// [SciPy `schur`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.schur.html).
 pub fn schur(a: &(impl super::MatrixInput + ?Sized)) -> Result<(Matrix, Matrix)> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = square(a)?;
     let (a, scale) = scaled(a);
     let (t, z) = real_schur(a, true)?;
@@ -1600,8 +1639,6 @@ pub fn schur(a: &(impl super::MatrixInput + ?Sized)) -> Result<(Matrix, Matrix)>
 ///
 /// [SciPy `eigvals`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigvals.html).
 pub fn eigvals(a: &(impl super::MatrixInput + ?Sized)) -> Result<Vec<crate::complex::Complex>> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = square(a)?;
     let (a, scale) = scaled(a);
     let values = a
@@ -1651,11 +1688,13 @@ pub fn eigvals(a: &(impl super::MatrixInput + ?Sized)) -> Result<Vec<crate::comp
 ///
 /// [SciPy `norm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.norm.html).
 pub fn norm(a: &(impl super::MatrixInput + ?Sized), order: MatrixNorm) -> Result<f64> {
-    let a_input = super::input::matrix_rows(a)?;
+    let a_input = dense_ref(a)?;
     let a = a_input.as_ref();
-    let a = dense(a)?;
     let value = match order {
-        MatrixNorm::Frobenius => a.iter().fold(0.0_f64, |v, &x| v.hypot(x)),
+        MatrixNorm::Frobenius => a
+            .col_iter()
+            .flat_map(|c| c.iter())
+            .fold(0.0_f64, |v, &x| v.hypot(x)),
         MatrixNorm::One | MatrixNorm::NegativeOne => {
             let sums = (0..a.ncols()).map(|j| a.col(j).iter().map(|x| x.abs()).sum::<f64>());
             if order == MatrixNorm::One {
@@ -1673,7 +1712,7 @@ pub fn norm(a: &(impl super::MatrixInput + ?Sized), order: MatrixNorm) -> Result
             }
         }
         MatrixNorm::Spectral | MatrixNorm::SmallestSingular | MatrixNorm::Nuclear => {
-            let d = decomposition(a, false)?;
+            let d = decomposition(a_input.into_owned(), false)?;
             match order {
                 MatrixNorm::Spectral => d.singular_values[0],
                 MatrixNorm::SmallestSingular => d.singular_values[d.singular_values.len() - 1],
