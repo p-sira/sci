@@ -182,7 +182,14 @@ fn element<'a>(b: &mut &'a [u8], e: Endian) -> Result<(u32, &'a [u8])> {
     *b = &b[end..];
     Ok((tag, data))
 }
-fn metadata(mut b: &[u8], e: Endian, total: &mut usize) -> Result<MatVariableInfo> {
+struct ParsedMatrix<'a> {
+    info: MatVariableInfo,
+    storage: u32,
+    real: &'a [u8],
+    imag: Option<&'a [u8]>,
+}
+
+fn matrix<'a>(mut b: &'a [u8], e: Endian, total: &mut usize) -> Result<ParsedMatrix<'a>> {
     let (t, flags) = element(&mut b, e)?;
     if t != 6 || flags.len() != 8 {
         return Err(invalid());
@@ -228,7 +235,7 @@ fn metadata(mut b: &[u8], e: Endian, total: &mut usize) -> Result<MatVariableInf
             "MATLAB names must be ASCII identifiers of 1..63 bytes",
         ));
     }
-    for _ in 0..1 + usize::from(complex) {
+    let mut component = || -> Result<&'a [u8]> {
         let (t, data) = element(&mut b, e)?;
         if t != storage {
             return Err(Error::Unsupported(
@@ -238,38 +245,41 @@ fn metadata(mut b: &[u8], e: Endian, total: &mut usize) -> Result<MatVariableInf
         if data.len() != n * width {
             return Err(invalid());
         }
-    }
+        Ok(data)
+    };
+    let real = component()?;
+    let imag = complex.then(&mut component).transpose()?;
     if !b.is_empty() {
         return Err(invalid());
     }
-    Ok(MatVariableInfo {
-        name: name.to_string(),
-        shape,
-        class: class_name,
-        complex,
+    Ok(ParsedMatrix {
+        info: MatVariableInfo {
+            name: name.to_string(),
+            shape,
+            class: class_name,
+            complex,
+        },
+        storage,
+        real,
+        imag,
     })
 }
-struct Prepared {
-    bytes: Vec<u8>,
-    info: Vec<MatVariableInfo>,
-}
-fn prepare(reader: impl Read) -> Result<Prepared> {
+
+fn read_matrices(
+    reader: impl Read,
+    mut visit: impl FnMut(ParsedMatrix<'_>, Endian) -> Result<()>,
+) -> Result<()> {
     let bytes = bounded_read(reader)?;
     let e = file_header(&bytes)?;
     let mut rest = &bytes[128..];
-    let mut out = bytes[..128].to_vec();
-    let signature = b"MATLAB 5.0 MAT-file, ";
-    out[..signature.len()].copy_from_slice(signature);
-    out[124..128].copy_from_slice(&[0, 1, b'I', b'M']);
-    let mut info = Vec::new();
+    let mut expanded = 128;
     let mut names = std::collections::BTreeSet::new();
     let mut total = 0;
     while !rest.is_empty() {
-        if info.len() >= 1024 {
+        if names.len() >= 1024 {
             return Err(Error::InvalidData("MATLAB file exceeds 1,024 variables"));
         }
         let (t, data) = element(&mut rest, e)?;
-        let matrix;
         let mut decoded;
         let payload = match t {
             14 => data,
@@ -277,9 +287,9 @@ fn prepare(reader: impl Read) -> Result<Prepared> {
                 let mut decoder = ZlibDecoder::new(data);
                 decoded = Vec::new();
                 (&mut decoder)
-                    .take((BYTES - out.len() + 1) as u64)
+                    .take((BYTES - expanded + 1) as u64)
                     .read_to_end(&mut decoded)?;
-                if decoded.len() > BYTES - out.len() {
+                if decoded.len() > BYTES - expanded {
                     return Err(Error::InvalidData("MATLAB decompression exceeds 64 MiB"));
                 }
                 if decoder.total_in() != data.len() as u64 {
@@ -290,43 +300,43 @@ fn prepare(reader: impl Read) -> Result<Prepared> {
                 if inner != 14 || !d.is_empty() {
                     return Err(invalid());
                 }
-                matrix = p;
-                matrix
+                p
             }
             _ => return Err(Error::Unsupported("unsupported top-level MATLAB element")),
         };
-        let m = metadata(payload, e, &mut total)?;
-        if !names.insert(m.name.clone()) {
+        let matrix = matrix(payload, e, &mut total)?;
+        if !names.insert(matrix.info.name.clone()) {
             return Err(Error::InvalidData("duplicate MATLAB variable name"));
         }
-        if out.len() + 8 + payload.len() + 7 > BYTES {
+        if expanded + 8 + payload.len() + 7 > BYTES {
             return Err(Error::InvalidData("MATLAB expanded file exceeds 64 MiB"));
         }
-        // Give the private backend normal tags and little-endian scalar words.
-        // This also avoids backend-specific big-endian small-tag assumptions.
-        let mut rest = payload;
-        let mut normalized = Vec::new();
-        while !rest.is_empty() {
-            let (kind, data) = element(&mut rest, e)?;
-            let width = match kind {
-                3 | 4 => 2,
-                5..=7 => 4,
-                9 | 12 | 13 => 8,
-                _ => 1,
-            };
-            let data = if e.0 {
-                data.to_vec()
-            } else {
-                data.chunks_exact(width)
-                    .flat_map(|v| v.iter().rev().copied())
-                    .collect()
-            };
-            put_element(&mut normalized, kind, &data);
-        }
-        put_element(&mut out, 14, &normalized);
-        info.push(m);
+        expanded += 8 + ((payload.len() + 7) & !7);
+        visit(matrix, e)?;
     }
-    Ok(Prepared { bytes: out, info })
+    Ok(())
+}
+
+fn numeric_data(data: &[u8], storage: u32, endian: Endian) -> Result<NumericData> {
+    // Matrix validation has checked the storage type and exact component length.
+    macro_rules! numeric {
+        ($($kind:literal => $variant:ident($scalar:ty)),+ $(,)?) => {
+            match storage {
+                $($kind => NumericData::$variant(data.as_chunks::<{ size_of::<$scalar>() }>().0.iter()
+                    .map(|bytes| if endian.0 {
+                        <$scalar>::from_le_bytes(*bytes)
+                    } else {
+                        <$scalar>::from_be_bytes(*bytes)
+                    }).collect()),)+
+                _ => return Err(invalid()),
+            }
+        };
+    }
+    Ok(
+        numeric!(1 => I8(i8), 2 => U8(u8), 3 => I16(i16), 4 => U16(u16),
+        5 => I32(i32), 6 => U32(u32), 7 => F32(f32), 9 => F64(f64),
+        12 => I64(i64), 13 => U64(u64)),
+    )
 }
 
 /// Identify a MATLAB Level-5 container's `(major, minor)` version.
@@ -375,7 +385,12 @@ pub fn matfile_version(mut reader: impl Read) -> Result<(u8, u8)> {
 /// # References
 /// [SciPy whosmat](https://docs.scipy.org/doc/scipy/reference/generated/scipy.io.whosmat.html).
 pub fn whosmat(reader: impl Read) -> Result<Vec<MatVariableInfo>> {
-    Ok(prepare(reader)?.info)
+    let mut info = Vec::new();
+    read_matrices(reader, |matrix, _| {
+        info.push(matrix.info);
+        Ok(())
+    })?;
+    Ok(info)
 }
 
 /// Load MATLAB numeric values `A[i₀,…,iₖ]` without dtype conversion or squeezing.
@@ -388,13 +403,13 @@ pub fn whosmat(reader: impl Read) -> Result<Vec<MatVariableInfo>> {
 /// Dense integer/floating arrays only, as described by this module. Floating
 /// NaN/infinities/signed zeros, exact 64-bit integers, unit axes and empty axes persist.
 /// # Returns
-/// A [`MatFile`] keyed by original names. Backend APIs remain private.
+/// A [`MatFile`] keyed by original names.
 /// # Errors
-/// Unsupported features and work limits in [`whosmat`], I/O errors, or backend
-/// decoding failures. All variables are validated before backend decoding.
+/// Unsupported features and work limits in [`whosmat`], malformed data, or I/O
+/// errors. Each variable is validated before its numeric components are decoded.
 /// # Numerical behavior
-/// Bounded zlib decompression and structural validation precede private numeric
-/// parsing. No precision conversion, transposition, arithmetic, or silent skipping.
+/// Bounded zlib decompression and structural validation precede native numeric
+/// decoding. No precision conversion, transposition, arithmetic, or silent skipping.
 /// # Examples
 /// ```
 /// use sci_io::{NumericData, matlab::{MatArray, MatFile}};
@@ -407,46 +422,23 @@ pub fn whosmat(reader: impl Read) -> Result<Vec<MatVariableInfo>> {
 /// # References
 /// [SciPy loadmat](https://docs.scipy.org/doc/scipy/reference/generated/scipy.io.loadmat.html).
 pub fn loadmat(reader: impl Read) -> Result<MatFile> {
-    let p = prepare(reader)?;
-    let parsed = matrw::load_matfile_from_u8(&p.bytes).map_err(|e| Error::Codec(e.to_string()))?;
     let mut out = MatFile::new();
-    fn convert(value: matrw::MatlabType) -> Result<NumericData> {
-        macro_rules! numeric {
-            ($($v:ident),+) => { match value {
-                $(matrw::MatlabType::$v(v)=>Ok(NumericData::$v(v))),+,
-                _=>Err(invalid()),
-            } };
-        }
-        numeric!(I8, U8, I16, U16, I32, U32, I64, U64, F32, F64)
-    }
-    for (name, a) in parsed {
-        let matrw::MatVariable::NumericArray(a) = a else {
-            return Err(invalid());
-        };
-        let real = convert(a.value)?;
-        let imag = a.value_cmp.map(convert).transpose()?;
+    read_matrices(reader, |matrix, endian| {
+        let real = numeric_data(matrix.real, matrix.storage, endian)?;
+        let imag = matrix
+            .imag
+            .map(|data| numeric_data(data, matrix.storage, endian))
+            .transpose()?;
         out.insert(
-            name,
+            matrix.info.name,
             MatArray {
-                shape: a.dim,
+                shape: matrix.info.shape,
                 real,
                 imag,
             },
         );
-    }
-    if out.len() != p.info.len() {
-        return Err(invalid());
-    }
-    for info in p.info {
-        let a = out.get(&info.name).ok_or_else(invalid)?;
-        validate(a)?;
-        if a.shape != info.shape
-            || repr(&a.real).3 != info.class
-            || a.imag.is_some() != info.complex
-        {
-            return Err(invalid());
-        }
-    }
+        Ok(())
+    })?;
     Ok(out)
 }
 

@@ -47,7 +47,7 @@ The other dependencies provide existing SciPy operations or specialized backend
 interfaces: special/XSF special functions, RustFFT/RealFFT/RustDCT transforms,
 Statrs/Anofox statistical operations, Kodama linkage, LapJV assignment,
 Delaunator geometry, splinefit fitting, pm-remez filter design, Basin solvers,
-Smelly/kalman_filters estimation, and faer/nalgebra/ndarray linear algebra.
+Smelly estimation, and faer/nalgebra/ndarray linear algebra.
 Their algorithm types and storage/adapter APIs stay private. Existing coverage
 reports describe supported numerical signatures; this audit does not assert
 complete parity with every dependency method or optional feature.

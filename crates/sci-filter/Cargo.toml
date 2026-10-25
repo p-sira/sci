@@ -1,6 +1,6 @@
 [package]
 name = "sci-filter"
-version = "0.2.0"
+version = "0.2.1"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -17,5 +17,4 @@ include = ["/src/**", "/LICENSE"]
 [dependencies]
 sci-core.workspace = true
 smelly.workspace = true
-kalman_filters.workspace = true
 nalgebra.workspace = true

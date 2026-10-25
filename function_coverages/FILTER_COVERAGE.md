@@ -2,9 +2,9 @@
 
 `sci-filter`, exposed as `sci::filter` with the `filter` feature, provides Bayesian
 state estimation. Its ten numerical exports are implemented, documented, and
-exercised through the public facade. Smelly 0.1.0 supplies the linear, extended,
-and scaled unscented Kalman algorithms. kalman_filters 1.0.1 supplies particle
-propagation, weighted moments, and effective sample size. Backend types remain
+exercised through the public facade. Smelly 0.2.0 supplies the linear, extended,
+and scaled unscented Kalman algorithms, particle propagation, and weighted
+moments. Effective sample size uses the elementary sum-of-squares identity. Backend types remain
 private; the API uses f64, shared `Matrix`, `Error`, and `Result`, and owned
 `Gaussian`, `Update`, `ParticleSet`, and `SigmaPoints` records.
 
@@ -69,13 +69,17 @@ No signal functions or compatibility aliases are duplicated in `filter`.
 - Particle states are one vector per row, with explicit nonnegative relative
   weights of positive mass. No initialization distribution is assumed. Generate
   initial particles and process samples with caller-controlled randomness;
-  `particle_predict` accepts FnMut to support a seeded generator. It disables
-  kalman_filters' implicit Gaussian noise and validates each model output.
-- Particle weighting and systematic resampling are native bounded elementary
-  operations. The backend's likelihood update uses a finite sentinel for zero
-  likelihood, which mishandles impossible observations and extreme log offsets;
-  its resampling uses a hidden thread-local RNG. Native normalization and an
-  explicit offset avoid those issues without exposing backend state.
+  `particle_predict` accepts FnMut to support a seeded generator and validates
+  each model output. Smelly takes contiguous particle columns privately; Sci
+  preserves the public row ordering and normalized weights.
+- Particle weighting, effective sample size, and systematic resampling are native
+  bounded elementary operations. Native log normalization removes common
+  likelihood offsets before combining them with retained prior logarithms,
+  preserving prior ratios even near ±1e308 and recovering underflowed priors.
+  Resampling retains the documented division and zero-mass boundary conventions.
+  Smelly moments receive the normalized linear weights through its likelihood
+  update; log-space fallback can introduce additional binary64 roundoff for tiny
+  relative weights. No backend RNG is used.
 - Resampling selects the first cumulative mass strictly greater than
   (i+offset)/N, skipping zero weights. It returns exactly N rows with weight 1/N.
   The offset lies in [0,1); a uniform random draw is the caller's responsibility.
@@ -131,6 +135,5 @@ not currently exported. Signal-processing filters remain available in `signal`.
 ## References
 
 - [Särkkä and Svensson, Bayesian Filtering and Smoothing, second edition](https://users.aalto.fi/~ssarkka/pub/bfs_book_2023_online.pdf).
-- [Smelly 0.1.0](https://docs.rs/smelly/0.1.0/smelly/).
-- [kalman_filters 1.0.1](https://docs.rs/kalman_filters/1.0.1/kalman_filters/).
+- [Smelly 0.2.0](https://docs.rs/smelly/0.2.0/smelly/).
 - [Douc, Cappé and Moulines, Comparison of Resampling Schemes for Particle Filtering](https://arxiv.org/abs/cs/0507025).

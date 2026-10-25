@@ -2,6 +2,7 @@
 
 ## 0.1.1
 
+- Disable OS entropy and thread-local RNG features; retain seeded sparse generation.
 - Reuse iterative solver workspaces and swap TFQMR buffers instead of cloning them; borrow accepted Yen paths while generating candidates.
 
 ## Unreleased

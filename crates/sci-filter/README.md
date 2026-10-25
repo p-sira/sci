@@ -5,8 +5,8 @@ Functional Bayesian state estimation on shared row-major `Matrix` values.
 Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 
 Linear and extended Kalman steps and the scaled unscented filter delegate to
-private Smelly backends. Particle propagation and moments use kalman_filters;
-log-weight normalization and reproducible systematic resampling are native.
+private Smelly backends, including particle propagation and moments;
+weight normalization, effective sample size, and systematic resampling are native.
 Sample filtering and FIR/IIR design remain in `sci-signal`.
 
 Every call validates finite values, shapes, covariance matrices, and work
@@ -31,5 +31,4 @@ fn main() -> Result<(), sci_filter::Error> {
 
 ## Acknowledgments
 
-We thank `smelly`, `kalman_filters`, and
-`nalgebra` for their state-estimation algorithms.
+We thank `smelly` and `nalgebra` for their state-estimation algorithms.

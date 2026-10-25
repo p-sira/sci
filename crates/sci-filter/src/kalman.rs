@@ -322,7 +322,7 @@ fn callback_matrix(x: &[Vec<f64>], m: usize, n: usize) -> Result<DMatrix<f64>> {
 ///
 /// # References
 /// [Särkkä and Svensson, ch. 8](https://users.aalto.fi/~ssarkka/pub/bfs_book_2023_online.pdf);
-/// [Smelly's UKF conventions](https://docs.rs/smelly/0.1.0/smelly/struct.UnscentedKalmanFilter.html).
+/// [Smelly's UKF conventions](https://docs.rs/smelly/0.2.0/smelly/struct.UnscentedKalmanFilter.html).
 pub fn unscented_kalman_step<F, H>(
     prior: &Gaussian,
     process_noise: &[Vec<f64>],

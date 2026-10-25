@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1
+
+- Replace matrw with native numeric decoding through the existing bounded MATLAB
+  parser. Preserve scalar types, special values, both endian orders, compression,
+  shape ordering, and validation limits while removing the normalized-file copy.
+
 ## Unreleased
 
 - The Sci facade exposes each format through `io-matrix-market`, `io-wav`, and `io-matlab`. With facade defaults disabled, `io` alone provides shared I/O types without codecs. Matrix Market avoids sparse NPZ dependencies. MATLAB and NPZ share the Rust/miniz compression backend.

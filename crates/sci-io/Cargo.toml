@@ -1,6 +1,6 @@
 [package]
 name = "sci-io"
-version = "0.1.0"
+version = "0.1.1"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -14,11 +14,10 @@ include = ["/src/**", "/LICENSE"]
 default = ["matrix-market", "wav", "matlab"]
 matrix-market = ["dep:sci-sparse"]
 wav = ["dep:hound"]
-matlab = ["dep:matrw", "dep:flate2"]
+matlab = ["dep:flate2"]
 
 [dependencies]
 sci-core.workspace = true
 sci-sparse = { workspace = true, optional = true }
 hound = { workspace = true, optional = true }
-matrw = { workspace = true, optional = true }
 flate2 = { workspace = true, optional = true }

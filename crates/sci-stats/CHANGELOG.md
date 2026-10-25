@@ -2,6 +2,7 @@
 
 ## 0.2.1
 
+- Disable unused statrs sampling features while retaining multivariate distributions.
 - Reuse sorted sample storage in one-sided and two-sided trimming.
 
 ## 0.2.0

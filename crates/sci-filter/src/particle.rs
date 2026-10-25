@@ -1,6 +1,4 @@
 use super::*;
-use kalman_filters::particle::{Particle, ParticleFilter, ResamplingStrategy};
-use std::cell::RefCell;
 
 /// Weighted particles representing p(x) ≈ Σ wᵢ δ(x−xᵢ).
 ///
@@ -14,7 +12,12 @@ pub struct ParticleSet {
     pub weights: Vec<f64>,
 }
 
-fn validated(particles: &ParticleSet) -> Result<ParticleFilter<f64>> {
+struct Weights {
+    linear: Vec<f64>,
+    log: Vec<f64>,
+}
+
+fn validated(particles: &ParticleSet) -> Result<Weights> {
     let count = particles.states.len();
     if count == 0 || count > 65_536 {
         return Err(Error::InvalidInput("particle count must be in 1..=65536"));
@@ -43,43 +46,32 @@ fn validated(particles: &ParticleSet) -> Result<ParticleFilter<f64>> {
     let sum: f64 = particles.weights.iter().map(|w| w / maximum).sum();
     let log_sum = sum.ln();
     let log_maximum = maximum.ln();
-    let particles = particles
-        .states
+    let (linear, log) = particles
+        .weights
         .iter()
-        .zip(&particles.weights)
-        .map(|(state, w)| {
+        .map(|w| {
             let relative = w / maximum;
-            let weight = relative / sum;
-            Particle {
-                state: state.clone(),
-                weight,
-                log_weight: if relative.is_normal() {
+            (
+                relative / sum,
+                if relative.is_normal() {
                     relative.ln() - log_sum
                 } else {
                     w.ln() - log_maximum - log_sum
                 },
-            }
+            )
         })
-        .collect();
-    Ok(ParticleFilter {
-        state_dim: n,
-        num_particles: count,
-        particles,
-        process_noise_std: vec![0.; n],
-        measurement_noise_std: vec![],
-        resampling_strategy: ResamplingStrategy::Systematic,
-        ess_threshold: 0.,
-        dt: 1.,
-    })
+        .unzip();
+    Ok(Weights { linear, log })
 }
 
-fn owned(filter: ParticleFilter<f64>) -> ParticleSet {
-    let (states, weights) = filter
-        .particles
-        .into_iter()
-        .map(|p| (p.state, p.weight))
-        .unzip();
-    ParticleSet { states, weights }
+// Inputs have already passed the shared validation and allocation limits.
+fn filter(particles: &ParticleSet) -> Result<smelly::ParticleFilter> {
+    smelly::ParticleFilter::new(DMatrix::from_fn(
+        particles.states[0].len(),
+        particles.states.len(),
+        |r, c| particles.states[c][r],
+    ))
+    .map_err(backend)
 }
 
 /// Propagates each particle xᵢ⁻ = f(xᵢ), retaining its normalized weight.
@@ -104,7 +96,7 @@ fn owned(filter: ParticleFilter<f64>) -> ParticleSet {
 /// unchanged; callback side effects, including RNG draws, cannot be rolled back.
 ///
 /// # Numerical behavior
-/// Private kalman_filters propagation with zero implicit process noise. Weights
+/// Private Smelly propagation with caller-supplied process noise. Weights
 /// are normalized after division by their maximum to avoid overflow. Tiny
 /// relative weights may underflow to zero. Each callback runs at most once per
 /// particle; user callback work is outside the library's work bound.
@@ -124,35 +116,40 @@ pub fn particle_predict<F>(prior: &ParticleSet, process: F) -> Result<ParticleSe
 where
     F: FnMut(&[f64]) -> Result<Vec<f64>>,
 {
-    let mut filter = validated(prior)?;
-    let n = filter.state_dim;
-    let process = RefCell::new(process);
-    let error = RefCell::new(None);
-    filter.predict(|x, _| {
-        if error.borrow().is_some() {
-            return x.to_vec();
-        }
-        let result = process.borrow_mut()(x).and_then(|value| {
-            if value.len() != n {
-                return Err(Error::DimensionMismatch);
+    let weights = validated(prior)?;
+    let mut filter = filter(prior)?;
+    let mut process = process;
+    let mut error = None;
+    filter
+        .predict(|x, out| {
+            if error.is_some() {
+                return;
             }
-            if value.iter().any(|v| !v.is_finite()) {
-                return Err(Error::NonFiniteEvaluation);
+            match process(x).and_then(|value| {
+                if value.len() != out.len() {
+                    return Err(Error::DimensionMismatch);
+                }
+                if value.iter().any(|v| !v.is_finite()) {
+                    return Err(Error::NonFiniteEvaluation);
+                }
+                Ok(value)
+            }) {
+                Ok(value) => out.copy_from_slice(&value),
+                Err(e) => error = Some(e),
             }
-            Ok(value)
-        });
-        match result {
-            Ok(value) => value,
-            Err(e) => {
-                *error.borrow_mut() = Some(e);
-                x.to_vec()
-            }
-        }
-    });
-    if let Some(e) = error.borrow_mut().take() {
+        })
+        .map_err(backend)?;
+    if let Some(e) = error {
         return Err(e);
     }
-    Ok(owned(filter))
+    Ok(ParticleSet {
+        states: filter
+            .particles()
+            .column_iter()
+            .map(|x| x.as_slice().to_vec())
+            .collect(),
+        weights: weights.linear,
+    })
 }
 
 /// Reweights particles using wᵢ⁺ ∝ wᵢ exp(ℓᵢ), where ℓᵢ = log p(z|xᵢ).
@@ -176,8 +173,8 @@ where
 /// shared errors. Inputs are unchanged; callbacks stop at the first error.
 ///
 /// # Numerical behavior
-/// Native max-shift log normalization avoids likelihood underflow and the
-/// backend's finite sentinel for impossible observations. Original positive
+/// Native max-shift log normalization avoids likelihood underflow and preserves
+/// prior ratios under enormous common log likelihood offsets. Original positive
 /// priors retain finite logarithms even when normalized prior weights underflow.
 /// Only final posterior weights are rounded to binary64. Very small posterior
 /// probabilities may round to zero. Work is linear in particle count, with the
@@ -198,15 +195,15 @@ pub fn particle_update<F>(prior: &ParticleSet, mut log_likelihood: F) -> Result<
 where
     F: FnMut(&[f64]) -> Result<f64>,
 {
-    let mut filter = validated(prior)?;
-    let mut likelihoods = Vec::with_capacity(filter.num_particles);
+    let mut weights = validated(prior)?;
+    let mut likelihoods = Vec::with_capacity(prior.states.len());
     let mut maximum_likelihood = f64::NEG_INFINITY;
-    for particle in &filter.particles {
-        let likelihood = log_likelihood(&particle.state)?;
+    for (state, log_weight) in prior.states.iter().zip(&weights.log) {
+        let likelihood = log_likelihood(state)?;
         if likelihood.is_nan() || likelihood == f64::INFINITY {
             return Err(Error::NonFiniteEvaluation);
         }
-        if particle.log_weight.is_finite() {
+        if log_weight.is_finite() {
             maximum_likelihood = maximum_likelihood.max(likelihood);
         }
         likelihoods.push(likelihood);
@@ -219,23 +216,24 @@ where
     // Remove the common likelihood offset before combining with prior logs;
     // this preserves prior weights even when log likelihoods are around 1e308.
     let mut maximum = f64::NEG_INFINITY;
-    for (particle, likelihood) in filter.particles.iter_mut().zip(likelihoods) {
-        particle.log_weight = if particle.log_weight == f64::NEG_INFINITY {
-            f64::NEG_INFINITY
-        } else {
-            particle.log_weight + (likelihood - maximum_likelihood)
-        };
-        maximum = maximum.max(particle.log_weight);
+    for (log_weight, likelihood) in weights.log.iter_mut().zip(likelihoods) {
+        if *log_weight != f64::NEG_INFINITY {
+            *log_weight += likelihood - maximum_likelihood;
+        }
+        maximum = maximum.max(*log_weight);
     }
     let mut sum = 0.;
-    for particle in &mut filter.particles {
-        particle.weight = (particle.log_weight - maximum).exp();
-        sum += particle.weight;
+    for (weight, log_weight) in weights.linear.iter_mut().zip(weights.log) {
+        *weight = (log_weight - maximum).exp();
+        sum += *weight;
     }
-    for particle in &mut filter.particles {
-        particle.weight /= sum;
+    for weight in &mut weights.linear {
+        *weight /= sum;
     }
-    Ok(owned(filter))
+    Ok(ParticleSet {
+        states: prior.states.clone(),
+        weights: weights.linear,
+    })
 }
 
 /// Computes μ = Σ wᵢ xᵢ and P = Σ wᵢ(xᵢ−μ)(xᵢ−μ)ᵀ.
@@ -258,7 +256,7 @@ where
 /// return shared errors.
 ///
 /// # Numerical behavior
-/// kalman_filters uses normalized weighted sums and a second pass for covariance.
+/// Smelly uses normalized weighted sums and a second pass for covariance.
 /// Cancellation or extreme coordinates can lose accuracy or overflow; dimensions
 /// and particle-count×dimension² are bounded, as is covariance validation.
 ///
@@ -273,10 +271,13 @@ where
 /// # References
 /// [Särkkä and Svensson, ch. 11](https://users.aalto.fi/~ssarkka/pub/bfs_book_2023_online.pdf).
 pub fn particle_estimate(particles: &ParticleSet) -> Result<Gaussian> {
-    let filter = validated(particles)?;
-    let mean = DVector::from_vec(filter.mean());
-    let p = DMatrix::from_row_slice(filter.state_dim, filter.state_dim, &filter.covariance());
-    output(&mean, &p)
+    let weights = validated(particles)?;
+    let mut filter = filter(particles)?;
+    let mut weights = weights.linear.into_iter();
+    filter
+        .update(|_| weights.next().unwrap())
+        .map_err(backend)?;
+    output(&filter.state(), &filter.covariance())
 }
 
 /// Computes effective sample size N_eff = 1 / Σ normalized(wᵢ)².
@@ -297,7 +298,7 @@ pub fn particle_estimate(particles: &ParticleSet) -> Result<Gaussian> {
 /// Invalid states, dimensions, weights, or work bounds return shared errors.
 ///
 /// # Numerical behavior
-/// kalman_filters computes ESS after overflow-safe max normalization; tiny
+/// Computes the sum of squared weights after overflow-safe max normalization; tiny
 /// weights may underflow. Linear work in N with the common allocation bounds.
 ///
 /// # Examples
@@ -311,7 +312,8 @@ pub fn particle_estimate(particles: &ParticleSet) -> Result<Gaussian> {
 /// # References
 /// [Särkkä and Svensson, ch. 11](https://users.aalto.fi/~ssarkka/pub/bfs_book_2023_online.pdf).
 pub fn effective_sample_size(particles: &ParticleSet) -> Result<f64> {
-    Ok(validated(particles)?.effective_sample_size())
+    let weights = validated(particles)?;
+    Ok(1. / weights.linear.iter().map(|w| w * w).sum::<f64>())
 }
 
 /// Systematically resamples at uᵢ = (i + offset)/N from the weighted CDF.
@@ -333,8 +335,8 @@ pub fn effective_sample_size(particles: &ParticleSet) -> Result<f64> {
 /// Inputs remain unchanged.
 ///
 /// # Numerical behavior
-/// Native linear CDF traversal uses an explicit offset rather than the backend's
-/// thread-local RNG. Rounding near CDF boundaries can change selected indices.
+/// Native linear CDF traversal uses the caller's explicit offset. Rounding near
+/// CDF boundaries can change selected indices.
 /// The final positive-mass particle absorbs CDF accumulation roundoff. Coordinate
 /// copying is bounded by the common work and allocation limits.
 ///
@@ -352,23 +354,19 @@ pub fn systematic_resample(particles: &ParticleSet, offset: f64) -> Result<Parti
     if !offset.is_finite() || !(0. ..1.).contains(&offset) {
         return Err(Error::InvalidInput("resampling offset must be in [0,1)"));
     }
-    let filter = validated(particles)?;
-    let count = filter.num_particles;
-    let last = filter
-        .particles
-        .iter()
-        .rposition(|p| p.weight > 0.)
-        .unwrap();
+    let weights = validated(particles)?.linear;
+    let count = particles.states.len();
+    let last = weights.iter().rposition(|w| *w > 0.).unwrap();
     let mut states = Vec::with_capacity(count);
     let mut index = 0;
-    let mut cumulative = filter.particles[0].weight;
+    let mut cumulative = weights[0];
     for i in 0..count {
         let u = (i as f64 + offset) / count as f64;
-        while index < last && (cumulative <= u || filter.particles[index].weight == 0.) {
+        while index < last && (cumulative <= u || weights[index] == 0.) {
             index += 1;
-            cumulative += filter.particles[index].weight;
+            cumulative += weights[index];
         }
-        states.push(filter.particles[index].state.clone());
+        states.push(particles.states[index].clone());
     }
     Ok(ParticleSet {
         states,
