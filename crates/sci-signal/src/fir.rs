@@ -51,6 +51,51 @@ fn iwcos(k: usize, lo: f64, hi: f64) -> f64 {
     }
 }
 
+fn remez_two_taps(
+    bands: &[f64],
+    desired: &[f64],
+    weight: &[f64],
+    fs: f64,
+    amplitude: f64,
+    weight_scale: f64,
+) -> Result<Vec<f64>> {
+    // A(f) = 2*a*cos(pi*f/fs). On each band its weighted error reaches
+    // its maximum at an endpoint. For endpoint constraints |s_i*a-t_i| <= r,
+    // the smallest feasible r is max_ij |s_j*t_i-s_i*t_j|/(s_i+s_j).
+    // A nonzero slope always exists for validated, strictly increasing bands.
+    // Intersect their feasible intervals to recover a minimizing tap.
+    let endpoints: Vec<_> = bands
+        .iter()
+        .enumerate()
+        .map(|(i, &f)| {
+            let w = weight[i / 2] / weight_scale;
+            let cosine = if f == fs / 2. {
+                0.
+            } else {
+                (PI * (f / fs)).cos()
+            };
+            (2. * w * cosine, w * (desired[i / 2] / amplitude))
+        })
+        .collect();
+    let mut ripple: f64 = 0.;
+    for &(s, t) in &endpoints {
+        for &(u, v) in &endpoints {
+            if s + u > 0. {
+                ripple = ripple.max((u * t - s * v).abs() / (s + u));
+            }
+        }
+    }
+    let (mut lower, mut upper) = (f64::NEG_INFINITY, f64::INFINITY);
+    for (s, t) in endpoints {
+        if s > 0. {
+            lower = lower.max((t - ripple) / s);
+            upper = upper.min((t + ripple) / s);
+        }
+    }
+    let tap = (lower / 2. + upper / 2.) * amplitude;
+    checked(vec![tap; 2])
+}
+
 /// Minimizes `sum_b w_b integral_b (D(omega)-sum_j a_j cos(j omega))^2 d omega`.
 ///
 /// ## Parameters
@@ -389,7 +434,9 @@ pub fn minimum_phase(h: &[f64], nfft: usize, half: bool) -> Result<Vec<f64>> {
     )
 }
 
-/// Finds a minimax linear-phase FIR minimizing `max_b weight_b |H(omega)-desired_b|` by Parks-McClellan exchange.
+/// Finds a symmetric minimax FIR minimizing
+/// `max_b sup_{f in band_b} weight_b |A(f) - desired_b|`, where the zero-phase
+/// amplitude is `A(f) = sum_k h[k] cos(2*pi*f*(k-(numtaps-1)/2)/fs)`.
 ///
 /// ## Parameters
 ///
@@ -398,6 +445,8 @@ pub fn minimum_phase(h: &[f64], nfft: usize, half: bool) -> Result<Vec<f64>> {
 /// ## Domain
 ///
 /// Inputs must be finite and satisfy the stated bounds. NaN and infinity are errors.
+/// Even-length designs require zero desired gain in a band ending at Nyquist
+/// (`fs/2`), because type II symmetry forces the amplitude there to zero.
 ///
 /// ## Returns
 ///
@@ -411,7 +460,14 @@ pub fn minimum_phase(h: &[f64], nfft: usize, half: bool) -> Result<Vec<f64>> {
 ///
 /// ## Numerical behavior
 ///
-/// Delegates the exchange algorithm to private pm-remez with bounded faer eigenvalue iterations, at most 100 exchanges, and degree-24 Chebyshev proxies. Its continuous extrema differ from SciPy grid extrema; filters agree in minimax behavior, not necessarily every coefficient. Failure to converge is an error.
+/// Two-tap filters solve the scalar weighted minimax problem directly at band
+/// endpoints, with quadratic work in the number of endpoints. Larger filters
+/// delegate the exchange algorithm to private pm-remez, reusing nalgebra for
+/// eigenvalues, with at most 100 exchanges and degree-24 Chebyshev proxies.
+/// The backend controls Schur convergence internally and exposes no separate
+/// eigenvalue iteration limit. Its continuous extrema differ from SciPy grid
+/// extrema; filters agree in minimax behavior, not necessarily every coefficient.
+/// Failure to converge is an error.
 ///
 /// # Examples
 ///
@@ -442,6 +498,12 @@ pub fn remez(
         return Ok(vec![0.; numtaps]);
     }
     let weight_scale = weight.iter().copied().fold(0., f64::max);
+    if numtaps == 2 {
+        if bands[bands.len() - 1] == fs / 2. && desired[desired.len() - 1] != 0. {
+            return Err(Error::InvalidInput("incompatible Remez constraints"));
+        }
+        return remez_two_taps(bands, desired, weight, fs, amplitude, weight_scale);
+    }
     use pm_remez::{BandSetting, ParametersBuilder, constant, pm_parameters, pm_remez};
     let settings: Vec<_> = bands
         .as_chunks::<2>()

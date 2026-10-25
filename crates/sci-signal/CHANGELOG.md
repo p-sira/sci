@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.1
+
+- Upgrade private `pm-remez` to 0.3.5 and reuse nalgebra 0.35 for Remez
+  eigenvalues, removing the duplicate faer stack and its default dependencies.
+- Solve two-tap Remez designs directly, avoiding the backend's constant-proxy
+  failure. Preserve symmetric taps, sample-rate units, and gain/weight scaling.
+- Document that the nalgebra backend does not expose an eigenvalue iteration
+  limit; exchange iterations remain capped at 100 with degree-24 proxies.
+
 ## 0.2.0
 
 Changes since the repository tag `v0.1.0`.
