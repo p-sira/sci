@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1
+
+- Reuse sorted sample storage in one-sided and two-sided trimming.
+
 ## 0.2.0
 
 Changes since the repository tag `v0.1.0`.

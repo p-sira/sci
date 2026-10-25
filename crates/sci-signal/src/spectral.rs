@@ -736,7 +736,7 @@ pub fn stft(
         }
     }
     for row in &output {
-        complex_checked(row.clone())?;
+        super::check_complex(row)?;
     }
     Ok((
         bins(nfft, fs),

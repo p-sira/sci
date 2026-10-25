@@ -4,6 +4,28 @@ use common::vector as numbers;
 
 use sci::{Error, Result, stats::*};
 
+#[test]
+fn trimming_preserves_signed_zero_and_empty_samples() {
+    let input = [1., 0., -1., -0.];
+    let bits = |x: Vec<f64>| x.into_iter().map(f64::to_bits).collect::<Vec<_>>();
+    assert_eq!(
+        bits(trimboth(&input, 0.25).unwrap()),
+        vec![(-0.0_f64).to_bits(), 0.0_f64.to_bits()]
+    );
+    assert_eq!(
+        bits(trim1(&input, 0.5, Tail::Lower).unwrap()),
+        vec![0.0_f64.to_bits(), 1.0_f64.to_bits()]
+    );
+    assert_eq!(
+        bits(trim1(&input, 0.5, Tail::Upper).unwrap()),
+        vec![(-1.0_f64).to_bits(), (-0.0_f64).to_bits()]
+    );
+    assert!(trimboth(&[], 0.25).unwrap().is_empty());
+    for tail in [Tail::Lower, Tail::Upper] {
+        assert!(trim1(&[], 0.5, tail).unwrap().is_empty());
+    }
+}
+
 fn alternative(p: f64) -> Alternative {
     match p as usize {
         0 => Alternative::TwoSided,

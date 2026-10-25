@@ -72,15 +72,23 @@ fn positive(x: f64) -> Result<()> {
     }
 }
 fn checked(x: Vec<f64>) -> Result<Vec<f64>> {
+    check_real(&x)?;
+    Ok(x)
+}
+fn check_real(x: &[f64]) -> Result<()> {
     if x.iter().all(|v| v.is_finite()) {
-        Ok(x)
+        Ok(())
     } else {
         Err(Error::NonFiniteEvaluation)
     }
 }
 fn complex_checked(x: Vec<crate::complex::Complex>) -> Result<Vec<crate::complex::Complex>> {
+    check_complex(&x)?;
+    Ok(x)
+}
+fn check_complex(x: &[crate::complex::Complex]) -> Result<()> {
     if x.iter().all(|v| v.re.is_finite() && v.im.is_finite()) {
-        Ok(x)
+        Ok(())
     } else {
         Err(Error::NonFiniteEvaluation)
     }

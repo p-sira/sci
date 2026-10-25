@@ -152,10 +152,10 @@ fn vector(a: Mat<f64>) -> Result<Vec<f64>> {
     }
     Ok(a.iter().copied().collect())
 }
-fn pseudoinverse(d: &SvdFactors, cutoff: f64) -> Result<(Mat<f64>, usize)> {
+fn pseudoinverse(d: &mut SvdFactors, cutoff: f64) -> Result<(Mat<f64>, usize)> {
     let mut vt = d
         .v_t
-        .clone()
+        .take()
         .ok_or(Error::NumericalFailure("missing right singular vectors"))?;
     let u =
         d.u.as_ref()
@@ -1030,9 +1030,9 @@ pub fn pinv(
     let a = dense(a)?;
     let rtol = relative(rtol, a.nrows(), a.ncols())?;
     tolerance(atol)?;
-    let d = decomposition(a, true)?;
+    let mut d = decomposition(a, true)?;
     let cutoff = crate::error::finite(atol + rtol * d.singular_values[0])?;
-    let (p, rank) = pseudoinverse(&d, cutoff)?;
+    let (p, rank) = pseudoinverse(&mut d, cutoff)?;
     Ok((rows(&p)?, rank))
 }
 /// Minimizes `||A x-b||₂`, choosing the minimum-norm solution when the system is rank deficient.
@@ -1078,9 +1078,9 @@ pub fn lstsq(
     let a = dense(a)?;
     let b = rhs(b, a.nrows())?;
     let cond = tolerance(cond.unwrap_or(f64::EPSILON))?;
-    let d = decomposition(a.clone(), true)?;
+    let mut d = decomposition(a.clone(), true)?;
     let cutoff = crate::error::finite(cond * d.singular_values[0])?;
-    let (p, rank) = pseudoinverse(&d, cutoff)?;
+    let (p, rank) = pseudoinverse(&mut d, cutoff)?;
     let x = p * &b;
     let residuals = if a.nrows() > a.ncols() && rank == a.ncols() {
         vec![crate::error::finite((&a * &x - b).squared_norm_l2())?]

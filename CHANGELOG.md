@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Reduce internal copies in signal validation and construction, SVD pseudoinverses,
+  distance weights, surface interpolation, statistical trimming, and sparse solvers.
+- Keep public numerical signatures, validation, and work limits unchanged.
+
 ## 0.2.0
 
 Changes since the repository tag `v0.1.0`.

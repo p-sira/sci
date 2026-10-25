@@ -447,12 +447,12 @@ pub fn bisplev(
     if x.windows(2).any(|p| p[1] < p[0]) || y.windows(2).any(|p| p[1] < p[0]) {
         return Err(Error::InvalidInput("surface queries must be nondecreasing"));
     }
-    let sx = Spline {
+    let mut sx = Spline {
         knots: spline.x_knots.clone(),
         coefficients: vec![0.0; nx],
         degree: kx,
     };
-    let sy = Spline {
+    let mut sy = Spline {
         knots: spline.y_knots.clone(),
         coefficients: vec![0.0; ny],
         degree: ky,
@@ -461,19 +461,17 @@ pub fn bisplev(
     backend::validate(&sy)?;
     let mut along_x = Vec::with_capacity(ny);
     for j in 0..ny {
-        let s = Spline {
-            coefficients: (0..nx).map(|i| spline.coefficients[i * ny + j]).collect(),
-            ..sx.clone()
-        };
-        along_x.push(crate::splev(x, &s, dx, crate::SplineExtension::Clamp)?);
+        for (i, c) in sx.coefficients.iter_mut().enumerate() {
+            *c = spline.coefficients[i * ny + j];
+        }
+        along_x.push(crate::splev(x, &sx, dx, crate::SplineExtension::Clamp)?);
     }
     (0..x.len())
         .map(|i| {
-            let s = Spline {
-                coefficients: (0..ny).map(|j| along_x[j][i]).collect(),
-                ..sy.clone()
-            };
-            crate::splev(y, &s, dy, crate::SplineExtension::Clamp)
+            for (c, row) in sy.coefficients.iter_mut().zip(&along_x) {
+                *c = row[i];
+            }
+            crate::splev(y, &sy, dy, crate::SplineExtension::Clamp)
         })
         .collect()
 }

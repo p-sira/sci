@@ -314,20 +314,22 @@ pub fn ellipap(n: usize, rp: f64, rs: f64) -> Result<Zpk> {
             im: -s * dv / den,
         });
     }
-    zeros.extend(zeros.clone().into_iter().map(|z| Complex {
-        re: z.re,
-        im: -z.im,
-    }));
-    poles.extend(
-        poles
-            .clone()
-            .into_iter()
-            .filter(|p| p.im.abs() > 1e-15)
-            .map(|p| Complex {
+    for i in 0..zeros.len() {
+        let z = zeros[i];
+        zeros.push(Complex {
+            re: z.re,
+            im: -z.im,
+        });
+    }
+    for i in 0..poles.len() {
+        let p = poles[i];
+        if p.im.abs() > 1e-15 {
+            poles.push(Complex {
                 re: p.re,
                 im: -p.im,
-            }),
-    );
+            });
+        }
+    }
     let mut gain = dc_gain(&poles, &zeros);
     if n.is_multiple_of(2) {
         gain /= (1. + eps2).sqrt();

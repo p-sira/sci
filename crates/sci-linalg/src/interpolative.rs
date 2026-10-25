@@ -96,7 +96,7 @@ pub fn interp_decomp(
     let a = dense(a)?;
     let (m, n) = a.shape();
     let (scaled_a, _) = scaled(a.clone());
-    let f = faer::Mat::from_fn(m, n, |i, j| scaled_a[(i, j)]).col_piv_qr();
+    let f = scaled_a.col_piv_qr();
     let indices = f.P().arrays().0.to_vec();
     let skeleton = Mat::from_fn(m, k, |i, j| a[(i, indices[j])]);
     let mut projection = vec![vec![0.; n - k]; k];

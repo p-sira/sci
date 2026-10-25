@@ -964,8 +964,7 @@ fn k_paths(
         let last = result
             .paths
             .last()
-            .ok_or(Error::NumericalFailure("missing Yen path"))?
-            .clone();
+            .ok_or(Error::NumericalFailure("missing Yen path"))?;
         let mut root_weight = 0.;
         for spur in 0..last.len().saturating_sub(1) {
             let root = &last[..=spur];

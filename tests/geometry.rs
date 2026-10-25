@@ -5,6 +5,22 @@ use common::{matrix, vector};
 use g::{DistanceForm, DistanceOutput, Metric};
 use sci::{linalg, spatial as g, spatial};
 
+#[test]
+fn distance_weight_normalization_preserves_caller_storage() {
+    let u = [0., 1., 0.];
+    let v = [1., 1., 1.];
+    let weights = [0., f64::MAX, f64::MAX];
+    let original = weights;
+    // The two active coordinates have one mismatch. Large weights require
+    // normalization for Hamming, while Euclidean uses their absolute scale.
+    assert_eq!(g::hamming(&u, &v, Some(&weights)).unwrap(), 0.5);
+    assert_eq!(
+        g::euclidean(&u, &v, Some(&weights)).unwrap(),
+        f64::MAX.sqrt()
+    );
+    assert_eq!(weights, original);
+}
+
 fn metric<'a>(name: &str, extra: &str, v: &'a [f64], m: &'a [Vec<f64>]) -> Metric<'a> {
     match name {
         "euclidean" => Metric::Euclidean,

@@ -128,7 +128,7 @@ fn fraction(b: &[f64], a: &[f64], tol: f64, digital: bool) -> Result<PartialFrac
                     b[i + j] -= v * a;
                 }
             }
-            b = b[len..].to_vec();
+            b.drain(..len);
         }
     }
     let n = poles.len();
