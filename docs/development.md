@@ -79,6 +79,17 @@ workspace flate2 backend even when MATLAB is absent. This avoids compiling
 zlib-rs alongside miniz. Archive bytes may differ while decoded values and
 format compatibility remain the same.
 
+The workspace uses `special` 0.14 with default features disabled and `std`
+enabled. Only `sci-special` enables its `lambert_w` feature; FFTLog needs only
+real log-gamma. Elliptic integrals continue to call `ellip` directly, without
+enabling `special/elliptic`.
+
+TODO: audit the overlapping incomplete gamma/beta functions and negative-argument
+digamma/trigamma before replacing their XSF calls. Replacing XSF for functions
+unsupported by `special` (including Bessel, Airy, Struve, hypergeometric,
+Faddeeva, Mathieu, and spheroidal functions) remains TODO. These functions
+retain their current implementations; `sci-special` still requires XSF.
+
 ## Pre-commit formatting
 
 Enable the repository's pre-commit hook once per clone:

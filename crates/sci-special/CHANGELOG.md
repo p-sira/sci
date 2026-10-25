@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- Upgrade the private `special` backend to 0.14.2, including its updated Lambert W implementation. Disable its default features and select `std` and `lambert_w`; elliptic integrals continue to use `ellip` directly.
+- Avoid principal Lambert W cancellation near zero with a bounded Taylor expansion, preserving signed zero and the relative accuracy of tiny inputs.
+
 ## 0.2.0
 
 Changes since the repository tag `v0.1.0`.

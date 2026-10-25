@@ -271,9 +271,27 @@ pub fn gammainc(a: f64, x: f64) -> f64 {
 
 /// Computes the principal real Lambert W branch W₀(x), satisfying W exp(W) = x.
 ///
-/// ## Domain
+/// ## Parameters and conventions
+///
+/// `x` is a dimensionless real argument. This function selects the real branch
+/// with W₀(x) ≥ −1.
+///
+/// ## Domain and special values
 ///
 /// x ≥ −1/e. Inputs below the branch point return NaN; positive infinity returns infinity.
+/// NaN propagates, and signed zero is preserved.
+///
+/// ## Return value
+///
+/// Returns W₀(x), with W₀(−1/e) = −1 and W₀(0) = 0.
+///
+/// ## Numerical behavior
+///
+/// For |x| ≤ 10⁻³, a degree-seven Taylor expansion of
+/// W₀(x) = ∑ₙ₌₁∞ (−n)ⁿ⁻¹ xⁿ/n! avoids cancellation in the backend near zero.
+/// The omitted terms contribute less than 6 × 10⁻²⁰ relative error in this
+/// interval before floating-point rounding. Other inputs use the private
+/// `special` backend's piecewise rational approximation.
 ///
 /// # Examples
 ///
@@ -285,7 +303,15 @@ pub fn gammainc(a: f64, x: f64) -> f64 {
 ///
 /// - [NIST DLMF](https://dlmf.nist.gov/4.13).
 pub fn lambertw(x: f64) -> f64 {
-    ::special::LambertW::lambert_w0(x)
+    if x.abs() <= 1e-3 {
+        x * (1.0
+            + x * (-1.0
+                + x * (1.5
+                    + x * (-8.0 / 3.0
+                        + x * (125.0 / 24.0 + x * (-54.0 / 5.0 + x * (16807.0 / 720.0)))))))
+    } else {
+        ::special::LambertW::lambert_w0(x)
+    }
 }
 
 /// Computes the lower real Lambert W branch W₋₁(x).

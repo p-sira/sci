@@ -42,7 +42,7 @@ for adapter in adapters:
 backend_rules = {
     "default": ({"zip", "flate2", "miniz_oxide"}, {"zlib-rs"}),
     "fft": ({"rustfft"}, {"xsf", "bindgen", "clang-sys"}),
-    "fft-hankel": ({"special"}, {"xsf", "bindgen", "clang-sys"}),
+    "fft-hankel": ({"special"}, {"xsf", "bindgen", "clang-sys", "ellip", "lambert_w"}),
     "sparse": ({"sci-sparse"}, {"zip", "flate2", "zlib-rs"}),
     "sparse-npz": ({"zip", "flate2", "miniz_oxide"}, {"zlib-rs"}),
     "io": ({"sci-io"}, {"sci-sparse", "hound", "matrw", "zip", "flate2"}),
