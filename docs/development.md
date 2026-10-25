@@ -46,6 +46,12 @@ cargo codspeed build -m simulation -p sci
 cargo codspeed run -p sci
 ```
 
+## Build footprint follow-ups
+
+- TODO: Make Hankel transforms, facade I/O formats, and sparse NPZ interchange
+  independently selectable so basic operations avoid their heavier dependencies.
+- TODO: Unify the compression backend used by MATLAB and NPZ interchange.
+
 ## Pre-commit formatting
 
 Enable the repository's pre-commit hook once per clone:

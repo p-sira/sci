@@ -1246,6 +1246,38 @@ fn spline_penalties_dual_windows_and_binary_sequences_obey_properties() {
 }
 
 #[test]
+fn remez_preserves_linear_phase_and_scaling_conventions() {
+    // The 255-tap boundary is compared with SciPy in the CSV fixtures.
+    for n in [2, 3, 20, 35, 63] {
+        let bands = [0., 0.3, 0.32, 1.];
+        let h = remez(n, &bands, &[1., 0.], &[1., 10.], 2.)
+            .unwrap_or_else(|error| panic!("{n} taps: {error}"));
+        assert_eq!(h.len(), n);
+        for (&x, &y) in h.iter().zip(h.iter().rev()) {
+            near(x, y, 1e-13, "Remez type I/II symmetry");
+        }
+        let scaled = remez(n, &[0., 300., 320., 1000.], &[1., 0.], &[1., 10.], 2000.).unwrap();
+        let gain = remez(n, &bands, &[-3., 0.], &[7., 70.], 2.).unwrap();
+        for ((&x, y), z) in h.iter().zip(scaled).zip(gain) {
+            near(x, y, 1e-11, "Remez sample-rate units");
+            near(-3. * x, z, 1e-11, "Remez gain and common weight scaling");
+        }
+    }
+    for n in [0, 1, 256, usize::MAX] {
+        assert!(remez(n, &[0., 0.3, 0.5, 1.], &[1., 0.], &[1., 1.], 2.).is_err());
+    }
+    for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert!(remez(9, &[0., 0.3, 0.5, 1.], &[value, 0.], &[1., 1.], 2.).is_err());
+        assert!(remez(9, &[0., 0.3, 0.5, 1.], &[1., 0.], &[1., value], 2.).is_err());
+        assert!(remez(9, &[0., 0.3, 0.5, 1.], &[1., 0.], &[1., 1.], value).is_err());
+    }
+    // Type II symmetry forces zero gain at Nyquist.
+    for n in [2, 20] {
+        assert!(remez(n, &[0., 0.3, 0.5, 1.], &[0., 1.], &[1., 1.], 2.).is_err());
+    }
+}
+
+#[test]
 fn fir_designs_and_envelopes_obey_frequency_and_energy_properties() {
     let h = remez(35, &[0., 0.3, 0.5, 1.], &[1., 0.], &[1., 1.], 2.).unwrap();
     for (&x, &y) in h.iter().zip(h.iter().rev()) {

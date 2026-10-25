@@ -169,10 +169,14 @@ and compute inventory coverage. Regenerate with
   is unsupported. minimum_phase supports homomorphic conversion with explicit
   nfft and half selection; Hilbert-method dispatch is unsupported. remez supports
   symmetric amplitude minimax design with constant band gains/weights; Hilbert
-  and differentiator types are unsupported. pm-remez uses private faer eigenvalues
-  with bounded iterations, 100 exchanges, and degree-24 Chebyshev proxies;
-  backend failures are converted to shared errors. Its version is pinned to 0.2.1
-  to retain the crate's Rust 1.87 compatibility.
+  and differentiator types are unsupported. pm-remez 0.3.5 reuses private
+  nalgebra 0.35 eigenvalues, with 100 exchanges and degree-24 Chebyshev proxies;
+  backend failures are converted to shared errors. The backend controls Schur
+  convergence internally and does not expose an eigenvalue iteration limit.
+  Two-tap designs use a direct scalar minimax solution over band endpoints,
+  avoiding an upstream constant-proxy failure.
+  This removes the older faer stack and its default features. Rust 1.89
+  compatibility is checked with the workspace's minimum supported toolchain.
 - Cardinal cubic/quadratic spline evaluation uses explicit spacing/origin and
   periodic endpoint reflection with clamped coefficient indices. cspline1d
   supports lambda=0 or lambda>1/144; small positive smoothing is unsupported.
