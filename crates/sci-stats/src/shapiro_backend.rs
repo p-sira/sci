@@ -6,7 +6,6 @@
 
 use super::*;
 
-#[inline]
 fn polynomial(coefficients: &[f64], x: f64) -> f64 {
     coefficients.iter().rev().fold(0., |p, c| p * x + c)
 }

@@ -2,7 +2,7 @@
 
 ## 0.1.1
 
-- Reuse iterative solver workspaces and swap TFQMR buffers instead of cloning them; borrow accepted Yen paths while generating candidates and inline private vector arithmetic helpers.
+- Reuse iterative solver workspaces and swap TFQMR buffers instead of cloning them; borrow accepted Yen paths while generating candidates.
 
 ## Unreleased
 

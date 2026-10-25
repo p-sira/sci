@@ -8,7 +8,6 @@ use crate::{Error, Result, error::finite_slice};
 const MAX_ENTRIES: usize = 1_000_000;
 const MAX_WORK: usize = 10_000_000;
 
-#[inline]
 fn bound(size: Option<usize>, limit: usize) -> Result<()> {
     if size.is_none_or(|n| n > limit) {
         Err(Error::InvalidInput("geometry work limit exceeded"))
@@ -38,7 +37,6 @@ fn pair(u: &[f64], v: &[f64]) -> Result<()> {
     finite_slice(v)
 }
 
-#[inline]
 fn evaluated(value: f64) -> Result<f64> {
     if value.is_infinite() {
         Err(Error::NonFiniteEvaluation)

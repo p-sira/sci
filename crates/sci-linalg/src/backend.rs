@@ -6,7 +6,6 @@ use num_complex::Complex64 as C;
 pub(super) const MAX_DIM: usize = 256;
 pub(super) const MAX_ENTRIES: usize = 1_000_000;
 /// Adapts internal real matrices without exposing computational backend APIs.
-#[inline]
 pub(super) fn native(
     a: &(impl AsMatRef<T = f64, Rows = usize, Cols = usize> + ?Sized),
 ) -> super::input::FaerInput<'_> {
@@ -22,7 +21,6 @@ pub(super) fn scaled(mut a: Mat<f64>) -> (Mat<f64>, f64) {
     }
     (a, scale)
 }
-#[inline]
 pub(super) fn shape(a: &(impl super::MatrixInput + ?Sized)) -> Result<(usize, usize)> {
     super::input::checked_shape(a)
 }
@@ -97,7 +95,6 @@ pub(super) fn output(a: Vec<Vec<f64>>) -> Result<Vec<Vec<f64>>> {
     }
     Ok(a)
 }
-#[inline]
 pub(super) fn tolerance(v: f64) -> Result<f64> {
     if !v.is_finite() || v < 0.0 {
         return Err(Error::InvalidInput(
@@ -106,7 +103,6 @@ pub(super) fn tolerance(v: f64) -> Result<f64> {
     }
     Ok(v)
 }
-#[inline]
 pub(super) fn relative(v: Option<f64>, m: usize, n: usize) -> Result<f64> {
     tolerance(v.unwrap_or(f64::EPSILON * m.max(n) as f64))
 }

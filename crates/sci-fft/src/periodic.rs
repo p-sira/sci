@@ -35,25 +35,21 @@ fn multiplier(
     }
     crate::irfft(&bins, Some(n))
 }
-#[inline]
 fn real(re: f64) -> Result<Complex> {
     Ok(Complex {
         re: finite(re)?,
         im: 0.0,
     })
 }
-#[inline]
 fn imaginary(im: f64) -> Result<Complex> {
     Ok(Complex {
         re: 0.0,
         im: finite(im)?,
     })
 }
-#[inline]
 fn log_cosh(x: f64) -> f64 {
     x.abs() + (-2.0 * x.abs()).exp().ln_1p() - LN_2
 }
-#[inline]
 fn log_sinh(x: f64) -> f64 {
     x.abs() + (-(-2.0 * x.abs()).exp_m1()).ln() - LN_2
 }

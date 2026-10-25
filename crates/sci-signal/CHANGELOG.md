@@ -2,7 +2,7 @@
 
 ## 0.2.1
 
-- Validate computed real and complex outputs by borrowing their storage. Build mirrored windows and conjugate roots without temporary vector clones, retain polynomial workspace storage, and inline small private helpers.
+- Validate computed real and complex outputs by borrowing their storage. Build mirrored windows and conjugate roots without temporary vector clones, and retain polynomial workspace storage.
 
 - Upgrade private `pm-remez` to 0.3.5 and reuse nalgebra 0.35 for Remez
   eigenvalues, removing the duplicate faer stack and its default dependencies.

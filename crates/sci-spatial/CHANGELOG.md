@@ -2,7 +2,7 @@
 
 ## 0.2.1
 
-- Borrow explicit distance weights until normalization requires owned storage; inline private bounds and result validation.
+- Borrow explicit distance weights until normalization requires owned storage.
 
 ## 0.2.0
 

@@ -36,7 +36,6 @@ use crate::{Error, Result};
 const MAX_SAMPLES: usize = 1_048_576;
 const MAX_WORK: usize = 16_777_216;
 
-#[inline]
 fn size(n: usize) -> Result<()> {
     if n > MAX_SAMPLES {
         Err(Error::InvalidInput("signal length exceeds 1048576"))
@@ -44,7 +43,6 @@ fn size(n: usize) -> Result<()> {
         Ok(())
     }
 }
-#[inline]
 fn work(a: usize, b: usize) -> Result<()> {
     if a.checked_mul(b).is_none_or(|n| n > MAX_WORK) {
         Err(Error::InvalidInput(
@@ -54,7 +52,6 @@ fn work(a: usize, b: usize) -> Result<()> {
         Ok(())
     }
 }
-#[inline]
 fn samples(x: &[f64]) -> Result<()> {
     size(x.len())?;
     crate::error::finite_slice(x)
@@ -67,7 +64,6 @@ fn nonempty(x: &[f64]) -> Result<()> {
         Ok(())
     }
 }
-#[inline]
 fn positive(x: f64) -> Result<()> {
     if x.is_finite() && x > 0. {
         Ok(())
@@ -75,12 +71,10 @@ fn positive(x: f64) -> Result<()> {
         Err(Error::InvalidInput("parameter must be finite and positive"))
     }
 }
-#[inline]
 fn checked(x: Vec<f64>) -> Result<Vec<f64>> {
     check_real(&x)?;
     Ok(x)
 }
-#[inline]
 fn check_real(x: &[f64]) -> Result<()> {
     if x.iter().all(|v| v.is_finite()) {
         Ok(())
@@ -88,12 +82,10 @@ fn check_real(x: &[f64]) -> Result<()> {
         Err(Error::NonFiniteEvaluation)
     }
 }
-#[inline]
 fn complex_checked(x: Vec<crate::complex::Complex>) -> Result<Vec<crate::complex::Complex>> {
     check_complex(&x)?;
     Ok(x)
 }
-#[inline]
 fn check_complex(x: &[crate::complex::Complex]) -> Result<()> {
     if x.iter().all(|v| v.re.is_finite() && v.im.is_finite()) {
         Ok(())

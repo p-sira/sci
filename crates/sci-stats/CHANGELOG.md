@@ -2,7 +2,7 @@
 
 ## 0.2.1
 
-- Reuse sorted sample storage in one-sided and two-sided trimming; inline private polynomial and distance helpers.
+- Reuse sorted sample storage in one-sided and two-sided trimming.
 
 ## 0.2.0
 

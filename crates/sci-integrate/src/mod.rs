@@ -28,20 +28,17 @@ fn spacings(y: &[f64], x: Option<&[f64]>, dx: f64) -> Result<Vec<f64>> {
 
 // Multiply the smallest and largest magnitudes first. This avoids a spurious
 // intermediate overflow/underflow when three finite factors balance each other.
-#[inline]
 fn product3(a: f64, b: f64, c: f64) -> f64 {
     let mut factors = [a, b, c];
     factors.sort_unstable_by(|a, b| a.abs().total_cmp(&b.abs()));
     (factors[0] * factors[2]) * factors[1]
 }
 
-#[inline]
 fn sample_scale(magnitude: f64) -> f64 {
     // A power of two makes normalization exact, including for subnormal data.
     f64::from_bits(magnitude.to_bits() & 0x7ff0_0000_0000_0000).max(f64::MIN_POSITIVE)
 }
 
-#[inline]
 fn trapezoid_interval(a: f64, b: f64, h: f64) -> f64 {
     let magnitude = a.abs().max(b.abs());
     if magnitude == 0.0 {

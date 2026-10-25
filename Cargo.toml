@@ -42,14 +42,14 @@ rustdct = "0.7.1"
 splinefit = "0.4.1"
 delaunator = "1.1.0"
 sci-io = { version = "0.1.0", path = "crates/sci-io", default-features = false }
-sci-core = { version = "0.2.1", path = "crates/sci-core" }
+sci-core = { version = "0.2.0", path = "crates/sci-core" }
 sci-cluster = { version = "0.2.0", path = "crates/sci-cluster" }
-sci-complex = { version = "0.2.1", path = "crates/sci-complex" }
+sci-complex = { version = "0.2.0", path = "crates/sci-complex" }
 sci-constants = { version = "0.2.0", path = "crates/sci-constants" }
-sci-differentiate = { version = "0.2.1", path = "crates/sci-differentiate" }
-sci-fft = { version = "0.2.1", path = "crates/sci-fft", default-features = false }
+sci-differentiate = { version = "0.2.0", path = "crates/sci-differentiate" }
+sci-fft = { version = "0.2.0", path = "crates/sci-fft", default-features = false }
 sci-filter = { version = "0.2.0", path = "crates/sci-filter" }
-sci-integrate = { version = "0.2.1", path = "crates/sci-integrate" }
+sci-integrate = { version = "0.2.0", path = "crates/sci-integrate" }
 sci-interpolate = { version = "0.2.1", path = "crates/sci-interpolate" }
 sci-linalg = { version = "0.2.1", path = "crates/sci-linalg", default-features = false }
 sci-optimize = { version = "0.2.0", path = "crates/sci-optimize" }

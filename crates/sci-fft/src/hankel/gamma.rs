@@ -16,7 +16,6 @@ fn checked(z: C) -> Result<C> {
     }
 }
 
-#[inline]
 fn polynomial(z: C, coefficients: &[f64]) -> C {
     coefficients
         .iter()
@@ -147,7 +146,6 @@ pub(super) fn loggamma(x: f64, y: f64) -> Result<C> {
     checked(result)
 }
 
-#[inline]
 fn pole(x: f64) -> bool {
     x <= 0.0 && x == x.floor()
 }

@@ -27,7 +27,6 @@ fn shape(x: &[Vec<f64>]) -> Result<(usize, usize)> {
     }
     Ok((x.len(), columns))
 }
-#[inline]
 fn index(i: isize, n: usize, boundary: Boundary) -> Option<usize> {
     let n = n as isize;
     match boundary {
@@ -45,7 +44,6 @@ fn index(i: isize, n: usize, boundary: Boundary) -> Option<usize> {
         }
     }
 }
-#[inline]
 fn crop(n: usize, m: usize, mode: Mode, correlation: bool) -> (usize, usize) {
     match mode {
         Mode::Full => (0, n + m - 1),

@@ -34,7 +34,6 @@ pub(super) fn normalized_points(points: &[&[f64]]) -> Result<(f64, Vec<Vec<f64>>
     }
     Ok((scale, normalized))
 }
-#[inline]
 pub(super) fn euclidean(first: &[f64], second: &[f64]) -> f64 {
     first
         .iter()

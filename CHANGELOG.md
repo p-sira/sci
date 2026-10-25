@@ -4,7 +4,6 @@
 
 - Reduce internal copies in signal validation and construction, SVD pseudoinverses,
   distance weights, surface interpolation, statistical trimming, and sparse solvers.
-- Inline small private conversion, arithmetic, and validation helpers across Sci crates.
 - Keep public numerical signatures, validation, and work limits unchanged.
 
 ## 0.2.0

@@ -9,12 +9,10 @@ pub struct Complex {
     pub im: f64,
 }
 
-#[inline]
 pub(crate) fn native(z: Complex) -> num_complex::Complex64 {
     num_complex::Complex64::new(z.re, z.im)
 }
 
-#[inline]
 pub(crate) fn owned(z: num_complex::Complex64) -> Complex {
     Complex { re: z.re, im: z.im }
 }

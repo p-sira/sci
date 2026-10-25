@@ -2,7 +2,7 @@
 
 ## 0.2.1
 
-- Move the mutable SVD factor into pseudoinverse construction instead of cloning it, reuse Leslie-matrix row storage, and remove a duplicate matrix copy before interpolative QR; inline private adapters and tolerance helpers.
+- Move the mutable SVD factor into pseudoinverse construction instead of cloning it, reuse Leslie-matrix row storage, and remove a duplicate matrix copy before interpolative QR.
 
 - Adapt numerical matrix inputs directly to faer, removing intermediate shared-row allocations while preserving interoperability and shared result types.
 - Borrow faer views, fixed arrays, and contiguous ndarray storage for compatible operations; retain owned workspaces for scaling and destructive algorithms. Preserve negative strides in solve refinement.

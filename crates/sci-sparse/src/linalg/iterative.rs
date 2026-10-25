@@ -240,15 +240,12 @@ pub struct IterativeResult {
     /// Euclidean norm of the final true residual.
     pub residual_norm: f64,
 }
-#[inline]
 fn dot(x: &[f64], y: &[f64]) -> Result<f64> {
     finite(x.iter().zip(y).map(|(a, b)| a * b).sum())
 }
-#[inline]
 fn length(x: &[f64]) -> Result<f64> {
     finite(x.iter().fold(0f64, |s, &v| s.hypot(v)))
 }
-#[inline]
 fn axpy(y: &mut [f64], a: f64, x: &[f64]) -> Result<()> {
     for (y, &x) in y.iter_mut().zip(x) {
         *y = finite(*y + a * x)?;
@@ -258,7 +255,6 @@ fn axpy(y: &mut [f64], a: f64, x: &[f64]) -> Result<()> {
 fn times(x: &[f64], a: f64) -> Result<Vec<f64>> {
     x.iter().map(|v| finite(v * a)).collect()
 }
-#[inline]
 fn ratio(a: f64, b: f64) -> Result<f64> {
     if b == 0. {
         return Err(Error::NumericalFailure("iterative solver breakdown"));
