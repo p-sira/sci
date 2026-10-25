@@ -67,6 +67,11 @@ independently of order and bias. This removes XSF from every FFT build.
 Expanded independent SciPy fixtures exercise reflection, Taylor and asymptotic
 regions, negative spacing, gamma poles, and the bounded ratio fallback.
 Large-order comparisons have explicit tolerances for log-gamma cancellation.
+`uv run tests/scipy/generate_fftlog_accuracy.py` regenerates 16 independent
+discrete FFTLog references using mpmath dense DFTs at 100 and 160 digits. Their
+inputs and tolerances are stored in `fft_cases.json`; ordinary Rust tests read
+the committed CSV. These measure the discrete mapping's roundoff, rather than
+the discretization error of the continuous Hankel integral.
 
 MATLAB and NPZ share flate2's Rust/miniz backend. `matrw` already enables that
 backend, so ZIP selects `deflate-flate2` and sparse NPZ explicitly enables the

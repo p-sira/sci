@@ -3690,7 +3690,11 @@
     "dln": 0.3,
     "mu": 1.5,
     "offset": 0.5,
-    "bias": 0.2
+    "bias": 0.2,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-12
+    ]
   },
   {
     "id": "fht_2",
@@ -3709,7 +3713,11 @@
     "dln": 0.5,
     "mu": -2.2,
     "offset": -0.3,
-    "bias": -0.1
+    "bias": -0.1,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-12
+    ]
   },
   {
     "id": "fht_3",
@@ -3735,7 +3743,11 @@
     "dln": 0.05,
     "mu": 2.0,
     "offset": 0.8,
-    "bias": 0.5
+    "bias": 0.5,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-12
+    ]
   },
   {
     "id": "fht_4",
@@ -3795,7 +3807,11 @@
     "dln": 0.3,
     "mu": 1.5,
     "offset": 0.5,
-    "bias": 0.2
+    "bias": 0.2,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-12
+    ]
   },
   {
     "id": "ifht_2",
@@ -3814,7 +3830,11 @@
     "dln": 0.5,
     "mu": -2.2,
     "offset": -0.3,
-    "bias": -0.1
+    "bias": -0.1,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-12
+    ]
   },
   {
     "id": "ifht_3",
@@ -3840,7 +3860,11 @@
     "dln": 0.05,
     "mu": 2.0,
     "offset": 0.8,
-    "bias": 0.5
+    "bias": 0.5,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-12
+    ]
   },
   {
     "id": "ifht_4",
@@ -4253,7 +4277,11 @@
     "dln": 8.0,
     "mu": -4.4,
     "offset": 0.17,
-    "bias": 0.2
+    "bias": 0.2,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-12
+    ]
   },
   {
     "id": "ifht_rust_gamma_4",
@@ -4304,7 +4332,11 @@
     "dln": -8.0,
     "mu": -4.4,
     "offset": 0.17,
-    "bias": 0.2
+    "bias": 0.2,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-12
+    ]
   },
   {
     "id": "ifht_rust_gamma_5",
@@ -4355,7 +4387,11 @@
     "dln": 0.01,
     "mu": -4.4,
     "offset": 0.17,
-    "bias": 0.2
+    "bias": 0.2,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-12
+    ]
   },
   {
     "id": "ifht_rust_gamma_6",
@@ -4509,7 +4545,11 @@
     "mu": 20001.0,
     "offset": 0.17,
     "bias": 0.25,
-    "tolerance": 3e-10
+    "tolerance": 3e-10,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-11
+    ]
   },
   {
     "id": "ifht_rust_gamma_9",
@@ -4527,7 +4567,11 @@
     "mu": 20001.0,
     "offset": 0.17,
     "bias": 0.25,
-    "tolerance": 3e-10
+    "tolerance": 3e-10,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-11
+    ]
   },
   {
     "id": "fhtoffset_rust_gamma_9",
@@ -4812,7 +4856,11 @@
     "mu": 1000000.0,
     "offset": 0.0,
     "bias": 0.25,
-    "tolerance": 3e-10
+    "tolerance": 3e-10,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-12
+    ]
   },
   {
     "id": "fht_dc_rust_gamma_1",
@@ -4845,7 +4893,11 @@
     "dln": 0.1,
     "mu": 200.0,
     "offset": 0.0,
-    "bias": 65.5
+    "bias": 65.5,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-12
+    ]
   },
   {
     "id": "fht_dc_rust_gamma_4",
@@ -4856,7 +4908,11 @@
     "dln": 0.1,
     "mu": 200.0,
     "offset": 0.0,
-    "bias": -65.5
+    "bias": -65.5,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-12
+    ]
   },
   {
     "id": "fht_near_gamma_pole_0",
@@ -5017,7 +5073,11 @@
     "dln": 0.1,
     "mu": -200.0,
     "offset": 0.0,
-    "bias": 65.0
+    "bias": 65.0,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-12
+    ]
   },
   {
     "id": "fht_dc_negative_poles_1",
@@ -5028,6 +5088,10 @@
     "dln": 0.1,
     "mu": -200.0,
     "offset": 0.0,
-    "bias": -65.0
+    "bias": -65.0,
+    "accuracy_tolerance": [
+      3e-12,
+      3e-12
+    ]
   }
 ]

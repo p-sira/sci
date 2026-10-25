@@ -20,8 +20,16 @@ fn rows<T: Clone>(x: &[T], n: usize) -> Vec<Vec<T>> {
 fn public_fft_inventory_matches_scipy() {
     let inputs: Vec<_> = common::lines(include_str!("fixtures/fft_inputs.csv")).collect();
     let expected: Vec<_> = common::lines(include_str!("fixtures/fft_expected.csv")).collect();
+    let accuracy: std::collections::BTreeMap<_, _> =
+        common::lines(include_str!("fixtures/fftlog_accuracy.csv"))
+            .map(|line| {
+                let fields = common::fields(line);
+                (fields[0], fields)
+            })
+            .collect();
     assert_eq!(inputs.len(), expected.len());
     let mut covered = std::collections::BTreeSet::new();
+    let mut accuracy_covered = std::collections::BTreeSet::new();
     for (input, expected) in inputs.iter().zip(expected) {
         let c: Vec<_> = common::fields(input);
         let e: Vec<_> = common::fields(expected);
@@ -174,6 +182,16 @@ fn public_fft_inventory_matches_scipy() {
         assert_eq!(got_shape, sizes(e[1]), "{} shape", c[0]);
         let want = complex(&vector(e[2]), &vector(e[3]));
         assert_eq!(got.len(), want.len(), "{} length", c[0]);
+        if let Some(reference) = accuracy.get(c[0]) {
+            accuracy_covered.insert(c[0]);
+            let values = vector(reference[1]);
+            assert_eq!(got.len(), values.len(), "{} high-precision length", c[0]);
+            let atol = reference[2].parse().unwrap();
+            let rtol = reference[3].parse().unwrap();
+            for (a, b) in got.iter().zip(values) {
+                finite_close(a.re, b, atol, rtol);
+            }
+        }
         let tolerance: f64 = c[15].parse().unwrap();
         for (a, b) in got.into_iter().zip(want) {
             assert!(
@@ -187,6 +205,7 @@ fn public_fft_inventory_matches_scipy() {
         }
     }
     assert_eq!(covered.len(), 35);
+    assert_eq!(accuracy_covered.len(), accuracy.len());
 }
 #[test]
 fn inverse_and_interoperability_properties() {
