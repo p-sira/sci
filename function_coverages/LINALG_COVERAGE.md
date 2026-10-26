@@ -1,10 +1,10 @@
 # `linalg` coverage and SciPy adaptations
 
-The `linalg` namespace exports **96 of 96** top-level
+The `linalg` namespace exports **92 of 96** top-level
 `scipy.linalg` inventory function names. The nine
 `scipy.linalg.interpolative` names are also exported in their own namespace.
-Every name has at least two independent reference cases, for **587 cases**
-total across 105 qualified APIs. These APIs have documented functional
+Every retained name has at least two independent reference cases, for **576 cases**
+total across 102 qualified reference labels (including the removed solve_lyapunov spelling, tested through solve_continuous_lyapunov). These APIs have documented functional
 signatures and limitations; name coverage does not establish full SciPy
 behavioral parity. There are no placeholder implementations.
 
@@ -12,9 +12,7 @@ The source of truth is [SCIPY_FUNCTIONS.md](SCIPY_FUNCTIONS.md) and its
 [linear algebra inventory](scipy-func-list/scipy.linalg.md). Deprecated
 `basic`, `decomp*`, `matfuncs`, `misc`, and `special_matrices` paths repeat the
 same top-level names; they do not require duplicate implementations.
-The BLAS/LAPACK/Cython binding namespaces remain absent. Top-level dispatchers
-return typed function handles for a documented subset of real operations;
-backend types remain private. Python classes and methods are not counted
+The BLAS/LAPACK/Cython binding namespaces remain absent. Runtime dispatchers are intentionally omitted; backend types remain private. Python classes and methods are not counted
 as free functions.
 
 ## Backend and adapter features
@@ -63,12 +61,11 @@ logical shapes directly. Shared output rows retain this representation limit.
 Input conversions and basic helpers bound each axis and entry count at
 1,000,000; numerical algorithms retain their existing tighter bounds.
 
-All **587 cases** run through shared, ndarray, nalgebra, and faer storage.
+All **576 cases** run through shared, ndarray, nalgebra, and faer storage.
 Additional independently generated SciPy BLAS fixtures test basic products,
 transpose, and dot products. Rust tests exercise mixed libraries, strided and
 mutable views, fixed storage, empty axes, IEEE conversion, cross-module results,
-validation, and allocation bounds. Optional vector parameters, typed dispatch
-function pointers, and complex conversion inputs retain existing slice/row
+validation, and allocation bounds. Optional vector parameters and complex conversion inputs retain existing slice/row
 signatures. Untyped empty literals and stored generic function items may require
 explicit type annotations. This adds storage interoperability without expanding
 SciPy numerical coverage or introducing another algorithm backend.
@@ -94,10 +91,10 @@ repeated eigenvalues. References are generated with NumPy 2.5.4 and SciPy 1.18.1
 | SVD and rank | `svd`, `svdvals`, `diagsvd`, `pinv`, `pinvh`, `lstsq`, `orth`, `null_space` |
 | Subspaces and alignment | `polar`, `orthogonal_procrustes`, `subspace_angles` |
 | Matrix functions | `expm`, `sinm`, `cosm`, `tanm`, `sinhm`, `coshm`, `tanhm`, `expm_frechet`, `expm_cond`, `sqrtm`, `logm`, `signm`, `funm`, `fractional_matrix_power` |
-| Matrix equations | `solve_sylvester`, `solve_continuous_lyapunov`, `solve_lyapunov`, `solve_discrete_lyapunov`, `solve_continuous_are`, `solve_discrete_are` |
+| Matrix equations | `solve_sylvester`, `solve_continuous_lyapunov`, `solve_discrete_lyapunov`, `solve_continuous_are`, `solve_discrete_are` |
 | Structured matrices | `toeplitz`, `hankel`, `circulant`, `hilbert`, `invhilbert`, `pascal`, `invpascal`, `hadamard`, `helmert`, `fiedler`, `companion`, `fiedler_companion`, `leslie`, `block_diag`, `convolution_matrix`, `dft`, `khatri_rao` |
 | Sketching | `clarkson_woodruff_transform` |
-| Typed dispatch | `find_best_blas_type`, `get_blas_funcs`, `get_lapack_funcs` |
+| Removed compatibility dispatch | `find_best_blas_type`, `get_blas_funcs`, `get_lapack_funcs`; call numerical APIs directly |
 | Norms and structure | `norm`, `bandwidth`, `issymmetric`, `ishermitian` |
 
 The existing `dot`, `matvec`, `matmul`, and `transpose` helpers remain available
@@ -238,7 +235,7 @@ Input-only cases live in `tests/scipy/linalg_cases.json`. The generator pins
 **SciPy 1.18.1 / NumPy 2.5.4**, uses their public APIs, and writes separate
 checked-in input/expected CSVs. Normal Rust tests require no Python.
 
-The **570** cases exercise all 105 qualified APIs, shapes, output ordering, triangle/band
+The **576** cases exercise all 102 qualified reference labels (including the removed solve_lyapunov spelling, tested through solve_continuous_lyapunov), shapes, output ordering, triangle/band
 layouts, normalization, rectangular and rank-deficient systems, explicit cutoffs,
 zero-rank spaces, and near-zero subspace angles. Well-conditioned small systems
 use **3e-11 absolute plus 3e-11 relative** tolerances for different dense
@@ -346,15 +343,11 @@ are omitted. Independent uniform draws are required for the usual probability
 bound; supplied arbitrary maps have no norm-preservation guarantee. Reference
 inputs contain NumPy RNG draws and are evaluated by SciPy's public transform.
 
-`find_best_blas_type` reports the fixed double-real prefix and row-major storage
-of the shared matrices, including an empty input list. It inspects shapes only
-and accepts IEEE entries. `get_blas_funcs` returns typed callable handles for
-`dot`, `nrm2`, `gemv`, `gemm`; `get_lapack_funcs` supports `gesv`, `getrf`, `getrs`,
-`potrf`, `potrs`, `geev`, `syev`, `syevd`, `gesvd`, `gesdd`, and `gges`. Optional d
-prefixes are accepted. Driver aliases reuse the same Rust backend. These handles
-use the owned functional signatures rather than raw work buffers, leading
-dimensions, mutable results, or Python tuples. Unsupported names return errors.
-This is limited dispatcher coverage; raw low-level BLAS/LAPACK parity is absent.
+`find_best_blas_type`, `get_blas_funcs`, and `get_lapack_funcs` are intentionally
+removed in 0.3.0: scalar precision is fixed by the Rust API, and numerical
+operations are called directly. `solve_lyapunov` is also removed; its references
+exercise `solve_continuous_lyapunov`. These four names are inventory exclusions,
+not implemented exports. Raw BLAS/LAPACK and Cython bindings remain unsupported.
 
 ## Interpolative namespace
 
@@ -382,7 +375,7 @@ zero identity, avoiding SciPy's undefined projection from division by zero.
 Nonunique IDs are checked by residuals; eigen/Schur/CS factors by reconstruction,
 orthogonality and spectra, with separate structure checks. NaN/infinity,
 singularity, invalid permutations, callback outputs, work bounds, branch values,
-very small/large scales, rank-zero shapes, and dispatch invocation are tested.
+very small/large scales, rank-zero shapes, and direct numerical calls are tested.
 
 ## Remaining behavioral gaps
 

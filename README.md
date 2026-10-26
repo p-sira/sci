@@ -23,6 +23,8 @@
 
 **Sci** is a family of scientific computing crates with a unified Rust interface. The philosophy of Sci is to build on Rust's scientific ecosystem maintained by domain experts, while Sci supplies a consistent interface, input validation, and interoperability. Shared types let results flow between modules, from differentiation into optimization or Fourier analysis into statistics.
 
+See [the migration guide](MIGRATING.md) for the breaking API changes in Sci 0.3.
+
 ## Installation
 
 ```shell

@@ -7,7 +7,7 @@
 //! Gamma, Bessel, elliptic, probability, polynomial, and combinatorial functions
 //! with `f64` scalars and shared Sci types. Specialized algorithms use private
 //! special, xsf, and ellip backends; elementary formulas use the standard library.
-//! [`geterr`] and [`seterr`] use explicit immutable error policies.
+//! Use `sci_core::finite` to reject nonfinite scalar results explicitly.
 //! There is no broadcasting, general complex-input overloading, exact integer
 //! mode, or derivative-axis output for array functions. Polynomial constructors
 //! return descending coefficients. Read each function's documented real domain,

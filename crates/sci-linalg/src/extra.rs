@@ -683,6 +683,3 @@ pub fn solve_discrete_lyapunov(
     ))?;
     rows(&Mat::from_fn(n, n, |i, j| x[(i * n + j, 0)]))
 }
-/// Alias of [`solve_continuous_lyapunov`], matching SciPy's compatibility spelling.
-/// All definitions, conventions, domains, bounds, and errors are identical.
-pub use solve_continuous_lyapunov as solve_lyapunov;

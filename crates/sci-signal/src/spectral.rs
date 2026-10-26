@@ -862,7 +862,7 @@ fn overlap_bins(window: &[f64], overlap: usize, squared: bool) -> Result<Vec<f64
 ///
 /// `pub fn check_cola(window:&[f64],overlap:usize,tolerance:f64)->Result<bool>`
 ///
-/// overlap is sample count, tolerance is positive absolute tolerance. Returns a boolean; SciPy check_COLA spelling is also exported.
+/// overlap is sample count, tolerance is positive absolute tolerance. Returns a boolean.
 ///
 /// ## Domain
 ///
@@ -909,7 +909,7 @@ pub fn check_cola(window: &[f64], overlap: usize, tolerance: f64) -> Result<bool
 ///
 /// `pub fn check_nola(window:&[f64],overlap:usize,tolerance:f64)->Result<bool>`
 ///
-/// overlap is sample count, tolerance is positive absolute threshold. Returns a boolean; SciPy check_NOLA spelling is also exported.
+/// overlap is sample count, tolerance is positive absolute threshold. Returns a boolean.
 ///
 /// ## Domain
 ///
@@ -944,10 +944,6 @@ pub fn check_nola(window: &[f64], overlap: usize, tolerance: f64) -> Result<bool
         .iter()
         .all(|v| *v > tolerance))
 }
-/// SciPy spelling of [`check_cola`], with identical parameters and errors.
-pub use check_cola as check_COLA;
-/// SciPy spelling of [`check_nola`], with identical parameters and errors.
-pub use check_nola as check_NOLA;
 
 /// Evaluates classical Lomb-Scargle power `0.5 ((sum y cos)^2/sum cos² + (sum y sin)^2/sum sin²)` after phase rotation.
 ///

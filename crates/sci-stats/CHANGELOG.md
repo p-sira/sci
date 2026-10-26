@@ -1,7 +1,10 @@
 # Changelog
 
-## 0.2.1
+## 0.3.0
 
+- Remove the two-sample-only kstest alias; select ks_1samp or ks_2samp explicitly.
+
+- Remove abs, exp and log scalar wrappers. Use f64::abs, f64::exp and f64::ln.
 - Disable unused statrs sampling features while retaining multivariate distributions.
 - Reuse sorted sample storage in one-sided and two-sided trimming.
 

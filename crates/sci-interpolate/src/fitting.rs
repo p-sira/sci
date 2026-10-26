@@ -171,11 +171,6 @@ pub fn make_splrep(
     }
 }
 
-/// Legacy name for [`make_splrep`], using the same explicit degree, smoothing
-/// target, weights and Sci-owned representation. No implicit weighted default,
-/// persistent FITPACK task cache, periodic fit, or diagnostic tuple is exposed.
-pub use make_splrep as splrep;
-
 /// Fits a parametric curve `g(u)=(S_0(u), ..., S_(d-1)(u))`, constraining `Σ_i w[i]² ||g(u[i])-points[i]||² <= smoothing`.
 ///
 /// ## Parameters and conventions
@@ -289,10 +284,6 @@ pub fn make_splprep(
         parameters: u,
     })
 }
-
-/// Legacy name for [`make_splprep`]. Points are sample-major, rather than
-/// SciPy's coordinate-major arrays; explicit smoothing replaces legacy defaults.
-pub use make_splprep as splprep;
 
 /// Estimates `P(h)=Σ_(j=0)^degree f^(j)(x) h^j/j!` by polynomial interpolation near x.
 ///

@@ -51,7 +51,6 @@ mod vq_benches {
         ]
     }
 
-    /// Also covers the `py_vq` alias.
     #[divan::bench]
     fn vq(bencher: Bencher) {
         let obs = blobs(300);
@@ -199,7 +198,6 @@ mod inconsistency_benches {
         bencher.bench(|| hierarchy::is_valid_im(black_box(&r)));
     }
 
-    /// Also covers the `maxRstat` alias.
     #[divan::bench]
     fn max_rstat(bencher: Bencher) {
         let z = tree();

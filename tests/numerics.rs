@@ -177,12 +177,7 @@ fn public_numerical_apis_match_scipy() {
                 match api {
                     "whiten" => check_matrix(&vq::whiten(&obs).unwrap(), e[1]),
                     "vq" | "py_vq" => {
-                        let (labels, distances) = if api == "vq" {
-                            vq::vq(&obs, &codes)
-                        } else {
-                            vq::py_vq(&obs, &codes)
-                        }
-                        .unwrap();
+                        let (labels, distances) = vq::vq(&obs, &codes).unwrap();
                         check_vector(&labels.iter().map(|v| *v as f64).collect::<Vec<_>>(), e[1]);
                         check_vector(&distances, e[2]);
                     }

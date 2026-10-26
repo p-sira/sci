@@ -5,6 +5,7 @@ or exported functions without reference fixtures fail the audit.
 Compatibility namespaces are checked as aliases, not independent algorithms.
 Masked-array-only behavior is not counted as implemented.
 """
+from api_disposition import ALIASES, EXCLUDED
 
 import csv
 import json
@@ -119,14 +120,16 @@ def audit():
     report = (ROOT / "function_coverages/STATISTICS_COVERAGE.md").read_text()
     normalized_report = " ".join(report.split())
     main_count = len(namespaces["scipy.stats"]["functions"])
-    if f"{main_count} of {main_count} scipy.stats function names" not in normalized_report:
+    retained_count = main_count - len(EXCLUDED["stats"]) - len(ALIASES["stats"])
+    if f"{retained_count} of {main_count} scipy.stats function names" not in normalized_report:
         raise SystemExit("Coverage report has stale main-namespace counts")
     if f"{len(cases)} cases" not in normalized_report:
         raise SystemExit("Coverage report has a stale fixture count")
     for ns in ["scipy.stats", "scipy.stats.contingency", "scipy.stats.qmc"]:
         names = namespaces[ns]["functions"]
         covered = names & exported[ns]
-        gaps = names - covered
+        module = "stats" if ns == "scipy.stats" else ""
+        gaps = names - covered - set(ALIASES.get(module, {})) - EXCLUDED.get(module, set())
         print(
             f"{ns}: {len(covered)}/{len(names)} function names with supported native signatures"
         )

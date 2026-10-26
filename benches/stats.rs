@@ -712,24 +712,6 @@ mod utility_benches {
     use super::*;
 
     #[divan::bench]
-    fn abs(bencher: Bencher) {
-        let x = values(GRID, 1);
-        bencher.bench(|| black_box(&x).iter().map(|&v| stats::abs(v)).sum::<f64>());
-    }
-
-    #[divan::bench]
-    fn exp(bencher: Bencher) {
-        let x = values(GRID, 1);
-        bencher.bench(|| black_box(&x).iter().map(|&v| stats::exp(v)).sum::<f64>());
-    }
-
-    #[divan::bench]
-    fn log(bencher: Bencher) {
-        let x = positive_values(GRID, 1);
-        bencher.bench(|| black_box(&x).iter().map(|&v| stats::log(v)).sum::<f64>());
-    }
-
-    #[divan::bench]
     fn binomtest(bencher: Bencher) {
         bencher.bench(|| {
             stats::binomtest(

@@ -3,9 +3,10 @@
 The default `npz` feature enables `load_npz` and `save_npz`. Use `default-features = false` to retain sparse numerical operations without ZIP and compression dependencies. The Sci facade selects NPZ with `sparse-npz`.
 
 Real sparse arrays, graph algorithms, and linear algebra using shared Sci records
-and private numerical backends. v0.1.0 covers all 83 modern SciPy sparse function
-names through documented Rust adaptations, excluding deprecated compatibility
-namespaces, legacy matrix predicates, `rand`, and `use_solver`.
+and private numerical backends. Numerical operations use Rust signatures and
+explicit inventory dispositions. Runtime type/dtype utilities, redundant aliases,
+deprecated compatibility namespaces, legacy matrix predicates, `rand`, and
+`use_solver` are omitted or replaced.
 
 ```rust
 use sci_sparse::{from_coo, matvec, linalg::spsolve};

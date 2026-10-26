@@ -227,7 +227,6 @@ fn errors_and_shared_results_interoperate_across_libraries() {
             vec![0.0, 0.0, 0.0, 1.0]
         ]
     );
-    assert!(!l::find_best_blas_type(&blocks).unwrap().prefer_fortran);
 }
 
 struct Oversized;

@@ -215,10 +215,19 @@ pub fn ellipd(m: f64) -> Result<f64> {
 /// [`Error::NumericalFailure`] if the backend cannot evaluate the integral, and
 /// [`Error::NonFiniteEvaluation`] if the result is nonfinite.
 ///
+/// ## Numerical behavior
+///
+/// Uses the private elliptic-integral backend with amplitude reduction and
+/// Carlson symmetric integrals. Work is independent of the amplitude magnitude;
+/// backend duplication iterations are bounded. Floating-point rounding affects
+/// large-amplitude reduction and values near the singular parameter m=1.
+/// No uniform relative-accuracy guarantee is made. This preserves Sci's finite
+/// real domain m<1; SciPy's additional m=1 and restricted m>1 cases are unsupported.
+///
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::ellipf(0.5, 0.0)?;
+/// let value = sci_special::elliptic::ellipkinc(0.5, 0.0)?;
 /// assert!((value - (0.5)).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -226,7 +235,7 @@ pub fn ellipd(m: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
-pub fn ellipf(phi: f64, m: f64) -> Result<f64> {
+pub fn ellipkinc(phi: f64, m: f64) -> Result<f64> {
     if !(phi.is_finite() && m.is_finite() && (m < 1.0)) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
@@ -1067,14 +1076,6 @@ pub fn ellippiinc_bulirsch(phi: f64, n: f64, m: f64) -> Result<f64> {
     }
     let value = ellip::ellippiinc_bulirsch(phi, n, m).map_err(Error::NumericalFailure)?;
     crate::error::finite(value)
-}
-
-/// Computes F(phi,m), using SciPy's name for [`ellipf`].
-///
-/// Amplitude `phi` is in radians; parameter `m = k²` must be finite and less
-/// than one. See [`ellipf`] for the definition, error conditions, and examples.
-pub fn ellipkinc(phi: f64, m: f64) -> Result<f64> {
-    ellipf(phi, m)
 }
 
 /// Computes K(1−p) accurately near the logarithmic singularity.

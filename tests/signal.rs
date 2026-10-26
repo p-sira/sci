@@ -226,19 +226,10 @@ fn evaluate(name: &str, a: &[&str]) -> Vec<Vec<f64>> {
         "whittaker_henderson" => {
             return vec![whittaker_henderson(&v(0), f(1), n(2), &v(3)).unwrap()];
         }
-        "choose_conv_method" => {
-            return vec![vec![
-                if choose_conv_method(&v(0), &v(1), mode(a[2])).unwrap() == ConvolutionMethod::Fft {
-                    1.
-                } else {
-                    0.
-                },
-            ]];
-        }
         "oaconvolve" => return vec![oaconvolve(&v(0), &v(1), mode(a[2])).unwrap()],
         "closest_STFT_dual_window" => {
             return {
-                let (w, s) = closest_STFT_dual_window(&v(0), n(1), &v(2), b(3)).unwrap();
+                let (w, s) = closest_stft_dual_window(&v(0), n(1), &v(2), b(3)).unwrap();
                 vec![w, vec![s]]
             };
         }
@@ -400,8 +391,8 @@ fn evaluate(name: &str, a: &[&str]) -> Vec<Vec<f64>> {
         }
         "bode" => return pair(bode(&v(0), &v(1), &v(2)).unwrap()),
         "dbode" => return pair(dbode(&v(0), &v(1), &v(2)).unwrap()),
-        "freqresp" => complex_row(freqresp(&v(0), &v(1), &v(2)).unwrap()),
-        "dfreqresp" => complex_row(dfreqresp(&v(0), &v(1), &v(2)).unwrap()),
+        "freqresp" => complex_row(freqs(&v(0), &v(1), &v(2)).unwrap()),
+        "dfreqresp" => complex_row(freqz(&v(0), &v(1), &v(2)).unwrap()),
         "get_window" => get_window(&window(a[0]), n(1), b(2)).unwrap(),
         "convolve" => convolve(&v(0), &v(1), mode(a[2])).unwrap(),
         "correlate" => correlate(&v(0), &v(1), mode(a[2])).unwrap(),
@@ -464,7 +455,7 @@ fn evaluate(name: &str, a: &[&str]) -> Vec<Vec<f64>> {
         "freqz" => complex_row(freqz(&v(0), &v(1), &v(2)).unwrap()),
         "freqs" => complex_row(freqs(&v(0), &v(1), &v(2)).unwrap()),
         "freqz_sos" => complex_row(freqz_sos(&sos(a[0]), &v(1)).unwrap()),
-        "sosfreqz" => complex_row(sosfreqz(&sos(a[0]), &v(1)).unwrap()),
+        "sosfreqz" => complex_row(freqz_sos(&sos(a[0]), &v(1)).unwrap()),
         "group_delay" => group_delay(&v(0), &v(1), &v(2)).unwrap(),
         "iirnotch" => return pair(iirnotch(f(0), f(1), f(2)).unwrap()),
         "iirpeak" => return pair(iirpeak(f(0), f(1), f(2)).unwrap()),
@@ -532,9 +523,9 @@ fn evaluate(name: &str, a: &[&str]) -> Vec<Vec<f64>> {
             return pair(istft(&z, &v(1), n(2), n(3), f(4)).unwrap());
         }
         "check_cola" => vec![f64::from(check_cola(&v(0), n(1), f(2)).unwrap())],
-        "check_COLA" => vec![f64::from(check_COLA(&v(0), n(1), f(2)).unwrap())],
+        "check_COLA" => vec![f64::from(check_cola(&v(0), n(1), f(2)).unwrap())],
         "check_nola" => vec![f64::from(check_nola(&v(0), n(1), f(2)).unwrap())],
-        "check_NOLA" => vec![f64::from(check_NOLA(&v(0), n(1), f(2)).unwrap())],
+        "check_NOLA" => vec![f64::from(check_nola(&v(0), n(1), f(2)).unwrap())],
         "lombscargle" => lombscargle(&v(0), &v(1), &v(2), b(3), b(4)).unwrap(),
         "find_peaks" => find_peaks(&v(0))
             .unwrap()
@@ -1222,7 +1213,7 @@ fn spline_penalties_dual_windows_and_binary_sequences_obey_properties() {
     let win = [0.5, 1., 0.7, 0.3, 0.8, 1., 0.5, 0.2];
     for hop in [1, 3, 4, 8] {
         for scaled in [false, true] {
-            let (dual, _) = closest_STFT_dual_window(&win, hop, &[1.; 8], scaled).unwrap();
+            let (dual, _) = closest_stft_dual_window(&win, hop, &[1.; 8], scaled).unwrap();
             for r in 0..hop {
                 near(
                     (r..win.len()).step_by(hop).map(|i| win[i] * dual[i]).sum(),
@@ -1460,9 +1451,8 @@ fn remaining_functions_reject_invalid_domains_and_shapes() {
     assert!(symiirorder1(&[1.; 8], 1., 0.99, 1e-6).is_err());
     assert!(symiirorder2(&[1.; 8], 1., 0.2, 1e-6).is_err());
     assert!(whittaker_henderson(&[1., 2., 3.], 1., 2, &[0.; 3]).is_err());
-    assert!(choose_conv_method(&[], &[1.], Mode::Full).is_err());
     assert!(oaconvolve(&[f64::INFINITY], &[1.], Mode::Full).is_err());
-    assert!(closest_STFT_dual_window(&[0.; 4], 2, &[1.; 4], true).is_err());
+    assert!(closest_stft_dual_window(&[0.; 4], 2, &[1.; 4], true).is_err());
     assert!(envelope(&[1.; 4], (0, 3), 4, false, true).is_err());
     assert!(max_len_seq(3, &[0; 3], 10, None).is_err());
     assert!(max_len_seq(3, &[1; 3], 10, Some(&[2, 2])).is_err());

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+- Remove py_vq and maxRstat aliases; use vq and max_rstat.
+- Update workspace dependencies for the new minor releases.
+
 ## 0.2.0
 
 Changes since the repository tag `v0.1.0`.

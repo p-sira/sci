@@ -482,13 +482,6 @@ mod normality_benches {
     }
 
     #[divan::bench]
-    fn kstest(bencher: Bencher) {
-        let (x, y) = (values(200, 1), shifted(200, 2, 0.1));
-        bencher
-            .bench(|| stats::kstest(black_box(&x), black_box(&y), Alternative::TwoSided).unwrap());
-    }
-
-    #[divan::bench]
     fn probplot(bencher: Bencher) {
         let x = values(200, 1);
         let dist = Distribution::Normal {

@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.2.1
+## 0.3.0
 
+- Remove splrep and splprep aliases; use make_splrep and make_splprep.
 - Reuse spline knots and coefficient buffers during tensor-product surface evaluation.
 
 ## 0.2.0

@@ -1,12 +1,11 @@
 # Changelog
 
-## 0.1.1
+## 0.2.0
 
+- Remove runtime type/dtype helpers and redundant aliases. Add csr_indices_i32 and csr_indices_i64 returning CsrIndices<T>; replace aslinearoperator with LinearOperator::try_from(&matrix).
+- Update workspace dependencies for the new minor releases.
 - Disable OS entropy and thread-local RNG features; retain seeded sparse generation.
 - Reuse iterative solver workspaces and swap TFQMR buffers instead of cloning them; borrow accepted Yen paths while generating candidates.
-
-## Unreleased
-
 - The default `npz` feature enables `load_npz` and `save_npz`. Use `default-features = false` to retain sparse numerical operations without ZIP and compression dependencies. The Sci facade selects NPZ with `sparse-npz`.
 
 ## 0.1.0

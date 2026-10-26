@@ -182,7 +182,6 @@ mod spline_fit_benches {
         });
     }
 
-    /// Also covers the `splrep` alias.
     #[divan::bench]
     fn make_splrep(bencher: Bencher) {
         let x = linspace(0.0, 10.0, 64);
@@ -197,7 +196,6 @@ mod spline_fit_benches {
         });
     }
 
-    /// Also covers the `splprep` alias.
     #[divan::bench]
     fn make_splprep(bencher: Bencher) {
         let t = linspace(0.0, 6.0, 64);

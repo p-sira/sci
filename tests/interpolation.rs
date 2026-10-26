@@ -100,11 +100,7 @@ fn every_added_inventory_name_matches_scipy() {
                 &e,
             ),
             "make_splrep" | "splrep" => {
-                let f = if c[1] == "splrep" {
-                    p::splrep
-                } else {
-                    p::make_splrep
-                };
+                let f = p::make_splrep;
                 check_fit(
                     &f(
                         &vector(a[0]),
@@ -130,11 +126,7 @@ fn every_added_inventory_name_matches_scipy() {
                 &e,
             ),
             "make_splprep" | "splprep" => {
-                let f = if c[1] == "splprep" {
-                    p::splprep
-                } else {
-                    p::make_splprep
-                };
+                let f = p::make_splprep;
                 let s = f(
                     &matrix(a[0]),
                     optional(a[1]).as_deref(),
@@ -402,14 +394,14 @@ fn invalid_shapes_domains_and_work_limits_are_errors() {
     assert!(p::make_lsq_spline(&x, &y, &[0., 0., 4., 4.], 1, Some(&[1.; 4])).is_err());
     assert!(p::make_lsq_spline(&x, &y, &[0., 0., 4., 4., 4.], 1, None).is_err());
     assert!(p::make_splrep(&x, &y, 3, -1., None).is_err());
-    assert!(p::splrep(&x, &y, 2, 1., None).is_err());
-    assert!(p::splrep(&x, &y, 1, 1., None).is_err());
+    assert!(p::make_splrep(&x, &y, 2, 1., None).is_err());
+    assert!(p::make_splrep(&x, &y, 1, 1., None).is_err());
     assert!(p::make_smoothing_spline(&x[..4], &y[..4], None, 1.).is_err());
     assert!(p::make_smoothing_spline(&x, &y, None, -1.).is_err());
     assert!(p::generate_knots(&x, &y, 3, -1., None).is_err());
     assert!(p::generate_knots(&[0.; 65], &[0.; 65], 1, 1., None).is_err());
     assert!(p::make_splprep(&[], None, 1, 0., None).is_err());
-    assert!(p::splprep(&[vec![0., 0.], vec![0., 0.]], None, 1, 0., None).is_err());
+    assert!(p::make_splprep(&[vec![0., 0.], vec![0., 0.]], None, 1, 0., None).is_err());
     assert!(p::make_splprep(&[vec![0., 0.], vec![1.]], None, 1, 0., None).is_err());
     assert!(p::make_splprep(&[vec![0., 0.], vec![1., 1.]], Some(&[0., 0.]), 1, 0., None).is_err());
     assert!(p::splev(&[-1.], &s, 0, p::SplineExtension::Error).is_err());

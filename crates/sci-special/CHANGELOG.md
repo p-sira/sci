@@ -1,7 +1,10 @@
 # Changelog
 
-## 0.2.1
+## 0.3.0
 
+- Consolidate psi, assoc_laguerre and ellipf on digamma, eval_genlaguerre and ellipkinc; see MIGRATING.md for argument order.
+
+- Remove geterr, seterr, ErrorPolicy, abbreviated quadrature-root aliases, and scalar wrappers cbrt, exp2, exp10, expm1, log1p and round. Use standard f64 methods; round maps to round_ties_even.
 - Upgrade the private `special` backend to 0.14.2, including its updated Lambert W implementation. Disable its default features and select `std` and `lambert_w`; elliptic integrals continue to use `ellip` directly.
 - Avoid principal Lambert W cancellation near zero with a bounded Taylor expansion, preserving signed zero and the relative accuracy of tiny inputs.
 

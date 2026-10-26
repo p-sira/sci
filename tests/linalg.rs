@@ -700,39 +700,6 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
                     }
                 }
             }
-            "find_best_blas_type" => {
-                let arrays: Vec<_> = if c[2].is_empty() {
-                    vec![]
-                } else {
-                    c[2].split('|').map(matrix).collect()
-                };
-                let arrays: Vec<_> = arrays.iter().map(|a| convert_matrix(a)).collect();
-                let t = l::find_best_blas_type(&arrays).unwrap();
-                assert_eq!(t.prefix.to_string(), e[1]);
-                assert_eq!(t.dtype, "f64");
-                assert_eq!(t.prefer_fortran, boolean(e[3]));
-            }
-            "get_blas_funcs" => match l::get_blas_funcs(&[c[2]]).unwrap()[0] {
-                l::BlasFunction::Dot(f) => finite_close(
-                    f(&vector(c[3]), &vector(c[4])).unwrap(),
-                    e[1].parse().unwrap(),
-                    3e-11,
-                    3e-11,
-                ),
-                l::BlasFunction::Nrm2(f) => finite_close(
-                    f(&vector(c[3])).unwrap(),
-                    e[1].parse().unwrap(),
-                    3e-11,
-                    3e-11,
-                ),
-                l::BlasFunction::Gemv(f) => vm(f(&matrix(c[3]), &vector(c[4])).unwrap()),
-                l::BlasFunction::Gemm(f) => mm(f(&matrix(c[3]), &matrix(c[4])).unwrap()),
-            },
-            "get_lapack_funcs" => match l::get_lapack_funcs(&[c[2]]).unwrap()[0] {
-                l::LapackFunction::Gesv(f) => vm(f(&matrix(c[3]), &vector(c[4])).unwrap()),
-                l::LapackFunction::Getrf(f) => mm(f(&matrix(c[3])).unwrap().packed),
-                _ => panic!("unsupported fixture"),
-            },
             "interpolative.estimate_rank" => assert_eq!(
                 l::interpolative::estimate_rank(&convert_matrix(&a()), c[3].parse().unwrap())
                     .unwrap(),
@@ -939,12 +906,11 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
                 &convert_matrix(&matrix(c[4])),
             )
             .unwrap()),
-            "solve_continuous_lyapunov" => mm(l::solve_continuous_lyapunov(
+            "solve_lyapunov" | "solve_continuous_lyapunov" => mm(l::solve_continuous_lyapunov(
                 &convert_matrix(&a()),
                 &convert_matrix(&matrix(c[3])),
             )
             .unwrap()),
-            "solve_lyapunov" => mm(l::solve_lyapunov(&a(), &matrix(c[3])).unwrap()),
             "solve_discrete_lyapunov" => mm(l::solve_discrete_lyapunov(
                 &convert_matrix(&a()),
                 &convert_matrix(&matrix(c[3])),
@@ -965,7 +931,7 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
             _ => panic!("missing dispatcher {}", c[1]),
         }
     }
-    assert_eq!(covered.len(), 105);
+    assert_eq!(covered.len(), 102);
 }
 
 #[test]
@@ -1037,12 +1003,12 @@ fn invalid_shapes_domains_and_work_limits_are_explicit() {
     assert!(l::solve_sylvester(&[vec![1.]], &[vec![-1.]], &[vec![2.]]).is_err());
     assert!(l::solve_sylvester(&positive, &positive, &[vec![1.]]).is_err());
     assert!(l::solve_continuous_lyapunov(&zeros, &positive).is_err());
-    assert!(l::solve_lyapunov(&zeros, &positive).is_err());
+    assert!(l::solve_continuous_lyapunov(&zeros, &positive).is_err());
     assert!(l::solve_discrete_lyapunov(&identity(2), &positive).is_err());
     assert!(l::solve_discrete_lyapunov(&positive, &[vec![1.]]).is_err());
     assert!(l::solve_discrete_lyapunov(&identity(17), &identity(17)).is_err());
     assert!(l::solve_sylvester(&identity(17), &identity(16), &vec![vec![1.; 16]; 17]).is_err());
-    assert!(l::solve_lyapunov(&identity(17), &identity(17)).is_err());
+    assert!(l::solve_continuous_lyapunov(&identity(17), &identity(17)).is_err());
     assert!(l::solve(&[vec![1.]], &[f64::INFINITY]).is_err());
     assert!(l::lstsq(&[vec![1.]], &[], None).is_err());
     for a in [
@@ -1218,7 +1184,7 @@ fn inverse_identities_and_cross_module_interoperability() {
     check_vector(&result, &[1., 2.]);
     let a = vec![vec![-1., 0.2], vec![0., -2.]];
     let q = identity(2);
-    let x = l::solve_lyapunov(&a, &q).unwrap();
+    let x = l::solve_continuous_lyapunov(&a, &q).unwrap();
     let ax = mul(&a, &x);
     let xat = mul(&x, &trans(&a));
     let sum: Matrix = ax
@@ -1526,60 +1492,6 @@ fn interpolative_validation_and_round_trips() {
         &ip::reconstruct_matrix_from_id(&b, &f.indices, &f.projection).unwrap(),
         &a,
     );
-}
-
-#[test]
-fn typed_dispatch_calls_shared_apis_and_rejects_unknown_names() {
-    use l::{BlasFunction as B, LapackFunction as L};
-    assert!(l::get_blas_funcs(&["sdot"]).is_err());
-    assert!(l::get_lapack_funcs(&["zgeev"]).is_err());
-    assert!(l::get_blas_funcs(&["unknown"]).is_err());
-    assert!(l::get_lapack_funcs(&["unknown"]).is_err());
-    assert!(l::find_best_blas_type(&[vec![vec![1.], vec![1., 2.]]]).is_err());
-    assert!(l::get_blas_funcs(&[]).unwrap().is_empty());
-    assert!(l::get_lapack_funcs(&[]).unwrap().is_empty());
-    if let B::Dot(f) = l::get_blas_funcs(&["ddot"]).unwrap()[0] {
-        assert!(f(&[1.], &[]).is_err());
-        assert!(f(&[f64::NAN], &[1.]).is_err());
-    }
-    if let B::Nrm2(f) = l::get_blas_funcs(&["dnrm2"]).unwrap()[0] {
-        finite_close(f(&[3e200, 4e200]).unwrap() / 1e200, 5., 3e-11, 3e-11);
-        assert!(f(&[f64::INFINITY]).is_err());
-    }
-    if let B::Gemv(f) = l::get_blas_funcs(&["gemv"]).unwrap()[0] {
-        assert_eq!(f(&[vec![f64::MAX]], &[2.]), Err(Error::NonFiniteEvaluation));
-    }
-    let a = [vec![2., 0.], vec![0., 3.]];
-    let id = identity(2);
-    let handles = l::get_lapack_funcs(&[
-        "getrf", "getrs", "potrf", "potrs", "geev", "syev", "syevd", "gesvd", "gesdd", "gges",
-    ])
-    .unwrap();
-    for f in handles {
-        match f {
-            L::Getrf(f) => assert_eq!(f(&a).unwrap().row_permutation.len(), 2),
-            L::Getrs(f) => check_vector(
-                &f(&l::lu_factor(&a).unwrap(), &[4., 9.], false).unwrap(),
-                &[2., 3.],
-            ),
-            L::Potrf(f) => check_matrix(
-                &mul(&f(&a, true).unwrap(), &trans(&f(&a, true).unwrap())),
-                &a,
-            ),
-            L::Potrs(f) => check_vector(
-                &f(&l::cho_factor(&a, true).unwrap(), &[4., 9.]).unwrap(),
-                &[2., 3.],
-            ),
-            L::Geev(f) => assert_eq!(f(&a).unwrap().eigenvalues.len(), 2),
-            L::Syev(f) => check_vector(&f(&a, true).unwrap().eigenvalues, &[2., 3.]),
-            L::Gesvd(f) => check_vector(&f(&a).unwrap().singular_values, &[3., 2.]),
-            L::Gges(f) => {
-                let f = f(&a, &id).unwrap();
-                ccheck(&cmul(&cmul(&f.q, &f.s), &cadjoint(&f.z)), &cfrom(&a));
-            }
-            L::Gesv(_) => unreachable!(),
-        }
-    }
 }
 
 #[test]

@@ -3568,106 +3568,6 @@ pub fn lqmn(m: usize, n: usize, x: f64) -> Result<ValueDerivativeMatrices> {
     Ok((crop(values)?, crop(derivatives)?))
 }
 
-/// Real cube root of x.
-///
-/// ## Parameters and domain
-///
-/// All real values; signed zero and infinities are preserved.
-/// NaN propagates; divergent values and overflow use IEEE infinities.
-///
-/// # Examples
-///
-/// ```
-/// assert!(sci_special::cbrt(0.5).is_finite());
-/// ```
-///
-/// # References
-///
-/// - [SciPy cbrt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.cbrt.html).
-pub fn cbrt(x: f64) -> f64 {
-    x.cbrt()
-}
-
-/// Base-two exponential 2^x.
-///
-/// ## Parameters and domain
-///
-/// All real values; overflow gives +∞.
-/// NaN propagates; divergent values and overflow use IEEE infinities.
-///
-/// # Examples
-///
-/// ```
-/// assert!(sci_special::exp2(0.5).is_finite());
-/// ```
-///
-/// # References
-///
-/// - [SciPy exp2](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.exp2.html).
-pub fn exp2(x: f64) -> f64 {
-    x.exp2()
-}
-
-/// Base-ten exponential 10^x.
-///
-/// ## Parameters and domain
-///
-/// All real values; overflow gives +∞.
-/// NaN propagates; divergent values and overflow use IEEE infinities.
-///
-/// # Examples
-///
-/// ```
-/// assert!(sci_special::exp10(0.5).is_finite());
-/// ```
-///
-/// # References
-///
-/// - [SciPy exp10](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.exp10.html).
-pub fn exp10(x: f64) -> f64 {
-    10.0_f64.powf(x)
-}
-
-/// exp(x)−1, avoiding cancellation near zero.
-///
-/// ## Parameters and domain
-///
-/// All real values.
-/// NaN propagates; divergent values and overflow use IEEE infinities.
-///
-/// # Examples
-///
-/// ```
-/// assert!(sci_special::expm1(0.000001).is_finite());
-/// ```
-///
-/// # References
-///
-/// - [SciPy expm1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.expm1.html).
-pub fn expm1(x: f64) -> f64 {
-    x.exp_m1()
-}
-
-/// ln(1+x), avoiding cancellation near zero.
-///
-/// ## Parameters and domain
-///
-/// x≥−1; −1 gives −∞ and smaller inputs give NaN.
-/// NaN propagates; divergent values and overflow use IEEE infinities.
-///
-/// # Examples
-///
-/// ```
-/// assert!(sci_special::log1p(0.000001).is_finite());
-/// ```
-///
-/// # References
-///
-/// - [SciPy log1p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.log1p.html).
-pub fn log1p(x: f64) -> f64 {
-    x.ln_1p()
-}
-
 /// Logistic sigmoid 1/(1+exp(−x)), evaluated without overflow.
 ///
 /// ## Parameters and domain
@@ -3935,26 +3835,6 @@ pub fn cotdg(x: f64) -> f64 {
 /// - [SciPy radian](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.radian.html).
 pub fn radian(d: f64, m: f64, s: f64) -> f64 {
     (d + (m + s / 60.0) / 60.0).to_radians()
-}
-
-/// Rounds to the nearest integer, with ties going to the even integer.
-///
-/// ## Parameters and domain
-///
-/// All real values; signed zero and infinities are preserved.
-/// NaN propagates; divergent values and overflow use IEEE infinities.
-///
-/// # Examples
-///
-/// ```
-/// assert!(sci_special::round(2.5).is_finite());
-/// ```
-///
-/// # References
-///
-/// - [SciPy round](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.round.html).
-pub fn round(x: f64) -> f64 {
-    x.round_ties_even()
 }
 
 /// Entropy contribution −x ln x.
@@ -4351,26 +4231,6 @@ pub fn inv_boxcox1p(y: f64, lambda: f64) -> f64 {
     } else {
         ((lambda * y).ln_1p() / lambda).exp_m1()
     }
-}
-
-/// Alias for digamma, ψ(x).
-///
-/// ## Parameters and domain
-///
-/// Same domain and endpoint behavior as digamma.
-/// NaN propagates; divergent values and overflow use IEEE infinities.
-///
-/// # Examples
-///
-/// ```
-/// assert!(sci_special::psi(2.5).is_finite());
-/// ```
-///
-/// # References
-///
-/// - [SciPy psi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.psi.html).
-pub fn psi(x: f64) -> f64 {
-    super::digamma(x)
 }
 
 /// Complementary regularized incomplete beta 1−I_x(a,b)=I_(1−x)(b,a).

@@ -68,7 +68,7 @@ fn public_hierarchy_matches_scipy() {
             "inconsistent" => h::inconsistent(&z, depth).unwrap(),
             "is_valid_im" => boolean(h::is_valid_im(&z)),
             "maxRstat" => vec![
-                h::maxRstat(
+                h::max_rstat(
                     &z,
                     &h::inconsistent(&z, depth).unwrap(),
                     c[5].parse().unwrap(),

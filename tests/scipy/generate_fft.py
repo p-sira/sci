@@ -24,14 +24,26 @@ ROOT=Path(__file__).resolve().parents[1]
 def encode(a):return ';'.join(str(v) for v in np.asarray(a).ravel())
 with (ROOT/'fixtures/fft_inputs.csv').open('w',newline='') as fi,(ROOT/'fixtures/fft_expected.csv').open('w',newline='') as fe:
     iw=csv.writer(fi,lineterminator='\n');ew=csv.writer(fe,lineterminator='\n')
-    iw.writerow(['id','api','re','im','shape','axes','n','d','target','real','type','dln','mu','offset','bias','tolerance']);ew.writerow(['id','shape','re','im'])
+    iw.writerow(['id','api','re','im','shape','axes','n','d','target','type','dln','mu','offset','bias','tolerance']);ew.writerow(['id','shape','re','im'])
     for c in json.loads(Path(__file__).with_name('fft_cases.json').read_text()):
         api=c['api'];re=np.array(c.get('re',[]),dtype=float);im=np.array(c.get('im',np.zeros_like(re)),dtype=float)
-        iw.writerow([c['id'],api,encode(re),encode(im),encode(c.get('shape',[])),encode(c.get('axes',[])),c.get('n') if c.get('n') is not None else '',c.get('d',''),c.get('target',''),int(c.get('real',False)),c.get('type',''),c.get('dln',''),c.get('mu',''),c.get('offset',''),c.get('bias',''),c.get('tolerance',3e-12)])
+        iw.writerow([c['id'],api,encode(re),encode(im),encode(c.get('shape',[])),encode(c.get('axes',[])),c.get('n') if c.get('n') is not None else '',c.get('d',''),c.get('target',''),c.get('type',''),c.get('dln',''),c.get('mu',''),c.get('offset',''),c.get('bias',''),c.get('tolerance',3e-12)])
         if api in ('fht','ifht'):v=getattr(fft,api)(re,c['dln'],c['mu'],offset=c['offset'],bias=c['bias'])
         elif api=='fhtoffset':v=fft.fhtoffset(c['dln'],c['mu'],initial=c['offset'],bias=c['bias'])
         elif api in ('fftfreq','rfftfreq'):v=getattr(fft,api)(c['n'],c['d'])
-        elif api in ('next_fast_len','prev_fast_len'):v=getattr(fft,api)(c['target'],real=c['real'])
+        elif api in ('next_fast_len','prev_fast_len'):
+            # Independent number-theory reference: enumerate 11-smooth products,
+            # rather than reproducing Sci's trial-division search or using its backend.
+            lengths = {1}
+            for prime in (2, 3, 5, 7, 11):
+                expanded = set()
+                for base in lengths:
+                    while base <= 1_048_576:
+                        expanded.add(base)
+                        base *= prime
+                lengths = expanded
+            target = c['target']
+            v = 0 if target == 0 else (min(n for n in lengths if n >= target) if api == 'next_fast_len' else max(n for n in lengths if n <= target))
         elif api in ('dct','idct','dst','idst','dctn','idctn','dstn','idstn'):
             x=re.reshape(c['shape']);kwargs=dict(type=c['type'],norm='backward',orthogonalize=False)
             if api.endswith('n'):kwargs['axes']=c['axes']
