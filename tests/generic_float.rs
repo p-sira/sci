@@ -343,10 +343,9 @@ fn boundary_properties<T: fft::FftFloat + e::BulirschFloat>() {
     let inf = T::infinity();
     let max = T::max_value();
     let tiny = T::min_positive_value() * T::epsilon();
-    assert!(sci_core::finite(-zero).unwrap().is_sign_negative());
-    assert_eq!(sci_core::finite(tiny).unwrap(), tiny);
-    assert!(sci_core::finite(nan).is_err());
-    assert!(sci_core::finite_slice(&[inf]).is_err());
+    assert_eq!(sci_core::is_finite_slice(&[-zero, tiny]), Ok(()));
+    assert!(sci_core::is_finite_slice(&[nan]).is_err());
+    assert!(sci_core::is_finite_slice(&[inf]).is_err());
     assert!(d::derivative(|x| x, one, T::epsilon() / cast(4.)).is_err());
     assert!(d::gradient(|x| x[0], &[one], zero).is_err());
     assert!(d::jacobian(|_| vec![nan], &[one], one).is_err());

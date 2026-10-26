@@ -86,7 +86,10 @@ pub fn gen_harmonic(n: u64, m: f64) -> Result<f64> {
             "invalid harmonic exponent or term limit",
         ));
     }
-    crate::error::finite(sum((1..=n).map(|j| (j as f64).powf(-m))))
+    match sum((1..=n).map(|j| (j as f64).powf(-m))) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes ln(n!) = ln Γ(n+1).
@@ -258,5 +261,8 @@ pub fn ln_multinomial(n: u64, counts: &[u64]) -> Result<f64> {
 /// ## References
 /// [NIST DLMF §26.4](https://dlmf.nist.gov/26.4).
 pub fn multinomial(n: u64, counts: &[u64]) -> Result<f64> {
-    crate::error::finite(ln_multinomial(n, counts)?.exp().round())
+    match ln_multinomial(n, counts)?.exp().round() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }

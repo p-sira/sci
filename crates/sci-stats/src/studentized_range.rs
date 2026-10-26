@@ -100,7 +100,10 @@ impl StudentizedRange {
             }
             total += weight * density * self.groups as f64 * conditional;
         }
-        finite(total)
+        match total {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }
     }
 
     // Called with 3..=16 groups, integer residual df in 3..=65533 and q>=0.

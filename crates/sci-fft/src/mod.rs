@@ -8,7 +8,7 @@ pub trait FftFloat: Float + FloatConst + fourier::private::Backend {}
 impl FftFloat for f32 {}
 impl FftFloat for f64 {}
 
-use crate::error::{finite, finite_slice};
+use crate::error::is_finite_slice;
 mod fourier;
 #[cfg(feature = "hankel")]
 mod hankel;
@@ -101,8 +101,14 @@ fn nd<T: FftFloat>(
                 let scale = if inverse { T::from(n).unwrap() } else { 1.0 };
                 for (k, v) in line.iter().enumerate() {
                     out[base + offset + k * stride] = Complex {
-                        re: finite(v.re / scale)?,
-                        im: finite(v.im / scale)?,
+                        re: match v.re / scale {
+                            value if value.is_finite() => Ok(value),
+                            _ => Err(Error::NonFiniteEvaluation),
+                        }?,
+                        im: match v.im / scale {
+                            value if value.is_finite() => Ok(value),
+                            _ => Err(Error::NonFiniteEvaluation),
+                        }?,
                     };
                 }
             }
@@ -180,7 +186,13 @@ pub fn irfft<T: FftFloat>(input: &[Complex<T>], n: Option<usize>) -> Result<Vec<
             };
         }
     }
-    ifft(&full).iter().map(|v| finite(v.re)).collect()
+    ifft(&full)
+        .iter()
+        .map(|v| match v.re {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
+        .collect()
 }
 
 /// Transforms Hermitian time data to a real spectrum: `H(x)=n*irfft(conj(x))`.
@@ -221,7 +233,10 @@ pub fn hfft<T: FftFloat>(input: &[Complex<T>], n: Option<usize>) -> Result<Vec<T
         .collect::<Vec<_>>();
     irfft(&conjugate, Some(n))?
         .into_iter()
-        .map(|v| finite(v * T::from(n).unwrap()))
+        .map(|v| match v * T::from(n).unwrap() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
         .collect()
 }
 
@@ -257,7 +272,7 @@ pub fn ihfft<T: FftFloat>(input: &[T], n: Option<usize>) -> Result<Vec<Complex<T
     if input.len() > LIMIT {
         return Err(Error::InvalidInput("FFT input size"));
     }
-    finite_slice(input)?;
+    is_finite_slice(input)?;
     let n = n.unwrap_or(input.len());
     length(n)?;
     let mut padded = vec![0.0; n];
@@ -267,8 +282,14 @@ pub fn ihfft<T: FftFloat>(input: &[T], n: Option<usize>) -> Result<Vec<Complex<T
         .into_iter()
         .map(|v| {
             Ok(Complex {
-                re: finite(v.re / T::from(n).unwrap())?,
-                im: finite(-v.im / T::from(n).unwrap())?,
+                re: match v.re / T::from(n).unwrap() {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?,
+                im: match -v.im / T::from(n).unwrap() {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?,
             })
         })
         .collect()
@@ -378,7 +399,7 @@ pub fn rfftn<T: FftFloat>(
     axes: &[usize],
 ) -> Result<(Vec<Complex<T>>, Vec<usize>)> {
     tensor(shape, axes, input.len())?;
-    finite_slice(input)?;
+    is_finite_slice(input)?;
     let (small, axis) = reduced(shape, axes)?;
     let complex = input
         .iter()
@@ -508,7 +529,12 @@ pub fn hfftn<T: FftFloat>(input: &[Complex<T>], shape: &[usize], axes: &[usize])
         .iter()
         .map(|a| T::from(shape[*a]).unwrap())
         .fold(T::one(), |a, b| a * b);
-    out.into_iter().map(|v| finite(v * scale)).collect()
+    out.into_iter()
+        .map(|v| match v * scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
+        .collect()
 }
 
 /// Inverts a real multidimensional spectrum: `IH(y)=conj(rfftn(y))/Πₐ nₐ`.
@@ -549,8 +575,14 @@ pub fn ihfftn<T: FftFloat>(
         .map(|a| T::from(shape[*a]).unwrap())
         .fold(T::one(), |a, b| a * b);
     for v in &mut out {
-        v.re = finite(v.re / scale)?;
-        v.im = finite(-v.im / scale)?;
+        v.re = match v.re / scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
+        v.im = match -v.im / scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     Ok((out, small))
 }
@@ -789,16 +821,21 @@ pub fn fftfreq<T: Float>(n: usize, d: T) -> Result<Vec<T>> {
             "sample spacing must be finite and nonzero",
         ));
     }
-    let scale = finite((1.0 / T::from(n).unwrap()) / d)?;
+    let scale = match (1.0 / T::from(n).unwrap()) / d {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     (0..n)
         .map(|k| {
-            finite(
-                if k < n.div_ceil(2) {
-                    T::from(k).unwrap()
-                } else {
-                    T::from(k).unwrap() - T::from(n).unwrap()
-                } * scale,
-            )
+            match if k < n.div_ceil(2) {
+                T::from(k).unwrap()
+            } else {
+                T::from(k).unwrap() - T::from(n).unwrap()
+            } * scale
+            {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }
         })
         .collect()
 }
@@ -837,9 +874,15 @@ pub fn rfftfreq<T: Float>(n: usize, d: T) -> Result<Vec<T>> {
             "sample spacing must be finite and nonzero",
         ));
     }
-    let scale = finite((1.0 / T::from(n).unwrap()) / d)?;
+    let scale = match (1.0 / T::from(n).unwrap()) / d {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     (0..n / 2 + 1)
-        .map(|k| finite(T::from(k).unwrap() * scale))
+        .map(|k| match T::from(k).unwrap() * scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
         .collect()
 }
 
@@ -1051,7 +1094,7 @@ fn real_nd<T: FftFloat>(
     inverse: bool,
 ) -> Result<Vec<T>> {
     tensor(shape, axes, input.len())?;
-    finite_slice(input)?;
+    is_finite_slice(input)?;
     if !sine && kind == RealTransformType::I && axes.iter().any(|a| shape[*a] == 1) {
         return Err(Error::InvalidInput("DCT I needs at least two samples"));
     }
@@ -1091,7 +1134,10 @@ fn real_nd<T: FftFloat>(
                 }
                 plan(&mut line, &mut scratch);
                 for (k, v) in line.iter().enumerate() {
-                    out[base + offset + k * stride] = finite(*v * scale)?;
+                    out[base + offset + k * stride] = match *v * scale {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }?;
                 }
             }
         }

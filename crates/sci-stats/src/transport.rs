@@ -14,7 +14,7 @@ pub(super) fn points_check(points: &[&[f64]], minimum: usize, maximum: usize) ->
         if row.len() != dimension {
             return Err(Error::DimensionMismatch);
         }
-        finite_slice(row)?;
+        is_finite_slice(row)?;
     }
     Ok(dimension)
 }
@@ -113,7 +113,10 @@ pub fn wasserstein_distance_nd(first: &[&[f64]], second: &[&[f64]]) -> Result<f6
         return Ok(0.);
     }
     if count == 1 {
-        return finite(euclidean(&points[0], &points[1]) * scale);
+        return match euclidean(&points[0], &points[1]) * scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        };
     }
     let costs = ndarray::Array2::from_shape_fn((count, count), |(i, j)| {
         euclidean(&points[i / (count / n)], &points[n + j / (count / m)])
@@ -130,5 +133,8 @@ pub fn wasserstein_distance_nd(first: &[&[f64]], second: &[&[f64]]) -> Result<f6
         .enumerate()
         .map(|(i, &j)| costs[(i, j)] / count as f64)
         .sum::<f64>();
-    finite(cost * scale)
+    match cost * scale {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }

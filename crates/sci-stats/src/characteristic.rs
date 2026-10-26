@@ -68,7 +68,10 @@ pub fn epps_singleton_2samp(x: &[f64], y: &[f64], t: &[f64]) -> Result<TestResul
         let mut data = DMatrix::zeros(k, values.len());
         for (j, &v) in values.iter().enumerate() {
             for (i, &frequency) in t.iter().enumerate() {
-                let phase = finite(frequency * (v / scale))?;
+                let phase = match frequency * (v / scale) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?;
                 data[(i, j)] = phase.cos();
                 data[(i + t.len(), j)] = phase.sin();
             }
@@ -101,7 +104,11 @@ pub fn epps_singleton_2samp(x: &[f64], y: &[f64], t: &[f64]) -> Result<TestResul
         .pseudo_inverse(cutoff)
         .map_err(|_| Error::NumericalFailure("covariance pseudoinverse failed"))?;
     let delta = mx - my;
-    let mut statistic = finite(n as f64 * delta.dot(&(&inverse * &delta)))?.max(0.);
+    let mut statistic = match n as f64 * delta.dot(&(&inverse * &delta)) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?
+    .max(0.);
     if x.len().max(y.len()) < 25 {
         statistic /= 1.
             + (n as f64).powf(-0.45)

@@ -8,7 +8,7 @@
 use std::borrow::Cow;
 
 use super::{MAX_ENTRIES, MAX_WORK, bound, evaluated, pair, points};
-use crate::{Error, Result, error::finite_slice};
+use crate::{Error, Result, error::is_finite_slice};
 
 /// A distance definition for [`pdist`] and [`cdist`].
 ///
@@ -63,7 +63,7 @@ fn weights(w: Option<&[f64]>, n: usize) -> Result<Cow<'_, [f64]>> {
     if w.len() != n {
         return Err(Error::DimensionMismatch);
     }
-    finite_slice(w)?;
+    is_finite_slice(w)?;
     if w.iter().any(|&x| x < 0.0) {
         return Err(Error::InvalidInput("weights must be nonnegative"));
     }
@@ -298,7 +298,7 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
             if variance.len() != u.len() {
                 return Err(Error::DimensionMismatch);
             }
-            finite_slice(variance)?;
+            is_finite_slice(variance)?;
             if variance.iter().any(|&x| x <= 0.0) {
                 return Err(Error::InvalidInput("variances must be positive"));
             }
@@ -1069,7 +1069,7 @@ pub fn squareform(input: DistanceForm<'_>) -> Result<DistanceOutput> {
     match input {
         DistanceForm::Condensed(y) => {
             bound(Some(y.len()), MAX_ENTRIES)?;
-            finite_slice(y)?;
+            is_finite_slice(y)?;
             let n = observation_count(y.len())
                 .ok_or(Error::InvalidInput("condensed length must be triangular"))?;
             bound(n.checked_mul(n), MAX_ENTRIES)?;

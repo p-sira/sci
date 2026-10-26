@@ -69,7 +69,10 @@ pub fn ellipk<T: Float>(m: T) -> Result<T> {
         ));
     }
     let value = ellip::ellipk(m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes E(m) = ∫₀^(π/2) √(1 − m sin²θ) dθ.
@@ -111,7 +114,10 @@ pub fn ellipe<T: Float>(m: T) -> Result<T> {
         ));
     }
     let value = ellip::ellipe(m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Π(n,m) = ∫₀^(π/2) [(1 − n sin²θ)√(1 − m sin²θ)]⁻¹ dθ.
@@ -154,7 +160,10 @@ pub fn ellippi<T: Float>(n: T, m: T) -> Result<T> {
         ));
     }
     let value = ellip::ellippi(n, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes D(m) = ∫₀^(π/2) sin²θ / √(1 − m sin²θ) dθ.
@@ -196,7 +205,10 @@ pub fn ellipd<T: Float>(m: T) -> Result<T> {
         ));
     }
     let value = ellip::ellipd(m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes F(φ,m) = ∫₀^φ (1 − m sin²θ)^(-1/2) dθ.
@@ -248,7 +260,10 @@ pub fn ellipkinc<T: Float>(phi: T, m: T) -> Result<T> {
         ));
     }
     let value = ellip::ellipf(phi, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes E(φ,m) = ∫₀^φ √(1 − m sin²θ) dθ.
@@ -291,7 +306,10 @@ pub fn ellipeinc<T: Float>(phi: T, m: T) -> Result<T> {
         ));
     }
     let value = ellip::ellipeinc(phi, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Π(φ,n,m) = ∫₀^φ [(1 − n sin²θ)√(1 − m sin²θ)]⁻¹ dθ.
@@ -335,7 +353,10 @@ pub fn ellippiinc<T: Float>(phi: T, n: T, m: T) -> Result<T> {
         ));
     }
     let value = ellip::ellippiinc(phi, n, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes D(φ,m) = ∫₀^φ sin²θ / √(1 − m sin²θ) dθ.
@@ -378,7 +399,10 @@ pub fn ellipdinc<T: Float>(phi: T, m: T) -> Result<T> {
         ));
     }
     let value = ellip::ellipdinc(phi, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes R_F(x,y,z) = ½ ∫₀^∞ [(t+x)(t+y)(t+z)]^(-1/2) dt.
@@ -429,7 +453,10 @@ pub fn elliprf<T: Float>(x: T, y: T, z: T) -> Result<T> {
         ));
     }
     let value = ellip::elliprf(x, y, z).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes R_D(x,y,z) = R_J(x,y,z,z).
@@ -477,7 +504,10 @@ pub fn elliprd<T: Float>(x: T, y: T, z: T) -> Result<T> {
         ));
     }
     let value = ellip::elliprd(x, y, z).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Carlson's symmetric elliptic integral R_G(x,y,z).
@@ -521,7 +551,10 @@ pub fn elliprg<T: Float>(x: T, y: T, z: T) -> Result<T> {
         ));
     }
     let value = ellip::elliprg(x, y, z).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes R_J(x,y,z,p) = (3/2) ∫₀^∞ [(t+p)√((t+x)(t+y)(t+z))]⁻¹ dt.
@@ -575,7 +608,10 @@ pub fn elliprj<T: Float>(x: T, y: T, z: T, p: T) -> Result<T> {
         ));
     }
     let value = ellip::elliprj(x, y, z, p).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes R_C(x,y) = R_F(x,y,y).
@@ -618,7 +654,10 @@ pub fn elliprc<T: Float>(x: T, y: T) -> Result<T> {
         ));
     }
     let value = ellip::elliprc(x, y).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes (K(m), E(m)), evaluated together.
@@ -661,8 +700,14 @@ pub fn ellipke<T: Float>(m: T) -> Result<(T, T)> {
     }
     let value = ellip::ellipke(m).map_err(Error::NumericalFailure)?;
     Ok((
-        crate::error::finite(value.0)?,
-        crate::error::finite(value.1)?,
+        match value.0 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?,
+        match value.1 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?,
     ))
 }
 
@@ -709,7 +754,10 @@ pub fn cel<T: Float>(kc: T, p: T, a: T, b: T) -> Result<T> {
         ));
     }
     let value = ellip::cel(kc, p, a, b).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes K(1−kc²).
@@ -751,7 +799,10 @@ pub fn cel1<T: Float>(kc: T) -> Result<T> {
         ));
     }
     let value = ellip::cel1(kc).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes cel(kc,1,a,b).
@@ -795,7 +846,10 @@ pub fn cel2<T: Float>(kc: T, a: T, b: T) -> Result<T> {
         ));
     }
     let value = ellip::cel2(kc, a, b).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Π(1−p,1−kc²) = cel(kc,p,1,1).
@@ -838,7 +892,10 @@ pub fn cel3<T: Float>(kc: T, p: T) -> Result<T> {
         ));
     }
     let value = ellip::cel3(kc, p).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes F(arctan(x),1−kc²).
@@ -881,7 +938,10 @@ pub fn el1<T: Float>(x: T, kc: T) -> Result<T> {
         ));
     }
     let value = ellip::el1(x, kc).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes ∫₀^arctan(x) (a cos²θ+b sin²θ)/√(cos²θ+kc² sin²θ) dθ.
@@ -926,7 +986,10 @@ pub fn el2<T: Float>(x: T, kc: T, a: T, b: T) -> Result<T> {
         ));
     }
     let value = ellip::el2(x, kc, a, b).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Π(1−p; arctan(x),1−kc²).
@@ -970,7 +1033,10 @@ pub fn el3<T: Float>(x: T, kc: T, p: T) -> Result<T> {
         ));
     }
     let value = ellip::el3(x, kc, p).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Z(φ,m) = E(φ,m) − E(m)F(φ,m)/K(m).
@@ -1013,7 +1079,10 @@ pub fn jacobi_zeta<T: Float>(phi: T, m: T) -> Result<T> {
         ));
     }
     let value = ellip::jacobi_zeta(phi, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Λ₀(φ,m) = F(φ,1−m)/K(1−m) + 2 K(m) Z(φ,1−m)/π.
@@ -1056,7 +1125,10 @@ pub fn heuman_lambda<T: Float>(phi: T, m: T) -> Result<T> {
         ));
     }
     let value = ellip::heuman_lambda(phi, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Π(n;φ,m), using Bulirsch's algorithm.
@@ -1100,7 +1172,10 @@ pub fn ellippiinc_bulirsch<T: BulirschFloat>(phi: T, n: T, m: T) -> Result<T> {
         ));
     }
     let value = T::third_kind(phi, n, m)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes K(1−p) accurately near the logarithmic singularity.

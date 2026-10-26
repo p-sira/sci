@@ -585,7 +585,10 @@ pub fn coherence(
                 if a == 0. || b == 0. {
                     Ok(f64::NAN)
                 } else {
-                    crate::error::finite((z.re.hypot(z.im) / a.sqrt() / b.sqrt()).powi(2))
+                    match (z.re.hypot(z.im) / a.sqrt() / b.sqrt()).powi(2) {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }
                 }
             })
             .collect::<Result<_>>()?,
@@ -648,8 +651,10 @@ pub fn spectrogram(
         let start = i * (window.len() - overlap);
         let spectrum = segment(&x[start..start + window.len()], window, nfft, detrend);
         for (k, row) in power.iter_mut().enumerate() {
-            row[i] =
-                crate::error::finite(native(spectrum[k]).norm_sqr() * scale * doubling(k, nfft))?;
+            row[i] = match native(spectrum[k]).norm_sqr() * scale * doubling(k, nfft) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
         }
     }
     let times = (0..count)

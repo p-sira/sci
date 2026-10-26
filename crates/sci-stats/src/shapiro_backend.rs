@@ -81,7 +81,10 @@ pub(super) fn evaluate(values: &[f64]) -> Result<TestResult> {
     }
     let norm = (aa * xx).sqrt();
     let complement = (norm - ax) * (norm + ax) / (aa * xx);
-    let statistic = finite(1. - complement)?;
+    let statistic = match 1. - complement {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     let pvalue = {
         let mut y = complement.ln();
         let (m, s) = if n <= 11 {
@@ -105,6 +108,10 @@ pub(super) fn evaluate(values: &[f64]) -> Result<TestResult> {
     };
     Ok(TestResult {
         statistic,
-        pvalue: finite(pvalue)?.clamp(0., 1.),
+        pvalue: match pvalue {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?
+        .clamp(0., 1.),
     })
 }

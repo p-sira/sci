@@ -1,5 +1,5 @@
 use crate::backend::{self, MAX_FIT};
-use crate::error::{finite, finite_slice};
+use crate::error::is_finite_slice;
 use crate::{Error, ParametricSpline, Result, Spline, SurfaceSpline};
 use nalgebra::{DMatrix, DVector};
 
@@ -230,7 +230,7 @@ pub fn make_splprep(
         return Err(Error::DimensionMismatch);
     }
     for p in points {
-        finite_slice(p)?;
+        is_finite_slice(p)?;
     }
     let u = if let Some(u) = parameters {
         if u.len() != points.len() {
@@ -240,11 +240,19 @@ pub fn make_splprep(
     } else {
         let mut u = vec![0.0];
         for p in points.windows(2) {
-            let distance = p[0]
-                .iter()
-                .zip(&p[1])
-                .try_fold(0.0_f64, |d, (a, b)| finite(d.hypot(finite(b - a)?)))?;
-            u.push(finite(u[u.len() - 1] + distance)?);
+            let distance = p[0].iter().zip(&p[1]).try_fold(0.0_f64, |d, (a, b)| {
+                match d.hypot(match b - a {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }
+            })?;
+            u.push(match u[u.len() - 1] + distance {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?);
         }
         let total = u[u.len() - 1];
         if total == 0.0 {
@@ -334,9 +342,20 @@ pub fn approximate_taylor_polynomial(
     }
     let n = order + 1;
     let nodes: Vec<_> = (0..n)
-        .map(|i| finite(x + scale * (std::f64::consts::PI * i as f64 / n as f64).cos()))
+        .map(
+            |i| match x + scale * (std::f64::consts::PI * i as f64 / n as f64).cos() {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            },
+        )
         .collect::<Result<_>>()?;
-    let centered: Vec<_> = nodes.iter().map(|t| finite(t - x)).collect::<Result<_>>()?;
+    let centered: Vec<_> = nodes
+        .iter()
+        .map(|t| match t - x {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
+        .collect::<Result<_>>()?;
     if centered
         .iter()
         .enumerate()
@@ -348,7 +367,10 @@ pub fn approximate_taylor_polynomial(
     }
     let values = nodes
         .into_iter()
-        .map(|t| finite(f(t)))
+        .map(|t| match f(t) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
         .collect::<Result<Vec<_>>>()?;
     let c = crate::lagrange(&centered, &values)?;
     Ok(c[c.len() - degree - 1..].to_vec())
@@ -415,11 +437,23 @@ pub fn generate_knots(
             .zip(y)
             .zip(&w)
             .map(|((x, y), w)| {
-                let r = finite(w * finite(backend::evaluate(&fit, *x)? - y)?)?;
-                finite(r * r)
+                let r = match w * match backend::evaluate(&fit, *x)? - y {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }? {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
+                match r * r {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }
             })
             .collect::<Result<_>>()?;
-        let residual = finite(residuals.iter().sum::<f64>())?;
+        let residual = match residuals.iter().sum::<f64>() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         if residual <= smoothing * 1.001 {
             return Ok(sequence);
         }
@@ -550,13 +584,13 @@ pub fn make_smoothing_spline(
             matrix[(n + j, i)] = d;
         }
     }
-    finite_slice(matrix.as_slice())?;
-    finite_slice(rhs.as_slice())?;
+    is_finite_slice(matrix.as_slice())?;
+    is_finite_slice(rhs.as_slice())?;
     let c = matrix
         .lu()
         .solve(&rhs)
         .ok_or(Error::NumericalFailure("singular natural smoothing system"))?;
-    finite_slice(c.as_slice())?;
+    is_finite_slice(c.as_slice())?;
     Ok(Spline {
         knots: t,
         coefficients: c.as_slice()[..n].to_vec(),
@@ -625,9 +659,9 @@ pub fn bisplrep(
             "invalid surface fit size, degree or knots",
         ));
     }
-    finite_slice(x)?;
-    finite_slice(y)?;
-    finite_slice(z)?;
+    is_finite_slice(x)?;
+    is_finite_slice(y)?;
+    is_finite_slice(z)?;
     let nx = x_knots.len() - x_degree - 1;
     let ny = y_knots.len() - y_degree - 1;
     backend::bound(&[x.len(), nx, ny, nx, ny])?;
@@ -642,7 +676,7 @@ pub fn bisplrep(
         }
     }
     let w = weights.map_or_else(|| vec![1.0; x.len()], <[f64]>::to_vec);
-    finite_slice(&w)?;
+    is_finite_slice(&w)?;
     if w.iter().any(|v| *v <= 0.0) {
         return Err(Error::InvalidInput("weights must be positive"));
     }

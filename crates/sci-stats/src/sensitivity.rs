@@ -77,7 +77,7 @@ pub fn sobol_indices(f_a: &[f64], f_b: &[f64], f_ab: &[&[f64]]) -> Result<SobolI
         if row.len() != f_a.len() {
             return Err(Error::DimensionMismatch);
         }
-        finite_slice(row)?;
+        is_finite_slice(row)?;
     }
     let pooled = f_a.iter().chain(f_b).copied().collect::<Vec<_>>();
     let centered = centered_sample(&pooled)?;
@@ -95,13 +95,31 @@ pub fn sobol_indices(f_a: &[f64], f_b: &[f64], f_ab: &[&[f64]]) -> Result<SobolI
         let mut first = Vec::with_capacity(row.len());
         let mut total = Vec::with_capacity(row.len());
         for ((&hybrid, &a), &b) in row.iter().zip(a).zip(b) {
-            let hybrid = finite((hybrid - centered.origin) / centered.scale - centered.center)?;
-            let difference = finite(hybrid - a)?;
-            first.push(finite(b * difference)?);
-            total.push(finite(difference * difference)?);
+            let hybrid = match (hybrid - centered.origin) / centered.scale - centered.center {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?;
+            let difference = match hybrid - a {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?;
+            first.push(match b * difference {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?);
+            total.push(match difference * difference {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?);
         }
-        first_order.push(finite(mean(&first)? / variance)?);
-        total_order.push(finite(mean(&total)? / (2. * variance))?);
+        first_order.push(match mean(&first)? / variance {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?);
+        total_order.push(match mean(&total)? / (2. * variance) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?);
     }
     Ok(SobolIndices {
         first_order,
@@ -183,7 +201,7 @@ where
         if row.len() != first.len() {
             return Err(Error::DimensionMismatch);
         }
-        finite_slice(row)?;
+        is_finite_slice(row)?;
     }
     let mut pvalues = Vec::with_capacity(samples.len());
     for row in samples {

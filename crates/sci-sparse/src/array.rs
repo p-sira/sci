@@ -16,7 +16,7 @@ pub(crate) fn validate_array(a: &SparseArray) -> Result<()> {
             "invalid canonical sparse array or rank/storage limit",
         ));
     }
-    sci_core::finite_slice(&a.data)
+    sci_core::is_finite_slice(&a.data)
 }
 
 /// Convert a CSR matrix to a rank-two coordinate array, `B[i,j] = A[i,j]`.
@@ -399,7 +399,7 @@ pub fn spdiags(
         if row.len() != width {
             return Err(Error::DimensionMismatch);
         }
-        sci_core::finite_slice(row)?;
+        sci_core::is_finite_slice(row)?;
         if !seen.insert(k) {
             return Err(Error::InvalidInput("repeated diagonal offset"));
         }

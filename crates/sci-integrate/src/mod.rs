@@ -1,4 +1,4 @@
-use crate::error::{finite, finite_slice};
+use crate::error::is_finite_slice;
 use crate::{Error, Result};
 use sci_core::Float;
 
@@ -9,7 +9,7 @@ fn validate_samples<T: Float>(y: &[T]) -> Result<()> {
     if y.is_empty() || y.len() > MAX_SAMPLES {
         return Err(Error::InvalidInput("sample count must be in 1..=1000001"));
     }
-    finite_slice(y)
+    is_finite_slice(y)
 }
 
 fn spacings<T: Float>(y: &[T], x: Option<&[T]>, dx: T) -> Result<Vec<T>> {
@@ -18,8 +18,13 @@ fn spacings<T: Float>(y: &[T], x: Option<&[T]>, dx: T) -> Result<Vec<T>> {
         if x.len() != y.len() {
             return Err(Error::DimensionMismatch);
         }
-        finite_slice(x)?;
-        x.windows(2).map(|pair| finite(pair[1] - pair[0])).collect()
+        is_finite_slice(x)?;
+        x.windows(2)
+            .map(|pair| match pair[1] - pair[0] {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            })
+            .collect()
     } else {
         if !dx.is_finite() {
             return Err(Error::InvalidInput("spacing must be finite"));
@@ -93,21 +98,28 @@ impl<T: Float> Default for Sum<T> {
 
 impl<T: Float> Sum<T> {
     fn add(&mut self, term: T) -> Result<()> {
-        let next = finite(self.value + term)?;
-        self.correction = finite(
-            self.correction
-                + if self.value.abs() >= term.abs() {
-                    (self.value - next) + term
-                } else {
-                    (term - next) + self.value
-                },
-        )?;
+        let next = match self.value + term {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
+        self.correction = match self.correction
+            + if self.value.abs() >= term.abs() {
+                (self.value - next) + term
+            } else {
+                (term - next) + self.value
+            } {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         self.value = next;
         Ok(())
     }
 
     fn total(&self) -> Result<T> {
-        finite(self.value + self.correction)
+        match self.value + self.correction {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }
     }
 }
 
@@ -416,11 +428,14 @@ pub fn romb<T: Float>(y: &[T], dx: T) -> Result<T> {
         return Err(Error::InvalidInput("Romberg needs 2^k+1 samples"));
     }
     let scale = sample_scale(y[0].abs().max(y[n].abs()));
-    let mut previous = vec![finite(product3(
+    let mut previous = vec![match product3(
         dx,
         scale,
         0.5 * T::from(n).unwrap() * (y[0] / scale + y[n] / scale),
-    ))?];
+    ) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?];
     let mut step = n;
     while step > 1 {
         step /= 2;
@@ -438,7 +453,10 @@ pub fn romb<T: Float>(y: &[T], dx: T) -> Result<T> {
             } else {
                 row[j - 1] / (factor - 1.0) - previous[j - 1] / (factor - 1.0)
             };
-            row.push(finite(row[j - 1] + correction)?);
+            row.push(match row[j - 1] + correction {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?);
             factor = factor * (4.0);
         }
         previous = row;
@@ -508,7 +526,10 @@ pub fn fixed_quad<T: Float>(f: impl Fn(T) -> T, a: T, b: T, n: usize) -> Result<
             // even when subtracting them overflows.
             (1.0 - t) * a + t * b
         };
-        let value = finite(f(point.clamp(a.min(b), a.max(b))))?;
+        let value = match f(point.clamp(a.min(b), a.max(b))) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         magnitude = magnitude.max(value.abs());
         values.push(value);
     }
@@ -521,11 +542,14 @@ pub fn fixed_quad<T: Float>(f: impl Fn(T) -> T, a: T, b: T, n: usize) -> Result<
         sum.add(T::from(weight).unwrap() * (value / scale))?;
     }
     let weighted = sum.total()?;
-    finite(if width.is_finite() {
+    match if width.is_finite() {
         product3(width, scale, 0.5 * weighted)
     } else {
         product3(half, scale, weighted)
-    })
+    } {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes closed Newton–Cotes weights and the leading error coefficient.
@@ -566,7 +590,7 @@ pub fn newton_cotes(rn: &[f64]) -> Result<(Vec<f64>, f64)> {
     if !(2..=13).contains(&rn.len()) {
         return Err(Error::InvalidInput("Newton-Cotes needs 2..=13 nodes"));
     }
-    finite_slice(rn)?;
+    is_finite_slice(rn)?;
     let n = rn.len() - 1;
     if rn[0] != 0.0 || rn[n] != n as f64 || rn.windows(2).any(|p| p[1] <= p[0]) {
         return Err(Error::InvalidInput("nodes must increase from zero to N"));
@@ -666,7 +690,7 @@ pub fn newton_cotes(rn: &[f64]) -> Result<(Vec<f64>, f64)> {
         .solve(&moments)
         .ok_or(Error::NumericalFailure("singular Newton-Cotes system"))?;
     let weights: Vec<f64> = weights.iter().copied().collect();
-    finite_slice(&weights)?;
+    is_finite_slice(&weights)?;
     let power = n + 1;
     let moment: f64 = rn
         .iter()
@@ -676,5 +700,11 @@ pub fn newton_cotes(rn: &[f64]) -> Result<(Vec<f64>, f64)> {
     let factorial: f64 = (1..=power).map(|i| i as f64).product();
     let error =
         (n as f64 / (power + 1) as f64 - moment) * (n as f64).powi(power as i32) / factorial;
-    Ok((weights, finite(error)?))
+    Ok((
+        weights,
+        match error {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?,
+    ))
 }

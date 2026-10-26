@@ -170,7 +170,7 @@ pub fn lu_solve(
     if factor.row_permutation.len() != n || b.len() != n {
         return Err(Error::DimensionMismatch);
     }
-    crate::error::finite_slice(b)?;
+    crate::error::is_finite_slice(b)?;
     let mut seen = vec![false; n];
     for &p in &factor.row_permutation {
         if p >= n || seen[p] {

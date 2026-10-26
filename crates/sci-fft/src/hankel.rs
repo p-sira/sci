@@ -4,7 +4,7 @@
 //! `LICENSES/scipy-fftlog.txt`.
 mod gamma;
 use super::{irfft, length, rfft};
-use crate::error::{finite, finite_slice};
+use crate::error::is_finite_slice;
 use crate::{
     Error, Result,
     complex::{native, owned},
@@ -12,21 +12,38 @@ use crate::{
 use std::f64::consts::{LN_2, PI};
 
 fn parameters(dln: f64, mu: f64, offset: f64, bias: f64) -> Result<(f64, f64)> {
-    finite_slice(&[dln, mu, offset, bias])?;
+    is_finite_slice(&[dln, mu, offset, bias])?;
     if dln == 0.0 {
         return Err(Error::InvalidInput("logarithmic spacing must be nonzero"));
     }
     Ok((
-        finite((mu + 1.0 + bias) / 2.0)?,
-        finite((mu + 1.0 - bias) / 2.0)?,
+        match (mu + 1.0 + bias) / 2.0 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?,
+        match (mu + 1.0 - bias) / 2.0 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?,
     ))
 }
 fn scale(value: f64, exponent: f64) -> Result<f64> {
-    let factor = finite(finite(exponent)?.exp())?;
+    let factor = match match exponent {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?
+    .exp()
+    {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     if factor == 0.0 {
         return Err(Error::NumericalFailure("FFTLog bias scaling underflow"));
     }
-    finite(value * factor)
+    match value * factor {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 fn transform(
     input: &[f64],
@@ -37,7 +54,7 @@ fn transform(
     inverse: bool,
 ) -> Result<Vec<f64>> {
     length(input.len())?;
-    finite_slice(input)?;
+    is_finite_slice(input)?;
     let (xp, xm) = parameters(dln, mu, offset, bias)?;
     let n = input.len();
     let center = (n as f64 - 1.0) / 2.0;
@@ -60,22 +77,40 @@ fn transform(
     let mut spectrum = rfft(&biased);
     for (k, v) in spectrum.iter_mut().enumerate() {
         let mut coefficient = if k == 0 {
-            let value = finite((LN_2 * bias).exp() * gamma::rising(xm, xp - xm)?)?;
+            let value = match (LN_2 * bias).exp() * gamma::rising(xm, xp - xm)? {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             if value == 0.0 {
                 return Err(Error::NumericalFailure("singular FFTLog coefficients"));
             }
             num_complex::Complex64::new(value, 0.0)
         } else {
-            let y = finite((PI * k as f64 / n as f64) / dln)?;
+            let y = match (PI * k as f64 / n as f64) / dln {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             let zp = gamma::loggamma(xp, y)?;
             let zm = gamma::loggamma(xm, y)?;
             let log = num_complex::Complex64::new(
-                finite(zp.re - zm.re + LN_2 * bias)?,
-                finite(zp.im + zm.im + 2.0 * y * (LN_2 - offset))?,
+                match zp.re - zm.re + LN_2 * bias {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?,
+                match zp.im + zm.im + 2.0 * y * (LN_2 - offset) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?,
             );
             let c = log.exp();
-            finite(c.re)?;
-            finite(c.im)?;
+            match c.re {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
+            match c.im {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             if c.norm() == 0.0 {
                 return Err(Error::NumericalFailure("FFTLog coefficient underflow"));
             }
@@ -94,8 +129,14 @@ fn transform(
         } else {
             native(*v) * coefficient
         };
-        finite(result.re)?;
-        finite(result.im)?;
+        match result.re {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
+        match result.im {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         *v = owned(result);
     }
     let mut out = irfft(&spectrum, Some(n))?;
@@ -243,9 +284,18 @@ pub fn ifht(input: &[f64], dln: f64, mu: f64, offset: f64, bias: f64) -> Result<
 /// Hamilton (2000), [FFTLog](https://doi.org/10.1046/j.1365-8711.2000.03171.x).
 pub fn fhtoffset(dln: f64, mu: f64, initial: f64, bias: f64) -> Result<f64> {
     let (xp, xm) = parameters(dln, mu, initial, bias)?;
-    let y = finite((PI / 2.0) / dln)?;
+    let y = match (PI / 2.0) / dln {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     let zp = gamma::loggamma(xp, y)?;
     let zm = gamma::loggamma(xm, y)?;
-    let phase = finite((LN_2 - initial) / dln + (zp.im + zm.im) / PI)?;
-    finite(initial + (phase - phase.round_ties_even()) * dln)
+    let phase = match (LN_2 - initial) / dln + (zp.im + zm.im) / PI {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
+    match initial + (phase - phase.round_ties_even()) * dln {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }

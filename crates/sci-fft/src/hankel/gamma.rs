@@ -163,7 +163,10 @@ pub(super) fn rising(a: f64, mut m: f64) -> Result<f64> {
             break;
         }
         if !r.is_finite() || r == 0.0 {
-            return crate::error::finite(r);
+            return match r {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            };
         }
     }
     let value = if m == 0.0 {
@@ -193,5 +196,8 @@ pub(super) fn rising(a: f64, mut m: f64) -> Result<f64> {
         };
         r * (num - den).exp() * f64::from(ns * ds)
     };
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }

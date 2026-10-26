@@ -1,5 +1,5 @@
 use super::{MAX_ENTRIES, MAX_WORK, bound, evaluated, pair, points};
-use crate::{Error, Result, error::finite_slice};
+use crate::{Error, Result, error::is_finite_slice};
 use nalgebra::{DMatrix, DVector};
 
 /// Computes the Lp distance `(Σ|xᵢ-yᵢ|ᵖ)^(1/p)`.
@@ -167,7 +167,7 @@ pub fn distance_matrix(x: &[Vec<f64>], y: &[Vec<f64>], p: f64) -> Result<Vec<Vec
 /// [SciPy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.geometric_slerp.html).
 pub fn geometric_slerp(start: &[f64], end: &[f64], t: &[f64], tol: f64) -> Result<Vec<Vec<f64>>> {
     pair(start, end)?;
-    finite_slice(t)?;
+    is_finite_slice(t)?;
     bound(t.len().checked_mul(start.len()), MAX_ENTRIES)?;
     if start.len() < 2 || !tol.is_finite() || !(0.0..1.0).contains(&tol) {
         return Err(Error::InvalidInput(

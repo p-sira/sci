@@ -190,7 +190,10 @@ fn order_evaluate(d: OrderStatisticDistribution, x: f64, op: Operation) -> Resul
             let probability = ppf(Distribution::Beta { a, b }, x)?;
             let value = ppf(d.base, probability)?;
             if x > 0. && x < 1. {
-                finite(value)
+                match value {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }
             } else {
                 Ok(value)
             }
@@ -306,8 +309,12 @@ pub(super) fn evaluate(distribution: DistributionSpec, x: f64, op: Operation) ->
 /// [SciPy truncate](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncate.html).
 pub fn truncate(distribution: Distribution, lower: f64, upper: f64) -> Result<DistributionSpec> {
     continuous_null(distribution)?;
-    finite(lower)?;
-    finite(upper)?;
+    if !lower.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
+    if !upper.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     if lower >= upper {
         return Err(Error::InvalidInput("truncation bounds must increase"));
     }

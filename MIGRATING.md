@@ -46,12 +46,16 @@ for the implemented groups and remaining migration work.
 
 ## Direct numerical calls
 
+`sci_core::finite(value)` is removed. Use `value.is_finite()` (from `Float`
+for generic scalars), returning `Error::NonFiniteEvaluation` when required.
+`finite_slice` is renamed to `is_finite_slice`; it still returns `Result<()>`.
+
 `linalg::find_best_blas_type`, `get_blas_funcs`, `get_lapack_funcs`, `BlasType`,
 `BlasFunction`, and `LapackFunction` are removed. Call `dot`, `matvec`, `matmul`,
 `solve`, `lu_factor`, `lu_solve`, `cholesky`, `cho_solve`, `eig`, `eigh`, `svd`,
 or `qz` directly. These linear-algebra entry points continue to use `f64`. Direct `dot`, `matvec`, and `matmul` retain
 their documented IEEE propagation; the removed dispatcher wrappers performed
-additional finite-value checks. Use `sci_core::finite_slice` and check results
+additional finite-value checks. Use `sci_core::is_finite_slice` and check results
 when that stricter behavior is required. For a vector Euclidean
 norm with overflow-resistant accumulation, use `x.iter().fold(0.0_f64,
 |norm, &value| norm.hypot(value))`; validate inputs when required.
@@ -61,7 +65,7 @@ norm with overflow-resistant accumulation, use `x.iter().fold(0.0_f64,
 `exp2`, `exp_m1`, `ln_1p`, and **`round_ties_even`**, respectively.
 `special::exp10(x)` becomes `10.0_f64.powf(x)`.
 `special::geterr`, `seterr`, and `ErrorPolicy` are removed. Use
-`sci_core::finite(value)` to reject NaN and infinity, or retain IEEE results.
+`value.is_finite()` to detect NaN and infinity, or retain IEEE results.
 Stable special functions such as `exprel`, `xlogy`, and `log_expit` remain.
 
 ## Sparse types and ownership

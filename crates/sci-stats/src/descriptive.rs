@@ -70,7 +70,10 @@ fn standardized_moments<T: Float>(x: &[T]) -> Result<(T, T, T, T)> {
 /// [NumPy `std`](https://numpy.org/doc/stable/reference/generated/numpy.std.html).
 pub fn std<T: Float>(values: &[T], ddof: usize) -> Result<T> {
     let (scale, normalized) = scaled_variance(values, ddof)?;
-    finite(normalized.sqrt() * scale)
+    match normalized.sqrt() * scale {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Standard error of the mean `sqrt(var(x,ddof)/n)`.
@@ -311,7 +314,10 @@ pub fn median<T: Float>(values: &[T]) -> Result<T> {
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn iqr<T: Float>(values: &[T]) -> Result<T> {
     let x = sorted(values)?;
-    finite(interpolate(&x, 0.75) - interpolate(&x, 0.25))
+    match interpolate(&x, 0.75) - interpolate(&x, 0.25) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Median absolute deviation `median(|x−median(x)|)/scale`.
@@ -356,7 +362,10 @@ pub fn median_abs_deviation<T: Float>(values: &[T], scale: T) -> Result<T> {
         .iter()
         .map(|&x| (x - center).abs())
         .collect::<Vec<_>>();
-    finite(median(&distances)? / scale)
+    match median(&distances)? / scale {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Geometric mean `exp(Σ ln(x)/n)`.
@@ -406,7 +415,10 @@ pub fn gmean<T: Float>(values: &[T]) -> Result<T> {
         return Ok(0.);
     }
     let logs = values.iter().map(|x| x.ln()).collect::<Vec<_>>();
-    finite(mean(&logs)?.exp())
+    match mean(&logs)?.exp() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Harmonic mean `n/Σ(1/x)`.
@@ -456,14 +468,16 @@ pub fn hmean<T: Float>(values: &[T]) -> Result<T> {
     if minimum == 0. {
         return Ok(0.);
     }
-    finite(
-        minimum
-            / (values
-                .iter()
-                .map(|&x| minimum / x)
-                .fold(T::zero(), |a, b| a + b)
-                / T::from(values.len()).unwrap()),
-    )
+    match minimum
+        / (values
+            .iter()
+            .map(|&x| minimum / x)
+            .fold(T::zero(), |a, b| a + b)
+            / T::from(values.len()).unwrap())
+    {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Geometric standard deviation `exp(std(ln(x),ddof))`.
@@ -509,7 +523,10 @@ pub fn gstd<T: Float>(values: &[T], ddof: usize) -> Result<T> {
             "geometric standard deviation requires positive values",
         ));
     }
-    finite(std(&values.iter().map(|x| x.ln()).collect::<Vec<_>>(), ddof)?.exp())
+    match std(&values.iter().map(|x| x.ln()).collect::<Vec<_>>(), ddof)?.exp() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Central moment `m_k=Σ(x−mean(x))^k/n`.
@@ -571,7 +588,10 @@ pub fn moment<T: Float>(values: &[T], order: usize) -> Result<T> {
         .collect::<Vec<_>>();
     let mut value = mean(&terms)?;
     for _ in 0..order {
-        value = finite(value * scale)?;
+        value = match value * scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
     }
     Ok(value)
 }
@@ -786,7 +806,7 @@ pub fn zmap<T: Float>(scores: &[T], compare: &[T], ddof: usize) -> Result<Vec<T>
                 *x / reference.scale - reference.origin / reference.scale
             };
             let score = (coordinate - reference.center) / spread;
-            finite(if score.is_finite() {
+            match if score.is_finite() {
                 score
             } else {
                 // A coordinate may overflow although division by a spread
@@ -797,7 +817,10 @@ pub fn zmap<T: Float>(scores: &[T], compare: &[T], ddof: usize) -> Result<Vec<T>
                     (*x / spread) / reference.scale - (reference.origin / spread) / reference.scale
                 };
                 displacement - reference.center / spread
-            })
+            } {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }
         })
         .collect()
 }

@@ -64,13 +64,16 @@ impl Posterior {
         let v = ppf(
             Distribution::InverseGamma {
                 shape_value: (self.n - 1.) / 2.,
-                scale: finite((self.n / 2.) * self.variance)?,
+                scale: match (self.n / 2.) * self.variance {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?,
             },
             probability,
         )?;
         let mu = self.center + (self.variance / (self.n - 1.)).sqrt() * t;
-        if probability > 0. && probability < 1. {
-            finite(mu)?;
+        if probability > 0. && probability < 1. && !mu.is_finite() {
+            return Err(crate::Error::NonFiniteEvaluation);
         }
         Ok([mu, v, v.sqrt()])
     }
@@ -88,15 +91,20 @@ impl Posterior {
             if self.n <= 3. {
                 f64::INFINITY
             } else {
-                finite(self.variance * (self.n / (self.n - 3.)))?
+                match self.variance * (self.n / (self.n - 3.)) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?
             },
             if self.n == 2. {
                 f64::INFINITY
             } else {
-                finite(
-                    self.variance.sqrt()
-                        * ((self.n / 2.).ln() / 2. + ln_gamma(a - 0.5) - ln_gamma(a)).exp(),
-                )?
+                match self.variance.sqrt()
+                    * ((self.n / 2.).ln() / 2. + ln_gamma(a - 0.5) - ln_gamma(a)).exp()
+                {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?
             },
         ])
     }

@@ -21,7 +21,7 @@ work limits, normalization, units, and error conventions remain per-function.
 | Statistics | 23 | Mean/variance and the complete descriptive module |
 | **Total** | **142** | Each function has independent reference coverage in both precisions |
 
-`finite` and `finite_slice` are also generic. Shared `Matrix`, `Spline`,
+`is_finite_slice` is also generic; scalar checks use `Float::is_finite`. Shared `Matrix`, `Spline`,
 `ParametricSpline`, `SurfaceSpline`, `SparseMatrix`, `SparseArray`, `Complex`,
 and `stats::Description` accept a scalar type and default to `f64`.
 

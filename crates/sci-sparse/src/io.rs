@@ -149,7 +149,11 @@ impl Npy {
                             f32::from_le_bytes(b) as f64
                         }
                     };
-                    finite(v)
+                    if v.is_finite() {
+                        Ok(v)
+                    } else {
+                        Err(Error::NonFiniteEvaluation)
+                    }
                 })
                 .collect()
         } else if matches!(self.dtype.as_bytes().get(1), Some(b'i' | b'u'))

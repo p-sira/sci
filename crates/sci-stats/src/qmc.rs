@@ -142,7 +142,10 @@ pub fn discrepancy(points: &[Vec<f64>], method: Discrepancy, iterative: bool) ->
             .max(0.)
             .sqrt(),
     };
-    finite(result)
+    match result {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Updated centered discrepancy `D_new=D_initial−2*A(x_new)/(n+1)+(2ΣB(x_new,x_i)+B(x_new,x_new))/(n+1)²`.
 ///
@@ -191,17 +194,21 @@ pub fn update_discrepancy(new_point: &[f64], points: &[Vec<f64>], initial: f64) 
     for &x in new_point {
         probability_check(x)?;
     }
-    finite(initial)?;
+    if !initial.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     let n = (points.len() + 1) as f64;
     let method = Discrepancy::Centered;
     let sum = points
         .iter()
         .map(|x| pair(new_point, x, method))
         .sum::<f64>();
-    finite(
-        initial - 2. * single(new_point, method) / n
-            + (2. * sum + pair(new_point, new_point, method)) / (n * n),
-    )
+    match initial - 2. * single(new_point, method) / n
+        + (2. * sum + pair(new_point, new_point, method)) / (n * n)
+    {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Affine sample scaling `y_j=lower_j+(upper_j−lower_j)x_j`, or its inverse.
 ///
@@ -262,10 +269,16 @@ pub fn scale(
                 if x < lower[j] || x > upper[j] {
                     return Err(Error::InvalidInput("point outside scaling bounds"));
                 }
-                scaled.push(finite((x - lower[j]) / (upper[j] - lower[j]))?);
+                scaled.push(match (x - lower[j]) / (upper[j] - lower[j]) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?);
             } else {
                 probability_check(x)?;
-                scaled.push(finite((1. - x) * lower[j] + x * upper[j])?);
+                scaled.push(match (1. - x) * lower[j] + x * upper[j] {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?);
             }
         }
         out.push(scaled);
@@ -353,5 +366,8 @@ pub fn geometric_discrepancy(points: &[Vec<f64>], method: GeometricDiscrepancy) 
             break;
         }
     }
-    finite(total / (n - 1) as f64)
+    match total / (n - 1) as f64 {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }

@@ -9,7 +9,7 @@ Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing lib
 Gamma, Bessel, elliptic, probability, polynomial, and combinatorial functions
 with floating-point scalars and shared Sci types. Specialized algorithms use private
 special, xsf, and ellip backends; elementary formulas use the standard library.
-Use `sci_core::finite` to reject nonfinite scalar results explicitly.
+Use `value.is_finite()` to check scalar results for NaN and infinity.
 There is no broadcasting, general complex-input overloading, exact integer
 mode, or derivative-axis output for array functions. Polynomial constructors
 return descending coefficients. Read each function's documented real domain,

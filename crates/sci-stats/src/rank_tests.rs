@@ -897,7 +897,10 @@ pub fn fligner(groups: &[&[f64]], center: Center) -> Result<TestResult> {
             Center::Median => median(g)?,
         };
         for x in *g {
-            deviations.push(finite((x - c).abs())?);
+            deviations.push(match (x - c).abs() {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?);
         }
     }
     let ranks = rankdata(&deviations, RankMethod::Average)?;

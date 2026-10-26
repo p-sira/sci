@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Remove the hidden `finite` helper; use `Float::is_finite()` for scalar checks. Rename `finite_slice` to `is_finite_slice` for shared slice validation.
+
 - Re-export the shared `Float` bound; make finite checks and matrix, spline, and sparse storage generic with `f64` defaults.
 
 - Update shared Sci dependency requirements to the new minor versions.

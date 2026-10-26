@@ -1,12 +1,12 @@
 //! Optimization objectives and SciPy forward-difference diagnostics.
-use crate::error::{finite, finite_slice};
+use crate::error::is_finite_slice;
 use crate::{Error, Result, linalg::Matrix};
 
 fn point(x: &[f64], min: usize, max: usize) -> Result<()> {
     if !(min..=max).contains(&x.len()) {
         return Err(Error::InvalidInput("unsupported objective dimension"));
     }
-    finite_slice(x)
+    is_finite_slice(x)
 }
 
 /// Returns the valley residual `y − x²` with the square's rounding error removed.
@@ -43,10 +43,19 @@ fn curvature(x: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
     let mut diagonal = vec![0.0; n];
     let mut off = Vec::with_capacity(n - 1);
     for (i, pair) in x.windows(2).enumerate() {
-        diagonal[i] =
-            finite(diagonal[i] + finite(1200.0 * pair[0] * pair[0] - 400.0 * pair[1] + 2.0)?)?;
+        diagonal[i] = match diagonal[i]
+            + match 1200.0 * pair[0] * pair[0] - 400.0 * pair[1] + 2.0 {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }? {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         diagonal[i + 1] += 200.0;
-        off.push(finite(-400.0 * pair[0])?);
+        off.push(match -400.0 * pair[0] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?);
     }
     Ok((diagonal, off))
 }
@@ -81,7 +90,10 @@ fn curvature(x: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
 pub fn rosen(x: &[f64]) -> Result<f64> {
     point(x, 0, 1_000_000)?;
     x.windows(2).try_fold(0.0, |sum, p| {
-        finite(sum + 100.0 * valley_residual(p[0], p[1]).powi(2) + (1.0 - p[0]).powi(2))
+        match sum + 100.0 * valley_residual(p[0], p[1]).powi(2) + (1.0 - p[0]).powi(2) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }
     })
 }
 
@@ -116,9 +128,18 @@ pub fn rosen_der(x: &[f64]) -> Result<Vec<f64>> {
     point(x, 2, 1_000_000)?;
     let mut out = vec![0.0; x.len()];
     for (i, p) in x.windows(2).enumerate() {
-        let residual = finite(valley_residual(p[0], p[1]))?;
-        out[i] = finite(out[i] - 400.0 * p[0] * residual + 2.0 * (p[0] - 1.0))?;
-        out[i + 1] = finite(out[i + 1] + 200.0 * residual)?;
+        let residual = match valley_residual(p[0], p[1]) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
+        out[i] = match out[i] - 400.0 * p[0] * residual + 2.0 * (p[0] - 1.0) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
+        out[i + 1] = match out[i + 1] + 200.0 * residual {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     Ok(out)
 }
@@ -194,16 +215,25 @@ pub fn rosen_hess_prod(x: &[f64], p: &[f64]) -> Result<Vec<f64>> {
     if x.len() != p.len() {
         return Err(Error::DimensionMismatch);
     }
-    finite_slice(p)?;
+    is_finite_slice(p)?;
     let (d, o) = curvature(x)?;
     let mut out = d
         .iter()
         .zip(p)
-        .map(|(d, p)| finite(d * p))
+        .map(|(d, p)| match d * p {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
         .collect::<Result<Vec<_>>>()?;
     for (i, v) in o.into_iter().enumerate() {
-        out[i] = finite(out[i] + v * p[i + 1])?;
-        out[i + 1] = finite(out[i + 1] + v * p[i])?;
+        out[i] = match out[i] + v * p[i + 1] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
+        out[i + 1] = match out[i + 1] + v * p[i] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     Ok(out)
 }
@@ -249,8 +279,14 @@ pub fn approx_fprime(
     }
     let mut steps = Vec::with_capacity(x.len());
     for (i, &v) in x.iter().enumerate() {
-        let next = finite(v + epsilon[if epsilon.len() == 1 { 0 } else { i }])?;
-        let dx = finite(next - v)?;
+        let next = match v + epsilon[if epsilon.len() == 1 { 0 } else { i }] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
+        let dx = match next - v {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         if dx == 0.0 {
             return Err(Error::InvalidStep);
         }
@@ -270,9 +306,16 @@ pub fn approx_fprime(
                 negative: baseline.len(),
             });
         }
-        finite_slice(&values)?;
+        is_finite_slice(&values)?;
         for (i, (value, base)) in values.iter().zip(&baseline).enumerate() {
-            out[i][j] = finite(finite(value - base)? / dx)?;
+            out[i][j] = match match value - base {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }? / dx
+            {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
         }
     }
     Ok(out)
@@ -316,9 +359,15 @@ pub fn check_grad(
     if g.len() != x.len() {
         return Err(Error::DimensionMismatch);
     }
-    finite_slice(&g)?;
+    is_finite_slice(&g)?;
     let jac = approx_fprime(|x| vec![function(x)], x, epsilon)?;
-    g.iter()
-        .zip(&jac[0])
-        .try_fold(0.0_f64, |norm, (a, b)| finite(norm.hypot(finite(a - b)?)))
+    g.iter().zip(&jac[0]).try_fold(0.0_f64, |norm, (a, b)| {
+        match norm.hypot(match a - b {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }
+    })
 }

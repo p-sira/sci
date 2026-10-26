@@ -161,7 +161,10 @@ pub fn binned_statistic_dd(
         } else {
             match statistic {
                 BinStatistic::Count => b.len() as f64,
-                BinStatistic::Sum => finite(b.iter().sum::<f64>())?,
+                BinStatistic::Sum => match b.iter().sum::<f64>() {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?,
                 BinStatistic::Mean => mean(&b)?,
                 BinStatistic::Std => std(&b, 0)?,
                 BinStatistic::Median => median(&b)?,
@@ -324,8 +327,12 @@ pub fn cumfreq(values: &[f64], bins: usize, lower: f64, upper: f64) -> Result<Fr
     if bins == 0 || bins > MAX_SAMPLES - 2 {
         return Err(Error::InvalidInput("invalid bin count"));
     }
-    finite(lower)?;
-    finite(upper)?;
+    if !lower.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
+    if !upper.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     positive(upper - lower)?;
     let width = (upper - lower) / bins as f64;
     positive(width)?;
@@ -397,8 +404,12 @@ pub fn relfreq(values: &[f64], bins: usize, lower: f64, upper: f64) -> Result<Fr
     if bins == 0 || bins > MAX_SAMPLES - 2 {
         return Err(Error::InvalidInput("invalid bin count"));
     }
-    finite(lower)?;
-    finite(upper)?;
+    if !lower.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
+    if !upper.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     positive(upper - lower)?;
     let width = (upper - lower) / bins as f64;
     positive(width)?;

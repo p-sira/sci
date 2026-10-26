@@ -1,7 +1,4 @@
-use crate::{
-    Error, Result,
-    error::{finite, finite_slice},
-};
+use crate::{Error, Result, error::is_finite_slice};
 use sci_core::Float;
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
@@ -57,11 +54,14 @@ pub fn mean<T: Float>(values: &[T]) -> Result<T> {
         };
         let Some(term) = term else {
             let total = sum + correction;
-            return finite(if total.is_finite() {
+            return match if total.is_finite() {
                 total / T::from(values.len()).unwrap()
             } else {
                 sum / T::from(values.len()).unwrap() + correction / T::from(values.len()).unwrap()
-            });
+            } {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            };
         };
         let next = sum + term;
         if !next.is_finite() {
@@ -95,7 +95,10 @@ pub fn mean<T: Float>(values: &[T]) -> Result<T> {
             };
         sum = next;
     }
-    finite((sum + correction).clamp(-1., 1.) * scale)
+    match (sum + correction).clamp(-1., 1.) * scale {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Variance `Σ(x_i−μ)²/(n−ddof)`.
@@ -142,7 +145,10 @@ pub fn variance<T: Float>(values: &[T], ddof: usize) -> Result<T> {
         ));
     }
     let (scale, normalized) = scaled_variance(values, ddof)?;
-    finite((normalized * scale) * scale)
+    match (normalized * scale) * scale {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 fn scaled_variance<T: Float>(values: &[T], ddof: usize) -> Result<(T, T)> {
@@ -376,7 +382,7 @@ fn sample<T: Float>(values: &[T], minimum: usize) -> Result<()> {
             "invalid observation count (maximum 1048576)",
         ));
     }
-    finite_slice(values)
+    is_finite_slice(values)
 }
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 fn positive<T: Float>(x: T) -> Result<()> {

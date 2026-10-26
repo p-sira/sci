@@ -153,7 +153,10 @@ pub fn directional_stats(observations: &[Vec<f64>], normalize: bool) -> Result<D
             m[j] += (row[j] / length) / n;
         }
     }
-    let length = finite(m.iter().fold(0_f64, |s, x| s.hypot(*x)))?;
+    let length = match m.iter().fold(0_f64, |s, x| s.hypot(*x)) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     let direction = m.iter().map(|x| x / length).collect();
     Ok(DirectionalStats {
         mean_direction: direction,
@@ -214,7 +217,10 @@ pub fn differential_entropy(values: &[f64], window: usize, base: Option<f64>) ->
     };
     let mut sum = 0.;
     for i in 0..n {
-        let distance = finite(x[(i + window).min(n - 1)] - x[i.saturating_sub(window)])?;
+        let distance = match x[(i + window).min(n - 1)] - x[i.saturating_sub(window)] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
         sum += distance.ln() + (n as f64 / (2. * window as f64)).ln();
     }
     Ok(sum / n as f64 / denominator)
@@ -299,6 +305,9 @@ pub fn lmoment(values: &[f64], order: usize, standardize: bool) -> Result<f64> {
     if standardize && order > 2 {
         Ok(l / l2)
     } else {
-        finite(l * scale)
+        match l * scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }
     }
 }

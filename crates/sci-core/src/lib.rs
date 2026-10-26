@@ -59,19 +59,32 @@ impl std::error::Error for Error {}
 /// The shared result type used by fallible numerical operations.
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// Checks a finite numerical result.
+/// Validates that every value in a slice is finite.
+///
+/// # Parameters and conventions
+/// `values` contains real values of the selected floating-point type.
+///
+/// # Domain and special values
+/// Empty slices, signed zeros, and subnormal values are accepted. NaN and
+/// either infinity are rejected.
+///
+/// # Returns
+/// `Ok(())` when every value is finite.
+///
+/// # Errors
+/// Returns [`Error::InvalidInput`] if any value is nonfinite.
+///
+/// # Numerical behavior
+/// Uses [`Float::is_finite`] without modifying values. Checks at most
+/// `values.len()` entries, stopping at the first nonfinite value.
+///
+/// # Examples
+/// ```
+/// assert_eq!(sci_core::is_finite_slice(&[0.0, 1.0]), Ok(()));
+/// assert!(sci_core::is_finite_slice(&[f64::NAN]).is_err());
+/// ```
 #[doc(hidden)]
-pub fn finite<T: Float>(value: T) -> Result<T> {
-    if value.is_finite() {
-        Ok(value)
-    } else {
-        Err(Error::NonFiniteEvaluation)
-    }
-}
-
-/// Checks that coordinates are finite.
-#[doc(hidden)]
-pub fn finite_slice<T: Float>(values: &[T]) -> Result<()> {
+pub fn is_finite_slice<T: Float>(values: &[T]) -> Result<()> {
     if values.iter().all(|value| value.is_finite()) {
         Ok(())
     } else {

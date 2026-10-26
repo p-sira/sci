@@ -1,7 +1,4 @@
-use crate::{
-    Error, Result,
-    error::{finite, finite_slice},
-};
+use crate::{Error, Result, error::is_finite_slice};
 use sci_core::Float;
 
 const WORK_LIMIT: usize = 1_000_000;
@@ -15,7 +12,7 @@ fn validate_work(count: Option<usize>) -> Result<()> {
 }
 
 fn perturbations<T: Float>(point: &[T], step: T) -> Result<Vec<(T, T)>> {
-    finite_slice(point)?;
+    is_finite_slice(point)?;
     point.iter().map(|&value| neighbors(value, step)).collect()
 }
 
@@ -56,11 +53,15 @@ fn difference_with_factor<T: Float>(
     coordinates: (T, T),
     factor: T,
 ) -> Result<T> {
-    finite(upper)?;
-    finite(lower)?;
+    if !upper.is_finite() {
+        return Err(Error::NonFiniteEvaluation);
+    }
+    if !lower.is_finite() {
+        return Err(Error::NonFiniteEvaluation);
+    }
     let width = coordinates.0 - coordinates.1;
     let delta = upper - lower;
-    finite(if width.is_finite() {
+    match if width.is_finite() {
         if delta.is_finite() {
             let numerator = factor * delta;
             if numerator.is_finite() {
@@ -75,7 +76,10 @@ fn difference_with_factor<T: Float>(
         // Both spans may exceed the finite range; their ratio can still fit.
         let half_width = 0.5 * coordinates.0 - 0.5 * coordinates.1;
         ((0.5 * upper - 0.5 * lower) / half_width) * factor
-    })
+    } {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Approximates `f′(x)` by the secant `(f(x₊) − f(x₋))/(x₊ − x₋)`,
@@ -267,7 +271,9 @@ where
         let values = function(point);
         validate_work(Some(values.len()))?;
         for value in &values {
-            finite(*value)?;
+            if !value.is_finite() {
+                return Err(Error::NonFiniteEvaluation);
+            }
         }
         return Ok(vec![Vec::new(); values.len()]);
     }
@@ -378,15 +384,24 @@ where
     if n == 0 {
         return Ok(Vec::new());
     }
-    let center = finite(function(point))?;
+    let center = match function(point) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     let mut sample = point.to_vec();
     let mut result = vec![vec![0.0; n]; n];
     for i in 0..n {
         let (upper, lower) = offsets[i];
         sample[i] = upper;
-        let positive = finite(function(&sample))?;
+        let positive = match function(&sample) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         sample[i] = lower;
-        let negative = finite(function(&sample))?;
+        let negative = match function(&sample) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         sample[i] = point[i];
         // Unequal three-point divided differences remove the false curvature
         // caused by rounded, asymmetric coordinate increments.
@@ -396,14 +411,26 @@ where
         for j in 0..i {
             sample[i] = upper;
             sample[j] = offsets[j].0;
-            let pp = finite(function(&sample))?;
+            let pp = match function(&sample) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             sample[j] = offsets[j].1;
-            let pm = finite(function(&sample))?;
+            let pm = match function(&sample) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             sample[i] = lower;
             sample[j] = offsets[j].0;
-            let mp = finite(function(&sample))?;
+            let mp = match function(&sample) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             sample[j] = offsets[j].1;
-            let mm = finite(function(&sample))?;
+            let mm = match function(&sample) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             sample[i] = point[i];
             sample[j] = point[j];
             let value = difference(

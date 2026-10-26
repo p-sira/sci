@@ -150,13 +150,15 @@ fn cvm_infinite(x: f64) -> Result<f64> {
         let k = k as f64;
         let y = 4. * k + 1.;
         let q = y * y / (16. * x);
-        let term = finite(
-            (special::gammaln(k + 0.5) - special::gammaln(k + 1.)).exp()
-                / (PI.powf(1.5) * x.sqrt())
-                * y.sqrt()
-                * (-q).exp()
-                * special::kv(0.25, q),
-        )?;
+        let term = match (special::gammaln(k + 0.5) - special::gammaln(k + 1.)).exp()
+            / (PI.powf(1.5) * x.sqrt())
+            * y.sqrt()
+            * (-q).exp()
+            * special::kv(0.25, q)
+        {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
         sum += term;
         if term.abs() < 1e-7 {
             return Ok(sum);
@@ -184,14 +186,16 @@ fn cvm_correction(x: f64) -> Result<f64> {
         let m = 2. * k + 1.;
         let sx = 2. * x.sqrt();
         let g = (special::gammaln(k + 0.5) - special::gammaln(k + 1.)).exp();
-        let term = finite(
-            -g / PI
-                * (m * ed2((4. * k + 3.) / sx) / (9. * x.powf(0.75))
-                    + ed3((4. * k + 1.) / sx) / (72. * x.powf(1.25))
-                    + 2. * (m + 2.) * (k + 0.5) * ed3((4. * k + 5.) / sx) / (12. * x.powf(1.25))
-                    + 7. * m * (ed2((4. * k + 1.) / sx) + ed2((4. * k + 5.) / sx))
-                        / (144. * x.powf(0.75))),
-        )?;
+        let term = match -g / PI
+            * (m * ed2((4. * k + 3.) / sx) / (9. * x.powf(0.75))
+                + ed3((4. * k + 1.) / sx) / (72. * x.powf(1.25))
+                + 2. * (m + 2.) * (k + 0.5) * ed3((4. * k + 5.) / sx) / (12. * x.powf(1.25))
+                + 7. * m * (ed2((4. * k + 1.) / sx) + ed2((4. * k + 5.) / sx))
+                    / (144. * x.powf(0.75)))
+        {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
         sum += term;
         if term.abs() < 1e-7 {
             return Ok(sum);
@@ -270,7 +274,10 @@ pub(super) fn cvm_statistic(values: &[f64], null: Distribution) -> Result<f64> {
     for (i, &value) in ordered.iter().enumerate() {
         statistic += (cdf(null, value)? - (2 * i + 1) as f64 / (2. * n)).powi(2);
     }
-    finite(statistic)
+    match statistic {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Null calibration for the two-sample Cramér–von Mises statistic.
@@ -537,7 +544,10 @@ pub fn anderson_ksamp(groups: &[&[f64]], variant: AndersonVariant) -> Result<Tes
     let d = (2. * h + 6.) * k * k - 4. * h * k;
     let variance = (a * n * n * n + b * n * n + c * n + d) / ((n - 1.) * (n - 2.) * (n - 3.));
     positive(variance)?;
-    let statistic = finite((raw - (k - 1.)) / variance.sqrt())?;
+    let statistic = match (raw - (k - 1.)) / variance.sqrt() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     let m = k - 1.;
     let b0 = [0.675, 1.281, 1.645, 1.96, 2.326, 2.573, 3.085];
     let b1 = [-0.245, 0.25, 0.678, 1.149, 1.822, 2.364, 3.615];
@@ -572,12 +582,14 @@ pub fn anderson_ksamp(groups: &[&[f64]], variant: AndersonVariant) -> Result<Tes
             ))?
             .solve(&response, 1e-14)
             .map_err(|_| Error::NumericalFailure("Anderson calibration fit failed"))?;
-        finite(
-            (coefficients[0] * statistic * statistic
-                + coefficients[1] * statistic
-                + coefficients[2])
-                .exp(),
-        )?
+        match (coefficients[0] * statistic * statistic
+            + coefficients[1] * statistic
+            + coefficients[2])
+            .exp()
+        {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?
     };
     Ok(TestResult { statistic, pvalue })
 }

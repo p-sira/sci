@@ -68,8 +68,8 @@ pub fn toeplitz(
     let c = c_input.as_ref();
     let r = r.unwrap_or(c);
     size(c.len(), r.len())?;
-    crate::error::finite_slice(c)?;
-    crate::error::finite_slice(r)?;
+    crate::error::is_finite_slice(c)?;
+    crate::error::is_finite_slice(r)?;
     Ok((0..c.len())
         .map(|i| {
             (0..r.len())
@@ -115,9 +115,9 @@ pub fn hankel(c: &(impl super::VectorInput + ?Sized), r: Option<&[f64]>) -> Resu
     let c = c_input.as_ref();
     let n = r.map_or(c.len(), <[f64]>::len);
     size(c.len(), n)?;
-    crate::error::finite_slice(c)?;
+    crate::error::is_finite_slice(c)?;
     if let Some(r) = r {
-        crate::error::finite_slice(r)?;
+        crate::error::is_finite_slice(r)?;
     }
     Ok((0..c.len())
         .map(|i| {
@@ -170,7 +170,7 @@ pub fn circulant(c: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>
     let c = c_input.as_ref();
     let n = c.len();
     size(n, n)?;
-    crate::error::finite_slice(c)?;
+    crate::error::is_finite_slice(c)?;
     Ok((0..n)
         .map(|i| (0..n).map(|j| c[(i + n - j) % n]).collect())
         .collect())
@@ -535,7 +535,7 @@ pub fn fiedler(a: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>> 
     let a_input = super::input::vector_slice(a)?;
     let a = a_input.as_ref();
     size(a.len(), a.len())?;
-    crate::error::finite_slice(a)?;
+    crate::error::is_finite_slice(a)?;
     output(
         a.iter()
             .map(|x| a.iter().map(|y| (x - y).abs()).collect())
@@ -584,7 +584,7 @@ pub fn companion(a: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>
     }
     let n = a.len() - 1;
     size(n, n)?;
-    crate::error::finite_slice(a)?;
+    crate::error::is_finite_slice(a)?;
     let mut c = vec![vec![0.0; n]; n];
     for j in 0..n {
         c[0][j] = -a[j + 1] / a[0];
@@ -629,7 +629,7 @@ pub fn companion(a: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>
 pub fn fiedler_companion(a: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>> {
     let a_input = super::input::vector_slice(a)?;
     let a = a_input.as_ref();
-    crate::error::finite_slice(a)?;
+    crate::error::is_finite_slice(a)?;
     if a.is_empty() {
         return Ok(vec![]);
     }
@@ -706,8 +706,8 @@ pub fn leslie(
         return Err(Error::DimensionMismatch);
     }
     size(n, n)?;
-    crate::error::finite_slice(f)?;
-    crate::error::finite_slice(s)?;
+    crate::error::is_finite_slice(f)?;
+    crate::error::is_finite_slice(s)?;
     let mut a = vec![vec![0.0; n]; n];
     a[0].copy_from_slice(f);
     for (i, &v) in s.iter().enumerate() {
@@ -760,7 +760,10 @@ pub fn block_diag(blocks: &[impl super::MatrixInput]) -> Result<Vec<Vec<f64>>> {
         let (r, c) = super::input::checked_shape(block)?;
         for i in 0..r {
             for j in 0..c {
-                crate::error::finite(block.matrix_entry(i, j))?;
+                match block.matrix_entry(i, j) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
             }
         }
         m = m
@@ -828,7 +831,7 @@ pub fn convolution_matrix(
     if a.is_empty() || n == 0 {
         return Err(Error::InvalidInput("convolution lengths must be positive"));
     }
-    crate::error::finite_slice(a)?;
+    crate::error::is_finite_slice(a)?;
     let total = a
         .len()
         .checked_add(n - 1)
@@ -952,7 +955,7 @@ pub fn diagsvd(
     if s.len() != m.min(n) {
         return Err(Error::DimensionMismatch);
     }
-    crate::error::finite_slice(s)?;
+    crate::error::is_finite_slice(s)?;
     let mut a = vec![vec![0.0; n]; m];
     for (i, &v) in s.iter().enumerate() {
         a[i][i] = v;

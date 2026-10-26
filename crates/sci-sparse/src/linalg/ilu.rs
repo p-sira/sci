@@ -119,14 +119,20 @@ pub fn spilu(a: &SparseMatrix, drop_tol: f64, fill_factor: f64) -> Result<Sparse
             if u[j][j] == 0. {
                 return Err(Error::NumericalFailure("incomplete LU has a zero pivot"));
             }
-            let factor = finite(row[j] / u[j][j])?;
+            let factor = match row[j] / u[j][j] {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?;
             row[j] = 0.;
             if factor.abs() <= drop_tol {
                 continue;
             }
             l[i][j] = factor;
             for (k, v) in row.iter_mut().enumerate().skip(j + 1) {
-                *v = finite(*v - factor * u[j][k])?;
+                *v = match *v - factor * u[j][k] {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?;
             }
         }
         if row[i] == 0. {

@@ -6,7 +6,7 @@
 //! errors even when residuals are small. Singular factorizations and nonfinite
 //! outputs return errors. General sparse operations retain crate storage limits.
 
-use super::{Error, LIMIT, Result, SparseMatrix, entries, finite, identity, matmul, validate};
+use super::{Error, LIMIT, Result, SparseMatrix, entries, identity, matmul, validate};
 use faer::prelude::Solve;
 
 /// Reusable sparse LU factorization, with private backend storage.
@@ -42,10 +42,15 @@ impl SparseLu {
         if b.len() != self.order {
             return Err(Error::DimensionMismatch);
         }
-        sci_core::finite_slice(b)?;
+        sci_core::is_finite_slice(b)?;
         let rhs = faer::Mat::from_fn(self.order, 1, |i, _| b[i]);
         let x = self.inner.solve(&rhs);
-        (0..self.order).map(|i| finite(x[(i, 0)])).collect()
+        (0..self.order)
+            .map(|i| match x[(i, 0)] {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            })
+            .collect()
     }
 }
 
@@ -119,7 +124,7 @@ pub fn spsolve(a: &SparseMatrix, b: &[f64]) -> Result<Vec<f64>> {
     if b.len() != a.rows {
         return Err(Error::DimensionMismatch);
     }
-    sci_core::finite_slice(b)?;
+    sci_core::is_finite_slice(b)?;
     splu(a)?.solve(b)
 }
 
@@ -157,7 +162,7 @@ pub fn spsolve_triangular(
     if a.rows != a.cols || b.len() != a.rows {
         return Err(Error::DimensionMismatch);
     }
-    sci_core::finite_slice(b)?;
+    sci_core::is_finite_slice(b)?;
     let mut x = vec![0.0; a.cols];
     for step in 0..a.rows {
         let r = if lower { step } else { a.rows - 1 - step };
@@ -175,13 +180,23 @@ pub fn spsolve_triangular(
                     return Err(Error::InvalidInput("matrix is not triangular"));
                 }
             } else {
-                rhs = finite(rhs - finite(v * x[c])?)?;
+                rhs = match rhs
+                    - match v * x[c] {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }? {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
             }
         }
         if diagonal == 0.0 {
             return Err(Error::NumericalFailure("zero triangular pivot"));
         }
-        x[r] = finite(rhs / diagonal)?;
+        x[r] = match rhs / diagonal {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     Ok(x)
 }
@@ -230,7 +245,10 @@ pub enum MatrixNorm {
 pub fn norm(a: &SparseMatrix, order: MatrixNorm) -> Result<f64> {
     validate(a)?;
     if order == MatrixNorm::Frobenius {
-        return finite(a.data.iter().fold(0.0, |s, &v| s.hypot(v)));
+        return match a.data.iter().fold(0.0_f64, |s, &v| s.hypot(v)) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        };
     }
     if order == MatrixNorm::Spectral {
         return Ok(svds(a, 1, true)?.singular_values[0]);
@@ -243,7 +261,10 @@ pub fn norm(a: &SparseMatrix, order: MatrixNorm) -> Result<f64> {
     let mut sums = vec![0.0; if column { a.cols } else { a.rows }];
     for (r, c, v) in entries(a) {
         let i = if column { c } else { r };
-        sums[i] = finite(sums[i] + v.abs())?;
+        sums[i] = match sums[i] + v.abs() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     Ok(sums
         .into_iter()

@@ -54,7 +54,7 @@ fn work(a: usize, b: usize) -> Result<()> {
 }
 fn samples(x: &[f64]) -> Result<()> {
     size(x.len())?;
-    crate::error::finite_slice(x)
+    crate::error::is_finite_slice(x)
 }
 fn nonempty(x: &[f64]) -> Result<()> {
     samples(x)?;

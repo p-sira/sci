@@ -63,11 +63,14 @@ fn validate(x: &[f64], y: &[f64]) -> Result<()> {
 
 fn pair_slope(xi: f64, xj: f64, yi: f64, yj: f64) -> Result<f64> {
     let (dx, dy) = (xj - xi, yj - yi);
-    finite(if dx.is_finite() && dy.is_finite() {
+    match if dx.is_finite() && dy.is_finite() {
         dy / dx
     } else {
         (0.5 * yj - 0.5 * yi) / (0.5 * xj - 0.5 * xi)
-    })
+    } {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 fn median_in_place(values: &mut [f64]) -> f64 {
@@ -79,7 +82,10 @@ fn line_intercept(x: &[f64], y: &[f64], slope: f64) -> Result<f64> {
     let mut residuals = x
         .iter()
         .zip(y)
-        .map(|(a, b)| finite((-slope).mul_add(*a, *b)))
+        .map(|(a, b)| match (-slope).mul_add(*a, *b) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        })
         .collect::<Result<Vec<_>>>()?;
     Ok(median_in_place(&mut residuals))
 }
@@ -157,7 +163,10 @@ pub fn theilslopes(
     let slope = median_in_place(&mut slopes);
     let intercept = match method {
         TheilMethod::Joint => line_intercept(x, y, slope)?,
-        TheilMethod::Separate => finite((-slope).mul_add(median(x)?, median(y)?))?,
+        TheilMethod::Separate => match (-slope).mul_add(median(x)?, median(y)?) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?,
     };
     let n = x.len() as f64;
     let variance = (n * (n - 1.) * (2. * n + 5.)
@@ -242,7 +251,10 @@ pub fn siegelslopes(x: &[f64], y: &[f64], method: SiegelMethod) -> Result<Robust
             let slope = pair_slope(x[i], x[j], y[i], y[j])?;
             pairs.push(slope);
             if method == SiegelMethod::Separate {
-                pair_intercepts.push(finite((-slope).mul_add(x[i], y[i]))?);
+                pair_intercepts.push(match (-slope).mul_add(x[i], y[i]) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?);
             }
         }
         slopes.push(median_in_place(&mut pairs));

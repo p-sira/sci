@@ -214,8 +214,8 @@ pub fn qr_update(
     if u.len() != a.nrows() || v.len() != a.ncols() {
         return Err(Error::DimensionMismatch);
     }
-    crate::error::finite_slice(u)?;
-    crate::error::finite_slice(v)?;
+    crate::error::is_finite_slice(u)?;
+    crate::error::is_finite_slice(v)?;
     for (i, &u) in u.iter().enumerate() {
         for (j, &v) in v.iter().enumerate() {
             a[(i, j)] += u * v;

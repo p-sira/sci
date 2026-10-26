@@ -1,4 +1,4 @@
-use crate::error::{finite, finite_slice};
+use crate::error::is_finite_slice;
 use crate::{Error, Result};
 use sci_core::Float;
 
@@ -11,9 +11,9 @@ fn validate<T: Float>(x: &[T], y: &[T], query: &[T], limit: usize) -> Result<()>
             "interpolation size or work limit exceeded",
         ));
     }
-    finite_slice(x)?;
-    finite_slice(y)?;
-    finite_slice(query)
+    is_finite_slice(x)?;
+    is_finite_slice(y)?;
+    is_finite_slice(query)
 }
 
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
@@ -39,7 +39,14 @@ fn newton<T: Float>(x: &[T], y: &[T]) -> Result<Vec<T>> {
             table[i] = if x[i] == x[i - j] {
                 y[starts[i] + j] / factorial
             } else {
-                finite((table[i] - table[i - 1]) / finite(x[i] - x[i - j])?)?
+                match (table[i] - table[i - 1])
+                    / match x[i] - x[i - j] {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }? {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?
             };
         }
         coefficients.push(table[j]);
@@ -92,7 +99,10 @@ pub fn barycentric_interpolate<T: Float>(xi: &[T], yi: &[T], x: &[T]) -> Result<
             if i == j {
                 continue;
             }
-            let d = finite(xi[i] - xi[j])?;
+            let d = match xi[i] - xi[j] {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             if d == 0.0 {
                 return Err(Error::InvalidInput("barycentric nodes must be distinct"));
             }
@@ -119,7 +129,10 @@ pub fn barycentric_interpolate<T: Float>(xi: &[T], yi: &[T], x: &[T]) -> Result<
         }
         let mut distance = T::infinity();
         for (term, node) in terms.iter_mut().zip(xi) {
-            *term = finite(*t - *node)?;
+            *term = match *t - *node {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             distance = distance.min(term.abs());
         }
         // Multiplying both sums by the nearest distance avoids forming 1/d
@@ -141,7 +154,10 @@ pub fn barycentric_interpolate<T: Float>(xi: &[T], yi: &[T], x: &[T]) -> Result<
                 .map(|(v, y)| (*v / scale) * (*y / value_scale))
                 .fold(T::zero(), |a, b| a + b)
         };
-        result.push(finite((numerator / denominator) * value_scale)?);
+        result.push(match (numerator / denominator) * value_scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?);
     }
     Ok(result)
 }
@@ -187,7 +203,15 @@ pub fn krogh_interpolate<T: Float>(xi: &[T], yi: &[T], x: &[T]) -> Result<Vec<T>
         .map(|t| {
             let mut value = c[c.len() - 1];
             for j in (0..c.len() - 1).rev() {
-                value = finite(c[j] + finite(*t - xi[j])? * value)?;
+                value = match c[j]
+                    + match *t - xi[j] {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }? * value
+                {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
             }
             Ok(value)
         })
@@ -235,10 +259,19 @@ pub fn lagrange<T: Float>(x: &[T], y: &[T]) -> Result<Vec<T>> {
     for i in (0..c.len() - 1).rev() {
         let mut next = vec![0.0; polynomial.len() + 1];
         for (j, coefficient) in polynomial.iter().enumerate() {
-            next[j] = finite(next[j] - x[i] * *coefficient)?;
-            next[j + 1] = finite(next[j + 1] + *coefficient)?;
+            next[j] = match next[j] - x[i] * *coefficient {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
+            next[j + 1] = match next[j + 1] + *coefficient {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
         }
-        next[0] = finite(next[0] + c[i])?;
+        next[0] = match next[0] + c[i] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         polynomial = next;
     }
     polynomial.reverse();
@@ -259,9 +292,15 @@ fn endpoint<T: Float>(h0: T, h1: T, d0: T, d1: T) -> Result<T> {
     if derivative.signum() != d0.signum() {
         Ok(0.0)
     } else if d0.signum() != d1.signum() && derivative.abs() / 3.0 > normalized.abs() {
-        finite(3.0 * d0)
+        match 3.0 * d0 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }
     } else {
-        finite(derivative * slope_scale)
+        match derivative * slope_scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }
     }
 }
 
@@ -311,10 +350,13 @@ pub fn pchip_interpolate<T: Float>(xi: &[T], yi: &[T], x: &[T]) -> Result<Vec<T>
             "PCHIP needs at least two nodes and bounded queries",
         ));
     }
-    finite_slice(x)?;
+    is_finite_slice(x)?;
     let h: Vec<T> = xi
         .windows(2)
-        .map(|p| finite(p[1] - p[0]))
+        .map(|p| match p[1] - p[0] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
         .collect::<Result<_>>()?;
     if h.iter().any(|v| *v <= 0.0) {
         return Err(Error::InvalidInput("PCHIP nodes must strictly increase"));
@@ -322,7 +364,10 @@ pub fn pchip_interpolate<T: Float>(xi: &[T], yi: &[T], x: &[T]) -> Result<Vec<T>
     let slopes: Vec<T> = yi
         .windows(2)
         .zip(&h)
-        .map(|(p, h)| finite((p[1] - p[0]) / *h))
+        .map(|(p, h)| match (p[1] - p[0]) / *h {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
         .collect::<Result<_>>()?;
     let mut derivatives = vec![0.0; xi.len()];
     let last = xi.len() - 1;
@@ -343,7 +388,10 @@ pub fn pchip_interpolate<T: Float>(xi: &[T], yi: &[T], x: &[T]) -> Result<Vec<T>
                 let small = slopes[i - 1].abs().min(slopes[i].abs());
                 let denominator = fraction * (small / slopes[i - 1].abs())
                     + (1.0 - fraction) * (small / slopes[i].abs());
-                derivatives[i] = finite(slopes[i].signum() * (small / denominator))?;
+                derivatives[i] = match slopes[i].signum() * (small / denominator) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
             }
         }
     }
@@ -354,15 +402,20 @@ pub fn pchip_interpolate<T: Float>(xi: &[T], yi: &[T], x: &[T]) -> Result<Vec<T>
                 return Ok(yi[i]);
             }
             let i = i.min(last - 1);
-            let u = finite((*t - xi[i]) / h[i])?;
+            let u = match (*t - xi[i]) / h[i] {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             let u2 = u * u;
             let u3 = u2 * u;
-            finite(
-                (2.0 * u3 - 3.0 * u2 + 1.0) * yi[i]
-                    + (u3 - 2.0 * u2 + u) * h[i] * derivatives[i]
-                    + (-2.0 * u3 + 3.0 * u2) * yi[i + 1]
-                    + (u3 - u2) * h[i] * derivatives[i + 1],
-            )
+            match (2.0 * u3 - 3.0 * u2 + 1.0) * yi[i]
+                + (u3 - 2.0 * u2 + u) * h[i] * derivatives[i]
+                + (-2.0 * u3 + 3.0 * u2) * yi[i + 1]
+                + (u3 - u2) * h[i] * derivatives[i + 1]
+            {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }
         })
         .collect()
 }
@@ -405,7 +458,7 @@ pub fn pade(an: &[f64], m: usize, n: Option<usize>) -> Result<(Vec<f64>, Vec<f64
             "invalid Pade coefficient count or degree",
         ));
     }
-    finite_slice(an)?;
+    is_finite_slice(an)?;
     let n = n.unwrap_or(an.len() - 1 - m);
     if n >= an.len() - m {
         return Err(Error::InvalidInput(
@@ -428,8 +481,8 @@ pub fn pade(an: &[f64], m: usize, n: Option<usize>) -> Result<(Vec<f64>, Vec<f64
     let mut p: Vec<f64> = (0..=n)
         .map(|k| (0..=m.min(k)).map(|j| q[j] * an[k - j]).sum())
         .collect();
-    finite_slice(&p)?;
-    finite_slice(&q)?;
+    is_finite_slice(&p)?;
+    is_finite_slice(&q)?;
     p.reverse();
     q.reverse();
     Ok((p, q))

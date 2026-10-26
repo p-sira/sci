@@ -3,13 +3,20 @@ use std::f64::consts::TAU;
 
 fn circular(values: &[f64], low: f64, high: f64) -> Result<(f64, f64)> {
     sample(values, 1)?;
-    finite(low)?;
-    finite(high)?;
+    if !low.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
+    if !high.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     positive(high - low)?;
     let (mut c, mut s) = (0., 0.);
     let n = values.len() as f64;
     for &x in values {
-        let phase = finite(((x - low) / (high - low)) * TAU)?;
+        let phase = match ((x - low) / (high - low)) * TAU {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
         c += phase.cos() / n;
         s += phase.sin() / n;
     }
@@ -60,7 +67,10 @@ fn transform(values: &[f64], f: impl Fn(f64) -> f64) -> Result<Vec<f64>> {
 /// [SciPy `circmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.circmean.html).
 pub fn circmean(values: &[f64], low: f64, high: f64) -> Result<f64> {
     let (c, s) = circular(values, low, high)?;
-    finite(low + (high - low) * (s.atan2(c).rem_euclid(TAU) / TAU))
+    match low + (high - low) * (s.atan2(c).rem_euclid(TAU) / TAU) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Circular variance `1−|mean(exp(i*θ))|`.
 ///
@@ -263,7 +273,9 @@ pub(super) fn probabilities(values: &[f64]) -> Result<Vec<f64>> {
 /// [SciPy `boxcox`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.boxcox.html).
 pub fn boxcox(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
     sample(values, 0)?;
-    finite(lambda)?;
+    if !lambda.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     if values.iter().any(|&x| x <= 0.) {
         return Err(Error::InvalidInput(
             "Box-Cox requires positive observations",
@@ -311,7 +323,9 @@ pub fn boxcox(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
 /// [SciPy `yeojohnson`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.yeojohnson.html).
 pub fn yeojohnson(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
     sample(values, 0)?;
-    finite(lambda)?;
+    if !lambda.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     transform(values, |x| {
         if x >= 0. {
             sci_special::boxcox1p(x, lambda)
@@ -458,7 +472,9 @@ pub fn yeojohnson_llf(lambda: f64, values: &[f64]) -> Result<f64> {
 /// [SciPy `pmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.pmean.html).
 pub fn pmean(values: &[f64], power: f64) -> Result<f64> {
     sample(values, 1)?;
-    finite(power)?;
+    if !power.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     if power.abs() > 64. || values.iter().any(|&x| x <= 0.) {
         return Err(Error::InvalidInput(
             "power mean needs positive values and |power|<=64",
@@ -477,21 +493,30 @@ pub fn pmean(values: &[f64], power: f64) -> Result<f64> {
         // correction to the geometric mean is far below one output ulp, and
         // forming power * log(x) can underflow.
         if power.abs() < 1e-150 {
-            return finite(center.exp());
+            return match center.exp() {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            };
         }
         // Centering keeps the exponent below 0.15 in magnitude. expm1/log1p
         // retain the small correction that exp/log would round away near p=0.
         for log in &mut logs {
             *log = (power * (*log - center)).exp_m1();
         }
-        return finite((center + mean(&logs)?.ln_1p() / power).exp());
+        return match (center + mean(&logs)?.ln_1p() / power).exp() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        };
     }
     let mut logs: Vec<_> = values.iter().map(|x| power * x.ln()).collect();
     let m = logs.iter().copied().fold(f64::NEG_INFINITY, f64::max);
     for log in &mut logs {
         *log = (*log - m).exp();
     }
-    finite(((m + mean(&logs)?.ln()) / power).exp())
+    match ((m + mean(&logs)?.ln()) / power).exp() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Expectile minimizes `Σ |alpha−I(x_i≤t)|*(x_i−t)²`.
 ///
@@ -596,7 +621,7 @@ pub fn expectile(values: &[f64], alpha: f64) -> Result<f64> {
     let total = wl + wr;
     let fraction = small / total;
     let delta = other - base;
-    finite(if !fraction.is_normal() {
+    match if !fraction.is_normal() {
         // Apply tiny masses before dividing by the group count; the fraction
         // itself may underflow while the physical displacement is representable.
         base + if delta.is_finite() {
@@ -608,7 +633,10 @@ pub fn expectile(values: &[f64], alpha: f64) -> Result<f64> {
         delta.mul_add(fraction, base)
     } else {
         (1. - fraction) * base + fraction * other
-    })
+    } {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// One-dimensional Wasserstein-1 distance `∫|F_u(t)−F_v(t)|dt`.
 ///
@@ -708,11 +736,17 @@ fn empirical_distance(first: &[f64], second: &[f64], energy: bool) -> Result<f64
             j += 1;
         }
         let d = (i as f64 / a.len() as f64 - j as f64 / b.len() as f64).abs();
-        integral += finite(window[1] - window[0])? * if energy { d * d } else { d };
+        integral += match window[1] - window[0] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }? * if energy { d * d } else { d };
     }
-    finite(if energy {
+    match if energy {
         (2. * integral).sqrt()
     } else {
         integral
-    })
+    } {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
