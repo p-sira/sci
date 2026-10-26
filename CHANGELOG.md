@@ -2,6 +2,8 @@
 
 ## 0.2.1
 
+- Consolidate particle filtering on Smelly 0.2, decode dense numeric MATLAB files
+  with the shared native parser, and disable unused statrs and rand features.
 - Reduce internal copies in signal validation and construction, SVD pseudoinverses,
   distance weights, surface interpolation, statistical trimming, and sparse solvers.
 - Keep public numerical signatures, validation, and work limits unchanged.

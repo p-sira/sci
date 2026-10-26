@@ -40,15 +40,16 @@ for adapter in adapters:
 # Check the resolved build graph: compiling successfully alone does not prove
 # that a reduced feature avoids its optional backends.
 backend_rules = {
-    "default": ({"zip", "flate2", "miniz_oxide"}, {"zlib-rs"}),
+    "default": ({"zip", "flate2", "miniz_oxide", "smelly"}, {"zlib-rs", "matrw", "kalman_filters", "getrandom"}),
+    "filter": ({"smelly", "nalgebra"}, {"kalman_filters", "rand", "rand_distr", "getrandom"}),
     "fft": ({"rustfft"}, {"xsf", "bindgen", "clang-sys"}),
     "fft-hankel": ({"special"}, {"xsf", "bindgen", "clang-sys", "ellip", "lambert_w"}),
-    "sparse": ({"sci-sparse"}, {"zip", "flate2", "zlib-rs"}),
+    "sparse": ({"sci-sparse"}, {"zip", "flate2", "zlib-rs", "getrandom"}),
     "sparse-npz": ({"zip", "flate2", "miniz_oxide"}, {"zlib-rs"}),
     "io": ({"sci-io"}, {"sci-sparse", "hound", "matrw", "zip", "flate2"}),
     "io-matrix-market": ({"sci-sparse"}, {"hound", "matrw", "zip", "flate2"}),
     "io-wav": ({"hound"}, {"sci-sparse", "matrw", "zip", "flate2", "xsf"}),
-    "io-matlab": ({"matrw", "flate2", "miniz_oxide"}, {"sci-sparse", "hound", "zip", "zlib-rs", "xsf"}),
+    "io-matlab": ({"flate2", "miniz_oxide"}, {"sci-sparse", "hound", "zip", "zlib-rs", "xsf", "matrw"}),
 }
 
 selected = sys.argv[1:] or ["default", "core", *modules, *adapters]

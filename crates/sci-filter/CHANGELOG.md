@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Upgrade Smelly to 0.2 and reuse its particle propagation and weighted moments;
+  remove kalman_filters and its random dependencies. Preserve native log-weight
+  normalization, effective sample size, resampling boundaries, and callback errors.
+
 ## 0.2.0
 
 Changes since the repository tag `v0.1.0`.

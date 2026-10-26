@@ -73,11 +73,15 @@ inputs and tolerances are stored in `fft_cases.json`; ordinary Rust tests read
 the committed CSV. These measure the discrete mapping's roundoff, rather than
 the discretization error of the continuous Hankel integral.
 
-MATLAB and NPZ share flate2's Rust/miniz backend. `matrw` already enables that
-backend, so ZIP selects `deflate-flate2` and sparse NPZ explicitly enables the
-workspace flate2 backend even when MATLAB is absent. This avoids compiling
+MATLAB and NPZ share flate2's Rust/miniz backend. ZIP selects `deflate-flate2`,
+and each format explicitly enables the workspace flate2 backend. This avoids compiling
 zlib-rs alongside miniz. Archive bytes may differ while decoded values and
 format compatibility remain the same.
+
+Particle propagation and moments reuse Smelly 0.2 without a random generator.
+MATLAB numeric decoding reuses Sci's native bounded format parser. Statrs keeps
+its `std` and `nalgebra` features with sampling disabled; sparse generation uses
+seeded `StdRng` without OS entropy or thread-local RNG features.
 
 The workspace uses `special` 0.14 with default features disabled and `std`
 enabled. Only `sci-special` enables its `lambert_w` feature; FFTLog needs only

@@ -231,7 +231,83 @@ fn scipy_matlab_references_metadata_endianness_and_writes() {
             output(&format!("{id}_{}", usize::from(compressed)), "mat", &b);
         }
     }
-    assert_eq!(expected.len(), 45);
+    assert_eq!(expected.len(), 68);
+}
+
+#[test]
+fn matlab_multiple_variables_preserve_types_and_metadata_order() {
+    let variables = mat::MatFile::from([
+        (
+            "a".into(),
+            mat::MatArray {
+                shape: vec![1, 2],
+                real: D::U64(vec![9007199254740993, u64::MAX]),
+                imag: None,
+            },
+        ),
+        (
+            "b".into(),
+            mat::MatArray {
+                shape: vec![2, 1],
+                real: D::F32(vec![-0., 1.25]),
+                imag: Some(D::F32(vec![-2.5, 0.])),
+            },
+        ),
+        (
+            "c".into(),
+            mat::MatArray {
+                shape: vec![2, 0, 3],
+                real: D::I16(vec![]),
+                imag: None,
+            },
+        ),
+    ]);
+    for compressed in [false, true] {
+        let mut bytes = Vec::new();
+        io::savemat(&mut bytes, &variables, compressed).unwrap();
+        let loaded = io::loadmat(bytes.as_slice()).unwrap();
+        assert_eq!(loaded, variables);
+        let D::F32(values) = &loaded["b"].real else {
+            panic!("expected f32");
+        };
+        assert_eq!(values[0].to_bits(), (-0.0f32).to_bits());
+        let info = io::whosmat(bytes.as_slice()).unwrap();
+        assert_eq!(
+            info.iter().map(|v| v.name.as_str()).collect::<Vec<_>>(),
+            ["a", "b", "c"]
+        );
+        assert_eq!(
+            info.iter()
+                .map(|v| (v.class, v.complex))
+                .collect::<Vec<_>>(),
+            [("uint64", false), ("single", true), ("int16", false)]
+        );
+        // Metadata follows file order, independently of the returned map's sorting.
+        if !compressed {
+            let element_len = |at: usize| {
+                let n = u32::from_le_bytes(bytes[at + 4..at + 8].try_into().unwrap()) as usize;
+                8 + ((n + 7) & !7)
+            };
+            let first_end = 128 + element_len(128);
+            let second_end = first_end + element_len(first_end);
+            let reordered = [
+                &bytes[..128],
+                &bytes[first_end..second_end],
+                &bytes[128..first_end],
+                &bytes[second_end..],
+            ]
+            .concat();
+            assert_eq!(io::loadmat(reordered.as_slice()).unwrap(), variables);
+            assert_eq!(
+                io::whosmat(reordered.as_slice())
+                    .unwrap()
+                    .iter()
+                    .map(|v| v.name.as_str())
+                    .collect::<Vec<_>>(),
+                ["b", "a", "c"]
+            );
+        }
+    }
 }
 
 #[test]

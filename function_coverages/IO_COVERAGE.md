@@ -44,9 +44,10 @@ coverage. NPZ remains in `sci::sparse`, outside the SciPy I/O inventory.
 Input-only cases are in `tests/scipy/io_cases.json`. The pinned generator
 `tests/scipy/generate_io.py` uses SciPy 1.18.1 and NumPy 2.5.4 to generate
 `io_inputs.csv` byte streams and separate reference CSVs. Fixtures include 11
-Matrix Market, eight WAV and 45 MATLAB cases. MATLAB tests cover both endian
-orders and compressed input, all ten numeric storage types, complex components,
-empty shapes and multidimensional ordering. Big-endian fixtures re-encode
+Matrix Market, eight WAV and 68 MATLAB cases. MATLAB tests cover both endian
+orders with and without compression, all ten numeric storage types, complex
+components, signed zeros, floating subnormals, empty shapes and multidimensional
+ordering. Additional properties check mixed-type variables and metadata file order. Big-endian fixtures re-encode
 SciPy-generated words using the documented Level-5 layout, and SciPy reads them
 back before they are committed.
 
@@ -77,8 +78,8 @@ preservation against the source token, while all other values use SciPy results.
 
 Read the [crate README](../crates/sci-io/README.md) and API documentation for full
 subsets, normalization, endian/order conventions, limits and errors. WAV PCM/float32 decoding
-uses private Hound; float64 uses native byte encoding; MATLAB numeric parsing uses private matrw after bounded
-zlib decompression and structural validation. Matrix Market and deterministic
-MAT numeric encoding use straightforward format serialization. The MATLAB
-adapter normalizes byte order and small tags before calling its backend; the
-backend never receives compressed or structurally unchecked data.
+uses private Hound; float64 uses native byte encoding. MATLAB metadata and
+numeric decoding share one bounded native parser, with zlib decompression
+through flate2. It decodes both endian orders and small tags directly, retaining
+all scalar bits without an intermediate normalized file. Matrix Market and
+deterministic MAT numeric encoding use straightforward format serialization.

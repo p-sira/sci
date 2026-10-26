@@ -5,8 +5,8 @@
 //! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Linear and extended Kalman steps and the scaled unscented filter delegate to
-//! private Smelly backends. Particle propagation and moments use kalman_filters;
-//! log-weight normalization and reproducible systematic resampling are native.
+//! private Smelly backends, including particle propagation and moments;
+//! weight normalization, effective sample size, and systematic resampling are native.
 //! Sample filtering and FIR/IIR design remain in `sci-signal`.
 //!
 //! Every call validates finite values, shapes, covariance matrices, and work
@@ -29,8 +29,7 @@
 //!
 //! ## Acknowledgments
 //!
-//! We thank `smelly`, `kalman_filters`, and
-//! `nalgebra` for their state-estimation algorithms.
+//! We thank `smelly` and `nalgebra` for their state-estimation algorithms.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]
@@ -202,6 +201,9 @@ fn backend(e: smelly::FilterError) -> Error {
             Error::NumericalFailure("sigma points require positive definite covariance")
         }
         InvalidSigmaPointScaling => Error::InvalidInput("invalid sigma-point scaling"),
+        InvalidParticles => Error::NonFiniteEvaluation,
+        InvalidParticleWeights => Error::NumericalFailure("invalid particle weights"),
+        InvalidResamplingOffset => Error::InvalidInput("resampling offset must be in [0,1)"),
         PredictRequired => Error::NumericalFailure("unscented prediction is missing"),
     }
 }
