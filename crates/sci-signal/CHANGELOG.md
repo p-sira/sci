@@ -1,9 +1,9 @@
 # Changelog
 
-## 0.2.1
+## 0.3.0
 
+- Remove freqresp, dfreqresp, sosfreqz, check_COLA and check_NOLA aliases; use freqs, freqz, freqz_sos, check_cola and check_nola.
 - Validate computed real and complex outputs by borrowing their storage. Build mirrored windows and conjugate roots without temporary vector clones, and retain polynomial workspace storage.
-
 - Upgrade private `pm-remez` to 0.3.5 and reuse nalgebra 0.35 for Remez
   eigenvalues, removing the duplicate faer stack and its default dependencies.
 - Solve two-tap Remez designs directly, avoiding the backend's constant-proxy

@@ -1219,31 +1219,6 @@ mod elementary_benches {
     use super::*;
 
     #[divan::bench]
-    fn cbrt(bencher: Bencher) {
-        sum1(bencher, range(N, 240, -100.0, 100.0), special::cbrt);
-    }
-
-    #[divan::bench]
-    fn exp2(bencher: Bencher) {
-        sum1(bencher, range(N, 241, -20.0, 20.0), special::exp2);
-    }
-
-    #[divan::bench]
-    fn exp10(bencher: Bencher) {
-        sum1(bencher, range(N, 242, -10.0, 10.0), special::exp10);
-    }
-
-    #[divan::bench]
-    fn expm1(bencher: Bencher) {
-        sum1(bencher, range(N, 243, -5.0, 5.0), special::expm1);
-    }
-
-    #[divan::bench]
-    fn log1p(bencher: Bencher) {
-        sum1(bencher, range(N, 244, -0.9, 10.0), special::log1p);
-    }
-
-    #[divan::bench]
     fn expit(bencher: Bencher) {
         sum1(bencher, range(N, 245, -20.0, 20.0), special::expit);
     }
@@ -1307,11 +1282,6 @@ mod elementary_benches {
             range(N, 258, 0.0, 60.0),
             special::radian,
         );
-    }
-
-    #[divan::bench]
-    fn round(bencher: Bencher) {
-        sum1(bencher, range(N, 259, -100.0, 100.0), special::round);
     }
 }
 

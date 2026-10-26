@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.2.1
+## 0.3.0
 
+- Update shared Sci dependency requirements to the new minor versions.
 - Upgrade Smelly to 0.2 and reuse its particle propagation and weighted moments;
   remove kalman_filters and its random dependencies. Preserve native log-weight
   normalization, effective sample size, resampling boundaries, and callback errors.

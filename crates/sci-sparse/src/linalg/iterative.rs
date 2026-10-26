@@ -161,37 +161,44 @@ impl LinearMap for LinearOperator {
     }
 }
 
-/// Borrow-independent operator adaptation, `op(x)=A x`, `opᵀ(x)=Aᵀ x`.
+/// Builds an owned operator with `op(x) = A x` and `opᵀ(x) = Aᵀ x`.
 ///
 /// # Parameters and conventions
-/// `a` is copied into private shared callback storage; caller mutation is isolated.
+/// The source is a shared CSR matrix. This conversion copies A and its transpose;
+/// later source mutation is isolated. Use a borrowed matrix directly with solvers
+/// through [`LinearMap`] when ownership is unnecessary.
 /// # Domain and special values
-/// Canonical finite CSR under the normal crate limits; empty axes are valid.
+/// Canonical finite CSR under the crate's storage limits; empty axes are valid.
 /// # Returns
-/// An owned [`LinearOperator`] usable by all iterative solvers.
+/// An owned [`LinearOperator`] with the source shape, usable by iterative solvers.
 /// # Errors
-/// Invalid CSR or storage limits.
+/// Invalid CSR, nonfinite values, or exceeded shape/storage limits.
 /// # Numerical behavior
-/// Copies A and its transpose once; each application performs a sparse product.
+/// O(rows + columns + stored entries) construction time and storage.
+/// Each later application performs a checked sparse matrix-vector product.
 /// # Examples
 /// ```
-/// use sci_sparse::linalg::LinearMap;
-/// let op=sci_sparse::linalg::aslinearoperator(&sci_sparse::identity(2)?)?;
-/// assert_eq!(op.apply(&[3.,4.])?, [3.,4.]);
+/// use sci_sparse::linalg::{LinearMap, LinearOperator};
+/// let op = LinearOperator::try_from(&sci_sparse::identity(2)?)?;
+/// assert_eq!(op.apply(&[3., 4.])?, [3., 4.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
-/// [SciPy aslinearoperator](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.aslinearoperator.html).
-pub fn aslinearoperator(a: &SparseMatrix) -> Result<LinearOperator> {
-    validate(a)?;
-    let t = transpose(a)?;
-    let a = a.clone();
-    LinearOperator::new(
-        a.rows,
-        a.cols,
-        move |x| matvec(&a, x),
-        move |x| matvec(&t, x),
-    )
+/// [SciPy LinearOperator](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.LinearOperator.html).
+impl TryFrom<&SparseMatrix> for LinearOperator {
+    type Error = Error;
+
+    fn try_from(a: &SparseMatrix) -> Result<Self> {
+        validate(a)?;
+        let t = transpose(a)?;
+        let a = a.clone();
+        Self::new(
+            a.rows,
+            a.cols,
+            move |x| matvec(&a, x),
+            move |x| matvec(&t, x),
+        )
+    }
 }
 
 /// Common bounded iterative-solver controls.

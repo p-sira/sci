@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+- Remove the real selector from next_fast_len and prev_fast_len. Both use an 11-smooth size heuristic based on RustFFT guidance, with no promise of optimal CPU-specific performance.
+- Update workspace dependencies for the new minor releases.
+
 ## Unreleased
 
 - The default `hankel` feature enables `fht`, `ifht`, and `fhtoffset` with the private Rust gamma backend. All transforms build without XSF, C++ compilation, or libclang. Use `default-features = false` to omit FFTLog. The Sci facade selects this capability with `fft-hankel`.

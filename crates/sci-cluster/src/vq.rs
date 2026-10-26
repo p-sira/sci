@@ -125,9 +125,6 @@ pub fn vq(obs: &[Vec<f64>], code_book: &[Vec<f64>]) -> Result<(Vec<usize>, Vec<f
     assign(obs, code_book)
 }
 
-/// Compatibility alias of [`vq`], sharing its domains, conventions, and limits.
-pub use vq as py_vq;
-
 /// Scales each feature by its population standard deviation: `out[i,j]=obs[i,j]/σ[j]`.
 ///
 /// ## Parameters

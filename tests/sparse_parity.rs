@@ -465,7 +465,7 @@ fn scipy_public_api_references() {
                 3e-11,
             ),
             "aslinearoperator" => {
-                let op = l::aslinearoperator(&a).unwrap();
+                let op = l::LinearOperator::try_from(&a).unwrap();
                 assert_v("x", &op.apply(&x).unwrap(), 3e-12);
                 assert_v("xt", &op.transpose_apply(&x).unwrap(), 3e-12);
             }
@@ -487,48 +487,22 @@ fn scipy_public_api_references() {
                 );
                 assert_v("data", &array_dense(&out), 0.);
             }
-            "issparse" => assert_v(
-                "value",
-                &[f64::from(if p[0] != 0. {
-                    s::issparse(&a)
-                } else {
-                    s::issparse(&s::to_dense(&a).unwrap())
-                })],
-                0.,
-            ),
-            "get_index_dtype" => {
-                let v: Vec<_> = x.iter().map(|v| *v as u64).collect();
-                let dtype = s::get_index_dtype(&[&v], None).unwrap();
-                assert_v(
-                    "value",
-                    &[if dtype == s::IndexDtype::I32 {
-                        32.
-                    } else {
-                        64.
-                    }],
-                    0.,
-                );
-            }
             "safely_cast_index_arrays" => {
-                let (ptr, idx) = s::safely_cast_index_arrays(
-                    &a,
-                    if p[0] == 32. {
-                        s::IndexDtype::I32
-                    } else {
-                        s::IndexDtype::I64
-                    },
-                )
-                .unwrap();
-                assert_v(
-                    "indptr",
-                    &ptr.iter().map(|v| *v as f64).collect::<Vec<_>>(),
-                    0.,
-                );
-                assert_v(
-                    "indices",
-                    &idx.iter().map(|v| *v as f64).collect::<Vec<_>>(),
-                    0.,
-                );
+                let (ptr, idx): (Vec<f64>, Vec<f64>) = if p[0] == 32. {
+                    let out = s::csr_indices_i32(&a).unwrap();
+                    (
+                        out.indptr.into_iter().map(f64::from).collect(),
+                        out.indices.into_iter().map(f64::from).collect(),
+                    )
+                } else {
+                    let out = s::csr_indices_i64(&a).unwrap();
+                    (
+                        out.indptr.into_iter().map(|v| v as f64).collect(),
+                        out.indices.into_iter().map(|v| v as f64).collect(),
+                    )
+                };
+                assert_v("indptr", &ptr, 0.);
+                assert_v("indices", &idx, 0.);
             }
             "random" | "random_array" => {
                 let out = if api == "random" {
@@ -580,7 +554,7 @@ fn scipy_public_api_references() {
         }
         tested += 1;
     }
-    assert_eq!(tested, 181);
+    assert_eq!(tested, 177);
 }
 
 #[test]
@@ -716,7 +690,7 @@ fn graph_edges_cycles_and_validation() {
 fn iterative_properties_and_errors() {
     let a = s::from_dense(&[vec![4., 1.], vec![1., 3.]]).unwrap();
     let b = [1., 2.];
-    let op = l::aslinearoperator(&a).unwrap();
+    let op = l::LinearOperator::try_from(&a).unwrap();
     for f in [
         l::cg,
         l::bicg,
@@ -756,7 +730,7 @@ fn iterative_properties_and_errors() {
         };
         assert_eq!(f(&op, &[6., 7.], &exact).unwrap().iterations, 0);
     }
-    let identity = l::aslinearoperator(&s::identity(2).unwrap()).unwrap();
+    let identity = l::LinearOperator::try_from(&s::identity(2).unwrap()).unwrap();
     let opts = l::SolverOptions {
         preconditioner: Some(identity),
         rtol: 1e-12,
@@ -890,12 +864,6 @@ fn spectral_and_array_domains() {
         data: vec![1.],
     };
     assert!(s::expand_dims(&malformed, 0).is_err());
-    assert!(s::issparse(&malformed));
-    assert!(s::get_index_dtype(&[&[u64::MAX]], None).is_err());
-    assert_eq!(
-        s::get_index_dtype(&[], Some(i32::MAX as u64 + 1)).unwrap(),
-        s::IndexDtype::I64
-    );
     assert!(s::random_array(&[3, 3], f64::NAN, 1).is_err());
     assert!(s::random_array(&[3, 3], -1., 1).is_err());
     assert!(s::random_array(&[], 0., 1).is_err());
@@ -1216,9 +1184,6 @@ fn sparse_arrays_enforce_rank_permutation_and_storage_limits() {
     };
     assert!(s::expand_dims(&rank32, 0).is_err());
     assert!(s::permute_dims(&rank32, &[0]).is_err());
-    let empty_indices: &[u64] = &[];
-    assert!(s::get_index_dtype(&vec![empty_indices; 1_000_001], None).is_err());
-    assert!(s::get_index_dtype(&[&vec![0; 1_000_001]], None).is_err());
     assert!(s::random_array(&[1_000_000, 2], 1., 0).is_err());
     assert!(s::random_array(&[1_000_000; 4], 0., 0).is_err());
 }
@@ -1359,7 +1324,7 @@ fn npz_writer_propagates_write_and_seek_failures() {
 #[test]
 fn iterative_operator_contracts_and_unsupported_preconditioning() {
     let a = s::from_dense(&[vec![4., 1.], vec![1., 3.]]).unwrap();
-    let op = l::aslinearoperator(&a).unwrap();
+    let op = l::LinearOperator::try_from(&a).unwrap();
     let debug = format!("{op:?}");
     assert!(debug.contains("LinearOperator"));
     assert!(debug.contains("rows: 2"));
@@ -1378,7 +1343,7 @@ fn iterative_operator_contracts_and_unsupported_preconditioning() {
             ..Default::default()
         },
         l::SolverOptions {
-            preconditioner: Some(l::aslinearoperator(&s::identity(1).unwrap()).unwrap()),
+            preconditioner: Some(l::LinearOperator::try_from(&s::identity(1).unwrap()).unwrap()),
             ..Default::default()
         },
     ] {
@@ -1435,7 +1400,7 @@ fn singular_preconditioners_report_residual_breakdown() {
     let a = s::identity(2).unwrap();
     let zero = s::from_coo(2, 2, &[]).unwrap();
     let options = l::SolverOptions {
-        preconditioner: Some(l::aslinearoperator(&zero).unwrap()),
+        preconditioner: Some(l::LinearOperator::try_from(&zero).unwrap()),
         ..Default::default()
     };
     for solver in [l::bicg, l::gmres, l::lgmres, l::gcrotmk] {
@@ -1508,4 +1473,37 @@ fn spectral_selection_and_empty_norm_conventions() {
         assert_eq!(l::norm_axis(&empty, 0., axis).unwrap(), [0.; 3]);
         assert_eq!(l::norm_axis(&empty, 2., axis).unwrap(), [0.; 3]);
     }
+}
+
+#[test]
+fn concrete_csr_indices_preserve_storage_and_validate_inputs() {
+    let matrix = s::from_coo(3, 4, &[(0, 3, 0.), (2, 1, 5.)]).unwrap();
+    let small = s::csr_indices_i32(&matrix).unwrap();
+    let large = s::csr_indices_i64(&matrix).unwrap();
+    assert_eq!(small.indptr, [0_i32, 1, 1, 2]);
+    assert_eq!(small.indices, [3_i32, 1]);
+    assert_eq!(large.indptr, [0_i64, 1, 1, 2]);
+    assert_eq!(large.indices, [3_i64, 1]);
+    let empty = s::from_coo(0, 4, &[]).unwrap();
+    assert_eq!(s::csr_indices_i32(&empty).unwrap().indptr, [0_i32]);
+    assert!(s::csr_indices_i64(&empty).unwrap().indices.is_empty());
+    let mut malformed = matrix.clone();
+    malformed.indptr[0] = 1;
+    assert!(s::csr_indices_i32(&malformed).is_err());
+    assert!(s::csr_indices_i64(&malformed).is_err());
+    let mut nonfinite = matrix;
+    nonfinite.data[0] = f64::NAN;
+    assert!(s::csr_indices_i32(&nonfinite).is_err());
+    assert!(s::csr_indices_i64(&nonfinite).is_err());
+}
+
+#[test]
+fn owned_sparse_operator_is_independent_of_source_mutation() {
+    let mut a = s::from_dense(&[vec![1., 2., 0.], vec![0., 3., 4.]]).unwrap();
+    let op = l::LinearOperator::try_from(&a).unwrap();
+    a.data.fill(0.);
+    assert_eq!(op.apply(&[1., 2., 3.]).unwrap(), [5., 18.]);
+    assert_eq!(op.transpose_apply(&[1., 2.]).unwrap(), [1., 8., 8.]);
+    a.indptr[0] = 1;
+    assert!(l::LinearOperator::try_from(&a).is_err());
 }

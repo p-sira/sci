@@ -1279,15 +1279,6 @@ order_function!(buttord, 0, "ceil(log(Gs/Gp)/(2 log(r)))");
 order_function!(cheb1ord, 1, "ceil(acosh(sqrt(Gs/Gp))/acosh(r))");
 order_function!(cheb2ord, 2, "ceil(acosh(sqrt(Gs/Gp))/acosh(r))");
 
-/// Analog transfer-function response; alias of [`super::freqs`].
-/// Uses explicit angular frequencies and returns responses only; see `freqs`
-/// for definitions, conventions, domains, errors, and examples.
-pub use super::freqs as freqresp;
-/// Digital transfer-function response; alias of [`super::freqz`].
-/// Uses explicit radians/sample and returns responses only; see `freqz`
-/// for definitions, conventions, domains, errors, and examples.
-pub use super::freqz as dfreqresp;
-
 macro_rules! transform_function {
     ($name:ident,$root_function:ident,$equation:literal,$($parameter:ident),+) => {
         #[doc=concat!("Transforms `H(s)=B(s)/A(s)` by `",$equation,"`.",

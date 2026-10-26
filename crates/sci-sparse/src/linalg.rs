@@ -123,12 +123,6 @@ pub fn spsolve(a: &SparseMatrix, b: &[f64]) -> Result<Vec<f64>> {
     splu(a)?.solve(b)
 }
 
-/// SciPy reusable-solve spelling of [`splu`].
-///
-/// Returns [`SparseLu`] rather than a Python callable; use its `solve` method.
-/// All domains, limits, and numerical behavior are those of [`splu`].
-pub use splu as factorized;
-
 /// Solve a triangular system `A x = b` by substitution.
 ///
 /// # Parameters and conventions

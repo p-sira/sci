@@ -809,7 +809,7 @@ pub fn is_valid_im(r: &[Vec<f64>]) -> bool {
 /// Returns a shared error for invalid linkage structure, values, counts, dimensions, or work limits.
 /// ## Numerical behavior
 ///
-/// O(n) bottom-up recurrence. Rust exports idiomatic `max_rstat` with SciPy alias `maxRstat`.
+/// O(n) bottom-up recurrence. Rust exports the idiomatic `max_rstat` spelling.
 /// # Examples
 ///
 /// ```
@@ -836,8 +836,6 @@ pub fn max_rstat(z: &[Vec<f64>], r: &[Vec<f64>], column: usize) -> Result<Vec<f6
         &r.iter().map(|v| v[column]).collect::<Vec<_>>(),
     ))
 }
-/// SciPy spelling of [`max_rstat`], sharing its domain and conventions.
-pub use max_rstat as maxRstat;
 
 /// Computes the maximum inconsistency coefficient over each subtree.
 ///

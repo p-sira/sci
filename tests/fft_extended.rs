@@ -45,7 +45,7 @@ fn public_fft_inventory_matches_scipy() {
         } else {
             Some(c[6].parse::<usize>().unwrap())
         };
-        let kind = match c[10] {
+        let kind = match c[9] {
             "1" => T::I,
             "2" => T::II,
             "3" => T::III,
@@ -53,10 +53,10 @@ fn public_fft_inventory_matches_scipy() {
         };
         let (got, got_shape) = match c[1] {
             "fht" | "ifht" | "fhtoffset" => {
-                let dln = c[11].parse().unwrap();
-                let mu = c[12].parse().unwrap();
-                let offset = c[13].parse().unwrap();
-                let bias = c[14].parse().unwrap();
+                let dln = c[10].parse().unwrap();
+                let mu = c[11].parse().unwrap();
+                let offset = c[12].parse().unwrap();
+                let bias = c[13].parse().unwrap();
                 let v = match c[1] {
                     "fht" => f::fht(&re, dln, mu, offset, bias).unwrap(),
                     "ifht" => f::ifht(&re, dln, mu, offset, bias).unwrap(),
@@ -100,11 +100,10 @@ fn public_fft_inventory_matches_scipy() {
             }
             "next_fast_len" | "prev_fast_len" => {
                 let target = c[8].parse().unwrap();
-                let real = c[9] == "1";
                 let v = if c[1] == "next_fast_len" {
-                    f::next_fast_len(target, real)
+                    f::next_fast_len(target)
                 } else {
-                    f::prev_fast_len(target, real)
+                    f::prev_fast_len(target)
                 }
                 .unwrap();
                 (
@@ -192,7 +191,7 @@ fn public_fft_inventory_matches_scipy() {
                 finite_close(a.re, b, atol, rtol);
             }
         }
-        let tolerance: f64 = c[15].parse().unwrap();
+        let tolerance: f64 = c[14].parse().unwrap();
         for (a, b) in got.into_iter().zip(want) {
             assert!(
                 (a.re - b.re).abs() <= tolerance * (1.0 + b.re.abs()),
@@ -275,14 +274,12 @@ fn inverse_and_interoperability_properties() {
         f::fftn(&complex(&x, &[0.0; 30]), &shape, &[]).unwrap(),
         complex(&x, &[0.0; 30])
     );
-    for real in [false, true] {
-        for target in [1, 17, 93059, f::prev_fast_len(1_048_576, real).unwrap()] {
-            let next = f::next_fast_len(target, real).unwrap();
-            let prev = f::prev_fast_len(target, real).unwrap();
-            assert!(prev <= target && target <= next);
-            assert_eq!(f::next_fast_len(next, real).unwrap(), next);
-            assert_eq!(f::prev_fast_len(prev, real).unwrap(), prev);
-        }
+    for target in [0, 1, 7, 11, 17, 93059, 1_048_576] {
+        let next = f::next_fast_len(target).unwrap();
+        let prev = f::prev_fast_len(target).unwrap();
+        assert!(prev <= target && target <= next);
+        assert_eq!(f::next_fast_len(next).unwrap(), next);
+        assert_eq!(f::prev_fast_len(prev).unwrap(), prev);
     }
 }
 #[test]
@@ -330,8 +327,8 @@ fn validation_and_special_values() {
         assert!(f::rfftfreq(2, d).is_err());
     }
     assert!(f::fftfreq(0, 1.0).is_err());
-    assert!(f::next_fast_len(1_048_577, false).is_err());
-    assert!(f::prev_fast_len(usize::MAX, true).is_err());
+    assert!(f::next_fast_len(1_048_577).is_err());
+    assert!(f::prev_fast_len(usize::MAX).is_err());
     assert!(f::fftshift(&[bad]).is_err());
     assert!(f::ifftshift(&[bad]).is_err());
     assert!(f::fftshift(&[]).unwrap().is_empty());

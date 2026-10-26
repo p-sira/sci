@@ -645,9 +645,6 @@ fn evaluate(fields: &[&str]) -> Result<Vec<f64>> {
             )?;
             [r.theoretical, r.ordered].concat()
         }
-        "abs" => vec![abs(x[0])],
-        "exp" => vec![exp(x[0])],
-        "log" => vec![log(x[0])],
         "tmean" => vec![tmean(&x, Some((p[0], p[1])), (p[2] != 0., p[3] != 0.))?],
         "tvar" => vec![tvar(
             &x,

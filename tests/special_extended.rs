@@ -153,11 +153,6 @@ fn special_families_match_scipy() {
                 let (a, b) = parsed_call!(special::lqmn; args[0], args[1], args[2]).unwrap();
                 [a, b].into_iter().flatten().flatten().collect()
             }
-            "cbrt" => scalar_call!(special::cbrt; args[0]),
-            "exp2" => scalar_call!(special::exp2; args[0]),
-            "exp10" => scalar_call!(special::exp10; args[0]),
-            "expm1" => scalar_call!(special::expm1; args[0]),
-            "log1p" => scalar_call!(special::log1p; args[0]),
             "expit" => scalar_call!(special::expit; args[0]),
             "logit" => scalar_call!(special::logit; args[0]),
             "softplus" => scalar_call!(special::softplus; args[0]),
@@ -170,7 +165,6 @@ fn special_families_match_scipy() {
             "tandg" => scalar_call!(special::tandg; args[0]),
             "cotdg" => scalar_call!(special::cotdg; args[0]),
             "radian" => scalar_call!(special::radian; args[0], args[1], args[2]),
-            "round" => scalar_call!(special::round; args[0]),
             "entr" => scalar_call!(special::entr; args[0]),
             "rel_entr" => scalar_call!(special::rel_entr; args[0], args[1]),
             "kl_div" => scalar_call!(special::kl_div; args[0], args[1]),
@@ -436,25 +430,33 @@ fn special_families_match_scipy() {
                     .collect::<Vec<_>>(),
             )
             .to_vec(),
-            "c_roots" => concat_pair!(parsed_call!(special::c_roots; args[0]).unwrap()),
-            "cg_roots" => concat_pair!(parsed_call!(special::cg_roots; args[0], args[1]).unwrap()),
-            "h_roots" => concat_pair!(parsed_call!(special::h_roots; args[0]).unwrap()),
-            "he_roots" => concat_pair!(parsed_call!(special::he_roots; args[0]).unwrap()),
+            "c_roots" => concat_pair!(parsed_call!(special::roots_chebyc; args[0]).unwrap()),
+            "cg_roots" => {
+                concat_pair!(parsed_call!(special::roots_gegenbauer; args[0], args[1]).unwrap())
+            }
+            "h_roots" => concat_pair!(parsed_call!(special::roots_hermite; args[0]).unwrap()),
+            "he_roots" => concat_pair!(parsed_call!(special::roots_hermitenorm; args[0]).unwrap()),
             "j_roots" => {
-                concat_pair!(parsed_call!(special::j_roots; args[0], args[1], args[2]).unwrap())
+                concat_pair!(
+                    parsed_call!(special::roots_jacobi; args[0], args[1], args[2]).unwrap()
+                )
             }
             "js_roots" => {
-                concat_pair!(parsed_call!(special::js_roots; args[0], args[1], args[2]).unwrap())
+                concat_pair!(
+                    parsed_call!(special::roots_sh_jacobi; args[0], args[1], args[2]).unwrap()
+                )
             }
-            "l_roots" => concat_pair!(parsed_call!(special::l_roots; args[0]).unwrap()),
-            "la_roots" => concat_pair!(parsed_call!(special::la_roots; args[0], args[1]).unwrap()),
-            "p_roots" => concat_pair!(parsed_call!(special::p_roots; args[0]).unwrap()),
-            "ps_roots" => concat_pair!(parsed_call!(special::ps_roots; args[0]).unwrap()),
-            "s_roots" => concat_pair!(parsed_call!(special::s_roots; args[0]).unwrap()),
-            "t_roots" => concat_pair!(parsed_call!(special::t_roots; args[0]).unwrap()),
-            "ts_roots" => concat_pair!(parsed_call!(special::ts_roots; args[0]).unwrap()),
-            "u_roots" => concat_pair!(parsed_call!(special::u_roots; args[0]).unwrap()),
-            "us_roots" => concat_pair!(parsed_call!(special::us_roots; args[0]).unwrap()),
+            "l_roots" => concat_pair!(parsed_call!(special::roots_laguerre; args[0]).unwrap()),
+            "la_roots" => {
+                concat_pair!(parsed_call!(special::roots_genlaguerre; args[0], args[1]).unwrap())
+            }
+            "p_roots" => concat_pair!(parsed_call!(special::roots_legendre; args[0]).unwrap()),
+            "ps_roots" => concat_pair!(parsed_call!(special::roots_sh_legendre; args[0]).unwrap()),
+            "s_roots" => concat_pair!(parsed_call!(special::roots_chebys; args[0]).unwrap()),
+            "t_roots" => concat_pair!(parsed_call!(special::roots_chebyt; args[0]).unwrap()),
+            "ts_roots" => concat_pair!(parsed_call!(special::roots_sh_chebyt; args[0]).unwrap()),
+            "u_roots" => concat_pair!(parsed_call!(special::roots_chebyu; args[0]).unwrap()),
+            "us_roots" => concat_pair!(parsed_call!(special::roots_sh_chebyu; args[0]).unwrap()),
             "btdtria" => scalar_call!(special::btdtria; args[0], args[1], args[2]),
             "btdtrib" => scalar_call!(special::btdtrib; args[0], args[1], args[2]),
             "bdtrik" => scalar_call!(special::bdtrik; args[0], args[1], args[2]),

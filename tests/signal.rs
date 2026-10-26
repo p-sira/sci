@@ -400,8 +400,8 @@ fn evaluate(name: &str, a: &[&str]) -> Vec<Vec<f64>> {
         }
         "bode" => return pair(bode(&v(0), &v(1), &v(2)).unwrap()),
         "dbode" => return pair(dbode(&v(0), &v(1), &v(2)).unwrap()),
-        "freqresp" => complex_row(freqresp(&v(0), &v(1), &v(2)).unwrap()),
-        "dfreqresp" => complex_row(dfreqresp(&v(0), &v(1), &v(2)).unwrap()),
+        "freqresp" => complex_row(freqs(&v(0), &v(1), &v(2)).unwrap()),
+        "dfreqresp" => complex_row(freqz(&v(0), &v(1), &v(2)).unwrap()),
         "get_window" => get_window(&window(a[0]), n(1), b(2)).unwrap(),
         "convolve" => convolve(&v(0), &v(1), mode(a[2])).unwrap(),
         "correlate" => correlate(&v(0), &v(1), mode(a[2])).unwrap(),
@@ -464,7 +464,7 @@ fn evaluate(name: &str, a: &[&str]) -> Vec<Vec<f64>> {
         "freqz" => complex_row(freqz(&v(0), &v(1), &v(2)).unwrap()),
         "freqs" => complex_row(freqs(&v(0), &v(1), &v(2)).unwrap()),
         "freqz_sos" => complex_row(freqz_sos(&sos(a[0]), &v(1)).unwrap()),
-        "sosfreqz" => complex_row(sosfreqz(&sos(a[0]), &v(1)).unwrap()),
+        "sosfreqz" => complex_row(freqz_sos(&sos(a[0]), &v(1)).unwrap()),
         "group_delay" => group_delay(&v(0), &v(1), &v(2)).unwrap(),
         "iirnotch" => return pair(iirnotch(f(0), f(1), f(2)).unwrap()),
         "iirpeak" => return pair(iirpeak(f(0), f(1), f(2)).unwrap()),
@@ -532,9 +532,9 @@ fn evaluate(name: &str, a: &[&str]) -> Vec<Vec<f64>> {
             return pair(istft(&z, &v(1), n(2), n(3), f(4)).unwrap());
         }
         "check_cola" => vec![f64::from(check_cola(&v(0), n(1), f(2)).unwrap())],
-        "check_COLA" => vec![f64::from(check_COLA(&v(0), n(1), f(2)).unwrap())],
+        "check_COLA" => vec![f64::from(check_cola(&v(0), n(1), f(2)).unwrap())],
         "check_nola" => vec![f64::from(check_nola(&v(0), n(1), f(2)).unwrap())],
-        "check_NOLA" => vec![f64::from(check_NOLA(&v(0), n(1), f(2)).unwrap())],
+        "check_NOLA" => vec![f64::from(check_nola(&v(0), n(1), f(2)).unwrap())],
         "lombscargle" => lombscargle(&v(0), &v(1), &v(2), b(3), b(4)).unwrap(),
         "find_peaks" => find_peaks(&v(0))
             .unwrap()

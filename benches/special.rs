@@ -1496,19 +1496,3 @@ mod zeros_benches {
         bencher.bench(|| special::bi_zeros(black_box(NT)).unwrap());
     }
 }
-
-mod policy_benches {
-    use super::*;
-
-    #[divan::bench]
-    fn seterr(bencher: Bencher) {
-        let x = positive_values(N, 8);
-        bencher.bench(|| {
-            let policy = special::geterr();
-            sum1(black_box(&x), |x| {
-                special::seterr(x, policy).unwrap()
-                    + special::seterr(x, special::ErrorPolicy::Finite).unwrap()
-            })
-        });
-    }
-}

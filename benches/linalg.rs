@@ -779,7 +779,6 @@ mod equation_benches {
         });
     }
 
-    /// Also covers the `solve_lyapunov` alias.
     #[divan::bench]
     fn solve_continuous_lyapunov(bencher: Bencher) {
         let a = scaled(&square_matrix(SMALL), -1.0);
@@ -1025,30 +1024,6 @@ mod interpolative_benches {
         warm(bencher, || {
             interpolative::estimate_spectral_norm_diff(black_box(&a), black_box(&b)).unwrap()
         });
-    }
-}
-
-mod dispatch_benches {
-    use super::*;
-
-    #[divan::bench]
-    fn find_best_blas_type(bencher: Bencher) {
-        let arrays = vec![square_matrix(N), symmetric_matrix(N)];
-        bencher.bench(|| linalg::find_best_blas_type(black_box(&arrays)).unwrap());
-    }
-
-    #[divan::bench]
-    fn get_blas_funcs(bencher: Bencher) {
-        let names = ["dot", "nrm2", "gemv", "gemm"];
-        bencher.bench(|| linalg::get_blas_funcs(black_box(&names)).unwrap());
-    }
-
-    #[divan::bench]
-    fn get_lapack_funcs(bencher: Bencher) {
-        let names = [
-            "gesv", "getrf", "getrs", "potrf", "potrs", "geev", "syev", "gesvd", "gges",
-        ];
-        bencher.bench(|| linalg::get_lapack_funcs(black_box(&names)).unwrap());
     }
 }
 

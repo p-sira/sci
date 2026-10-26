@@ -867,24 +867,20 @@ pub fn ifftshift(input: &[Complex]) -> Result<Vec<Complex>> {
     Ok(out)
 }
 
-fn smooth(mut n: usize, real: bool) -> bool {
-    for p in if real {
-        &[2, 3, 5][..]
-    } else {
-        &[2, 3, 5, 7, 11][..]
-    } {
-        while n > 1 && n.is_multiple_of(*p) {
+fn smooth(mut n: usize) -> bool {
+    for p in [2, 3, 5, 7, 11] {
+        while n > 1 && n.is_multiple_of(p) {
             n /= p;
         }
     }
     n == 1
 }
 
-/// Finds the smallest smooth length ≥ target.
+/// Returns min { n ≥ target : n = 2ᵃ3ᵇ5ᶜ7ᵈ11ᵉ, a,b,c,d,e ≥ 0 }, with zero mapped to zero.
 ///
 /// ## Parameters
 ///
-/// `real` selects SciPy 1.18.1 factors {2,3,5}; complex lengths use {2,3,5,7,11}. These are SciPy-compatible size recommendations; RustFFT performance depends on its own kernels.
+/// `target` is a sample count. A smooth length has only prime factors 2, 3, 5, 7, and 11. This heuristic follows RustFFT’s guidance for complex transforms; real transforms also use RustFFT internally. The SciPy `real` selector is omitted.
 /// ## Domain
 ///
 /// Integer target in 0..=1,048,576.
@@ -893,20 +889,21 @@ fn smooth(mut n: usize, real: bool) -> bool {
 /// The nearest supported smooth size in the selected direction. Zero returns zero.
 /// ## Errors
 ///
-/// Invalid sizes, shapes, axes, nonfinite inputs, work limits, or arithmetic overflow return shared errors.
+/// Targets above 1,048,576 return an invalid-input error. A bounded search
+/// without a suitable length returns a numerical-failure error.
 /// ## Numerical behavior
 ///
-/// Bounded trial division over at most 1,048,576 candidates; no transform planning. Factor sets are version-specific and do not promise optimal RustFFT speed.
+/// Bounded trial division over at most 1,048,576 candidates; no transform planning. This is a size heuristic, not a guarantee of the fastest transform on every CPU. Zero is a sentinel for empty input; positive outputs are 11-smooth.
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_fft::next_fast_len(17,true)?,18);
+/// assert_eq!(sci_fft::next_fast_len(17)?,18);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
 ///
-/// [SciPy next_fast_len](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.next_fast_len.html).
-pub fn next_fast_len(target: usize, real: bool) -> Result<usize> {
+/// [RustFFT performance guidance](https://docs.rs/rustfft/6.4.0/rustfft/#avx-performance-tips).
+pub fn next_fast_len(target: usize) -> Result<usize> {
     if target > LIMIT {
         return Err(Error::InvalidInput("fast length search limit"));
     }
@@ -914,15 +911,15 @@ pub fn next_fast_len(target: usize, real: bool) -> Result<usize> {
         return Ok(0);
     }
     (target..=LIMIT)
-        .find(|n| smooth(*n, real))
+        .find(|n| smooth(*n))
         .ok_or(Error::NumericalFailure("no bounded fast FFT length"))
 }
 
-/// Finds the largest smooth length ≤ target.
+/// Returns max { n ≤ target : n = 2ᵃ3ᵇ5ᶜ7ᵈ11ᵉ, a,b,c,d,e ≥ 0 }, with zero mapped to zero.
 ///
 /// ## Parameters
 ///
-/// `real` selects SciPy 1.18.1 factors {2,3,5}; complex lengths use {2,3,5,7,11}. These are SciPy-compatible size recommendations; RustFFT performance depends on its own kernels.
+/// `target` is a sample count. A smooth length has only prime factors 2, 3, 5, 7, and 11. This heuristic follows RustFFT’s guidance for complex transforms; real transforms also use RustFFT internally. The SciPy `real` selector is omitted.
 /// ## Domain
 ///
 /// Integer target in 0..=1,048,576.
@@ -931,20 +928,21 @@ pub fn next_fast_len(target: usize, real: bool) -> Result<usize> {
 /// The nearest supported smooth size in the selected direction. Zero returns zero.
 /// ## Errors
 ///
-/// Invalid sizes, shapes, axes, nonfinite inputs, work limits, or arithmetic overflow return shared errors.
+/// Targets above 1,048,576 return an invalid-input error. A bounded search
+/// without a suitable length returns a numerical-failure error.
 /// ## Numerical behavior
 ///
-/// Bounded trial division over at most 1,048,576 candidates; no transform planning. Factor sets are version-specific and do not promise optimal RustFFT speed.
+/// Bounded trial division over at most 1,048,576 candidates; no transform planning. This is a size heuristic, not a guarantee of the fastest transform on every CPU. Zero is a sentinel for empty input; positive outputs are 11-smooth.
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_fft::prev_fast_len(17,true)?,16);
+/// assert_eq!(sci_fft::prev_fast_len(17)?,16);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
 ///
-/// [SciPy prev_fast_len](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.prev_fast_len.html).
-pub fn prev_fast_len(target: usize, real: bool) -> Result<usize> {
+/// [RustFFT performance guidance](https://docs.rs/rustfft/6.4.0/rustfft/#avx-performance-tips).
+pub fn prev_fast_len(target: usize) -> Result<usize> {
     if target > LIMIT {
         return Err(Error::InvalidInput("fast length search limit"));
     }
@@ -953,7 +951,7 @@ pub fn prev_fast_len(target: usize, real: bool) -> Result<usize> {
     }
     (1..=target)
         .rev()
-        .find(|n| smooth(*n, real))
+        .find(|n| smooth(*n))
         .ok_or(Error::NumericalFailure("no bounded fast FFT length"))
 }
 

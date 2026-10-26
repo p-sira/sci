@@ -1,15 +1,12 @@
 # `signal` coverage and SciPy adaptations
 
 Audited against `SCIPY_FUNCTIONS.md` and `scipy-func-list/scipy.signal.md`:
-**175 of 175 public function names are implemented and exercised**: all 149
-in `scipy.signal` and all 26 in `scipy.signal.windows`. Each name has a bounded
-Rust functional API, documentation, and reference cases. Supported overloads
-and numerical limits are specified below; there are no unimplemented inventory
-names or placeholder exports.
-The 174 additional/compatibility entries repeat these public names; they do
-not introduce separate algorithms or Rust compatibility modules. No Cython-only
-signal namespace is listed. `get_window`, `sosfreqz`, `freqresp`, `dfreqresp`,
-and the COLA/NOLA spellings reuse implementations.
+**170 of 175 public inventory function names remain exported**. Five redundant
+spellings are removed: `freqresp` → `freqs`, `dfreqresp` → `freqz`, `sosfreqz` →
+`freqz_sos`, `check_COLA` → `check_cola`, and `check_NOLA` → `check_nola`.
+The underlying numerical operations retain bounded Rust signatures and
+independent reference cases; fixtures may keep SciPy's original labels.
+Compatibility namespaces and Cython duplicates add no separate Rust APIs.
 
 The `fft`, `ifft`, and `rfft` functions are re-exported from `sci-fft` and
 retain their signatures and normalization. `lfilter_with_state`, `check_cola`,

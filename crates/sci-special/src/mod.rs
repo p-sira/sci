@@ -358,52 +358,6 @@ mod zeros;
 pub use zeros::*;
 mod ellipsoidal;
 pub use ellipsoidal::*;
-mod policy;
-/// SciPy compatibility alias for [`roots_chebyc`]; see it for domains, weights, and errors.
-pub use self::roots_chebyc as c_roots;
-pub use policy::*;
-
-/// SciPy compatibility alias for [`roots_gegenbauer`]; see it for domains, weights, and errors.
-pub use self::roots_gegenbauer as cg_roots;
-
-/// SciPy compatibility alias for [`roots_hermite`]; see it for domains, weights, and errors.
-pub use self::roots_hermite as h_roots;
-
-/// SciPy compatibility alias for [`roots_hermitenorm`]; see it for domains, weights, and errors.
-pub use self::roots_hermitenorm as he_roots;
-
-/// SciPy compatibility alias for [`roots_jacobi`]; see it for domains, weights, and errors.
-pub use self::roots_jacobi as j_roots;
-
-/// SciPy compatibility alias for [`roots_sh_jacobi`]; see it for domains, weights, and errors.
-pub use self::roots_sh_jacobi as js_roots;
-
-/// SciPy compatibility alias for [`roots_laguerre`]; see it for domains, weights, and errors.
-pub use self::roots_laguerre as l_roots;
-
-/// SciPy compatibility alias for [`roots_genlaguerre`]; see it for domains, weights, and errors.
-pub use self::roots_genlaguerre as la_roots;
-
-/// SciPy compatibility alias for [`roots_legendre`]; see it for domains, weights, and errors.
-pub use self::roots_legendre as p_roots;
-
-/// SciPy compatibility alias for [`roots_sh_legendre`]; see it for domains, weights, and errors.
-pub use self::roots_sh_legendre as ps_roots;
-
-/// SciPy compatibility alias for [`roots_chebys`]; see it for domains, weights, and errors.
-pub use self::roots_chebys as s_roots;
-
-/// SciPy compatibility alias for [`roots_chebyt`]; see it for domains, weights, and errors.
-pub use self::roots_chebyt as t_roots;
-
-/// SciPy compatibility alias for [`roots_sh_chebyt`]; see it for domains, weights, and errors.
-pub use self::roots_sh_chebyt as ts_roots;
-
-/// SciPy compatibility alias for [`roots_chebyu`]; see it for domains, weights, and errors.
-pub use self::roots_chebyu as u_roots;
-
-/// SciPy compatibility alias for [`roots_sh_chebyu`]; see it for domains, weights, and errors.
-pub use self::roots_sh_chebyu as us_roots;
 
 mod combinatorics;
 pub use combinatorics::*;

@@ -1,10 +1,11 @@
-# Sparse v0.1.0 coverage and numerical conventions
+# Sparse coverage and numerical conventions
 
-The default API still covers all 83 supported names. With facade defaults disabled, NPZ requires `sparse-npz`; direct `sci-sparse` users select the default-enabled `npz` feature. Other sparse operations compile without ZIP or compression. NPZ uses the same flate2 Rust/miniz backend as MATLAB; numerical behavior and reference fixtures are unchanged.
+The Rust API omits runtime type/dtype utilities and redundant aliases; see the disposition table below. With facade defaults disabled, NPZ requires `sparse-npz`; direct `sci-sparse` users select the default-enabled `npz` feature. Other sparse operations compile without ZIP or compression. NPZ uses the same flate2 Rust/miniz backend as MATLAB; numerical behavior and reference fixtures are unchanged.
 
 `sci-sparse` is exposed as `sci::sparse` through the default-enabled `sparse`
-feature. The modern inventory is **83/83 function names**: construction and
-utilities **27/27**, graph algorithms **25/25**, and linear algebra **31/31**.
+feature. The original modern inventory has **83 names**. Retained function-name coverage
+is **74/83**: construction/utilities **20/27**, graph algorithms **25/25**, and
+linear algebra **29/31**. Removed names and redesigned operations are recorded below.
 This is function-name coverage through the Rust adaptations below; it is not
 Python signature, performance, storage-class, or unrestricted-domain parity.
 All supported names have independent SciPy references and public Sci tests.
@@ -16,7 +17,8 @@ and 55 compatibility-qualified functions. Excluded legacy APIs are `rand`
 the eight `isspmatrix*` predicates for old Python matrix classes. Deprecated
 compatibility namespaces, Python warning/exception classes, mutable storage
 classes and their methods are not reproduced. Primary aliases (`bmat`,
-`factorized`, `eye_array`, `diags_array`, `matrix_transpose`) reuse implementations.
+`factorized`, `eye_array`, `diags_array`, `matrix_transpose`) are removed; their
+canonical numerical operations remain available.
 All 148 inventory entries have explicit dispositions in the table below.
 
 ## Shared storage and construction
@@ -31,17 +33,19 @@ All 148 inventory entries have explicit dispositions in the table below.
 - Matrix/array variants share these records; there are no dynamic dtype/format
   arguments. `as_array` converts CSR to COO. `expand_dims`, `permute_dims`, and
   `swapaxes` accept COO, including negative axes. Repeated expansion composes
-  multiple new axes. Matrix arithmetic and `matrix_transpose` retain CSR inputs.
+  multiple new axes. Matrix arithmetic and `transpose` retain CSR inputs.
 - `diags` requires explicit shape, distinct offsets and exact unpadded lengths;
   `spdiags` instead aligns padded rows by output column. Blocks require explicit
   shaped zero matrices in place of Python None, and nonempty input grids/lists.
 - `random_array` and `random` sample distinct coordinates and uniform `[0,1)`
   data using private seeded StdRng. Counts use ties-to-even density rounding;
   streams differ from NumPy. No sampler callback; callers can replace sampled
-  values with validated data. `issparse` recognizes both shared records.
-- Index-width utilities inspect unsigned integer values and return an `IndexDtype`
-  tag; checked cast output uses i64 vectors, with an I32 representability guarantee
-  when requested. Rust usize remains the shared record's storage type.
+  values with validated data. Runtime `issparse` checks are omitted; use concrete Rust types.
+- `csr_indices_i32` and `csr_indices_i64` return concrete checked integer vectors
+  in named `CsrIndices<T>` fields. `get_index_dtype`, `IndexDtype`, and
+  `safely_cast_index_arrays` are removed. Rust usize remains the shared record's
+  storage type. `LinearOperator::try_from(&matrix)` replaces `aslinearoperator`;
+  solvers also accept borrowed CSR matrices directly through `LinearMap`.
 - NPZ uses private ZIP compression and bounded pickle-free NPY parsing. All five
   SciPy matrix formats (CSR, CSC, COO, DIA, BSR), real f32/f64, integer and bool
   data can be read as CSR. Writing emits f64 CSR arrays. Signed integer data above
@@ -198,21 +202,21 @@ tests, clippy, rustdoc, and `tests/check_features.py` as in `docs/development.md
 
 <!-- inventory -->
 
-| Namespace | Inventory name | v0.1.0 disposition | Sci API |
+| Namespace | Inventory name | Current disposition | Sci API |
 | --- | --- | --- | --- |
 | `scipy.sparse` | `block_array` | Supported adaptation | `sparse::block_array` |
 | `scipy.sparse` | `block_diag` | Supported adaptation | `sparse::block_diag` |
-| `scipy.sparse` | `bmat` | Supported adaptation | `sparse::bmat` |
+| `scipy.sparse` | `bmat` | Removed redundant alias | `block_array` |
 | `scipy.sparse` | `diags` | Supported adaptation | `sparse::diags` |
-| `scipy.sparse` | `diags_array` | Supported adaptation | `sparse::diags_array` |
+| `scipy.sparse` | `diags_array` | Removed redundant alias | `diags` |
 | `scipy.sparse` | `expand_dims` | Supported adaptation | `sparse::expand_dims` |
 | `scipy.sparse` | `eye` | Supported adaptation | `sparse::eye` |
-| `scipy.sparse` | `eye_array` | Supported adaptation | `sparse::eye_array` |
+| `scipy.sparse` | `eye_array` | Removed redundant alias | `eye` |
 | `scipy.sparse` | `find` | Supported adaptation | `sparse::find` |
-| `scipy.sparse` | `get_index_dtype` | Supported adaptation | `sparse::get_index_dtype` |
+| `scipy.sparse` | `get_index_dtype` | Removed or redesigned for Rust | — |
 | `scipy.sparse` | `hstack` | Supported adaptation | `sparse::hstack` |
 | `scipy.sparse` | `identity` | Supported adaptation | `sparse::identity` |
-| `scipy.sparse` | `issparse` | Supported adaptation | `sparse::issparse` |
+| `scipy.sparse` | `issparse` | Removed or redesigned for Rust | — |
 | `scipy.sparse` | `isspmatrix` | Excluded legacy API | — |
 | `scipy.sparse` | `isspmatrix_bsr` | Excluded legacy API | — |
 | `scipy.sparse` | `isspmatrix_coo` | Excluded legacy API | — |
@@ -224,12 +228,12 @@ tests, clippy, rustdoc, and `tests/check_features.py` as in `docs/development.md
 | `scipy.sparse` | `kron` | Supported adaptation | `sparse::kron` |
 | `scipy.sparse` | `kronsum` | Supported adaptation | `sparse::kronsum` |
 | `scipy.sparse` | `load_npz` | Supported adaptation | `sparse::load_npz` |
-| `scipy.sparse` | `matrix_transpose` | Supported adaptation | `sparse::matrix_transpose` |
+| `scipy.sparse` | `matrix_transpose` | Removed redundant alias | `transpose` |
 | `scipy.sparse` | `permute_dims` | Supported adaptation | `sparse::permute_dims` |
 | `scipy.sparse` | `rand` | Excluded legacy API | — |
 | `scipy.sparse` | `random` | Supported adaptation | `sparse::random` |
 | `scipy.sparse` | `random_array` | Supported adaptation | `sparse::random_array` |
-| `scipy.sparse` | `safely_cast_index_arrays` | Supported adaptation | `sparse::safely_cast_index_arrays` |
+| `scipy.sparse` | `safely_cast_index_arrays` | Removed or redesigned for Rust | `sparse::csr_indices_i32`, `sparse::csr_indices_i64` |
 | `scipy.sparse` | `save_npz` | Supported adaptation | `sparse::save_npz` |
 | `scipy.sparse` | `spdiags` | Supported adaptation | `sparse::spdiags` |
 | `scipy.sparse` | `swapaxes` | Supported adaptation | `sparse::swapaxes` |
@@ -261,7 +265,7 @@ tests, clippy, rustdoc, and `tests/check_features.py` as in `docs/development.md
 | `scipy.sparse.csgraph` | `shortest_path` | Supported adaptation | `sparse::csgraph::shortest_path` |
 | `scipy.sparse.csgraph` | `structural_rank` | Supported adaptation | `sparse::csgraph::structural_rank` |
 | `scipy.sparse.csgraph` | `yen` | Supported adaptation | `sparse::csgraph::yen` |
-| `scipy.sparse.linalg` | `aslinearoperator` | Supported adaptation | `sparse::linalg::aslinearoperator` |
+| `scipy.sparse.linalg` | `aslinearoperator` | Removed or redesigned for Rust | `LinearOperator::try_from` |
 | `scipy.sparse.linalg` | `bicg` | Supported adaptation | `sparse::linalg::bicg` |
 | `scipy.sparse.linalg` | `bicgstab` | Supported adaptation | `sparse::linalg::bicgstab` |
 | `scipy.sparse.linalg` | `cg` | Supported adaptation | `sparse::linalg::cg` |
@@ -270,7 +274,7 @@ tests, clippy, rustdoc, and `tests/check_features.py` as in `docs/development.md
 | `scipy.sparse.linalg` | `eigsh` | Supported adaptation | `sparse::linalg::eigsh` |
 | `scipy.sparse.linalg` | `expm` | Supported adaptation | `sparse::linalg::expm` |
 | `scipy.sparse.linalg` | `expm_multiply` | Supported adaptation | `sparse::linalg::expm_multiply` |
-| `scipy.sparse.linalg` | `factorized` | Supported adaptation | `sparse::linalg::factorized` |
+| `scipy.sparse.linalg` | `factorized` | Removed redundant alias | `splu` |
 | `scipy.sparse.linalg` | `funm_multiply_krylov` | Supported adaptation | `sparse::linalg::funm_multiply_krylov` |
 | `scipy.sparse.linalg` | `gcrotmk` | Supported adaptation | `sparse::linalg::gcrotmk` |
 | `scipy.sparse.linalg` | `gmres` | Supported adaptation | `sparse::linalg::gmres` |

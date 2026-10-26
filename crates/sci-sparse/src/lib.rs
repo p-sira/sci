@@ -1127,12 +1127,3 @@ pub fn kronsum(a: &SparseMatrix, b: &SparseMatrix) -> Result<SparseMatrix> {
     }
     add(&kron(&identity(b.rows)?, a)?, &kron(b, &identity(a.rows)?)?)
 }
-
-/// SciPy matrix spelling of [`block_array`], with the same signature and behavior.
-pub use block_array as bmat;
-/// SciPy array spelling of [`diags`], with the same signature and behavior.
-pub use diags as diags_array;
-/// SciPy array spelling of [`eye`], with the same signature and behavior.
-pub use eye as eye_array;
-/// SciPy spelling of [`transpose`], with the same signature and behavior.
-pub use transpose as matrix_transpose;

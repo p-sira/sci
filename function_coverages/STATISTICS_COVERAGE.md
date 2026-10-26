@@ -3,16 +3,16 @@
 Native implementations use private statrs 0.19.1, Basin 1.15.1, nalgebra 0.35,
 shared Sci special functions and lapjv 0.3.0 backends. Shapiro and Tukey use
 private adaptations of BSD-licensed SciPy algorithms and mixture integrals;
-the retained license is `crates/sci-stats/SCIPY_LICENSE.txt`. No Python runtime is used. **Main-namespace function
-coverage is complete for the documented Rust signatures; full SciPy statistics
-parity is not complete.** The audit against `SCIPY_FUNCTIONS.md` and
-`scipy-func-list/scipy.stats.md` covers **137 of 137 scipy.stats function names**,
+the retained license is `crates/sci-stats/SCIPY_LICENSE.txt`. No Python runtime is used. **The Rust API intentionally omits scalar standard-library wrappers. Full SciPy
+statistics parity is not complete.** The audit against `SCIPY_FUNCTIONS.md` and
+`scipy-func-list/scipy.stats.md` covers **134 of 137 scipy.stats function names**,
 all **7 contingency names**, and all **4 QMC utility function names**.
 Distribution coverage is **30 of 149 callable families** with evaluation methods;
 this does not claim their entire object-oriented SciPy method surface.
 
 The coverage audit fails for exported functions without committed reference
-cases and checks main-namespace inventory completion. There are no placeholder
+cases and checks explicit main-namespace inventory dispositions. `abs`, `exp`,
+and `log` are intentionally omitted in favor of `f64` methods. There are no placeholder
 exports. Run `python tests/scipy/audit_statistics.py` to reproduce the counts.
 SciPy compatibility namespaces (`stats`, `morestats`, `distributions`, etc.)
 repeat canonical names; no separate legacy Rust modules are added. The inventory
@@ -278,7 +278,7 @@ the backend. Multivariate matrices use one Vec per row, interoperable with algeb
 
 `tests/scipy/statistics_cases.json` contains inputs separately from expected
 results. `generate_statistics.py` pins SciPy 1.18.1 and NumPy 2.5.4 and emits
-5116 cases into `stats_inputs.csv` and `stats_expected.csv`. Ordinary Rust tests
+5089 cases into `stats_inputs.csv` and `stats_expected.csv`. Ordinary Rust tests
 read the CSV files; they require no Python. The fixture generator explicitly
 identifies independent mathematical references for the documented corner
 adaptations and KS limiting probabilities. References never use Sci/statrs.

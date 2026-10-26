@@ -636,7 +636,7 @@ pub fn freqs(b: &[f64], a: &[f64], frequencies: &[f64]) -> Result<Vec<Complex>> 
 ///
 /// `pub fn freqz_sos(sos:&[[f64;6]],frequencies:&[f64])->Result<Vec<Complex>>`
 ///
-/// Rows are `[b0,b1,b2,1,a1,a2]`; frequencies are radians/sample. Returns complex responses in input frequency order. sosfreqz is an alias.
+/// Rows are `[b0,b1,b2,1,a1,a2]`; frequencies are radians/sample. Returns complex responses in input frequency order.
 ///
 /// ## Domain
 ///
@@ -680,8 +680,6 @@ pub fn freqz_sos(sos: &[[f64; 6]], frequencies: &[f64]) -> Result<Vec<Complex>> 
     }
     super::complex_checked(output.into_iter().map(owned).collect())
 }
-/// Legacy alias for [`freqz_sos`], with identical parameters and errors.
-pub use freqz_sos as sosfreqz;
 
 /// Computes `-d arg H(ω)/dω = Re(B1/B - A1/A)`, where `C1=sum_j j c[j] exp(-iωj)`.
 ///

@@ -6,6 +6,10 @@ The main inventory contains **3,971 function entries in 42 namespaces**, includi
 
 Source of truth: the installed runtime and matching `.pyi` files under `.venv/lib/python3.13/site-packages/`; Cython-only functions come from SciPy `.pxd` declarations. Public module classification and available documentation links come from the [SciPy API reference](https://docs.scipy.org/doc/scipy/reference/index.html) and its [Sphinx inventory](https://docs.scipy.org/doc/scipy/objects.inv), version 1.18.0. Names have been checked against the local 1.18.1 installation; documentation links are provided where indexed.
 
+SciPy names are a numerical reference inventory, not a requirement to reproduce
+Python runtime APIs or redundant aliases. See [the migration guide](MIGRATING.md)
+and module coverage reports for deliberate omissions and Rust replacements.
+
 ## Top-level submodule files
 
 Each file contains its submodule and all nested namespaces. The main `scipy` namespace has its own file.
@@ -87,9 +91,9 @@ Sci omits the legacy `fftpack` namespace. Its ten distinct periodic operators
 are exported from `fft`; redundant transforms and compatibility variants are
 removed. See [FFT coverage and inventory disposition](function_coverages/FFT_COVERAGE.md).
 
-Sparse v0.1.0 covers all 83 modern sparse function names through documented Rust
-adaptations, excluding legacy matrix predicates, `rand`, `use_solver` and deprecated
-compatibility namespaces. See [sparse coverage and inventory disposition](function_coverages/SPARSE_COVERAGE.md)
+Sparse implements the numerical operations through documented Rust adaptations.
+Runtime type/dtype utilities, redundant aliases, legacy matrix predicates, `rand`,
+`use_solver`, and deprecated compatibility namespaces are excluded or redesigned. See [sparse coverage and inventory disposition](function_coverages/SPARSE_COVERAGE.md)
 for signature adaptations, numerical conventions and bounded-work limitations.
 
 Scientific I/O implements nine distinct function names for Matrix Market, WAV,

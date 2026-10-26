@@ -210,32 +210,26 @@ mod helpers {
         bencher.bench(|| sci::fft::ifftshift(black_box(&input)).unwrap());
     }
 
-    /// Searches upward from 128 awkward targets for both factor sets.
+    /// Searches upward from 128 awkward targets using the RustFFT size heuristic.
     #[divan::bench]
     fn next_fast_len(bencher: Bencher) {
         let targets: Vec<usize> = (0..128).map(|i| 1000 + 37 * i).collect();
         bencher.bench(|| {
             black_box(&targets)
                 .iter()
-                .map(|&t| {
-                    sci::fft::next_fast_len(t, true).unwrap()
-                        + sci::fft::next_fast_len(t, false).unwrap()
-                })
+                .map(|&t| sci::fft::next_fast_len(t).unwrap())
                 .sum::<usize>()
         });
     }
 
-    /// Searches downward from 128 awkward targets for both factor sets.
+    /// Searches downward from 128 awkward targets using the RustFFT size heuristic.
     #[divan::bench]
     fn prev_fast_len(bencher: Bencher) {
         let targets: Vec<usize> = (0..128).map(|i| 1000 + 37 * i).collect();
         bencher.bench(|| {
             black_box(&targets)
                 .iter()
-                .map(|&t| {
-                    sci::fft::prev_fast_len(t, true).unwrap()
-                        + sci::fft::prev_fast_len(t, false).unwrap()
-                })
+                .map(|&t| sci::fft::prev_fast_len(t).unwrap())
                 .sum::<usize>()
         });
     }

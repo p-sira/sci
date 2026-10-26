@@ -4,13 +4,14 @@ Run from any directory using Python 3.11+. This does not need SciPy.
 Compatibility namespaces are aliases mapped to the public signal/windows API.
 No declaration is treated as supported unless input cases exercise it.
 """
+from api_disposition import ALIASES
 from pathlib import Path
 import json
 import re
 
 ROOT=Path(__file__).resolve().parents[2]
 CASES=json.loads((ROOT/"tests/scipy/signal_cases.json").read_text())
-TESTED={c["function"] for c in CASES}
+TESTED={ALIASES["signal"].get(c["function"], c["function"]) for c in CASES}
 SOURCES=ROOT/"crates/sci-signal/src"
 
 

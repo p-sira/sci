@@ -70,10 +70,11 @@ or produce a checked overflow. Shift helpers accept finite one-dimensional
 shared complex vectors; empty inputs are unchanged. Real values may be carried
 with zero imaginary components. Multidimensional shifts are absent.
 
-Smooth-length helpers match SciPy 1.18.1 factor sets: {2,3,5} for real and
-{2,3,5,7,11} for complex. Targets are 0..=1,048,576; zero returns zero. Searches
-are bounded trial division. These sizes are version-specific SciPy-compatible
-recommendations, not guarantees of optimal RustFFT performance.
+Smooth-length helpers use factors {2,3,5,7,11}, following RustFFT guidance.
+The `real` selector is removed. Targets are 0..=1,048,576; zero returns zero.
+Searches use bounded trial division. These are heuristics, not guarantees of
+optimal CPU-specific performance. Independent reference fixtures enumerate
+smooth products rather than using SciPy's different real-transform heuristic.
 
 ## FFTLog
 

@@ -1,12 +1,14 @@
 # Changelog
 
-## 0.2.1
+## 0.3.0
+
+- Remove SciPy runtime compatibility APIs and redundant aliases; add concrete sparse index conversions and standard owned operator conversion. See MIGRATING.md for replacements.
 
 - Consolidate particle filtering on Smelly 0.2, decode dense numeric MATLAB files
   with the shared native parser, and disable unused statrs and rand features.
 - Reduce internal copies in signal validation and construction, SVD pseudoinverses,
   distance weights, surface interpolation, statistical trimming, and sparse solvers.
-- Keep public numerical signatures, validation, and work limits unchanged.
+- Retain numerical algorithms and validation apart from the documented API redesigns.
 
 ## 0.2.0
 

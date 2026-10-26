@@ -1,7 +1,8 @@
 # Changelog
 
-## 0.2.1
+## 0.3.0
 
+- Update shared Sci dependency requirements to the new minor versions.
 - Borrow explicit distance weights until normalization requires owned storage.
 
 ## 0.2.0

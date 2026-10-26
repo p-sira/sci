@@ -1,9 +1,10 @@
 """Audit modern sparse inventory, exports, fixtures, and explicit legacy exclusions.
 
 Run: python tests/scipy/audit_sparse.py [--write]. No SciPy needed.
-Compatibility namespaces and old sparse-matrix predicates are excluded; primary
-aliases share implementations and remain covered by public-API fixtures.
+Compatibility namespaces, runtime type utilities and redundant aliases are
+excluded. Old alias fixture labels exercise canonical public numerical APIs.
 """
+from api_disposition import ALIASES, EXCLUDED
 import csv
 import re
 import sys
@@ -35,11 +36,23 @@ exports['scipy.sparse.linalg']-={'new','solve'}
 fixtures=set()
 for file in ('sparse_inputs.csv','sparse_parity_inputs.csv'):
     fixtures|={r['api'] for r in csv.DictReader((ROOT/'tests/fixtures'/file).open())}
-rows=['| Namespace | Inventory name | v0.1.0 disposition | Sci API |','| --- | --- | --- | --- |']
+fixtures |= {ALIASES['sparse'].get(name, name) for name in fixtures}
+if 'safely_cast_index_arrays' in fixtures:
+    fixtures |= {'csr_indices_i32', 'csr_indices_i64'}
+rows=['| Namespace | Inventory name | Current disposition | Sci API |','| --- | --- | --- | --- |']
 counts={}
 for ns,name in inventory:
     if ns not in PRIMARY:
         status,target='Excluded legacy compatibility namespace','—'
+    elif name in EXCLUDED['sparse']:
+        assert name not in exports[ns], f'removed API exported: {name}'
+        replacements = {'safely_cast_index_arrays': '`sparse::csr_indices_i32`, `sparse::csr_indices_i64`', 'aslinearoperator': '`LinearOperator::try_from`'}
+        status, target = 'Removed or redesigned for Rust', replacements.get(name, '—')
+    elif name in ALIASES['sparse']:
+        canonical = ALIASES['sparse'][name]
+        assert name not in exports[ns] and canonical in exports[ns]
+        assert canonical in fixtures
+        status, target = 'Removed redundant alias', f'`{canonical}`'
     elif name in LEGACY:
         assert name not in exports[ns],f'legacy function unexpectedly exported: {name}'
         status,target='Excluded legacy API','—'
@@ -51,7 +64,7 @@ for ns,name in inventory:
         target=f'`{path}`'
     rows.append(f'| `{ns}` | `{name}` | {status} | {target} |')
     if ns in PRIMARY:
-        done,total=counts.get(ns,(0,0));counts[ns]=(done+(name not in LEGACY),total+(name not in LEGACY))
+        done,total=counts.get(ns,(0,0));counts[ns]=(done+(name not in LEGACY|EXCLUDED['sparse']|set(ALIASES['sparse'])),total+(name not in LEGACY))
 extra=set()
 for ns,names in exports.items():
     extra|=names-{name for n,name in inventory if n==ns}

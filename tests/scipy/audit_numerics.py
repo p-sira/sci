@@ -3,6 +3,7 @@
 Print exact remaining names. Aliases count once in their public namespace;
 compatibility namespaces and low-level Python/Cython bindings are not new APIs.
 """
+from api_disposition import ALIASES
 import csv
 import re
 from collections import Counter
@@ -37,6 +38,8 @@ assert [c['id'] for c in interpolation]==[e['id'] for e in interpolation_expecte
 cases.extend({**c, "module": "interpolate"} for c in interpolation)
 tests=(root / "tests/numerics.rs").read_text() + (root / "tests/interpolation.rs").read_text()
 for module,names in implemented.items():
+    aliases = ALIASES.get(module, {})
+    names = {aliases.get(name, name) for name in names}
     namespace="cluster.vq" if module=="cluster" else module
     available=inventory(module,namespace)
     source="\n".join(p.read_text() for p in (root / f"crates/sci-{module}/src").glob("*.rs") if module!="cluster" or p.name=="vq.rs")
@@ -44,7 +47,7 @@ for module,names in implemented.items():
     exported.update(re.findall(r"pub use \w+ as (\w+);",source))
     assert names==exported,(module,names-exported,exported-names)
     assert names<=available,(module,names-available)
-    counter=Counter(c['api'] for c in (constants if module=="constants" else cases) if module=="constants" or c['module']==module)
+    counter=Counter(aliases.get(c['api'], c['api']) for c in (constants if module=="constants" else cases) if module=="constants" or c['module']==module)
     assert set(counter)==names,(module,names-set(counter))
     prefix={"constants":"c","integrate":"i","interpolate":"p","cluster":"vq"}[module]
     for name in names:
@@ -54,4 +57,4 @@ for module,names in implemented.items():
     print(f"scipy.{namespace}: {len(names)}/{len(available)} exported and tested; {sum(counter.values())} reference cases")
     if remaining: print("  Remaining: "+", ".join(remaining))
 print("Cluster hierarchy coverage: run tests/scipy/audit_cluster.py.")
-print(f"{sum(map(len, implemented.values()))} public names; {len(cases)} numerical cases; {len(constants)} constant cases; 445 independently snapshotted table rows.")
+print(f"{sum(len({ALIASES.get(module, {}).get(n, n) for n in names}) for module, names in implemented.items())} public names; {len(cases)} numerical cases; {len(constants)} constant cases; 445 independently snapshotted table rows.")

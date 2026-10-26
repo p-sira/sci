@@ -101,22 +101,15 @@ fn scipy_fixtures_cover_public_functions() {
                 Some(a.clone())
             }
             "eye" => Some(s::eye(rows, cols, scalar as isize).unwrap()),
-            "eye_array" => Some(s::eye_array(rows, cols, scalar as isize).unwrap()),
+            "eye_array" => Some(s::eye(rows, cols, scalar as isize).unwrap()),
             "identity" => Some(s::identity(rows).unwrap()),
             "diags" | "diags_array" => {
                 let diagonals: Vec<_> = f[8].split(':').map(numbers).collect();
                 let offsets: Vec<_> = k.iter().map(|&v| v as isize).collect();
-                Some(
-                    if api == "diags" {
-                        s::diags(rows, cols, &diagonals, &offsets)
-                    } else {
-                        s::diags_array(rows, cols, &diagonals, &offsets)
-                    }
-                    .unwrap(),
-                )
+                Some(s::diags(rows, cols, &diagonals, &offsets).unwrap())
             }
             "transpose" => Some(s::transpose(&a).unwrap()),
-            "matrix_transpose" => Some(s::matrix_transpose(&a).unwrap()),
+            "matrix_transpose" => Some(s::transpose(&a).unwrap()),
             "eliminate_zeros" => Some(s::eliminate_zeros(&a).unwrap()),
             "tril" => Some(s::tril(&a, scalar as isize).unwrap()),
             "triu" => Some(s::triu(&a, scalar as isize).unwrap()),
@@ -128,7 +121,7 @@ fn scipy_fixtures_cover_public_functions() {
             "vstack" => Some(s::vstack(&[&a, &b]).unwrap()),
             "block_diag" => Some(s::block_diag(&[&a, &b]).unwrap()),
             "block_array" => Some(s::block_array(&[vec![&a, &b], vec![&b, &a]]).unwrap()),
-            "bmat" => Some(s::bmat(&[vec![&a, &b], vec![&b, &a]]).unwrap()),
+            "bmat" => Some(s::block_array(&[vec![&a, &b], vec![&b, &a]]).unwrap()),
             "kron" => Some(s::kron(&a, &b).unwrap()),
             "kronsum" => Some(s::kronsum(&a, &b).unwrap()),
             "inv" => Some(l::inv(&a).unwrap()),
@@ -152,7 +145,7 @@ fn scipy_fixtures_cover_public_functions() {
                 "matvec" => s::matvec(&a, &x).unwrap(),
                 "spsolve" => l::spsolve(&a, &x).unwrap(),
                 "splu" | "lu_solve" => l::splu(&a).unwrap().solve(&x).unwrap(),
-                "factorized" => l::factorized(&a).unwrap().solve(&x).unwrap(),
+                "factorized" => l::splu(&a).unwrap().solve(&x).unwrap(),
                 "spsolve_triangular" => l::spsolve_triangular(
                     &a,
                     &x,
