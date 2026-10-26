@@ -1276,7 +1276,7 @@ pub fn orthogonal_procrustes(
     let d = decomposition(product, true)?;
     Ok((
         rows(&(d.u.unwrap() * d.v_t.unwrap()))?,
-        crate::error::finite(d.singular_values.iter().sum())?,
+        crate::error::finite(d.singular_values.iter().sum::<f64>())?,
     ))
 }
 /// Solves the standard symmetric eigenproblem `A V=V diag(w)`, `Vᵀ V=I`.

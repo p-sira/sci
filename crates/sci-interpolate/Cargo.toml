@@ -15,6 +15,7 @@ readme = false
 include = ["/src/**", "/LICENSE"]
 
 [dependencies]
+numeric_literals.workspace = true
 sci-core.workspace = true
 nalgebra.workspace = true
 splinefit.workspace = true

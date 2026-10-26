@@ -276,7 +276,7 @@ pub fn kmeans(
     let mut previous = f64::INFINITY;
     for _ in 0..max_iterations {
         let (labels, distances) = assign(obs, &codes)?;
-        let distortion = finite(distances.iter().map(|v| v / obs.len() as f64).sum())?;
+        let distortion = finite(distances.iter().map(|v| v / obs.len() as f64).sum::<f64>())?;
         if (previous - distortion).abs() <= threshold {
             return Ok((codes, distortion));
         }
@@ -284,7 +284,7 @@ pub fn kmeans(
         previous = distortion;
     }
     let (_, distances) = assign(obs, &codes)?;
-    let distortion = finite(distances.iter().map(|v| v / obs.len() as f64).sum())?;
+    let distortion = finite(distances.iter().map(|v| v / obs.len() as f64).sum::<f64>())?;
     if (previous - distortion).abs() <= threshold {
         Ok((codes, distortion))
     } else {

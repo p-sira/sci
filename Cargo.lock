@@ -1569,6 +1569,7 @@ name = "sci-complex"
 version = "0.3.0"
 dependencies = [
  "num-complex",
+ "numeric_literals",
  "sci-core",
  "sci-fft",
  "sci-special",
@@ -1578,17 +1579,22 @@ dependencies = [
 name = "sci-constants"
 version = "0.3.0"
 dependencies = [
+ "numeric_literals",
  "sci-core",
 ]
 
 [[package]]
 name = "sci-core"
 version = "0.3.0"
+dependencies = [
+ "num-traits",
+]
 
 [[package]]
 name = "sci-differentiate"
 version = "0.3.0"
 dependencies = [
+ "numeric_literals",
  "sci-core",
  "sci-linalg",
  "sci-optimize",
@@ -1599,6 +1605,8 @@ name = "sci-fft"
 version = "0.3.0"
 dependencies = [
  "num-complex",
+ "num-traits",
+ "numeric_literals",
  "realfft",
  "rustdct",
  "rustfft",
@@ -1621,6 +1629,7 @@ name = "sci-integrate"
 version = "0.3.0"
 dependencies = [
  "nalgebra",
+ "numeric_literals",
  "sci-core",
  "sci-special",
 ]
@@ -1631,6 +1640,7 @@ version = "0.3.0"
 dependencies = [
  "delaunator",
  "nalgebra",
+ "numeric_literals",
  "sci-core",
  "splinefit",
 ]
@@ -1719,6 +1729,7 @@ dependencies = [
  "ellip",
  "nalgebra",
  "num-complex",
+ "numeric_literals",
  "sci-complex",
  "sci-core",
  "special",
@@ -1733,6 +1744,7 @@ dependencies = [
  "lapjv",
  "nalgebra",
  "ndarray 0.16.1",
+ "numeric_literals",
  "sci-complex",
  "sci-core",
  "sci-fft",

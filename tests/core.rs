@@ -39,7 +39,7 @@ fn finite_checks_preserve_ieee_values_and_reject_nonfinite_inputs() {
         assert_eq!(sci_core::finite(value).unwrap().to_bits(), value.to_bits());
         assert_eq!(sci_core::finite_slice(&[value]), Ok(()));
     }
-    assert_eq!(sci_core::finite_slice(&[]), Ok(()));
+    assert_eq!(sci_core::finite_slice::<f64>(&[]), Ok(()));
     for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
         assert_eq!(sci_core::finite(bad), Err(Error::NonFiniteEvaluation));
         for values in [[bad, 1.0], [1.0, bad]] {

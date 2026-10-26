@@ -717,8 +717,8 @@ pub fn power_divergence(
             "frequencies must be nonnegative with positive expectations",
         ));
     }
-    let o = finite(observed.iter().sum())?;
-    let e = finite(expected.iter().sum())?;
+    let o = finite(observed.iter().sum::<f64>())?;
+    let e = finite(expected.iter().sum::<f64>())?;
     if (o - e).abs() > f64::EPSILON.sqrt() * o.min(e) {
         return Err(Error::InvalidInput("observed and expected totals differ"));
     }

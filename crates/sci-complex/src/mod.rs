@@ -1,19 +1,20 @@
 use crate::{Error, Result};
+use sci_core::Float;
 
 /// A complex value `re + i im`, shared across Sci modules.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct Complex {
+pub struct Complex<T = f64> {
     /// Real component.
-    pub re: f64,
+    pub re: T,
     /// Imaginary component.
-    pub im: f64,
+    pub im: T,
 }
 
-pub(crate) fn native(z: Complex) -> num_complex::Complex64 {
-    num_complex::Complex64::new(z.re, z.im)
+pub(crate) fn native<T: Float>(z: Complex<T>) -> num_complex::Complex<T> {
+    num_complex::Complex::<T>::new(z.re, z.im)
 }
 
-pub(crate) fn owned(z: num_complex::Complex64) -> Complex {
+pub(crate) fn owned<T: Float>(z: num_complex::Complex<T>) -> Complex<T> {
     Complex { re: z.re, im: z.im }
 }
 
@@ -33,7 +34,7 @@ pub(crate) fn owned(z: num_complex::Complex64) -> Complex {
 ///
 /// ## Numerical behavior
 ///
-/// Constant work using `f64` arithmetic; rounding, overflow, and underflow apply.
+/// Constant work using the selected floating-point type; rounding, overflow, and underflow apply.
 ///
 /// # Examples
 ///
@@ -46,7 +47,7 @@ pub(crate) fn owned(z: num_complex::Complex64) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn add(a: Complex, b: Complex) -> Complex {
+pub fn add<T: Float>(a: Complex<T>, b: Complex<T>) -> Complex<T> {
     Complex {
         re: a.re + b.re,
         im: a.im + b.im,
@@ -69,7 +70,7 @@ pub fn add(a: Complex, b: Complex) -> Complex {
 ///
 /// ## Numerical behavior
 ///
-/// Constant work using `f64` arithmetic; rounding, overflow, and underflow apply.
+/// Constant work using the selected floating-point type; rounding, overflow, and underflow apply.
 ///
 /// # Examples
 ///
@@ -82,7 +83,7 @@ pub fn add(a: Complex, b: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn subtract(a: Complex, b: Complex) -> Complex {
+pub fn subtract<T: Float>(a: Complex<T>, b: Complex<T>) -> Complex<T> {
     Complex {
         re: a.re - b.re,
         im: a.im - b.im,
@@ -122,7 +123,7 @@ pub fn subtract(a: Complex, b: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn multiply(a: Complex, b: Complex) -> Complex {
+pub fn multiply<T: Float>(a: Complex<T>, b: Complex<T>) -> Complex<T> {
     if [a.re, a.im, b.re, b.im].iter().all(|x| x.is_finite()) {
         Complex {
             re: product_sum(a.re, b.re, -a.im, b.im),
@@ -134,35 +135,38 @@ pub fn multiply(a: Complex, b: Complex) -> Complex {
 }
 
 // Exact binary decomposition, including subnormals; zero keeps its sign.
-fn binary_parts(value: f64) -> (f64, i32) {
-    if value == 0.0 {
+fn binary_parts<T: Float>(value: T) -> (T, i32) {
+    if value == T::zero() {
         return (value, 0);
     }
-    let bits = value.to_bits();
-    let exponent = ((bits >> 52) & 0x7ff) as i32;
-    if exponent == 0 {
-        let (mantissa, exponent) = binary_parts(value * (1_u64 << 54) as f64);
-        return (mantissa, exponent - 54);
-    }
-    let mantissa = f64::from_bits((bits & 0x800f_ffff_ffff_ffff) | (1023_u64 << 52));
-    (mantissa, exponent - 1023)
+    let (mantissa, exponent, sign) = value.integer_decode();
+    let leading = 63 - mantissa.leading_zeros();
+    let fraction = T::from(mantissa).unwrap() / T::from(1_u64 << leading).unwrap();
+    (
+        fraction * T::from(sign).unwrap(),
+        i32::from(exponent) + leading as i32,
+    )
 }
 
-fn restore_binary_scale(mut value: f64, mut exponent: i32) -> f64 {
-    while exponent > 1023 {
-        value *= 2.0_f64.powi(1023);
-        exponent -= 1023;
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn restore_binary_scale<T: Float>(mut value: T, mut exponent: i32) -> T {
+    let (_, maximum) = binary_parts(T::max_value());
+    let (_, minimum) = binary_parts(T::min_positive_value());
+    while exponent > maximum {
+        value = value * 2.0.powi(maximum);
+        exponent -= maximum;
     }
-    while exponent < -1022 {
-        value *= f64::MIN_POSITIVE;
-        exponent += 1022;
+    while exponent < minimum {
+        value = value * T::min_positive_value();
+        exponent -= minimum;
     }
-    value * 2.0_f64.powi(exponent)
+    value * 2.0.powi(exponent)
 }
 
 // Two products are combined before restoring their shared exponent. FMA
 // residuals preserve cancellation that separate rounded products would lose.
-fn product_sum(a: f64, b: f64, c: f64, d: f64) -> f64 {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn product_sum<T: Float>(a: T, b: T, c: T, d: T) -> T {
     let (mut a, ae) = binary_parts(a);
     let (b, be) = binary_parts(b);
     let (mut c, ce) = binary_parts(c);
@@ -178,8 +182,8 @@ fn product_sum(a: f64, b: f64, c: f64, d: f64) -> f64 {
         return restore_binary_scale(a * b, ae + be);
     }
     let exponent = (ae + be).max(ce + de);
-    a *= 2.0_f64.powi(ae + be - exponent);
-    c *= 2.0_f64.powi(ce + de - exponent);
+    a = a * (2.0_f64.powi(ae + be - exponent));
+    c = c * (2.0_f64.powi(ce + de - exponent));
     let (p, q) = (a * b, c * d);
     let residual = a.mul_add(b, -p) + c.mul_add(d, -q);
     restore_binary_scale((p + q) + residual, exponent)
@@ -215,12 +219,13 @@ fn product_sum(a: f64, b: f64, c: f64, d: f64) -> f64 {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn divide(a: Complex, b: Complex) -> Complex {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn divide<T: Float>(a: Complex<T>, b: Complex<T>) -> Complex<T> {
     let scale = b.re.abs().max(b.im.abs());
     if scale == 0.0 {
         return Complex {
-            re: f64::NAN,
-            im: f64::NAN,
+            re: T::nan(),
+            im: T::nan(),
         };
     }
     if !scale.is_finite() {
@@ -259,7 +264,7 @@ pub fn divide(a: Complex, b: Complex) -> Complex {
 ///
 /// ## Numerical behavior
 ///
-/// Constant work using `f64` arithmetic; rounding, overflow, and underflow apply.
+/// Constant work using the selected floating-point type; rounding, overflow, and underflow apply.
 ///
 /// # Examples
 ///
@@ -272,7 +277,7 @@ pub fn divide(a: Complex, b: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn negate(z: Complex) -> Complex {
+pub fn negate<T: Float>(z: Complex<T>) -> Complex<T> {
     Complex {
         re: -z.re,
         im: -z.im,
@@ -295,7 +300,7 @@ pub fn negate(z: Complex) -> Complex {
 ///
 /// ## Numerical behavior
 ///
-/// Constant work using `f64` arithmetic; rounding, overflow, and underflow apply.
+/// Constant work using the selected floating-point type; rounding, overflow, and underflow apply.
 ///
 /// # Examples
 ///
@@ -308,7 +313,7 @@ pub fn negate(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn conjugate(z: Complex) -> Complex {
+pub fn conjugate<T: Float>(z: Complex<T>) -> Complex<T> {
     Complex {
         re: z.re,
         im: -z.im,
@@ -331,7 +336,7 @@ pub fn conjugate(z: Complex) -> Complex {
 ///
 /// ## Numerical behavior
 ///
-/// Constant work using `f64` arithmetic; rounding, overflow, and underflow apply.
+/// Constant work using the selected floating-point type; rounding, overflow, and underflow apply.
 ///
 /// # Examples
 ///
@@ -344,7 +349,8 @@ pub fn conjugate(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn reciprocal(z: Complex) -> Complex {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn reciprocal<T: Float>(z: Complex<T>) -> Complex<T> {
     divide(Complex { re: 1.0, im: 0.0 }, z)
 }
 
@@ -378,7 +384,7 @@ pub fn reciprocal(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn real(z: Complex) -> f64 {
+pub fn real<T: Float>(z: Complex<T>) -> T {
     z.re
 }
 
@@ -412,7 +418,7 @@ pub fn real(z: Complex) -> f64 {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn imag(z: Complex) -> f64 {
+pub fn imag<T: Float>(z: Complex<T>) -> T {
     z.im
 }
 
@@ -446,7 +452,7 @@ pub fn imag(z: Complex) -> f64 {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn abs(z: Complex) -> f64 {
+pub fn abs<T: Float>(z: Complex<T>) -> T {
     z.re.hypot(z.im)
 }
 
@@ -469,7 +475,7 @@ pub fn abs(z: Complex) -> f64 {
 /// Scaled products combine the squares before restoring their exponent,
 /// preserving representable subnormal sums when individual squares underflow.
 /// Constant work; true overflow returns infinity and true underflow may return
-/// zero. Binary64 rounding remains; correct rounding is not guaranteed.
+/// zero. Floating-point rounding remains; correct rounding is not guaranteed.
 ///
 /// # Examples
 ///
@@ -482,7 +488,7 @@ pub fn abs(z: Complex) -> f64 {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn norm_sqr(z: Complex) -> f64 {
+pub fn norm_sqr<T: Float>(z: Complex<T>) -> T {
     if z.re.is_finite() && z.im.is_finite() {
         product_sum(z.re, z.re, z.im, z.im)
     } else {
@@ -521,7 +527,7 @@ pub fn norm_sqr(z: Complex) -> f64 {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn arg(z: Complex) -> f64 {
+pub fn arg<T: Float>(z: Complex<T>) -> T {
     z.im.atan2(z.re)
 }
 
@@ -541,7 +547,7 @@ pub fn arg(z: Complex) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Constant work using `f64` arithmetic; rounding, overflow, and underflow apply.
+/// Constant work using the selected floating-point type; rounding, overflow, and underflow apply.
 ///
 /// # Examples
 ///
@@ -554,7 +560,7 @@ pub fn arg(z: Complex) -> f64 {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn to_polar(z: Complex) -> (f64, f64) {
+pub fn to_polar<T: Float>(z: Complex<T>) -> (T, T) {
     (abs(z), arg(z))
 }
 
@@ -593,36 +599,42 @@ pub fn to_polar(z: Complex) -> (f64, f64) {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn from_polar(radius: f64, phase: f64) -> Result<Complex> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn from_polar<T: Float>(radius: T, phase: T) -> Result<Complex<T>> {
     if !radius.is_finite() || radius < 0.0 || !phase.is_finite() {
         return Err(Error::InvalidInput(
             "polar radius must be finite and nonnegative; phase must be finite",
         ));
     }
-    Ok(owned(num_complex::Complex64::from_polar(radius, phase)))
+    Ok(owned(num_complex::Complex::<T>::from_polar(radius, phase)))
 }
 
-// Multiply a bounded trigonometric coefficient by exp(x), optionally halved,
-// without overflowing the exponential first. Powers of exp(512) have exact
-// exponent offsets; multiply the small coefficient before restoring the scale.
-fn exponential_component(x: f64, coefficient: f64, half: bool) -> f64 {
+// Split a large exponential into at most four chunks in the selected format.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn exponential_component<T: Float>(x: T, coefficient: T, half: bool) -> T {
     if coefficient == 0.0 {
         return coefficient;
     }
-    if x > 1500.0 {
-        // Even the smallest nonzero binary64 coefficient must overflow here.
-        return f64::INFINITY.copysign(coefficient);
+    let chunk_log = (T::max_value().ln() * 0.75).floor();
+    if x > T::max_value().ln() - T::min_positive_value().ln() - T::epsilon().ln() + 1.0 {
+        return T::infinity().copysign(coefficient);
     }
-    let chunk = 512.0_f64.exp();
-    let mut value = coefficient * chunk;
+    let chunk = chunk_log.exp();
+    // Scale before halving so the smallest subnormal coefficient survives.
+    let first = x.min(chunk_log);
+    let mut value = coefficient * first.exp();
     if half {
-        value *= 0.5;
+        value = value * 0.5;
     }
-    if x <= 1024.0 {
-        value * (x - 512.0).exp()
-    } else {
-        (value * (x - 1024.0).exp()) * chunk
+    let mut remainder = x - first;
+    for _ in 0..2 {
+        if remainder <= chunk_log {
+            break;
+        }
+        value = value * chunk;
+        remainder = remainder - chunk_log;
     }
+    value * remainder.exp()
 }
 
 /// Computes `exp(z) = exp(re)(cos(im) + i sin(im))`.
@@ -658,8 +670,9 @@ fn exponential_component(x: f64, coefficient: f64, half: bool) -> f64 {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn exp(z: Complex) -> Complex {
-    if z.re.is_finite() && z.im.is_finite() && z.re > 700.0 {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn exp<T: Float>(z: Complex<T>) -> Complex<T> {
+    if z.re.is_finite() && z.im.is_finite() && z.re > (T::max_value().ln() - 10.0) {
         let (sine, cosine) = z.im.sin_cos();
         Complex {
             re: exponential_component(z.re, cosine, false),
@@ -703,7 +716,8 @@ pub fn exp(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn ln(z: Complex) -> Complex {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ln<T: Float>(z: Complex<T>) -> Complex<T> {
     let scale = z.re.abs().max(z.im.abs());
     let re = if scale > 0.0 && z.re.is_finite() && z.im.is_finite() {
         if (0.5..=1.5).contains(&scale) {
@@ -740,7 +754,7 @@ pub fn ln(z: Complex) -> Complex {
 ///
 /// Finite components are scaled before the magnitude calculation. The smaller
 /// root component uses `im/(2*large)` to avoid cancellation near the real axis.
-/// Binary64 rounding and subnormal underflow remain.
+/// Floating-point rounding and subnormal underflow remain.
 ///
 /// # Examples
 ///
@@ -753,7 +767,8 @@ pub fn ln(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn sqrt(z: Complex) -> Complex {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn sqrt<T: Float>(z: Complex<T>) -> Complex<T> {
     if !z.re.is_finite() || !z.im.is_finite() {
         return owned(native(z).sqrt());
     }
@@ -811,8 +826,9 @@ pub fn sqrt(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn sin(z: Complex) -> Complex {
-    if z.re.is_finite() && z.im.is_finite() && z.im.abs() > 700.0 {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn sin<T: Float>(z: Complex<T>) -> Complex<T> {
+    if z.re.is_finite() && z.im.is_finite() && z.im.abs() > (T::max_value().ln() - 10.0) {
         let (sine, cosine) = z.re.sin_cos();
         Complex {
             re: exponential_component(z.im.abs(), sine, true),
@@ -856,8 +872,9 @@ pub fn sin(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn cos(z: Complex) -> Complex {
-    if z.re.is_finite() && z.im.is_finite() && z.im.abs() > 700.0 {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn cos<T: Float>(z: Complex<T>) -> Complex<T> {
+    if z.re.is_finite() && z.im.is_finite() && z.im.abs() > (T::max_value().ln() - 10.0) {
         let (sine, cosine) = z.re.sin_cos();
         Complex {
             re: exponential_component(z.im.abs(), cosine, true),
@@ -901,8 +918,9 @@ pub fn cos(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn sinh(z: Complex) -> Complex {
-    if z.re.is_finite() && z.im.is_finite() && z.re.abs() > 700.0 {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn sinh<T: Float>(z: Complex<T>) -> Complex<T> {
+    if z.re.is_finite() && z.im.is_finite() && z.re.abs() > (T::max_value().ln() - 10.0) {
         let value = sin(Complex { re: z.im, im: z.re });
         Complex {
             re: value.im,
@@ -946,8 +964,9 @@ pub fn sinh(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn cosh(z: Complex) -> Complex {
-    if z.re.is_finite() && z.im.is_finite() && z.re.abs() > 700.0 {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn cosh<T: Float>(z: Complex<T>) -> Complex<T> {
+    if z.re.is_finite() && z.im.is_finite() && z.re.abs() > (T::max_value().ln() - 10.0) {
         cos(Complex {
             re: -z.im,
             im: z.re,
@@ -990,7 +1009,8 @@ pub fn cosh(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn tan(z: Complex) -> Complex {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn tan<T: Float>(z: Complex<T>) -> Complex<T> {
     if !z.re.is_finite() || !z.im.is_finite() {
         return owned(native(z).tan());
     }
@@ -1046,7 +1066,7 @@ pub fn tan(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn tanh(z: Complex) -> Complex {
+pub fn tanh<T: Float>(z: Complex<T>) -> Complex<T> {
     let t = tan(Complex {
         re: -z.im,
         im: z.re,
@@ -1059,10 +1079,13 @@ pub fn tanh(z: Complex) -> Complex {
 
 // First-quadrant inverse geometry. Rationalize hypot differences before
 // evaluating A-1 and A-x; direct subtraction loses the small branch component.
-fn inverse_geometry(x: f64, y: f64) -> (f64, f64) {
-    if x.max(y) > 1e150 {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn inverse_geometry<T: Float>(x: T, y: T) -> (T, T) {
+    if x.max(y) > (T::max_value().sqrt() * 0.01) {
         let scale = x.max(y);
-        let height = scale.ln() + (x / scale).hypot(y / scale).ln() + std::f64::consts::LN_2;
+        let height = scale.ln()
+            + (x / scale).hypot(y / scale).ln()
+            + T::from(std::f64::consts::LN_2).unwrap();
         return (y, height);
     }
     if y == 0.0 {
@@ -1073,7 +1096,7 @@ fn inverse_geometry(x: f64, y: f64) -> (f64, f64) {
         };
     }
     // Away from the branch point, first-order limits preserve subnormals.
-    if y < 1e-150 && x != 1.0 {
+    if y < (T::min_positive_value().sqrt() * 10000.0) && x != 1.0 {
         let root = (x - 1.0).abs().sqrt() * (x + 1.0).sqrt();
         return if x < 1.0 {
             (root, y / root)
@@ -1122,7 +1145,7 @@ fn inverse_geometry(x: f64, y: f64) -> (f64, f64) {
 ///
 /// Constant work using rationalized distances, `log1p`, and scaled large-input
 /// limits for finite values. This preserves small branch components and avoids
-/// intermediate overflow. Binary64 rounding and subnormal underflow remain.
+/// intermediate overflow. Floating-point rounding and subnormal underflow remain.
 ///
 /// # Examples
 ///
@@ -1135,7 +1158,8 @@ fn inverse_geometry(x: f64, y: f64) -> (f64, f64) {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn asin(z: Complex) -> Complex {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn asin<T: Float>(z: Complex<T>) -> Complex<T> {
     if z.im == 0.0 {
         if z.re.abs() <= 1.0 {
             return Complex {
@@ -1144,7 +1168,7 @@ pub fn asin(z: Complex) -> Complex {
             };
         }
         return Complex {
-            re: std::f64::consts::FRAC_PI_2.copysign(z.re),
+            re: T::from(std::f64::consts::FRAC_PI_2).unwrap().copysign(z.re),
             im: z.re.abs().acosh().copysign(z.im),
         };
     }
@@ -1178,7 +1202,7 @@ pub fn asin(z: Complex) -> Complex {
 ///
 /// Constant work using rationalized distances, `log1p`, and scaled large-input
 /// limits for finite values. This preserves small branch components and avoids
-/// intermediate overflow. Binary64 rounding and subnormal underflow remain.
+/// intermediate overflow. Floating-point rounding and subnormal underflow remain.
 ///
 /// # Examples
 ///
@@ -1191,7 +1215,8 @@ pub fn asin(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn acos(z: Complex) -> Complex {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn acos<T: Float>(z: Complex<T>) -> Complex<T> {
     if !z.re.is_finite() || !z.im.is_finite() {
         return owned(native(z).acos());
     }
@@ -1199,7 +1224,7 @@ pub fn acos(z: Complex) -> Complex {
     let angle = distance.atan2(z.re.abs());
     Complex {
         re: if z.re < 0.0 {
-            std::f64::consts::PI - angle
+            T::from(std::f64::consts::PI).unwrap() - angle
         } else {
             angle
         },
@@ -1226,7 +1251,7 @@ pub fn acos(z: Complex) -> Complex {
 ///
 /// Constant work using rationalized distances, `log1p`, and scaled large-input
 /// limits for finite values. This preserves small branch components and avoids
-/// intermediate overflow. Binary64 rounding and subnormal underflow remain.
+/// intermediate overflow. Floating-point rounding and subnormal underflow remain.
 ///
 /// # Examples
 ///
@@ -1239,7 +1264,7 @@ pub fn acos(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn atan(z: Complex) -> Complex {
+pub fn atan<T: Float>(z: Complex<T>) -> Complex<T> {
     let a = atanh(Complex {
         re: -z.im,
         im: z.re,
@@ -1270,7 +1295,7 @@ pub fn atan(z: Complex) -> Complex {
 ///
 /// Constant work using rationalized distances, `log1p`, and scaled large-input
 /// limits for finite values. This preserves small branch components and avoids
-/// intermediate overflow. Binary64 rounding and subnormal underflow remain.
+/// intermediate overflow. Floating-point rounding and subnormal underflow remain.
 ///
 /// # Examples
 ///
@@ -1283,7 +1308,7 @@ pub fn atan(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn asinh(z: Complex) -> Complex {
+pub fn asinh<T: Float>(z: Complex<T>) -> Complex<T> {
     let a = asin(Complex {
         re: -z.im,
         im: z.re,
@@ -1314,7 +1339,7 @@ pub fn asinh(z: Complex) -> Complex {
 ///
 /// Constant work using rationalized distances, `log1p`, and scaled large-input
 /// limits for finite values. This preserves small branch components and avoids
-/// intermediate overflow. Binary64 rounding and subnormal underflow remain.
+/// intermediate overflow. Floating-point rounding and subnormal underflow remain.
 ///
 /// # Examples
 ///
@@ -1327,7 +1352,8 @@ pub fn asinh(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn acosh(z: Complex) -> Complex {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn acosh<T: Float>(z: Complex<T>) -> Complex<T> {
     if z.im == 0.0 {
         if z.re >= 1.0 {
             return Complex {
@@ -1343,7 +1369,7 @@ pub fn acosh(z: Complex) -> Complex {
         }
         return Complex {
             re: (-z.re).acosh(),
-            im: std::f64::consts::PI.copysign(z.im),
+            im: T::from(std::f64::consts::PI).unwrap().copysign(z.im),
         };
     }
     if !z.re.is_finite() || !z.im.is_finite() {
@@ -1375,7 +1401,7 @@ pub fn acosh(z: Complex) -> Complex {
 ///
 /// Constant work using rationalized distances, `log1p`, and scaled large-input
 /// limits for finite values. This preserves small branch components and avoids
-/// intermediate overflow. Binary64 rounding and subnormal underflow remain.
+/// intermediate overflow. Floating-point rounding and subnormal underflow remain.
 ///
 /// # Examples
 ///
@@ -1388,7 +1414,8 @@ pub fn acosh(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn atanh(z: Complex) -> Complex {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn atanh<T: Float>(z: Complex<T>) -> Complex<T> {
     if z.im == 0.0 {
         let re = if z.re.abs() <= 1.0 {
             z.re.atanh()
@@ -1398,7 +1425,7 @@ pub fn atanh(z: Complex) -> Complex {
         let im = if z.re.abs() <= 1.0 {
             z.im
         } else {
-            std::f64::consts::FRAC_PI_2.copysign(z.im)
+            T::from(std::f64::consts::FRAC_PI_2).unwrap().copysign(z.im)
         };
         return Complex { re, im };
     }
@@ -1408,11 +1435,14 @@ pub fn atanh(z: Complex) -> Complex {
     let x = z.re.abs();
     let y = z.im.abs();
     let scale = x.max(y);
-    let (re, im) = if scale > 1e150 {
+    let (re, im) = if scale > (T::max_value().sqrt() * 0.01) {
         // atanh(z) ~ 1/z + sign(im) i pi/2; scale before squaring.
         let a = x / scale;
         let b = y / scale;
-        ((a / (a * a + b * b)) / scale, std::f64::consts::FRAC_PI_2)
+        (
+            (a / (a * a + b * b)) / scale,
+            T::from(std::f64::consts::FRAC_PI_2).unwrap(),
+        )
     } else {
         let radius = (1.0 - x).hypot(y);
         let ratio = (4.0 * x / radius) / radius;
@@ -1465,14 +1495,15 @@ pub fn atanh(z: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn powf(z: Complex, exponent: f64) -> Complex {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn powf<T: Float>(z: Complex<T>, exponent: T) -> Complex<T> {
     if exponent == 0.0 {
         return Complex { re: 1.0, im: 0.0 };
     }
     if z.re == 0.0 && z.im == 0.0 && exponent < 0.0 {
         return Complex {
-            re: f64::NAN,
-            im: f64::NAN,
+            re: T::nan(),
+            im: T::nan(),
         };
     }
     if z.re.is_finite() && z.im.is_finite() && (z.re != 0.0 || z.im != 0.0) && exponent.is_finite()
@@ -1506,7 +1537,7 @@ pub fn powf(z: Complex, exponent: f64) -> Complex {
                 im: exponent * logarithm.im,
             })
         };
-        if z.re > 0.0 && z.im.abs() <= f64::EPSILON * z.re / exponent.abs().max(1.0) {
+        if z.re > 0.0 && z.im.abs() <= T::epsilon() * z.re / exponent.abs().max(1.0) {
             // The phase may underflow even when the final component is finite.
             // Bound the powered phase too; the first-order error is O(eps²).
             let derivative = z.re.powf(exponent - 1.0);
@@ -1557,7 +1588,8 @@ pub fn powf(z: Complex, exponent: f64) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn powc(z: Complex, exponent: Complex) -> Complex {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn powc<T: Float>(z: Complex<T>, exponent: Complex<T>) -> Complex<T> {
     if exponent.im == 0.0 {
         return powf(z, exponent.re);
     }
@@ -1569,8 +1601,8 @@ pub fn powc(z: Complex, exponent: Complex) -> Complex {
             Complex { re: 0.0, im: 0.0 }
         } else {
             Complex {
-                re: f64::NAN,
-                im: f64::NAN,
+                re: T::nan(),
+                im: T::nan(),
             }
         };
     }
@@ -1607,7 +1639,7 @@ pub fn powc(z: Complex, exponent: Complex) -> Complex {
 ///
 /// [NIST DLMF §4](https://dlmf.nist.gov/4) and
 /// [num-complex contracts](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html).
-pub fn powi(z: Complex, exponent: i32) -> Complex {
+pub fn powi<T: Float>(z: Complex<T>, exponent: i32) -> Complex<T> {
     powu(
         if exponent < 0 { reciprocal(z) } else { z },
         exponent.unsigned_abs(),
@@ -1638,7 +1670,8 @@ pub fn powi(z: Complex, exponent: i32) -> Complex {
 ///
 /// ## References
 /// [num-complex integer powers](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html#method.powu).
-pub fn powu(z: Complex, exponent: u32) -> Complex {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn powu<T: Float>(z: Complex<T>, exponent: u32) -> Complex<T> {
     let mut n = exponent;
     let mut base = z;
     let mut value = Complex { re: 1.0, im: 0.0 };
@@ -1681,7 +1714,8 @@ pub fn powu(z: Complex, exponent: u32) -> Complex {
 /// ## References
 /// [NIST DLMF §4.2](https://dlmf.nist.gov/4.2),
 /// [num-complex cube root](https://docs.rs/num-complex/0.4.6/num_complex/struct.Complex.html#method.cbrt).
-pub fn cbrt(z: Complex) -> Complex {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn cbrt<T: Float>(z: Complex<T>) -> Complex<T> {
     if !z.re.is_finite() || !z.im.is_finite() || z.re == 0.0 || z.im == 0.0 {
         return owned(native(z).cbrt());
     }

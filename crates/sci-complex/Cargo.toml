@@ -15,6 +15,7 @@ readme = false
 include = ["/src/**", "/LICENSE"]
 
 [dependencies]
+numeric_literals.workspace = true
 sci-core.workspace = true
 num-complex.workspace = true
 

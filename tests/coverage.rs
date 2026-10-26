@@ -286,9 +286,9 @@ fn spatial_zero_weights_exclude_overflowing_coordinate_differences() {
 
 #[test]
 fn special_reductions_handle_empty_and_nonfinite_normalization() {
-    assert_eq!(special::logsumexp(&[]), f64::NEG_INFINITY);
-    assert!(special::softmax(&[]).is_empty());
-    assert!(special::log_softmax(&[]).is_empty());
+    assert_eq!(special::logsumexp::<f64>(&[]), f64::NEG_INFINITY);
+    assert!(special::softmax::<f64>(&[]).is_empty());
+    assert!(special::log_softmax::<f64>(&[]).is_empty());
     assert_eq!(
         special::logsumexp(&[f64::NEG_INFINITY; 2]),
         f64::NEG_INFINITY

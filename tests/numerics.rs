@@ -264,7 +264,7 @@ fn constants_match_scipy_and_full_codata_snapshot() {
 fn integration_domains_boundaries_and_properties() {
     use sci::Error;
     assert_eq!(
-        i::trapezoid(&[], None, 1.0),
+        i::trapezoid::<f64>(&[], None, 1.0),
         Err(Error::InvalidInput("sample count must be in 1..=1000001"))
     );
     assert_eq!(
@@ -317,7 +317,7 @@ fn integration_domains_boundaries_and_properties() {
         let (nodes, weights) = sci::special::roots_legendre(n).unwrap();
         let samples: Vec<_> = nodes.iter().map(|v| v.powi((2 * n - 2) as i32)).collect();
         close(
-            i::fixed_quad(|v| v.powi((2 * n - 2) as i32), -1.0, 1.0, n).unwrap(),
+            i::fixed_quad(|v: f64| v.powi((2 * n - 2) as i32), -1.0, 1.0, n).unwrap(),
             sci::linalg::dot(&weights, &samples).unwrap(),
             3e-12,
             3e-12,
@@ -359,7 +359,7 @@ fn interpolation_preserves_finite_results_at_extreme_scales() {
         }
     }
 
-    for zero in [-0.0, 0.0] {
+    for zero in [-0.0_f64, 0.0] {
         let values = p::pchip_interpolate(&[-0.0, 1.0], &[-0.0, 1.0], &[zero]).unwrap();
         assert_eq!(values[0].to_bits(), (-0.0_f64).to_bits());
         let values = p::barycentric_interpolate(&[-0.0, 1.0], &[-0.0, 1.0], &[zero]).unwrap();
@@ -596,7 +596,7 @@ fn quadrature_extreme_scales_obey_moments_and_callback_contracts() {
         );
         assert_eq!(calls.get(), order);
         let forward = i::fixed_quad(
-            |x| {
+            |x: f64| {
                 assert!(x.is_finite() && (-1.7e308..=1.7e308).contains(&x));
                 1e-308
             },
@@ -625,7 +625,7 @@ fn quadrature_extreme_scales_obey_moments_and_callback_contracts() {
         3e-12,
     );
     assert!(
-        i::fixed_quad(|_| 0.0, 1.0, 0.0, 3)
+        i::fixed_quad(|_| 0.0_f64, 1.0, 0.0, 3)
             .unwrap()
             .is_sign_negative()
     );

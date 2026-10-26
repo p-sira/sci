@@ -248,7 +248,7 @@ pub struct IterativeResult {
     pub residual_norm: f64,
 }
 fn dot(x: &[f64], y: &[f64]) -> Result<f64> {
-    finite(x.iter().zip(y).map(|(a, b)| a * b).sum())
+    finite(x.iter().zip(y).map(|(a, b)| a * b).sum::<f64>())
 }
 fn length(x: &[f64]) -> Result<f64> {
     finite(x.iter().fold(0f64, |s, &v| s.hypot(v)))
@@ -972,7 +972,7 @@ fn lsqr_inner(a: &dyn LinearMap, b: &[f64], o: &LeastSquaresOptions) -> Result<L
     let forward = |x: &[f64]| -> Result<Vec<f64>> { d.iter().map(|r| dot(r, x)).collect() };
     let backward = |x: &[f64]| -> Result<Vec<f64>> {
         (0..n)
-            .map(|j| finite((0..m).map(|i| d[i][j] * x[i]).sum()))
+            .map(|j| finite((0..m).map(|i| d[i][j] * x[i]).sum::<f64>()))
             .collect()
     };
     let mut beta = length(&rhs)?;

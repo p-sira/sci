@@ -4,7 +4,8 @@ Statistical analysis, hypothesis tests, and probability distributions.
 
 Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 
-Descriptive statistics, hypothesis tests, and native distributions on `f64` values.
+Descriptive statistics use generic floating-point values; hypothesis tests and
+native distributions use `f64`.
 Distribution evaluation uses statrs and shared special functions privately; callers supply parameters
 directly rather than constructing a backend distribution.
 

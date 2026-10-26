@@ -2,6 +2,11 @@
 
 ## 0.3.0
 
+- Add ellip-style generic floats to 142 numerical APIs, with native `f32`/`f64`
+  arithmetic, generic shared containers defaulting to `f64`, independent reference
+  fixtures, and documented remaining binary64 APIs. See MIGRATING.md and
+  function_coverages/GENERIC_FLOAT_COVERAGE.md.
+
 - Complete a second API audit: remove remaining compatibility aliases and the SciPy-calibrated convolution cost selector; use snake case for the STFT dual-window helper.
 
 - Remove SciPy runtime compatibility APIs and redundant aliases; add concrete sparse index conversions and standard owned operator conversion. See MIGRATING.md for replacements.

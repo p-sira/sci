@@ -1,8 +1,27 @@
 //! Elementary combinatorics, reductions, and derivative recurrences.
 
 use crate::{Error, Result, complex::Complex};
+use sci_core::Float;
 
-/// Stable ln Σ exp(x) over a one-dimensional slice.
+/// Stable `logsumexp(x) = ln(Σᵢ exp(xᵢ))` over a one-dimensional slice.
+///
+/// ## Parameters and conventions
+///
+/// `values` are dimensionless real values; the logarithm is natural.
+///
+/// ## Returns
+///
+/// The scalar logarithm of the exponential sum in the input precision.
+///
+/// ## Numerical behavior
+///
+/// Maximum shifting bounds each exponential by one. Linear work in the slice
+/// length, without a configurable work limit. Rounding and underflow of small
+/// relative contributions remain; no precision promotion is performed.
+///
+/// ## References
+///
+/// [SciPy logsumexp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.logsumexp.html).
 ///
 /// ## Domain
 ///
@@ -15,18 +34,41 @@ use crate::{Error, Result, complex::Complex};
 /// ```
 /// assert!((sci_special::logsumexp(&[1000.0,1000.0])-1000.0-2.0_f64.ln()).abs()<1e-12);
 /// ```
-pub fn logsumexp(values: &[f64]) -> f64 {
+pub fn logsumexp<T: Float>(values: &[T]) -> T {
     if values.iter().any(|x| x.is_nan()) {
-        return f64::NAN;
+        return T::nan();
     }
-    let maximum = values.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+    let maximum = values.iter().copied().fold(T::neg_infinity(), T::max);
     if !maximum.is_finite() {
         return maximum;
     }
-    maximum + values.iter().map(|x| (x - maximum).exp()).sum::<f64>().ln()
+    maximum
+        + values
+            .iter()
+            .map(|&x| (x - maximum).exp())
+            .fold(T::zero(), |a, b| a + b)
+            .ln()
 }
 
-/// Softmax exp(x_i)/Σ exp(x_j) over a one-dimensional slice.
+/// Softmax `softmax(x)ᵢ = exp(xᵢ) / Σⱼ exp(xⱼ)` over a one-dimensional slice.
+///
+/// ## Parameters and conventions
+///
+/// `values` are dimensionless real logits; normalization covers the entire slice.
+///
+/// ## Returns
+///
+/// Probabilities in input order, with the same length and scalar precision.
+///
+/// ## Numerical behavior
+///
+/// Linear work and storage, without a configurable work limit. Maximum shifting
+/// prevents exponential overflow. Small probabilities can underflow to zero;
+/// the sum is one up to rounding in the selected precision.
+///
+/// ## References
+///
+/// [SciPy softmax](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.softmax.html).
 ///
 /// ## Domain
 ///
@@ -38,14 +80,33 @@ pub fn logsumexp(values: &[f64]) -> f64 {
 /// ```
 /// assert_eq!(sci_special::softmax(&[1000.0,1000.0]),vec![0.5,0.5]);
 /// ```
-pub fn softmax(values: &[f64]) -> Vec<f64> {
-    let maximum = values.iter().copied().fold(f64::NEG_INFINITY, f64::max);
-    let exp: Vec<_> = values.iter().map(|x| (x - maximum).exp()).collect();
-    let sum: f64 = exp.iter().sum();
+pub fn softmax<T: Float>(values: &[T]) -> Vec<T> {
+    let maximum = values.iter().copied().fold(T::neg_infinity(), T::max);
+    let exp: Vec<_> = values.iter().map(|&x| (x - maximum).exp()).collect();
+    let sum = exp.iter().copied().fold(T::zero(), |a, b| a + b);
     exp.into_iter().map(|x| x / sum).collect()
 }
 
-/// Log softmax x_i−ln Σ exp(x_j), evaluated after maximum-shifting.
+/// Log softmax `log_softmax(x)ᵢ = xᵢ − ln(Σⱼ exp(xⱼ))`.
+///
+/// ## Parameters and conventions
+///
+/// `values` are dimensionless real logits; logarithms are natural and
+/// normalization covers the entire slice.
+///
+/// ## Returns
+///
+/// Log probabilities in input order, with the same length and precision.
+///
+/// ## Numerical behavior
+///
+/// Linear work and storage, without a configurable work limit. Subtracts the
+/// maximum before computing the log sum to preserve small log probabilities
+/// at large common offsets. Rounding and cancellation remain type dependent.
+///
+/// ## References
+///
+/// [SciPy log_softmax](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.log_softmax.html).
 ///
 /// ## Domain
 ///
@@ -57,9 +118,9 @@ pub fn softmax(values: &[f64]) -> Vec<f64> {
 /// ```
 /// assert!((sci_special::log_softmax(&[1000.0,1000.0])[0]+2.0_f64.ln()).abs()<1e-14);
 /// ```
-pub fn log_softmax(values: &[f64]) -> Vec<f64> {
-    let maximum = values.iter().copied().fold(f64::NEG_INFINITY, f64::max);
-    let shifted: Vec<_> = values.iter().map(|x| x - maximum).collect();
+pub fn log_softmax<T: Float>(values: &[T]) -> Vec<T> {
+    let maximum = values.iter().copied().fold(T::neg_infinity(), T::max);
+    let shifted: Vec<_> = values.iter().map(|&x| x - maximum).collect();
     let logsum = logsumexp(&shifted);
     shifted.into_iter().map(|x| x - logsum).collect()
 }

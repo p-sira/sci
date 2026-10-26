@@ -69,7 +69,7 @@ mod quadrature {
     fn fixed_quad(bencher: Bencher) {
         bencher.bench(|| {
             sci::integrate::fixed_quad(
-                |x| (-x * x).exp() * x.cos(),
+                |x: f64| (-x * x).exp() * x.cos(),
                 black_box(-3.0),
                 black_box(3.0),
                 16,

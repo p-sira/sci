@@ -2,6 +2,7 @@ use crate::{
     Error, Result,
     error::{finite, finite_slice},
 };
+use sci_core::Float;
 use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 
 /// Arithmetic mean `μ=Σx_i/n`.
@@ -27,7 +28,7 @@ use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 /// ## Numerical behavior
 ///
 /// Sign-balanced Neumaier summation preserves small cancellation residuals.
-/// A scaled fallback avoids overflow for large uncancelled sums. Binary64
+/// A scaled fallback avoids overflow for large uncancelled sums. Selected-precision
 /// rounding and subnormal underflow remain. At most 1048576 observations.
 ///
 /// # Examples
@@ -40,7 +41,8 @@ use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 /// # References
 ///
 /// [NumPy `mean`](https://numpy.org/doc/stable/reference/generated/numpy.mean.html).
-pub fn mean(values: &[f64]) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn mean<T: Float>(values: &[T]) -> Result<T> {
     sample(values, 1)?;
     // Consume an opposite-sign term whenever possible, keeping large terms
     // from overflowing before they cancel. Divide only after cancellation.
@@ -56,20 +58,21 @@ pub fn mean(values: &[f64]) -> Result<f64> {
         let Some(term) = term else {
             let total = sum + correction;
             return finite(if total.is_finite() {
-                total / values.len() as f64
+                total / T::from(values.len()).unwrap()
             } else {
-                sum / values.len() as f64 + correction / values.len() as f64
+                sum / T::from(values.len()).unwrap() + correction / T::from(values.len()).unwrap()
             });
         };
         let next = sum + term;
         if !next.is_finite() {
             break;
         }
-        correction += if sum.abs() >= term.abs() {
-            (sum - next) + term
-        } else {
-            (term - next) + sum
-        };
+        correction = correction
+            + if sum.abs() >= term.abs() {
+                (sum - next) + term
+            } else {
+                (term - next) + sum
+            };
         sum = next;
     }
     // Overflow here requires a large uncancelled sum; normalization cannot
@@ -78,17 +81,18 @@ pub fn mean(values: &[f64]) -> Result<f64> {
     if scale == 0. {
         return Ok(0.);
     }
-    let n = values.len() as f64;
+    let n = T::from(values.len()).unwrap();
     // Neumaier compensation preserves small terms during cancellation.
     let (mut sum, mut correction) = (0_f64, 0_f64);
     for x in values {
-        let term = (x / scale) / n;
+        let term = (*x / scale) / n;
         let next = sum + term;
-        correction += if sum.abs() >= term.abs() {
-            (sum - next) + term
-        } else {
-            (term - next) + sum
-        };
+        correction = correction
+            + if sum.abs() >= term.abs() {
+                (sum - next) + term
+            } else {
+                (term - next) + sum
+            };
         sum = next;
     }
     finite((sum + correction).clamp(-1., 1.) * scale)
@@ -118,7 +122,7 @@ pub fn mean(values: &[f64]) -> Result<f64> {
 ///
 /// Observations are shifted before scaling to preserve small differences at
 /// large offsets. Scaling first is used only when subtraction overflows.
-/// A variance above the finite f64 range is an evaluation error; underflow
+/// A variance above the finite range of the selected type is an evaluation error; underflow
 /// can return zero. At most 1048576 observations.
 ///
 /// # Examples
@@ -131,7 +135,7 @@ pub fn mean(values: &[f64]) -> Result<f64> {
 /// # References
 ///
 /// [NumPy `variance`](https://numpy.org/doc/stable/reference/generated/numpy.var.html).
-pub fn variance(values: &[f64], ddof: usize) -> Result<f64> {
+pub fn variance<T: Float>(values: &[T], ddof: usize) -> Result<T> {
     if ddof >= values.len() {
         return Err(Error::InvalidInput(
             "ddof must be smaller than the observation count",
@@ -141,7 +145,7 @@ pub fn variance(values: &[f64], ddof: usize) -> Result<f64> {
     finite((normalized * scale) * scale)
 }
 
-fn scaled_variance(values: &[f64], ddof: usize) -> Result<(f64, f64)> {
+fn scaled_variance<T: Float>(values: &[T], ddof: usize) -> Result<(T, T)> {
     sample(values, 1)?;
     if ddof >= values.len() {
         return Err(Error::InvalidInput(
@@ -152,37 +156,38 @@ fn scaled_variance(values: &[f64], ddof: usize) -> Result<(f64, f64)> {
     Ok((scale, normalized_variance(&deviations, ddof)))
 }
 
-fn normalized_variance(deviations: &[f64], ddof: usize) -> f64 {
+fn normalized_variance<T: Float>(deviations: &[T], ddof: usize) -> T {
     deviations
         .iter()
-        .map(|x| x.powi(2) / (deviations.len() - ddof) as f64)
-        .sum()
+        .map(|x| x.powi(2) / T::from(deviations.len() - ddof).unwrap())
+        .fold(T::zero(), |a, b| a + b)
 }
 
-struct CenteredSample {
-    origin: f64,
-    scale: f64,
-    center: f64,
-    deviations: Vec<f64>,
+struct CenteredSample<T = f64> {
+    origin: T,
+    scale: T,
+    center: T,
+    deviations: Vec<T>,
 }
 
 // Returns centered deviations divided by a finite scale. Shift first when
 // possible: dividing large, nearly equal observations loses their differences.
-fn centered_scaled(values: &[f64]) -> Result<(f64, Vec<f64>)> {
+fn centered_scaled<T: Float>(values: &[T]) -> Result<(T, Vec<T>)> {
     let sample = centered_sample(values)?;
     Ok((sample.scale, sample.deviations))
 }
 
-fn centered_sample(values: &[f64]) -> Result<CenteredSample> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn centered_sample<T: Float>(values: &[T]) -> Result<CenteredSample<T>> {
     sample(values, 1)?;
     let mut origin = values[0];
-    let mut shifted: Vec<_> = values.iter().map(|x| x - origin).collect();
+    let mut shifted: Vec<_> = values.iter().map(|&x| x - origin).collect();
     let mut scale = shifted.iter().fold(0_f64, |s, x| s.max(x.abs()));
     if !scale.is_finite() {
         origin = 0.;
         scale = values.iter().fold(0_f64, |s, x| s.max(x.abs()));
         for (y, x) in shifted.iter_mut().zip(values) {
-            *y = x / scale;
+            *y = *x / scale;
         }
     } else if scale == 0.0 {
         return Ok(CenteredSample {
@@ -193,12 +198,12 @@ fn centered_sample(values: &[f64]) -> Result<CenteredSample> {
         });
     } else {
         for y in &mut shifted {
-            *y /= scale;
+            *y = *y / scale;
         }
     }
     let center = mean(&shifted)?;
     for y in &mut shifted {
-        *y -= center;
+        *y = *y - center;
     }
     Ok(CenteredSample {
         origin,
@@ -365,7 +370,7 @@ pub use ranking::*;
 pub use transformations::*;
 
 const MAX_SAMPLES: usize = 1_048_576;
-fn sample(values: &[f64], minimum: usize) -> Result<()> {
+fn sample<T: Float>(values: &[T], minimum: usize) -> Result<()> {
     if values.len() < minimum || values.len() > MAX_SAMPLES {
         return Err(Error::InvalidInput(
             "invalid observation count (maximum 1048576)",
@@ -373,34 +378,41 @@ fn sample(values: &[f64], minimum: usize) -> Result<()> {
     }
     finite_slice(values)
 }
-fn positive(x: f64) -> Result<()> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn positive<T: Float>(x: T) -> Result<()> {
     if x.is_finite() && x > 0. {
         Ok(())
     } else {
         Err(Error::InvalidInput("parameter must be finite and positive"))
     }
 }
-fn probability_check(x: f64) -> Result<()> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn probability_check<T: Float>(x: T) -> Result<()> {
     if (0. ..=1.).contains(&x) {
         Ok(())
     } else {
         Err(Error::InvalidInput("probability must be in [0,1]"))
     }
 }
-fn sorted(x: &[f64]) -> Result<Vec<f64>> {
+fn sorted<T: Float>(x: &[T]) -> Result<Vec<T>> {
     sample(x, 1)?;
     let mut out = x.to_vec();
-    out.sort_by(f64::total_cmp);
+    out.sort_by(|a, b| {
+        a.partial_cmp(b)
+            .unwrap()
+            .then_with(|| b.is_sign_negative().cmp(&a.is_sign_negative()))
+    });
     Ok(out)
 }
-fn interpolate(x: &[f64], p: f64) -> f64 {
-    let h = (x.len() - 1) as f64 * p;
-    let i = h.floor() as usize;
-    let j = h.ceil() as usize;
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn interpolate<T: Float>(x: &[T], p: T) -> T {
+    let h = T::from(x.len() - 1).unwrap() * p;
+    let i = h.floor().to_usize().unwrap();
+    let j = h.ceil().to_usize().unwrap();
     if i == j {
         x[i]
     } else {
-        let f = h - i as f64;
+        let f = h - T::from(i).unwrap();
         (1. - f) * x[i] + f * x[j]
     }
 }

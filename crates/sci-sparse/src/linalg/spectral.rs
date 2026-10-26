@@ -185,7 +185,7 @@ fn exponential_action(a: &SparseMatrix, b: &[f64], times: &[f64]) -> Result<Matr
             let e = sci_linalg::expm(&scaled)?;
             let mut y = vec![0.; a.rows];
             for (i, r) in e.iter().enumerate() {
-                y[i] = finite(r.iter().zip(b).map(|(x, y)| x * y).sum())?;
+                y[i] = finite(r.iter().zip(b).map(|(x, y)| x * y).sum::<f64>())?;
             }
             Ok(y)
         })
@@ -250,7 +250,7 @@ fn krylov<F: FnMut(Complex) -> Complex>(
         // Two-pass modified Gram–Schmidt reduces loss of orthogonality.
         for _ in 0..2 {
             for i in 0..=j {
-                let c = finite(q[i].iter().zip(&w).map(|(x, y)| x * y).sum())?;
+                let c = finite(q[i].iter().zip(&w).map(|(x, y)| x * y).sum::<f64>())?;
                 h[i][j] = finite(h[i][j] + c)?;
                 for (w, &v) in w.iter_mut().zip(&q[i]) {
                     *w = finite(*w - c * v)?;

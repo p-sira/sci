@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Make barycentric, Krogh, Lagrange, and PCHIP interpolation generic over `Float`.
+
 - Remove splrep and splprep aliases; use make_splrep and make_splprep.
 - Reuse spline knots and coefficient buffers during tensor-product surface evaluation.
 

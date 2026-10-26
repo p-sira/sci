@@ -419,7 +419,7 @@ pub fn generate_knots(
                 finite(r * r)
             })
             .collect::<Result<_>>()?;
-        let residual = finite(residuals.iter().sum())?;
+        let residual = finite(residuals.iter().sum::<f64>())?;
         if residual <= smoothing * 1.001 {
             return Ok(sequence);
         }

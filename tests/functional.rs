@@ -15,7 +15,7 @@ fn shapes_and_controls_are_validated() {
         linalg::matmul(&[vec![1.0, 2.0]], &[vec![1.0]]),
         Err(Error::DimensionMismatch)
     );
-    assert!(stats::mean(&[]).is_err());
+    assert!(stats::mean::<f64>(&[]).is_err());
     assert!(stats::variance(&[1.0], 1).is_err());
     assert!(stats::normal_pdf(0.0, 0.0, 0.0).is_err());
     assert!(stats::normal_cdf(f64::NAN, 0.0, 1.0).is_err());

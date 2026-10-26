@@ -2,6 +2,8 @@
 
 Scalar polynomial, B-spline, surface, and multidimensional interpolation.
 
+Polynomial and PCHIP interpolation accept `T: sci_core::Float`; spline and fitting algorithms use `f64`.
+
 Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 
 Functions use slices and shared spline types. Polynomial coefficients use

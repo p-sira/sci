@@ -2,6 +2,8 @@
 
 The default `hankel` feature enables `fht`, `ifht`, and `fhtoffset` with the private Rust gamma backend. All transforms build without XSF, C++ compilation, or libclang. Use `default-features = false` to omit FFTLog. The Sci facade selects this capability with `fft-hankel`.
 
+Fourier, cosine/sine, and periodic transforms support native `f32` and `f64`; FFTLog Hankel transforms use `f64`.
+
 Fourier transforms on shared real and complex data.
 
 Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.

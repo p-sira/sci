@@ -1,16 +1,18 @@
 use crate::error::{finite, finite_slice};
 use crate::{Error, Result};
+use sci_core::Float;
 
 const MAX_SAMPLES: usize = 1_000_001;
 
-fn validate_samples(y: &[f64]) -> Result<()> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn validate_samples<T: Float>(y: &[T]) -> Result<()> {
     if y.is_empty() || y.len() > MAX_SAMPLES {
         return Err(Error::InvalidInput("sample count must be in 1..=1000001"));
     }
     finite_slice(y)
 }
 
-fn spacings(y: &[f64], x: Option<&[f64]>, dx: f64) -> Result<Vec<f64>> {
+fn spacings<T: Float>(y: &[T], x: Option<&[T]>, dx: T) -> Result<Vec<T>> {
     validate_samples(y)?;
     if let Some(x) = x {
         if x.len() != y.len() {
@@ -28,18 +30,27 @@ fn spacings(y: &[f64], x: Option<&[f64]>, dx: f64) -> Result<Vec<f64>> {
 
 // Multiply the smallest and largest magnitudes first. This avoids a spurious
 // intermediate overflow/underflow when three finite factors balance each other.
-fn product3(a: f64, b: f64, c: f64) -> f64 {
+fn product3<T: Float>(a: T, b: T, c: T) -> T {
     let mut factors = [a, b, c];
-    factors.sort_unstable_by(|a, b| a.abs().total_cmp(&b.abs()));
+    factors.sort_unstable_by(|a, b| {
+        a.abs()
+            .partial_cmp(&b.abs())
+            .unwrap_or_else(|| a.is_nan().cmp(&b.is_nan()))
+    });
     (factors[0] * factors[2]) * factors[1]
 }
 
-fn sample_scale(magnitude: f64) -> f64 {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn sample_scale<T: Float>(magnitude: T) -> T {
     // A power of two makes normalization exact, including for subnormal data.
-    f64::from_bits(magnitude.to_bits() & 0x7ff0_0000_0000_0000).max(f64::MIN_POSITIVE)
+    let (mantissa, exponent, _) = magnitude.integer_decode();
+    let leading = 63 - mantissa.max(1).leading_zeros();
+    2.0.powi(i32::from(exponent) + leading as i32)
+        .max(T::min_positive_value())
 }
 
-fn trapezoid_interval(a: f64, b: f64, h: f64) -> f64 {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn trapezoid_interval<T: Float>(a: T, b: T, h: T) -> T {
     let magnitude = a.abs().max(b.abs());
     if magnitude == 0.0 {
         return h * (a + b);
@@ -48,14 +59,22 @@ fn trapezoid_interval(a: f64, b: f64, h: f64) -> f64 {
     product3(h, scale, 0.5 * (a / scale + b / scale))
 }
 
-#[derive(Default)]
-struct Sum {
-    value: f64,
-    correction: f64,
+struct Sum<T> {
+    value: T,
+    correction: T,
 }
 
-impl Sum {
-    fn add(&mut self, term: f64) -> Result<()> {
+impl<T: Float> Default for Sum<T> {
+    fn default() -> Self {
+        Self {
+            value: T::zero(),
+            correction: T::zero(),
+        }
+    }
+}
+
+impl<T: Float> Sum<T> {
+    fn add(&mut self, term: T) -> Result<()> {
         let next = finite(self.value + term)?;
         self.correction = finite(
             self.correction
@@ -69,12 +88,13 @@ impl Sum {
         Ok(())
     }
 
-    fn total(&self) -> Result<f64> {
+    fn total(&self) -> Result<T> {
         finite(self.value + self.correction)
     }
 }
 
-fn accumulate(intervals: impl Iterator<Item = f64>, initial: Option<f64>) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn accumulate<T: Float>(intervals: impl Iterator<Item = T>, initial: Option<T>) -> Result<Vec<T>> {
     if initial.is_some_and(|v| !v.is_finite()) {
         return Err(Error::InvalidInput("initial value must be finite"));
     }
@@ -124,7 +144,7 @@ fn accumulate(intervals: impl Iterator<Item = f64>, initial: Option<f64>) -> Res
 /// # References
 ///
 /// [SciPy trapezoid](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.trapezoid.html).
-pub fn trapezoid(y: &[f64], x: Option<&[f64]>, dx: f64) -> Result<f64> {
+pub fn trapezoid<T: Float>(y: &[T], x: Option<&[T]>, dx: T) -> Result<T> {
     let h = spacings(y, x, dx)?;
     let mut result = Sum::default();
     for (pair, h) in y.windows(2).zip(h) {
@@ -162,12 +182,13 @@ pub fn trapezoid(y: &[f64], x: Option<&[f64]>, dx: f64) -> Result<f64> {
 /// # References
 ///
 /// [SciPy cumulative_trapezoid](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.cumulative_trapezoid.html).
-pub fn cumulative_trapezoid(
-    y: &[f64],
-    x: Option<&[f64]>,
-    dx: f64,
-    initial: Option<f64>,
-) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn cumulative_trapezoid<T: Float>(
+    y: &[T],
+    x: Option<&[T]>,
+    dx: T,
+    initial: Option<T>,
+) -> Result<Vec<T>> {
     if initial.is_some_and(|v| v != 0.0) {
         return Err(Error::InvalidInput("initial must be zero or absent"));
     }
@@ -180,7 +201,8 @@ pub fn cumulative_trapezoid(
     )
 }
 
-fn quadratic_half(a: f64, b: f64, c: f64, h0: f64, h1: f64) -> f64 {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn quadratic_half<T: Float>(a: T, b: T, c: T, h0: T, h1: T) -> T {
     let width_scale = h0.abs().max(h1.abs());
     let r = (h0 / width_scale) / (h0 / width_scale + h1 / width_scale);
     let q = r * (h0 / h1);
@@ -199,7 +221,8 @@ fn quadratic_half(a: f64, b: f64, c: f64, h0: f64, h1: f64) -> f64 {
     )
 }
 
-fn validate_quadratic(h: &[f64], increasing: bool) -> Result<()> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn validate_quadratic<T: Float>(h: &[T], increasing: bool) -> Result<()> {
     if h.iter().any(|v| *v == 0.0 || (increasing && *v < 0.0))
         || h.windows(2).any(|v| v[0] + v[1] == 0.0)
     {
@@ -239,14 +262,15 @@ fn validate_quadratic(h: &[f64], increasing: bool) -> Result<()> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_integrate::simpson(&[0.0, 1.0, 4.0], None, 1.0)? - 8.0/3.0).abs() < 1e-14);
+/// assert!((sci_integrate::simpson(&[0.0_f64, 1.0, 4.0], None, 1.0)? - 8.0/3.0).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
 ///
 /// [SciPy simpson](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.simpson.html);
 /// Cartwright (2012), Simpson's Rule Cumulative Integration with Irregularly-spaced Data.
-pub fn simpson(y: &[f64], x: Option<&[f64]>, dx: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn simpson<T: Float>(y: &[T], x: Option<&[T]>, dx: T) -> Result<T> {
     let h = spacings(y, x, dx)?;
     if y.len() <= 2 {
         return trapezoid(y, x, dx);
@@ -291,19 +315,20 @@ pub fn simpson(y: &[f64], x: Option<&[f64]>, dx: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let integrals = sci_integrate::cumulative_simpson(&[0.0, 1.0, 4.0], None, 1.0, Some(2.0))?;
+/// let integrals = sci_integrate::cumulative_simpson(&[0.0_f64, 1.0, 4.0], None, 1.0, Some(2.0))?;
 /// assert!((integrals[1] - 7.0/3.0).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
 ///
 /// [SciPy cumulative_simpson](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.cumulative_simpson.html).
-pub fn cumulative_simpson(
-    y: &[f64],
-    x: Option<&[f64]>,
-    dx: f64,
-    initial: Option<f64>,
-) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn cumulative_simpson<T: Float>(
+    y: &[T],
+    x: Option<&[T]>,
+    dx: T,
+    initial: Option<T>,
+) -> Result<Vec<T>> {
     let h = spacings(y, x, dx)?;
     if x.is_some() && h.iter().any(|v| *v <= 0.0) {
         return Err(Error::InvalidInput("coordinates must strictly increase"));
@@ -356,13 +381,14 @@ pub fn cumulative_simpson(
 /// # Examples
 ///
 /// ```
-/// assert!((sci_integrate::romb(&[0.0, 1.0, 4.0, 9.0, 16.0], 1.0)? - 64.0/3.0).abs() < 1e-12);
+/// assert!((sci_integrate::romb(&[0.0_f64, 1.0, 4.0, 9.0, 16.0], 1.0)? - 64.0/3.0).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
 ///
 /// [SciPy romb](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.romb.html).
-pub fn romb(y: &[f64], dx: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn romb<T: Float>(y: &[T], dx: T) -> Result<T> {
     validate_samples(y)?;
     if !dx.is_finite() {
         return Err(Error::InvalidInput("spacing must be finite"));
@@ -375,7 +401,7 @@ pub fn romb(y: &[f64], dx: f64) -> Result<f64> {
     let mut previous = vec![finite(product3(
         dx,
         scale,
-        0.5 * n as f64 * (y[0] / scale + y[n] / scale),
+        0.5 * T::from(n).unwrap() * (y[0] / scale + y[n] / scale),
     ))?];
     let mut step = n;
     while step > 1 {
@@ -383,7 +409,7 @@ pub fn romb(y: &[f64], dx: f64) -> Result<f64> {
         let mut sum = Sum::default();
         sum.add(0.5 * previous[0])?;
         for i in (step..n).step_by(2 * step) {
-            sum.add(product3(dx, step as f64, y[i]))?;
+            sum.add(product3(dx, T::from(step).unwrap(), y[i]))?;
         }
         let mut row = vec![sum.total()?];
         let mut factor = 4.0;
@@ -395,7 +421,7 @@ pub fn romb(y: &[f64], dx: f64) -> Result<f64> {
                 row[j - 1] / (factor - 1.0) - previous[j - 1] / (factor - 1.0)
             };
             row.push(finite(row[j - 1] + correction)?);
-            factor *= 4.0;
+            factor = factor * (4.0);
         }
         previous = row;
     }
@@ -420,7 +446,8 @@ pub fn romb(y: &[f64], dx: f64) -> Result<f64> {
 /// Invalid bounds/order, callback overflow, or quadrature backend failure.
 /// ## Numerical behavior
 ///
-/// Uses shared [`sci_special::roots_legendre`] and exactly `n` evaluations
+/// Uses shared [`sci_special::roots_legendre`] to generate binary64 nodes and
+/// weights, rounds them to the selected type, and performs exactly `n` evaluations
 /// for nonzero intervals. Finite bounds map to clamped convex combinations,
 /// including when their difference overflows. At most 256 callback values
 /// are buffered and normalized by a power of two before compensated summation;
@@ -432,14 +459,15 @@ pub fn romb(y: &[f64], dx: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let value = sci_integrate::fixed_quad(|x|x*x, 0.0, 1.0, 3)?;
+/// let value = sci_integrate::fixed_quad(|x|x*x, 0.0_f64, 1.0, 3)?;
 /// assert!((value-1.0/3.0).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
 ///
 /// [SciPy fixed_quad](https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.fixed_quad.html).
-pub fn fixed_quad(f: impl Fn(f64) -> f64, a: f64, b: f64, n: usize) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn fixed_quad<T: Float>(f: impl Fn(T) -> T, a: T, b: T, n: usize) -> Result<T> {
     if !a.is_finite() || !b.is_finite() || !(1..=256).contains(&n) {
         return Err(Error::InvalidInput(
             "finite bounds and order in 1..=256 required",
@@ -454,7 +482,7 @@ pub fn fixed_quad(f: impl Fn(f64) -> f64, a: f64, b: f64, n: usize) -> Result<f6
     let mut values = Vec::with_capacity(n);
     let mut magnitude = 0_f64;
     for node in nodes {
-        let t = 0.5 * (node + 1.0);
+        let t = 0.5 * (T::from(node).unwrap() + 1.0);
         let point = if width.is_finite() {
             width.mul_add(t, a)
         } else {
@@ -472,7 +500,7 @@ pub fn fixed_quad(f: impl Fn(f64) -> f64, a: f64, b: f64, n: usize) -> Result<f6
     let scale = sample_scale(magnitude);
     let mut sum = Sum::default();
     for (value, weight) in values.into_iter().zip(weights) {
-        sum.add(weight * (value / scale))?;
+        sum.add(T::from(weight).unwrap() * (value / scale))?;
     }
     let weighted = sum.total()?;
     finite(if width.is_finite() {

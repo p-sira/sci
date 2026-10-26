@@ -2,6 +2,9 @@
 //!
 //! One-dimensional integration of samples and fixed-order Gaussian quadrature.
 //!
+//! Sampled integration and fixed quadrature use `T: sci_core::Float`; arithmetic
+//! and callbacks retain the selected precision. Newton–Cotes weights use `f64`.
+//!
 //! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Functions accept slices or scalar callbacks; sampled inputs have at most

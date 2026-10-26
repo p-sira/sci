@@ -12,6 +12,12 @@
 
 use std::fmt;
 
+/// Floating-point arithmetic bound, following the ellip convention.
+///
+/// Implemented by `f32` and `f64`; generic algorithms compute in the selected
+/// type without promoting inputs. Individual APIs may require additional bounds.
+pub use num_traits::Float;
+
 /// A validation or numerical evaluation failure.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Error {
@@ -55,7 +61,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Checks a finite numerical result.
 #[doc(hidden)]
-pub fn finite(value: f64) -> Result<f64> {
+pub fn finite<T: Float>(value: T) -> Result<T> {
     if value.is_finite() {
         Ok(value)
     } else {
@@ -65,7 +71,7 @@ pub fn finite(value: f64) -> Result<f64> {
 
 /// Checks that coordinates are finite.
 #[doc(hidden)]
-pub fn finite_slice(values: &[f64]) -> Result<()> {
+pub fn finite_slice<T: Float>(values: &[T]) -> Result<()> {
     if values.iter().all(|value| value.is_finite()) {
         Ok(())
     } else {
@@ -74,7 +80,7 @@ pub fn finite_slice(values: &[f64]) -> Result<()> {
 }
 
 /// An owned real matrix with one vector per row.
-pub type Matrix = Vec<Vec<f64>>;
+pub type Matrix<T = f64> = Vec<Vec<T>>;
 
 /// Scalar B-spline `S(x) = Σ coefficients[i] B[i,degree](x)`.
 ///
@@ -82,33 +88,33 @@ pub type Matrix = Vec<Vec<f64>>;
 /// The base interval is `[knots[degree], knots[coefficients.len()]]`.
 /// Numerical APIs validate public fields before use. Coefficients have sample units.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Spline {
+pub struct Spline<T = f64> {
     /// Complete knot vector, including endpoint multiplicities.
-    pub knots: Vec<f64>,
+    pub knots: Vec<T>,
     /// B-spline coefficients in increasing basis-index order.
-    pub coefficients: Vec<f64>,
+    pub coefficients: Vec<T>,
     /// Polynomial degree, rather than order (order is degree plus one).
     pub degree: usize,
 }
 
 /// Parametric B-spline curve with one scalar spline per coordinate.
 #[derive(Clone, Debug, PartialEq)]
-pub struct ParametricSpline {
+pub struct ParametricSpline<T = f64> {
     /// Coordinate splines, all using the same parameter and knot vector.
-    pub components: Vec<Spline>,
+    pub components: Vec<Spline<T>>,
     /// Increasing sample parameters used for the fit.
-    pub parameters: Vec<f64>,
+    pub parameters: Vec<T>,
 }
 
 /// Tensor-product spline `S(x,y) = Σ c[i,j] B[i,kx](x) B[j,ky](y)`.
 #[derive(Clone, Debug, PartialEq)]
-pub struct SurfaceSpline {
+pub struct SurfaceSpline<T = f64> {
     /// Complete nondecreasing x knot vector.
-    pub x_knots: Vec<f64>,
+    pub x_knots: Vec<T>,
     /// Complete nondecreasing y knot vector.
-    pub y_knots: Vec<f64>,
+    pub y_knots: Vec<T>,
     /// Flattened coefficients: x basis index first, y basis index fastest.
-    pub coefficients: Vec<f64>,
+    pub coefficients: Vec<T>,
     /// Degree in the first coordinate.
     pub x_degree: usize,
     /// Degree in the second coordinate.
@@ -137,7 +143,7 @@ pub enum Mode {
 /// their documented work limits before use. Use `sci_sparse::from_coo` or
 /// `sci_sparse::from_csr` to construct canonical matrices.
 #[derive(Clone, Debug, PartialEq)]
-pub struct SparseMatrix {
+pub struct SparseMatrix<T = f64> {
     /// Number of rows, including empty rows.
     pub rows: usize,
     /// Number of columns, including empty columns.
@@ -147,7 +153,7 @@ pub struct SparseMatrix {
     /// Zero-based column indices, strictly increasing within each row.
     pub indices: Vec<usize>,
     /// Finite stored values, including any explicit zeros.
-    pub data: Vec<f64>,
+    pub data: Vec<T>,
 }
 
 /// Real sparse array in canonical coordinate (COO) storage of arbitrary rank.
@@ -157,11 +163,11 @@ pub struct SparseMatrix {
 /// `shape.len()` components. Explicit zeros are allowed. Numerical operations
 /// validate these public fields before use. Rank is between one and 32.
 #[derive(Clone, Debug, PartialEq)]
-pub struct SparseArray {
+pub struct SparseArray<T = f64> {
     /// Axis lengths in logical order.
     pub shape: Vec<usize>,
     /// One multi-index per stored entry, in lexicographic order.
     pub coordinates: Vec<Vec<usize>>,
     /// Finite real values aligned with coordinates.
-    pub data: Vec<f64>,
+    pub data: Vec<T>,
 }

@@ -148,7 +148,7 @@ fn rejects_nonfinite_evaluations_and_arithmetic() {
         );
     }
     assert_eq!(
-        d::derivative(|x| x.signum() * f64::MAX, 0.0, 0.5),
+        d::derivative(|x: f64| x.signum() * f64::MAX, 0.0, 0.5),
         Err(Error::NonFiniteEvaluation)
     );
     assert_eq!(
@@ -237,13 +237,13 @@ fn evaluation_counts_and_symmetric_matrix_interoperate() {
 
 #[test]
 fn second_order_convergence_and_extreme_scales() {
-    let error = |h| (d::hessian(|x| x[0].powi(4), &[1.0], h).unwrap()[0][0] - 12.0).abs();
+    let error = |h: f64| (d::hessian(|x| x[0].powi(4), &[1.0], h).unwrap()[0][0] - 12.0).abs();
     finite_close(error(0.125) / error(0.0625), 4.0, 1e-12, 0.0);
-    let error = |h| (d::derivative(|x| x.powi(3), 1.0, h).unwrap() - 3.0).abs();
+    let error = |h: f64| (d::derivative(|x| x.powi(3), 1.0, h).unwrap() - 3.0).abs();
     finite_close(error(0.125) / error(0.0625), 4.0, 1e-12, 0.0);
     assert_eq!(d::derivative(|x| x, 0.0, f64::MAX).unwrap(), 1.0);
     assert_eq!(
-        d::derivative(|x| x.signum() * f64::MAX, 0.0, 1.0).unwrap(),
+        d::derivative(|x: f64| x.signum() * f64::MAX, 0.0, 1.0).unwrap(),
         f64::MAX
     );
     assert_eq!(d::derivative(|x| x, 0.0, f64::from_bits(1)).unwrap(), 1.0);
@@ -275,7 +275,7 @@ fn rounded_coordinate_stencils_preserve_linear_and_quadratic_identities() {
         assert_eq!(d::hessian(|x| x[0], &[x], step).unwrap(), vec![vec![0.0]]);
     }
     assert_eq!(
-        d::hessian(|x| (x[0] - 1.0).powi(2), &[1.0], 1.2e-16).unwrap(),
+        d::hessian(|x: &[f64]| (x[0] - 1.0).powi(2), &[1.0], 1.2e-16).unwrap(),
         vec![vec![2.0]]
     );
     assert_eq!(

@@ -169,7 +169,7 @@ fn elementary_limits_and_elliptic_conventions() {
             1e-14,
         );
     }
-    assert!(s::ellipkm1(1e-20).unwrap().is_finite());
+    assert!(s::ellipkm1(1e-20_f64).unwrap().is_finite());
     finite_close(
         s::logsumexp(&[1000.0, 1000.0]),
         1000.0 + 2.0_f64.ln(),

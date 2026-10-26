@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Make all finite-difference APIs generic over `Float`, preserving rounded-coordinate stencils, validation, and work limits.
+
 - Update shared Sci dependency requirements to the new minor versions.
 
 ## 0.2.0

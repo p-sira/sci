@@ -161,7 +161,7 @@ pub fn binned_statistic_dd(
         } else {
             match statistic {
                 BinStatistic::Count => b.len() as f64,
-                BinStatistic::Sum => finite(b.iter().sum())?,
+                BinStatistic::Sum => finite(b.iter().sum::<f64>())?,
                 BinStatistic::Mean => mean(&b)?,
                 BinStatistic::Std => std(&b, 0)?,
                 BinStatistic::Median => median(&b)?,

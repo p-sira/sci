@@ -1,33 +1,35 @@
 use super::*;
+use sci_core::Float;
 
 /// One-dimensional sample summary returned by [`describe`].
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Description {
+pub struct Description<T = f64> {
     /// Number of observations.
     pub count: usize,
     /// Smallest observation.
-    pub min: f64,
+    pub min: T,
     /// Largest observation.
-    pub max: f64,
+    pub max: T,
     /// Arithmetic mean.
-    pub mean: f64,
+    pub mean: T,
     /// Variance using the requested ddof.
-    pub variance: f64,
+    pub variance: T,
     /// Skewness, with the requested bias convention.
-    pub skewness: f64,
+    pub skewness: T,
     /// Fisher excess kurtosis, with the requested bias convention.
-    pub kurtosis: f64,
+    pub kurtosis: T,
 }
 
-fn standardized_moments(x: &[f64]) -> Result<(f64, f64, f64, f64)> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn standardized_moments<T: Float>(x: &[T]) -> Result<(T, T, T, T)> {
     sample(x, 1)?;
     let (_, deviations) = centered_scaled(x)?;
-    let n = x.len() as f64;
+    let n = T::from(x.len()).unwrap();
     let (mut m2, mut m3, mut m4) = (0., 0., 0.);
     for d in deviations {
-        m2 += d * d / n;
-        m3 += d * d * d / n;
-        m4 += (d * d).powi(2) / n;
+        m2 = m2 + (d * d / n);
+        m3 = m3 + (d * d * d / n);
+        m4 = m4 + ((d * d).powi(2) / n);
     }
     Ok((n, m2, m3, m4))
 }
@@ -43,7 +45,7 @@ fn standardized_moments(x: &[f64]) -> Result<(f64, f64, f64, f64)> {
 ///
 /// ## Returns
 ///
-/// `f64`: standard deviation in observation units.
+/// `T`: standard deviation in observation units.
 ///
 /// ## Errors
 ///
@@ -53,7 +55,7 @@ fn standardized_moments(x: &[f64]) -> Result<(f64, f64, f64, f64)> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -66,7 +68,7 @@ fn standardized_moments(x: &[f64]) -> Result<(f64, f64, f64, f64)> {
 /// # References
 ///
 /// [NumPy `std`](https://numpy.org/doc/stable/reference/generated/numpy.std.html).
-pub fn std(values: &[f64], ddof: usize) -> Result<f64> {
+pub fn std<T: Float>(values: &[T], ddof: usize) -> Result<T> {
     let (scale, normalized) = scaled_variance(values, ddof)?;
     finite(normalized.sqrt() * scale)
 }
@@ -83,7 +85,7 @@ pub fn std(values: &[f64], ddof: usize) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: estimated standard error.
+/// `T`: estimated standard error.
 ///
 /// ## Errors
 ///
@@ -93,7 +95,7 @@ pub fn std(values: &[f64], ddof: usize) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -106,9 +108,9 @@ pub fn std(values: &[f64], ddof: usize) -> Result<f64> {
 /// # References
 ///
 /// [SciPy `sem`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sem.html).
-pub fn sem(values: &[f64], ddof: usize) -> Result<f64> {
+pub fn sem<T: Float>(values: &[T], ddof: usize) -> Result<T> {
     sample(values, 2)?;
-    Ok(std(values, ddof)? / (values.len() as f64).sqrt())
+    Ok(std(values, ddof)? / (T::from(values.len()).unwrap()).sqrt())
 }
 
 /// Coefficient of variation `std(x,ddof)/mean(x)`.
@@ -123,7 +125,7 @@ pub fn sem(values: &[f64], ddof: usize) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: dimensionless coefficient.
+/// `T`: dimensionless coefficient.
 ///
 /// ## Errors
 ///
@@ -133,7 +135,7 @@ pub fn sem(values: &[f64], ddof: usize) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -146,7 +148,7 @@ pub fn sem(values: &[f64], ddof: usize) -> Result<f64> {
 /// # References
 ///
 /// [SciPy `variation`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.variation.html).
-pub fn variation(values: &[f64], ddof: usize) -> Result<f64> {
+pub fn variation<T: Float>(values: &[T], ddof: usize) -> Result<T> {
     Ok(std(values, ddof)? / mean(values)?)
 }
 
@@ -162,7 +164,7 @@ pub fn variation(values: &[f64], ddof: usize) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: quantile in observation units.
+/// `T`: quantile in observation units.
 ///
 /// ## Errors
 ///
@@ -185,7 +187,7 @@ pub fn variation(values: &[f64], ddof: usize) -> Result<f64> {
 /// # References
 ///
 /// [SciPy `quantile`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.quantile.html).
-pub fn quantile(values: &[f64], probability: f64) -> Result<f64> {
+pub fn quantile<T: Float>(values: &[T], probability: T) -> Result<T> {
     probability_check(probability)?;
     let x = sorted(values)?;
     Ok(interpolate(&x, probability))
@@ -203,7 +205,7 @@ pub fn quantile(values: &[f64], probability: f64) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: percentile in observation units.
+/// `T`: percentile in observation units.
 ///
 /// ## Errors
 ///
@@ -213,7 +215,7 @@ pub fn quantile(values: &[f64], probability: f64) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -226,7 +228,8 @@ pub fn quantile(values: &[f64], probability: f64) -> Result<f64> {
 /// # References
 ///
 /// [SciPy `scoreatpercentile`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.scoreatpercentile.html).
-pub fn scoreatpercentile(values: &[f64], percentile: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn scoreatpercentile<T: Float>(values: &[T], percentile: T) -> Result<T> {
     quantile(values, percentile / 100.)
 }
 
@@ -242,7 +245,7 @@ pub fn scoreatpercentile(values: &[f64], percentile: f64) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: sample median.
+/// `T`: sample median.
 ///
 /// ## Errors
 ///
@@ -252,7 +255,7 @@ pub fn scoreatpercentile(values: &[f64], percentile: f64) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -265,7 +268,8 @@ pub fn scoreatpercentile(values: &[f64], percentile: f64) -> Result<f64> {
 /// # References
 ///
 /// [NumPy `median`](https://numpy.org/doc/stable/reference/generated/numpy.median.html).
-pub fn median(values: &[f64]) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn median<T: Float>(values: &[T]) -> Result<T> {
     quantile(values, 0.5)
 }
 
@@ -281,7 +285,7 @@ pub fn median(values: &[f64]) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: nonnegative range in observation units.
+/// `T`: nonnegative range in observation units.
 ///
 /// ## Errors
 ///
@@ -291,7 +295,7 @@ pub fn median(values: &[f64]) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -304,7 +308,8 @@ pub fn median(values: &[f64]) -> Result<f64> {
 /// # References
 ///
 /// [SciPy `iqr`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.iqr.html).
-pub fn iqr(values: &[f64]) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn iqr<T: Float>(values: &[T]) -> Result<T> {
     let x = sorted(values)?;
     finite(interpolate(&x, 0.75) - interpolate(&x, 0.25))
 }
@@ -321,7 +326,7 @@ pub fn iqr(values: &[f64]) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: scaled absolute deviation.
+/// `T`: scaled absolute deviation.
 ///
 /// ## Errors
 ///
@@ -331,7 +336,7 @@ pub fn iqr(values: &[f64]) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -344,12 +349,12 @@ pub fn iqr(values: &[f64]) -> Result<f64> {
 /// # References
 ///
 /// [SciPy `median_abs_deviation`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.median_abs_deviation.html).
-pub fn median_abs_deviation(values: &[f64], scale: f64) -> Result<f64> {
+pub fn median_abs_deviation<T: Float>(values: &[T], scale: T) -> Result<T> {
     positive(scale)?;
     let center = median(values)?;
     let distances = values
         .iter()
-        .map(|x| (x - center).abs())
+        .map(|&x| (x - center).abs())
         .collect::<Vec<_>>();
     finite(median(&distances)? / scale)
 }
@@ -366,7 +371,7 @@ pub fn median_abs_deviation(values: &[f64], scale: f64) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: geometric mean.
+/// `T`: geometric mean.
 ///
 /// ## Errors
 ///
@@ -376,20 +381,21 @@ pub fn median_abs_deviation(values: &[f64], scale: f64) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert!((sci_stats::gmean(&[1., 4.])? - 2.).abs() < 1e-14);
+/// assert!((sci_stats::gmean(&[1.0_f64, 4.])? - 2.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `gmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gmean.html).
-pub fn gmean(values: &[f64]) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gmean<T: Float>(values: &[T]) -> Result<T> {
     sample(values, 1)?;
     if values.iter().any(|x| *x < 0.) {
         return Err(Error::InvalidInput(
@@ -415,7 +421,7 @@ pub fn gmean(values: &[f64]) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: harmonic mean.
+/// `T`: harmonic mean.
 ///
 /// ## Errors
 ///
@@ -438,18 +444,26 @@ pub fn gmean(values: &[f64]) -> Result<f64> {
 /// # References
 ///
 /// [SciPy `hmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.hmean.html).
-pub fn hmean(values: &[f64]) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn hmean<T: Float>(values: &[T]) -> Result<T> {
     sample(values, 1)?;
     if values.iter().any(|x| *x < 0.) {
         return Err(Error::InvalidInput(
             "harmonic mean requires nonnegative values",
         ));
     }
-    let minimum = values.iter().copied().fold(f64::INFINITY, f64::min);
+    let minimum = values.iter().copied().fold(T::infinity(), T::min);
     if minimum == 0. {
         return Ok(0.);
     }
-    finite(minimum / (values.iter().map(|x| minimum / x).sum::<f64>() / values.len() as f64))
+    finite(
+        minimum
+            / (values
+                .iter()
+                .map(|&x| minimum / x)
+                .fold(T::zero(), |a, b| a + b)
+                / T::from(values.len()).unwrap()),
+    )
 }
 
 /// Geometric standard deviation `exp(std(ln(x),ddof))`.
@@ -464,7 +478,7 @@ pub fn hmean(values: &[f64]) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: dimensionless multiplicative spread.
+/// `T`: dimensionless multiplicative spread.
 ///
 /// ## Errors
 ///
@@ -474,7 +488,7 @@ pub fn hmean(values: &[f64]) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -487,7 +501,8 @@ pub fn hmean(values: &[f64]) -> Result<f64> {
 /// # References
 ///
 /// [SciPy `gstd`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gstd.html).
-pub fn gstd(values: &[f64], ddof: usize) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gstd<T: Float>(values: &[T], ddof: usize) -> Result<T> {
     sample(values, 1)?;
     if values.iter().any(|x| *x <= 0.) {
         return Err(Error::InvalidInput(
@@ -509,7 +524,7 @@ pub fn gstd(values: &[f64], ddof: usize) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: central moment, in observation units raised to `order`.
+/// `T`: central moment, in observation units raised to `order`.
 ///
 /// ## Errors
 ///
@@ -534,7 +549,8 @@ pub fn gstd(values: &[f64], ddof: usize) -> Result<f64> {
 /// # References
 ///
 /// [SciPy `moment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.moment.html).
-pub fn moment(values: &[f64], order: usize) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn moment<T: Float>(values: &[T], order: usize) -> Result<T> {
     sample(values, 1)?;
     if order > 64 {
         return Err(Error::InvalidInput("moment order exceeds 64"));
@@ -572,7 +588,7 @@ pub fn moment(values: &[f64], order: usize) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: dimensionless skewness.
+/// `T`: dimensionless skewness.
 ///
 /// ## Errors
 ///
@@ -588,17 +604,18 @@ pub fn moment(values: &[f64], order: usize) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::skew(&[1., 2., 3.], true)?.abs() < 1e-14);
+/// assert!(sci_stats::skew(&[1.0_f64, 2., 3.], true)?.abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `skew`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.skew.html).
-pub fn skew(values: &[f64], bias: bool) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn skew<T: Float>(values: &[T], bias: bool) -> Result<T> {
     let (n, m2, m3, _) = standardized_moments(values)?;
     if m2 == 0. {
-        return Ok(f64::NAN);
+        return Ok(T::nan());
     }
     let g = m3 / m2.powf(1.5);
     Ok(if !bias && n > 2. {
@@ -620,7 +637,7 @@ pub fn skew(values: &[f64], bias: bool) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: dimensionless kurtosis.
+/// `T`: dimensionless kurtosis.
 ///
 /// ## Errors
 ///
@@ -636,17 +653,18 @@ pub fn skew(values: &[f64], bias: bool) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_stats::kurtosis(&[1., 2., 3.], true, true)? + 1.5).abs() < 1e-14);
+/// assert!((sci_stats::kurtosis(&[1.0_f64, 2., 3.], true, true)? + 1.5).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `kurtosis`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kurtosis.html).
-pub fn kurtosis(values: &[f64], fisher: bool, bias: bool) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn kurtosis<T: Float>(values: &[T], fisher: bool, bias: bool) -> Result<T> {
     let (n, m2, _, m4) = standardized_moments(values)?;
     if m2 == 0. {
-        return Ok(f64::NAN);
+        return Ok(T::nan());
     }
     let mut k = m4 / (m2 * m2);
     if !bias && n > 3. {
@@ -667,7 +685,7 @@ pub fn kurtosis(values: &[f64], fisher: bool, bias: bool) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `Vec<f64>`: one dimensionless score per observation.
+/// `Vec<T>`: one dimensionless score per observation.
 ///
 /// ## Errors
 ///
@@ -693,7 +711,7 @@ pub fn kurtosis(values: &[f64], fisher: bool, bias: bool) -> Result<f64> {
 /// # References
 ///
 /// [SciPy `zscore`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.zscore.html).
-pub fn zscore(values: &[f64], ddof: usize) -> Result<Vec<f64>> {
+pub fn zscore<T: Float>(values: &[T], ddof: usize) -> Result<Vec<T>> {
     zmap(values, values, ddof)
 }
 
@@ -715,7 +733,7 @@ pub fn zscore(values: &[f64], ddof: usize) -> Result<Vec<f64>> {
 ///
 /// ## Returns
 ///
-/// `Vec<f64>`: standardized scores in original order.
+/// `Vec<T>`: standardized scores in original order.
 ///
 /// ## Errors
 ///
@@ -742,7 +760,8 @@ pub fn zscore(values: &[f64], ddof: usize) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy `zmap`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.zmap.html).
-pub fn zmap(scores: &[f64], compare: &[f64], ddof: usize) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn zmap<T: Float>(scores: &[T], compare: &[T], ddof: usize) -> Result<Vec<T>> {
     sample(scores, 0)?;
     if ddof >= compare.len() {
         return Err(Error::InvalidInput(
@@ -764,7 +783,7 @@ pub fn zmap(scores: &[f64], compare: &[f64], ddof: usize) -> Result<Vec<f64>> {
             let coordinate = if delta.is_finite() {
                 delta / reference.scale
             } else {
-                x / reference.scale - reference.origin / reference.scale
+                *x / reference.scale - reference.origin / reference.scale
             };
             let score = (coordinate - reference.center) / spread;
             finite(if score.is_finite() {
@@ -775,7 +794,7 @@ pub fn zmap(scores: &[f64], compare: &[f64], ddof: usize) -> Result<Vec<f64>> {
                 let displacement = if delta.is_finite() {
                     (delta / spread) / reference.scale
                 } else {
-                    (x / spread) / reference.scale - (reference.origin / spread) / reference.scale
+                    (*x / spread) / reference.scale - (reference.origin / spread) / reference.scale
                 };
                 displacement - reference.center / spread
             })
@@ -795,7 +814,7 @@ pub fn zmap(scores: &[f64], compare: &[f64], ddof: usize) -> Result<Vec<f64>> {
 ///
 /// ## Returns
 ///
-/// `Vec<f64>`: dimensionless log-space scores.
+/// `Vec<T>`: dimensionless log-space scores.
 ///
 /// ## Errors
 ///
@@ -820,7 +839,8 @@ pub fn zmap(scores: &[f64], compare: &[f64], ddof: usize) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy `gzscore`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gzscore.html).
-pub fn gzscore(values: &[f64], ddof: usize) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gzscore<T: Float>(values: &[T], ddof: usize) -> Result<Vec<T>> {
     sample(values, 1)?;
     if values.iter().any(|x| *x <= 0.) {
         return Err(Error::InvalidInput(
@@ -842,7 +862,7 @@ pub fn gzscore(values: &[f64], ddof: usize) -> Result<Vec<f64>> {
 ///
 /// ## Returns
 ///
-/// `Vec<f64>`: retained observations, ascending.
+/// `Vec<T>`: retained observations, ascending.
 ///
 /// ## Errors
 ///
@@ -852,7 +872,7 @@ pub fn gzscore(values: &[f64], ddof: usize) -> Result<Vec<f64>> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -865,14 +885,22 @@ pub fn gzscore(values: &[f64], ddof: usize) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy `trimboth`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.trimboth.html).
-pub fn trimboth(values: &[f64], proportion: f64) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn trimboth<T: Float>(values: &[T], proportion: T) -> Result<Vec<T>> {
     sample(values, 0)?;
     if !proportion.is_finite() || !(0. ..0.5).contains(&proportion) {
         return Err(Error::InvalidInput("trim proportion must be in [0,0.5)"));
     }
     let mut x = values.to_vec();
-    x.sort_by(f64::total_cmp);
-    let k = (x.len() as f64 * proportion).floor() as usize;
+    x.sort_by(|a, b| {
+        a.partial_cmp(b)
+            .unwrap()
+            .then_with(|| b.is_sign_negative().cmp(&a.is_sign_negative()))
+    });
+    let k = (T::from(x.len()).unwrap() * proportion)
+        .floor()
+        .to_usize()
+        .unwrap();
     x.truncate(x.len() - k);
     x.drain(..k);
     Ok(x)
@@ -890,7 +918,7 @@ pub fn trimboth(values: &[f64], proportion: f64) -> Result<Vec<f64>> {
 ///
 /// ## Returns
 ///
-/// `f64`: arithmetic mean after sorting and trimming.
+/// `T`: arithmetic mean after sorting and trimming.
 ///
 /// ## Errors
 ///
@@ -900,7 +928,7 @@ pub fn trimboth(values: &[f64], proportion: f64) -> Result<Vec<f64>> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -913,7 +941,7 @@ pub fn trimboth(values: &[f64], proportion: f64) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy `trim_mean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.trim_mean.html).
-pub fn trim_mean(values: &[f64], proportion: f64) -> Result<f64> {
+pub fn trim_mean<T: Float>(values: &[T], proportion: T) -> Result<T> {
     mean(&trimboth(values, proportion)?)
 }
 
@@ -929,7 +957,7 @@ pub fn trim_mean(values: &[f64], proportion: f64) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `(f64, usize)`: modal observation and its count.
+/// `(T, usize)`: modal observation and its count.
 ///
 /// ## Errors
 ///
@@ -952,7 +980,7 @@ pub fn trim_mean(values: &[f64], proportion: f64) -> Result<f64> {
 /// # References
 ///
 /// [SciPy `mode`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mode.html).
-pub fn mode(values: &[f64]) -> Result<(f64, usize)> {
+pub fn mode<T: Float>(values: &[T]) -> Result<(T, usize)> {
     let x = sorted(values)?;
     let mut best = (x[0], 1);
     let mut start = 0;
@@ -991,7 +1019,7 @@ pub fn mode(values: &[f64]) -> Result<(f64, usize)> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -1004,12 +1032,12 @@ pub fn mode(values: &[f64]) -> Result<(f64, usize)> {
 /// # References
 ///
 /// [SciPy `describe`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.describe.html).
-pub fn describe(values: &[f64], ddof: usize, bias: bool) -> Result<Description> {
+pub fn describe<T: Float>(values: &[T], ddof: usize, bias: bool) -> Result<Description<T>> {
     sample(values, 1)?;
     Ok(Description {
         count: values.len(),
-        min: values.iter().copied().fold(f64::INFINITY, f64::min),
-        max: values.iter().copied().fold(f64::NEG_INFINITY, f64::max),
+        min: values.iter().copied().fold(T::infinity(), T::min),
+        max: values.iter().copied().fold(T::neg_infinity(), T::max),
         mean: mean(values)?,
         variance: variance(values, ddof)?,
         skewness: skew(values, bias)?,

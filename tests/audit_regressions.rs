@@ -469,6 +469,6 @@ fn fft_workspaces_preserve_round_trips_and_thread_isolation() {
     for thread in threads {
         thread.join().unwrap();
     }
-    assert!(fft::rfft(&[]).is_empty());
+    assert!(fft::rfft::<f64>(&[]).is_empty());
     assert!(fft::rfft(&[f64::NAN, 1.0]).iter().any(|z| z.re.is_nan()));
 }

@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Re-export the shared `Float` bound; make finite checks and matrix, spline, and sparse storage generic with `f64` defaults.
+
 - Update shared Sci dependency requirements to the new minor versions.
 
 ## 0.2.0
