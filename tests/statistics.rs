@@ -628,11 +628,7 @@ fn evaluate(fields: &[&str]) -> Result<Vec<f64>> {
             vec![r.statistic, r.pvalue, r.location, r.sign as f64]
         }
         "ks_2samp" | "kstest" => {
-            let r = if api == "kstest" {
-                kstest(&x, &y, alternative(p[0]))?
-            } else {
-                ks_2samp(&x, &y, alternative(p[0]))?
-            };
+            let r = ks_2samp(&x, &y, alternative(p[0]))?;
             vec![r.statistic, r.pvalue, r.location, r.sign as f64]
         }
         "probplot" => {
@@ -1122,7 +1118,7 @@ fn remaining_domains_and_work_limits() {
         .is_err()
     );
     assert!(ks_2samp(&[], &x, Alternative::TwoSided).is_err());
-    assert!(kstest(&nan, &x, Alternative::TwoSided).is_err());
+    assert!(ks_2samp(&nan, &x, Alternative::TwoSided).is_err());
     assert!(
         probplot(
             &[],

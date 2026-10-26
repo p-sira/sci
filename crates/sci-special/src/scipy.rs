@@ -4233,26 +4233,6 @@ pub fn inv_boxcox1p(y: f64, lambda: f64) -> f64 {
     }
 }
 
-/// Alias for digamma, ψ(x).
-///
-/// ## Parameters and domain
-///
-/// Same domain and endpoint behavior as digamma.
-/// NaN propagates; divergent values and overflow use IEEE infinities.
-///
-/// # Examples
-///
-/// ```
-/// assert!(sci_special::psi(2.5).is_finite());
-/// ```
-///
-/// # References
-///
-/// - [SciPy psi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.psi.html).
-pub fn psi(x: f64) -> f64 {
-    super::digamma(x)
-}
-
 /// Complementary regularized incomplete beta 1−I_x(a,b)=I_(1−x)(b,a).
 ///
 /// ## Parameters and domain

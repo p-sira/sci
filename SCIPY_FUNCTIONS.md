@@ -9,6 +9,8 @@ Source of truth: the installed runtime and matching `.pyi` files under `.venv/li
 SciPy names are a numerical reference inventory, not a requirement to reproduce
 Python runtime APIs or redundant aliases. See [the migration guide](MIGRATING.md)
 and module coverage reports for deliberate omissions and Rust replacements.
+The [second Rust API audit](function_coverages/RUST_API_AUDIT.md) records
+additional cleanup decisions and remaining design candidates.
 
 ## Top-level submodule files
 

@@ -26,7 +26,16 @@ fn inventory_has_references_or_intentional_exclusions() {
     assert_eq!(inventory_names(&unix), inventory_names(&windows));
     assert_eq!(expected.len(), 355);
     for name in [
-        "geterr", "seterr", "cbrt", "exp2", "exp10", "expm1", "log1p", "round",
+        "psi",
+        "assoc_laguerre",
+        "geterr",
+        "seterr",
+        "cbrt",
+        "exp2",
+        "exp10",
+        "expm1",
+        "log1p",
+        "round",
     ] {
         assert!(expected.remove(name));
     }

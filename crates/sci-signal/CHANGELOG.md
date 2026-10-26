@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Remove choose_conv_method and ConvolutionMethod (SciPy timing calibration); rename closest_STFT_dual_window to closest_stft_dual_window.
+
 - Remove freqresp, dfreqresp, sosfreqz, check_COLA and check_NOLA aliases; use freqs, freqz, freqz_sos, check_cola and check_nola.
 - Validate computed real and complex outputs by borrowing their storage. Build mirrored windows and conjugate roots without temporary vector clones, and retain polynomial workspace storage.
 - Upgrade private `pm-remez` to 0.3.5 and reuse nalgebra 0.35 for Remez

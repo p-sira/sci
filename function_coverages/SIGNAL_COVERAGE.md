@@ -1,9 +1,12 @@
 # `signal` coverage and SciPy adaptations
 
 Audited against `SCIPY_FUNCTIONS.md` and `scipy-func-list/scipy.signal.md`:
-**170 of 175 public inventory function names remain exported**. Five redundant
+**168 of 175 public inventory function names remain exported**. Six redundant
 spellings are removed: `freqresp` → `freqs`, `dfreqresp` → `freqz`, `sosfreqz` →
-`freqz_sos`, `check_COLA` → `check_cola`, and `check_NOLA` → `check_nola`.
+`freqz_sos`, `check_COLA` → `check_cola`, `check_NOLA` → `check_nola`, and
+`closest_STFT_dual_window` → `closest_stft_dual_window`.
+`choose_conv_method` and `ConvolutionMethod` are removed because their cost model
+was calibrated to SciPy rather than Sci’s Rust backends.
 The underlying numerical operations retain bounded Rust signatures and
 independent reference cases; fixtures may keep SciPy's original labels.
 Compatibility namespaces and Cython duplicates add no separate Rust APIs.
@@ -17,7 +20,7 @@ remain private; data uses f64 slices, row-major vectors, and shared Complex.
 
 `tests/scipy/signal_cases.json` contains inputs only. The generator
 `tests/scipy/generate_signal.py` pins SciPy 1.18.1 and NumPy 2.5.4 and writes
-1416 cases to separate input and expected CSV files. Rust tests check every
+1411 cases to separate input and expected CSV files. Rust tests check every
 output row and its length, complex interleaving, indices, state ordering, and
 frequency/time axes. The justified combined tolerance is
 `2e-11 * (1 + abs(expected))`; most direct formulas agree within 1e-13.
@@ -187,8 +190,7 @@ and compute inventory coverage. Regenerate with
   nonfinite data masked by zero weights are unsupported. It returns samples
   instead of SciPy's result object; lambda=0 returns the original data.
 - oaconvolve uses FFT overlap-add with cached kernel spectra and bounded blocks.
-  choose_conv_method uses SciPy's one-dimensional f64 cost model; hardware timing
-  and integer/complex dispatch are unsupported. closest_STFT_dual_window accepts
+  closest_stft_dual_window accepts
   real desired windows, explicit hop, and optional scaling, returning (dual,alpha).
 - envelope supports real periodic samples, nonnegative integer frequency-bin
   bands, output-length resampling, squared amplitude, and all/lowpass residual.
@@ -228,7 +230,7 @@ Taylor nbar is 1..128. These bounds are part of the supported API.
 No uniform relative-error guarantee applies near cancellation, repeated roots,
 singularities, poorly conditioned filters, or extreme parameter values.
 
-## Implemented public inventory names
+## Implemented numerical operations (canonical Rust names)
 
 - `abcd_normalize`
 - `argrelextrema`
@@ -249,11 +251,10 @@ singularities, poorly conditioned filters, or extreme parameter values.
 - `cheb2ord`
 - `cheby1`
 - `cheby2`
-- `check_COLA`
-- `check_NOLA`
+- `check_cola`
+- `check_nola`
 - `chirp`
-- `choose_conv_method`
-- `closest_STFT_dual_window`
+- `closest_stft_dual_window`
 - `coherence`
 - `cont2discrete`
 - `convolve`
@@ -271,7 +272,6 @@ singularities, poorly conditioned filters, or extreme parameter values.
 - `decimate`
 - `deconvolve`
 - `detrend`
-- `dfreqresp`
 - `dimpulse`
 - `dlsim`
 - `dstep`
@@ -288,7 +288,6 @@ singularities, poorly conditioned filters, or extreme parameter values.
 - `firwin`
 - `firwin2`
 - `firwin_2d`
-- `freqresp`
 - `freqs`
 - `freqs_zpk`
 - `freqz`
@@ -354,7 +353,6 @@ singularities, poorly conditioned filters, or extreme parameter values.
 - `sosfilt`
 - `sosfilt_zi`
 - `sosfiltfilt`
-- `sosfreqz`
 - `spectrogram`
 - `spline_filter`
 - `square`

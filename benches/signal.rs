@@ -113,15 +113,6 @@ mod convolution_benches {
     }
 
     #[divan::bench]
-    fn choose_conv_method(bencher: Bencher) {
-        let x = sine_signal(N);
-        let h = values(64, 3);
-        bencher.bench(|| {
-            signal::choose_conv_method(black_box(&x), black_box(&h), Mode::Full).unwrap()
-        });
-    }
-
-    #[divan::bench]
     fn deconvolve(bencher: Bencher) {
         let h: Vec<f64> = (0..8).map(|i| 0.5f64.powi(i)).collect();
         let x = signal::convolve(&values(256, 5), &h, Mode::Full).unwrap();
@@ -1175,7 +1166,7 @@ mod spectral_benches {
         let window = windows::hann(256, false).unwrap();
         let desired = windows::hamming(256, false).unwrap();
         bencher.bench(|| {
-            signal::closest_STFT_dual_window(black_box(&window), 64, black_box(&desired), true)
+            signal::closest_stft_dual_window(black_box(&window), 64, black_box(&desired), true)
                 .unwrap()
         });
     }

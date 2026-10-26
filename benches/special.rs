@@ -601,12 +601,6 @@ mod orthogonal_eval_benches {
         let x = unit_values(N, 6);
         bencher.bench(|| sum1(black_box(&x), |x| special::eval_sh_jacobi(10, 2.5, 1.5, x)));
     }
-
-    #[divan::bench]
-    fn assoc_laguerre(bencher: Bencher) {
-        let x = positive_values(N, 6);
-        bencher.bench(|| sum1(black_box(&x), |x| special::assoc_laguerre(x, 10, 0.5)));
-    }
 }
 
 mod orthogonal_polynomial_benches {
@@ -1033,17 +1027,6 @@ mod incomplete_elliptic_benches {
         linspace(0.0, 0.95, N)
     }
 
-    #[divan::bench]
-    fn ellipf(bencher: Bencher) {
-        let (phi, m) = (amplitudes(), parameters());
-        bencher.bench(|| {
-            sum2(black_box(&phi), black_box(&m), |p, m| {
-                special::ellipf(p, m).unwrap()
-            })
-        });
-    }
-
-    /// Alias of `ellipf`.
     #[divan::bench]
     fn ellipkinc(bencher: Bencher) {
         let (phi, m) = (amplitudes(), parameters());

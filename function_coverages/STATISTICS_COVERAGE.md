@@ -5,14 +5,15 @@ shared Sci special functions and lapjv 0.3.0 backends. Shapiro and Tukey use
 private adaptations of BSD-licensed SciPy algorithms and mixture integrals;
 the retained license is `crates/sci-stats/SCIPY_LICENSE.txt`. No Python runtime is used. **The Rust API intentionally omits scalar standard-library wrappers. Full SciPy
 statistics parity is not complete.** The audit against `SCIPY_FUNCTIONS.md` and
-`scipy-func-list/scipy.stats.md` covers **134 of 137 scipy.stats function names**,
+`scipy-func-list/scipy.stats.md` covers **133 of 137 scipy.stats function names**,
 all **7 contingency names**, and all **4 QMC utility function names**.
 Distribution coverage is **30 of 149 callable families** with evaluation methods;
 this does not claim their entire object-oriented SciPy method surface.
 
 The coverage audit fails for exported functions without committed reference
 cases and checks explicit main-namespace inventory dispositions. `abs`, `exp`,
-and `log` are intentionally omitted in favor of `f64` methods. There are no placeholder
+and `log` are intentionally omitted in favor of `f64` methods. `kstest` is removed; use
+`ks_1samp` or `ks_2samp` explicitly. There are no placeholder
 exports. Run `python tests/scipy/audit_statistics.py` to reproduce the counts.
 SciPy compatibility namespaces (`stats`, `morestats`, `distributions`, etc.)
 repeat canonical names; no separate legacy Rust modules are added. The inventory
@@ -247,7 +248,7 @@ the backend. Multivariate matrices use one Vec per row, interoperable with algeb
 - KS one-sided one-sample tails reuse the special-function Smirnov backend;
   two-sided one-sample tails are asymptotic (SciPy method="asymp"). Two-sample
   tails use the limiting null, without SciPy's finite-sample correction/exact test.
-  `kstest` supports the two-sample overload. Continuous null distributions with
+  `ks_1samp` and `ks_2samp` select the test explicitly. Continuous null distributions with
   independently supplied parameters are required; ties invalidate ordinary KS
   probability calibration. `probplot` returns Filliben plot data (fit=false).
 - Chi-square frequencies need matching totals and positive expectations. Power

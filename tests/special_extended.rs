@@ -177,7 +177,7 @@ fn special_families_match_scipy() {
             "boxcox1p" => scalar_call!(special::boxcox1p; args[0], args[1]),
             "inv_boxcox" => scalar_call!(special::inv_boxcox; args[0], args[1]),
             "inv_boxcox1p" => scalar_call!(special::inv_boxcox1p; args[0], args[1]),
-            "psi" => scalar_call!(special::psi; args[0]),
+            "psi" => scalar_call!(special::digamma; args[0]),
             "betaincc" => scalar_call!(special::betaincc; args[0], args[1], args[2]),
             "betainccinv" => scalar_call!(special::betainccinv; args[0], args[1], args[2]),
             "nrdtrimn" => scalar_call!(special::nrdtrimn; args[0], args[1], args[2]),
@@ -381,7 +381,7 @@ fn special_families_match_scipy() {
             "spherical_yn" => scalar_call!(special::spherical_yn; args[0], args[1], args[2]),
             "spherical_in" => scalar_call!(special::spherical_in; args[0], args[1], args[2]),
             "spherical_kn" => scalar_call!(special::spherical_kn; args[0], args[1], args[2]),
-            "assoc_laguerre" => scalar_call!(special::assoc_laguerre; args[0], args[1], args[2]),
+            "assoc_laguerre" => scalar_call!(special::eval_genlaguerre; args[1], args[2], args[0]),
             "eval_chebyc" => scalar_call!(special::eval_chebyc; args[0], args[1]),
             "eval_chebys" => scalar_call!(special::eval_chebys; args[0], args[1]),
             "eval_sh_chebyt" => scalar_call!(special::eval_sh_chebyt; args[0], args[1]),
@@ -553,7 +553,7 @@ fn special_families_match_scipy() {
                 let (a, b) = parsed_call!(special::ellipke; args[0]).unwrap();
                 vec![a, b]
             }
-            "ellipf" => vec![parsed_call!(special::ellipf; args[0], args[1]).unwrap()],
+            "ellipf" => vec![parsed_call!(special::ellipkinc; args[0], args[1]).unwrap()],
             "ellippi" => vec![parsed_call!(special::ellippi; args[0], args[1]).unwrap()],
             "ellippiinc" => {
                 vec![parsed_call!(special::ellippiinc; args[0], args[1], args[2]).unwrap()]

@@ -438,7 +438,6 @@ fn elliptic_functions_reject_nonfinite_and_singular_parameters() {
         }
         assert!(e::ellipke(bad).is_err());
         for f in [
-            e::ellipf,
             e::ellipeinc,
             e::ellipdinc,
             e::jacobi_zeta,

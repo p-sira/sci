@@ -57,6 +57,14 @@ prime factors are at most 11, following RustFFT guidance. This is a heuristic,
 not CPU-specific performance tuning or exact SciPy real-transform parity.
 Zero remains zero and the search remains bounded at 1,048,576 samples.
 
+## Convolution algorithm selection
+
+`signal::choose_conv_method` and `ConvolutionMethod` are removed. Their timing
+constants were calibrated for SciPy and did not predict Sci's Rust backends.
+Call `convolve`, `fftconvolve`, or `oaconvolve` explicitly and benchmark the
+relevant input sizes when performance matters. These operations retain their
+existing output conventions and work limits.
+
 ## Canonical names
 
 The following aliases are removed. Their numerical operations remain available
@@ -64,6 +72,11 @@ under the canonical names. Existing independent SciPy fixture labels may retain
 the old spelling while Rust tests call the canonical API.
 
 | Removed name | Replacement |
+| `stats::kstest(x, y, alternative)` | `stats::ks_2samp(x, y, alternative)`; use `ks_1samp` for a continuous null |
+| `special::psi(x)` | `special::digamma(x)` |
+| `special::assoc_laguerre(x, n, k)` | `special::eval_genlaguerre(n, k, x)` (arguments reordered) |
+| `special::ellipf(phi, m)` | `special::ellipkinc(phi, m)` |
+| `signal::closest_STFT_dual_window` | `signal::closest_stft_dual_window` |
 | --- | --- |
 | `c_roots` | `roots_chebyc` |
 | `cg_roots` | `roots_gegenbauer` |

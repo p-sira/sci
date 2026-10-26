@@ -6,14 +6,6 @@ use crate::{
 };
 use std::f64::consts::PI;
 
-/// Recommended convolution algorithm from an operation-count model.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ConvolutionMethod {
-    /// Direct summation.
-    Direct,
-    /// Fourier-domain multiplication.
-    Fft,
-}
 /// Frequency-domain envelope and its real residual.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Envelope {
@@ -21,72 +13,6 @@ pub struct Envelope {
     pub amplitude: Vec<f64>,
     /// Real residual, containing all rejected positive frequencies or only lower ones.
     pub residual: Vec<f64>,
-}
-
-/// Predicts whether direct or FFT convolution has lower estimated operation cost.
-///
-/// ## Parameters
-///
-/// x/h are nonempty finite real vectors; mode selects output cropping. Returns ConvolutionMethod. Uses SciPy one-dimensional f64 cost constants; measured hardware timing and integer/complex dispatch are unsupported.
-///
-/// ## Domain
-///
-/// Inputs must be finite and satisfy the stated bounds. NaN and infinity are errors.
-///
-/// ## Returns
-///
-/// Returns the values in the ordering and normalization stated above.
-///
-/// ## Errors
-///
-/// Returns shared errors for invalid inputs, incompatible shapes, singular solves,
-/// work limits, or nonfinite results. Sample lengths are at most 1048576 and
-/// direct work at most 16777216 operations.
-///
-/// ## Numerical behavior
-///
-/// A heuristic based on SciPy calibration; actual RustFFT timing can differ. The result predicts cost and does not execute convolution.
-///
-/// # Examples
-///
-/// ```
-/// use sci_signal::*;
-/// let _=choose_conv_method(&[1.;8],&[1.;4],Mode::Full)?;
-/// # Ok::<(),sci_core::Error>(())
-/// ```
-///
-/// # References
-///
-/// [SciPy choose_conv_method](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.choose_conv_method.html).
-pub fn choose_conv_method(x: &[f64], h: &[f64], mode: Mode) -> Result<ConvolutionMethod> {
-    nonempty(x)?;
-    nonempty(h)?;
-    size(x.len() + h.len() - 1)?;
-    let n = x.len() as f64;
-    let m = h.len() as f64;
-    let length = n + m - 1.;
-    let fft = 3. * length * length.ln();
-    let (direct, cf, cd, offset) = match mode {
-        Mode::Full => (n * m, 1.7649070e-9, 2.1414831e-10, -1e-3),
-        Mode::Valid => (
-            (n - m).abs().mul_add(n.min(m), n.min(m)),
-            1.89095737e-9,
-            2.1364985e-10,
-            -1e-3,
-        ),
-        Mode::Same if h.len() <= x.len() => (
-            n * m - (h.len() / 2) as f64 * h.len().div_ceil(2) as f64,
-            3.2646654e-9,
-            2.8478277e-10,
-            -1e-3,
-        ),
-        Mode::Same => (n * m, 3.21635404e-9, 1.1773253e-8, -1e-5),
-    };
-    Ok(if cf * fft < cd * direct + offset {
-        ConvolutionMethod::Fft
-    } else {
-        ConvolutionMethod::Direct
-    })
 }
 
 /// Computes zero-extended convolution `y[k]=sum_j x[j] h[k-j]` with FFT overlap-add.
@@ -200,15 +126,14 @@ pub fn oaconvolve(x: &[f64], h: &[f64], mode: Mode) -> Result<Vec<f64>> {
 ///
 /// ```
 /// use sci_signal::*;
-/// let _=closest_STFT_dual_window(&[1.;8],4,&[1.;8],true)?;
+/// let _=closest_stft_dual_window(&[1.;8],4,&[1.;8],true)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy closest_STFT_dual_window](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.closest_STFT_dual_window.html).
-#[allow(non_snake_case)]
-pub fn closest_STFT_dual_window(
+pub fn closest_stft_dual_window(
     win: &[f64],
     hop: usize,
     desired: &[f64],

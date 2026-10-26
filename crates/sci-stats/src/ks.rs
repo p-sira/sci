@@ -185,45 +185,6 @@ pub fn ks_2samp(first: &[f64], second: &[f64], alternative: Alternative) -> Resu
         sign,
     })
 }
-/// Two-sample Kolmogorov–Smirnov test; functional alias of ks_2samp.
-///
-/// ## Parameters
-///
-/// Supports SciPy's two-sample overload only. For a one-sample test use ks_1samp with a Distribution.
-///
-/// ## Domain
-///
-/// Nonempty finite samples, continuous-null assumption.
-///
-/// ## Returns
-///
-/// KS distance, asymptotic-limit p-value, location, and sign.
-///
-/// ## Errors
-///
-/// Returns an error for invalid domains, nonfinite inputs, incompatible shapes,
-/// or exceeded work limits, where applicable. Arithmetic overflow returns an
-/// evaluation error; documented NaN and infinity results are permitted.
-///
-/// ## Numerical behavior
-///
-/// Reuses ks_2samp, including its work bounds and finite-sample limitations.
-/// Inputs are limited to 1,048,576 observations. No Python runtime is used.
-///
-/// # Examples
-///
-/// ```
-/// use sci_stats::{kstest, Alternative};
-/// assert_eq!(kstest(&[1.,2.], &[1.,2.], Alternative::TwoSided)?.pvalue, 1.);
-/// # Ok::<(), sci_core::Error>(())
-/// ```
-///
-/// # References
-///
-/// [SciPy `kstest`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kstest.html).
-pub fn kstest(first: &[f64], second: &[f64], alternative: Alternative) -> Result<KsResult> {
-    ks_2samp(first, second, alternative)
-}
 /// Probability-plot quantiles `F⁻¹(p_i)` paired with sorted observations, using Filliben plotting positions.
 ///
 /// ## Parameters

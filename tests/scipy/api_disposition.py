@@ -4,14 +4,17 @@ Fixture labels keep SciPy spellings when the canonical Rust API reuses their
 independent numerical references. Exclusions are never counted as exports.
 """
 ALIASES = {
+    'stats': {'kstest': 'ks_2samp'},
     'linalg': {'solve_lyapunov': 'solve_continuous_lyapunov'},
     'cluster': {'py_vq': 'vq', 'maxRstat': 'max_rstat'},
     'interpolate': {'splrep': 'make_splrep', 'splprep': 'make_splprep'},
-    'signal': {'freqresp': 'freqs', 'dfreqresp': 'freqz', 'sosfreqz': 'freqz_sos',
+    'signal': {'closest_STFT_dual_window': 'closest_stft_dual_window',
+               'freqresp': 'freqs', 'dfreqresp': 'freqz', 'sosfreqz': 'freqz_sos',
                'check_COLA': 'check_cola', 'check_NOLA': 'check_nola'},
     'sparse': {'bmat': 'block_array', 'diags_array': 'diags', 'eye_array': 'eye',
                'matrix_transpose': 'transpose', 'factorized': 'splu'},
     'special': {
+        'ellipf': 'ellipkinc', 'psi': 'digamma', 'assoc_laguerre': 'eval_genlaguerre',
         'c_roots': 'roots_chebyc', 'cg_roots': 'roots_gegenbauer',
         'h_roots': 'roots_hermite', 'he_roots': 'roots_hermitenorm',
         'j_roots': 'roots_jacobi', 'js_roots': 'roots_sh_jacobi',
@@ -23,6 +26,7 @@ ALIASES = {
     },
 }
 EXCLUDED = {
+    'signal': {'choose_conv_method'},
     'linalg': {'find_best_blas_type', 'get_blas_funcs', 'get_lapack_funcs'},
     'special': {'geterr', 'seterr', 'cbrt', 'exp2', 'exp10', 'expm1', 'log1p', 'round'},
     'stats': {'abs', 'exp', 'log'},

@@ -342,27 +342,6 @@ pub fn spherical_kn(n: i64, x: f64, derivative: bool) -> f64 {
     }
 }
 
-/// Associated Laguerre polynomial L_n^k(x), with SciPy's x-first argument order.
-///
-/// ## Parameters and domain
-///
-/// Integer n≥0, real k>−1, and real x.
-/// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
-///
-/// # Examples
-///
-/// ```
-/// let value = sci_special::assoc_laguerre(0.3,3,0.5);
-/// let _ = value;
-/// ```
-///
-/// # References
-///
-/// - [SciPy assoc_laguerre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.assoc_laguerre.html).
-pub fn assoc_laguerre(x: f64, n: i32, k: f64) -> f64 {
-    super::eval_genlaguerre(n, k, x)
-}
-
 /// Scaled or shifted orthogonal polynomial, using its standard three-term recurrence.
 ///
 /// ## Parameters and domain

@@ -218,11 +218,6 @@ mod gamma_error_benches {
     }
 
     #[divan::bench]
-    fn psi(bencher: Bencher) {
-        sum1(bencher, range(N, 23, 0.01, 50.0), special::psi);
-    }
-
-    #[divan::bench]
     fn polygamma(bencher: Bencher) {
         sum2(
             bencher,

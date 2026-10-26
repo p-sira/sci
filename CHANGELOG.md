@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Complete a second API audit: remove remaining compatibility aliases and the SciPy-calibrated convolution cost selector; use snake case for the STFT dual-window helper.
+
 - Remove SciPy runtime compatibility APIs and redundant aliases; add concrete sparse index conversions and standard owned operator conversion. See MIGRATING.md for replacements.
 
 - Consolidate particle filtering on Smelly 0.2, decode dense numeric MATLAB files

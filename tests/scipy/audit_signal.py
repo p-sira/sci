@@ -4,7 +4,7 @@ Run from any directory using Python 3.11+. This does not need SciPy.
 Compatibility namespaces are aliases mapped to the public signal/windows API.
 No declaration is treated as supported unless input cases exercise it.
 """
-from api_disposition import ALIASES
+from api_disposition import ALIASES, EXCLUDED
 from pathlib import Path
 import json
 import re
@@ -43,6 +43,14 @@ main_names=set(re.findall(r"^- \[`(\w+)`\]",public,re.M))
 window_names={"windows."+n for n in re.findall(r"^- \[`(\w+)`\]",windows,re.M)}
 SUPPORTED=(main_names|window_names)&EXPORTED&TESTED
 MISSING=(main_names|window_names)-SUPPORTED
+unaccounted = MISSING - set(ALIASES["signal"]) - EXCLUDED["signal"]
+if unaccounted:
+    raise RuntimeError(f"Inventory names without a disposition: {sorted(unaccounted)}")
+for alias, canonical in ALIASES["signal"].items():
+    if alias in EXPORTED or canonical not in EXPORTED:
+        raise RuntimeError(f"Stale signal alias disposition: {alias} -> {canonical}")
+if EXPORTED & EXCLUDED["signal"]:
+    raise RuntimeError("An excluded compatibility API is exported")
 print(f"Public inventory: {len(SUPPORTED)}/{len(main_names|window_names)} supported; {len(MISSING)} missing")
 print(f"Fixture cases: {len(CASES)}; all {len(EXPORTED)} exported numerical names exercised (including legacy FFT fixtures)")
 print("Remaining: "+", ".join(sorted(MISSING)))
