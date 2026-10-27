@@ -412,7 +412,7 @@ pub fn erf_zeros(nt: usize) -> Result<Vec<Complex>> {
         let mut z = num_complex::Complex64::new(u / 2.0 - correction, u / 2.0 + correction);
         let mut converged = false;
         for _ in 0..100 {
-            let f = xsf::erf(z);
+            let f = crate::backend::complex::erf(z).map_err(Error::NumericalFailure)?;
             let derivative = 2.0 / std::f64::consts::PI.sqrt() * (-z * z).exp();
             let step = f / derivative;
             z -= step;

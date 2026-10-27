@@ -41,6 +41,26 @@ def stable_keip_zeros(count):
 
 def reference(name, args):
     """SciPy evaluations or independent quadrature for ellip-only functions."""
+    if name in {"modfresnelp", "modfresnelm"} and args[0] < 0:
+        # SciPy's negative-x branch overwrites Re(F) before computing Im(F).
+        # Reflect the positive-x reference using the defining Fresnel integral.
+        x, = args
+        sign = 1 if name == "modfresnelp" else -1
+        positive, _ = getattr(special, name)(-x)
+        f = np.sqrt(np.pi/2)*(1 + sign*1j) - positive
+        k = np.exp(-sign*1j*(x*x + np.pi/4))*f/np.sqrt(np.pi)
+        return f, k
+    if name == "itstruve0":
+        # SciPy 1.18.1's large-x formula disagrees with its defining integral.
+        return integrate.quad(lambda t: special.struve(0, t), 0, abs(args[0]),
+                              epsabs=2e-12, epsrel=2e-12)[0]
+    if name == "itairy":
+        # SciPy's legacy series stops at 1e-5 and loses ~4e-10 already at x=0.5.
+        # Independent quadrature verifies the improved 1e-15 series termination.
+        x, = args
+        return tuple(integrate.quad(lambda t: special.airy(sign*t)[index], 0, x,
+                                    epsabs=2e-13, epsrel=2e-13)[0]
+                     for sign in (1, -1) for index in (0, 2))
     if name == "keip_zeros":
         return stable_keip_zeros(*args)
     if name == "kelvin_zeros":

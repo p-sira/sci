@@ -305,20 +305,28 @@ pub fn h2vp(v: f64, x: f64, n: u32) -> Complex {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::spherical_jn(2,0.5,false);
+/// let value = sci_special::spherical_jn(2,0.5_f64,false);
 /// let _ = value;
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy spherical_jn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.spherical_jn.html).
-pub fn spherical_jn(n: i64, x: f64, derivative: bool) -> f64 {
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn spherical_jn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
     if !(0..=4096).contains(&n) {
-        f64::NAN
+        T::nan()
     } else if derivative {
-        xsf::sph_bessel_j_prime(n, x)
+        crate::backend::sph_bessel_j_jac(n as i32, x).unwrap_or(T::nan())
     } else {
-        xsf::sph_bessel_j(n, x)
+        crate::backend::sph_bessel_j(n as i32, x).unwrap_or(T::nan())
     }
 }
 
@@ -332,20 +340,28 @@ pub fn spherical_jn(n: i64, x: f64, derivative: bool) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::spherical_yn(2,0.5,false);
+/// let value = sci_special::spherical_yn(2,0.5_f64,false);
 /// let _ = value;
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy spherical_yn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.spherical_yn.html).
-pub fn spherical_yn(n: i64, x: f64, derivative: bool) -> f64 {
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn spherical_yn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
     if !(0..=4096).contains(&n) {
-        f64::NAN
+        T::nan()
     } else if derivative {
-        xsf::sph_bessel_y_prime(n, x)
+        crate::backend::sph_bessel_y_jac(n as i32, x).unwrap_or(T::nan())
     } else {
-        xsf::sph_bessel_y(n, x)
+        crate::backend::sph_bessel_y(n as i32, x).unwrap_or(T::nan())
     }
 }
 
@@ -359,20 +375,28 @@ pub fn spherical_yn(n: i64, x: f64, derivative: bool) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::spherical_in(2,0.5,false);
+/// let value = sci_special::spherical_in(2,0.5_f64,false);
 /// let _ = value;
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy spherical_in](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.spherical_in.html).
-pub fn spherical_in(n: i64, x: f64, derivative: bool) -> f64 {
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn spherical_in<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
     if !(0..=4096).contains(&n) {
-        f64::NAN
+        T::nan()
     } else if derivative {
-        xsf::sph_bessel_i_prime(n, x)
+        crate::backend::sph_bessel_i_jac(n as i32, x).unwrap_or(T::nan())
     } else {
-        xsf::sph_bessel_i(n, x)
+        crate::backend::sph_bessel_i(n as i32, x).unwrap_or(T::nan())
     }
 }
 
@@ -386,20 +410,28 @@ pub fn spherical_in(n: i64, x: f64, derivative: bool) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::spherical_kn(2,0.5,false);
+/// let value = sci_special::spherical_kn(2,0.5_f64,false);
 /// let _ = value;
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy spherical_kn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.spherical_kn.html).
-pub fn spherical_kn(n: i64, x: f64, derivative: bool) -> f64 {
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn spherical_kn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
     if !(0..=4096).contains(&n) {
-        f64::NAN
+        T::nan()
     } else if derivative {
-        xsf::sph_bessel_k_prime(n, x)
+        crate::backend::sph_bessel_k_jac(n as i32, x).unwrap_or(T::nan())
     } else {
-        xsf::sph_bessel_k(n, x)
+        crate::backend::sph_bessel_k(n as i32, x).unwrap_or(T::nan())
     }
 }
 
@@ -660,18 +692,26 @@ pub fn factorialk(n: i32, k: u32) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::comb(5.0,2.0);
+/// let value = sci_special::comb(5.0_f64,2.0);
 /// let _ = value;
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy comb](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.comb.html).
-pub fn comb(n: f64, k: f64) -> f64 {
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn comb<T: sci_core::Float>(n: T, k: T) -> T {
     if n < 0.0 || k < 0.0 || k > n {
         0.0
     } else {
-        xsf::binom(n, k)
+        crate::backend::binom(n, k).unwrap_or(T::nan())
     }
 }
 
@@ -712,15 +752,23 @@ pub fn perm(n: f64, k: u32) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::poch(2.5,3.0);
+/// let value = sci_special::poch(2.5_f64,3.0);
 /// let _ = value;
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy poch](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.poch.html).
-pub fn poch(a: f64, m: f64) -> f64 {
-    xsf::pow_rising(a, m)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn poch<T: sci_core::Float>(a: T, m: T) -> T {
+    crate::backend::poch(a, m).unwrap_or(T::nan())
 }
 
 /// Stirling number of the second kind S(n,k), counting partitions of n elements into k nonempty subsets.
@@ -814,7 +862,7 @@ pub fn euler(n: usize) -> Result<Vec<f64>> {
     for m in (2..=n).step_by(2) {
         values[m] = -(0..m)
             .step_by(2)
-            .map(|j| xsf::binom(m as f64, j as f64) * values[j])
+            .map(|j| crate::backend::binom(m as f64, j as f64).unwrap_or(f64::NAN) * values[j])
             .sum::<f64>();
     }
     if values.iter().any(|x| !x.is_finite()) {
@@ -1000,5 +1048,5 @@ pub fn lmbda(v: f64, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
     if !v.is_finite() || !(0.0..=256.0).contains(&v) || !x.is_finite() || x <= 0.0 {
         return Err(Error::InvalidInput("invalid Lambda function arguments"));
     }
-    Ok(xsf::jahnke_emden_lambda(v, x))
+    Ok(crate::backend::legacy::jahnke_emden_lambda(v, x))
 }

@@ -19,15 +19,23 @@ pub type ValueDerivativeMatrices = (Vec<Vec<f64>>, Vec<Vec<f64>>);
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::agm(1.0,2.0);
+/// let value = sci_special::agm(1.0_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy agm](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.agm.html).
-pub fn agm(a: f64, b: f64) -> f64 {
-    xsf::agm(a, b)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn agm<T: sci_core::Float>(a: T, b: T) -> T {
+    crate::backend::agm(a, b).unwrap_or(T::nan())
 }
 
 /// Airy equation y″−xy=0 solutions, ordered `[Ai,Ai′,Bi,Bi′]`.
@@ -52,7 +60,7 @@ pub fn agm(a: f64, b: f64) -> f64 {
 ///
 /// - [SciPy airy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.airy.html).
 pub fn airy(x: f64) -> [f64; 4] {
-    xsf::airy(x)
+    crate::backend::legacy::airy(x)
 }
 
 /// Scaled Airy values `[Ai exp(ζ),Ai′ exp(ζ),Bi exp(−abs(ζ)),Bi′ exp(−abs(ζ))]`, ζ=2x^(3/2)/3.
@@ -77,7 +85,7 @@ pub fn airy(x: f64) -> [f64; 4] {
 ///
 /// - [SciPy airye](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.airye.html).
 pub fn airye(x: f64) -> [f64; 4] {
-    xsf::airy_scaled(x)
+    crate::backend::legacy::airy_scaled(x)
 }
 
 /// Integrals from 0 to x of Ai(t), Bi(t), Ai(−t), and Bi(−t), in that order.
@@ -101,8 +109,15 @@ pub fn airye(x: f64) -> [f64; 4] {
 /// # References
 ///
 /// - [SciPy itairy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.itairy.html).
+///
+/// ## Numerical behavior and work limits
+///
+/// A bounded Gaussian quadrature evaluates the four defining integrals for `abs(x) <= 16`;
+/// translated asymptotic expansions apply beyond this range. Large oscillatory arguments
+/// retain asymptotic and argument-reduction limits. This corrects the early-termination
+/// error in SciPy's legacy series.
 pub fn itairy(x: f64) -> [f64; 4] {
-    xsf::airy_integrals(x)
+    crate::backend::legacy::airy_integrals(x)
 }
 
 /// Jacobi elliptic functions (sn,cn,dn,amplitude), with u=F(amplitude,m).
@@ -127,7 +142,7 @@ pub fn itairy(x: f64) -> [f64; 4] {
 ///
 /// - [SciPy ellipj](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ellipj.html).
 pub fn ellipj(u: f64, m: f64) -> (f64, f64, f64, f64) {
-    xsf::ellipj(u, m)
+    crate::backend::legacy::ellipj(u, m)
 }
 
 /// Generalized binomial coefficient Γ(n+1)/(Γ(k+1)Γ(n−k+1)).
@@ -144,15 +159,23 @@ pub fn ellipj(u: f64, m: f64) -> (f64, f64, f64, f64) {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::binom(5.0,2.0);
+/// let value = sci_special::binom(5.0_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy binom](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.binom.html).
-pub fn binom(n: f64, k: f64) -> f64 {
-    xsf::binom(n, k)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn binom<T: sci_core::Float>(n: T, k: T) -> T {
+    crate::backend::binom(n, k).unwrap_or(T::nan())
 }
 
 /// Scaled complementary error function exp(x²) erfc(x), evaluated without forming the exponential.
@@ -169,15 +192,23 @@ pub fn binom(n: f64, k: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::erfcx(0.5);
+/// let value = sci_special::erfcx(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy erfcx](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.erfcx.html).
-pub fn erfcx(x: f64) -> f64 {
-    xsf::erfcx(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn erfcx<T: sci_core::Float>(x: T) -> T {
+    crate::backend::erfcx(x).unwrap_or(T::nan())
 }
 
 /// Imaginary error function 2/√π ∫₀ˣ exp(t²) dt.
@@ -194,15 +225,23 @@ pub fn erfcx(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::erfi(0.5);
+/// let value = sci_special::erfi(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy erfi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.erfi.html).
-pub fn erfi(x: f64) -> f64 {
-    xsf::erfi(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn erfi<T: sci_core::Float>(x: T) -> T {
+    crate::backend::erfi(x).unwrap_or(T::nan())
 }
 
 /// Inverse complementary error function, satisfying erfc(result)=p.
@@ -219,15 +258,23 @@ pub fn erfi(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::erfcinv(0.3);
+/// let value = sci_special::erfcinv(0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy erfcinv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.erfcinv.html).
-pub fn erfcinv(p: f64) -> f64 {
-    xsf::erfcinv(p)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn erfcinv<T: sci_core::Float>(p: T) -> T {
+    crate::backend::erfcinv(p).unwrap_or(T::nan())
 }
 
 /// Dawson integral exp(−x²) ∫₀ˣ exp(t²) dt.
@@ -244,15 +291,23 @@ pub fn erfcinv(p: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::dawsn(0.5);
+/// let value = sci_special::dawsn(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy dawsn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.dawsn.html).
-pub fn dawsn(x: f64) -> f64 {
-    xsf::dawsn(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn dawsn<T: sci_core::Float>(x: T) -> T {
+    crate::backend::dawsn(x).unwrap_or(T::nan())
 }
 
 /// Sign of Γ(x), with zero at nonpositive integer poles.
@@ -269,15 +324,23 @@ pub fn dawsn(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::gammasgn(-0.5);
+/// let value = sci_special::gammasgn(-0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy gammasgn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gammasgn.html).
-pub fn gammasgn(x: f64) -> f64 {
-    xsf::gammasgn(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gammasgn<T: sci_core::Float>(x: T) -> T {
+    crate::backend::gammasgn(x).unwrap_or(T::nan())
 }
 
 /// Regularized upper incomplete gamma Q(a,x)=Γ(a,x)/Γ(a).
@@ -294,15 +357,23 @@ pub fn gammasgn(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::gammaincc(2.5,3.0);
+/// let value = sci_special::gammaincc(2.5_f64,3.0);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy gammaincc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gammaincc.html).
-pub fn gammaincc(a: f64, x: f64) -> f64 {
-    xsf::gammaincc(a, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gammaincc<T: sci_core::Float>(a: T, x: T) -> T {
+    crate::backend::gammaincc(a, x).unwrap_or(T::nan())
 }
 
 /// Inverse of P(a,x) with respect to x.
@@ -319,15 +390,23 @@ pub fn gammaincc(a: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::gammaincinv(2.5,0.3);
+/// let value = sci_special::gammaincinv(2.5_f64,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy gammaincinv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gammaincinv.html).
-pub fn gammaincinv(a: f64, p: f64) -> f64 {
-    xsf::gammaincinv(a, p)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gammaincinv<T: sci_core::Float>(a: T, p: T) -> T {
+    crate::backend::gammaincinv(a, p).unwrap_or(T::nan())
 }
 
 /// Inverse of Q(a,x) with respect to x.
@@ -344,15 +423,23 @@ pub fn gammaincinv(a: f64, p: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::gammainccinv(2.5,0.3);
+/// let value = sci_special::gammainccinv(2.5_f64,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy gammainccinv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gammainccinv.html).
-pub fn gammainccinv(a: f64, q: f64) -> f64 {
-    xsf::gammainccinv(a, q)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gammainccinv<T: sci_core::Float>(a: T, q: T) -> T {
+    crate::backend::gammainccinv(a, q).unwrap_or(T::nan())
 }
 
 /// Principal real logarithm of Γ(x).
@@ -369,15 +456,23 @@ pub fn gammainccinv(a: f64, q: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::loggamma(2.5);
+/// let value = sci_special::loggamma(2.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy loggamma](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.loggamma.html).
-pub fn loggamma(x: f64) -> f64 {
-    xsf::loggamma(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn loggamma<T: sci_core::Float>(x: T) -> T {
+    crate::backend::loggamma(x).unwrap_or(T::nan())
 }
 
 /// Reciprocal gamma function 1/Γ(x), continued to zero at the poles.
@@ -394,15 +489,23 @@ pub fn loggamma(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::rgamma(-2.0);
+/// let value = sci_special::rgamma(-2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy rgamma](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.rgamma.html).
-pub fn rgamma(x: f64) -> f64 {
-    xsf::rgamma(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn rgamma<T: sci_core::Float>(x: T) -> T {
+    crate::backend::rgamma(x).unwrap_or(T::nan())
 }
 
 /// Order-n derivative of digamma, ψ^(n)(x).
@@ -430,7 +533,7 @@ pub fn polygamma(n: u32, x: f64) -> f64 {
     if n > 1024 {
         return f64::NAN;
     }
-    xsf::polygamma(n, x)
+    crate::backend::legacy::polygamma(n, x)
 }
 
 /// Log multivariate gamma: d(d−1)ln(π)/4 + Σⱼ₌₁ᵈ ln Γ(a+(1−j)/2).
@@ -458,7 +561,7 @@ pub fn multigammaln(a: f64, d: u32) -> f64 {
     if d == 0 || d > 4096 || a <= (d as f64 - 1.0) / 2.0 {
         return f64::NAN;
     }
-    xsf::multigammaln(a, d)
+    crate::backend::legacy::multigammaln(a, d)
 }
 
 /// Cylindrical Bessel function J_v(x), a solution of x²y″+xy′+(x²−v²)y=0.
@@ -475,15 +578,23 @@ pub fn multigammaln(a: f64, d: u32) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::jv(0.5,2.0);
+/// let value = sci_special::jv(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy jv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jv.html).
-pub fn jv(v: f64, x: f64) -> f64 {
-    xsf::bessel_j(v, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn jv<T: sci_core::Float>(v: T, x: T) -> T {
+    crate::backend::cyl_bessel_j(v, x).unwrap_or(T::nan())
 }
 
 /// Exponentially scaled J_v(x); for real x this equals J_v(x).
@@ -500,15 +611,23 @@ pub fn jv(v: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::jve(0.5,2.0);
+/// let value = sci_special::jve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy jve](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jve.html).
-pub fn jve(v: f64, x: f64) -> f64 {
-    xsf::bessel_je(v, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn jve<T: sci_core::Float>(v: T, x: T) -> T {
+    crate::backend::cyl_bessel_je(v, x).unwrap_or(T::nan())
 }
 
 /// Cylindrical Bessel function Y_v(x), the second real Bessel solution.
@@ -525,15 +644,23 @@ pub fn jve(v: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::yv(0.5,2.0);
+/// let value = sci_special::yv(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy yv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.yv.html).
-pub fn yv(v: f64, x: f64) -> f64 {
-    xsf::bessel_y(v, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn yv<T: sci_core::Float>(v: T, x: T) -> T {
+    crate::backend::cyl_bessel_y(v, x).unwrap_or(T::nan())
 }
 
 /// Exponentially scaled Y_v(x); real positive x leaves the value unchanged.
@@ -550,15 +677,23 @@ pub fn yv(v: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::yve(0.5,2.0);
+/// let value = sci_special::yve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy yve](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.yve.html).
-pub fn yve(v: f64, x: f64) -> f64 {
-    xsf::bessel_ye(v, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn yve<T: sci_core::Float>(v: T, x: T) -> T {
+    crate::backend::cyl_bessel_ye(v, x).unwrap_or(T::nan())
 }
 
 /// Modified Bessel function I_v(x), solving x²y″+xy′−(x²+v²)y=0.
@@ -575,15 +710,23 @@ pub fn yve(v: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::iv(0.5,2.0);
+/// let value = sci_special::iv(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy iv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.iv.html).
-pub fn iv(v: f64, x: f64) -> f64 {
-    xsf::bessel_i(v, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn iv<T: sci_core::Float>(v: T, x: T) -> T {
+    crate::backend::cyl_bessel_i(v, x).unwrap_or(T::nan())
 }
 
 /// Scaled modified Bessel function exp(−abs(x)) I_v(x).
@@ -600,15 +743,23 @@ pub fn iv(v: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::ive(0.5,2.0);
+/// let value = sci_special::ive(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy ive](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ive.html).
-pub fn ive(v: f64, x: f64) -> f64 {
-    xsf::bessel_ie(v, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ive<T: sci_core::Float>(v: T, x: T) -> T {
+    crate::backend::cyl_bessel_ie(v, x).unwrap_or(T::nan())
 }
 
 /// Modified Bessel function K_v(x), decaying on the positive real axis.
@@ -625,15 +776,23 @@ pub fn ive(v: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::kv(0.5,2.0);
+/// let value = sci_special::kv(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy kv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kv.html).
-pub fn kv(v: f64, x: f64) -> f64 {
-    xsf::bessel_k(v, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn kv<T: sci_core::Float>(v: T, x: T) -> T {
+    crate::backend::cyl_bessel_k(v, x).unwrap_or(T::nan())
 }
 
 /// Scaled modified Bessel function exp(x) K_v(x).
@@ -650,15 +809,23 @@ pub fn kv(v: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::kve(0.5,2.0);
+/// let value = sci_special::kve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy kve](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kve.html).
-pub fn kve(v: f64, x: f64) -> f64 {
-    xsf::bessel_ke(v, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn kve<T: sci_core::Float>(v: T, x: T) -> T {
+    crate::backend::cyl_bessel_ke(v, x).unwrap_or(T::nan())
 }
 
 /// Bessel function J₀(x).
@@ -675,15 +842,23 @@ pub fn kve(v: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::j0(2.0);
+/// let value = sci_special::j0(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy j0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.j0.html).
-pub fn j0(x: f64) -> f64 {
-    xsf::bessel_j0(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn j0<T: sci_core::Float>(x: T) -> T {
+    crate::backend::cyl_bessel_j0(x).unwrap_or(T::nan())
 }
 
 /// Bessel function J₁(x).
@@ -700,15 +875,23 @@ pub fn j0(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::j1(2.0);
+/// let value = sci_special::j1(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy j1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.j1.html).
-pub fn j1(x: f64) -> f64 {
-    xsf::bessel_j1(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn j1<T: sci_core::Float>(x: T) -> T {
+    crate::backend::cyl_bessel_j1(x).unwrap_or(T::nan())
 }
 
 /// Bessel function Y₀(x).
@@ -725,15 +908,23 @@ pub fn j1(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::y0(2.0);
+/// let value = sci_special::y0(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy y0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.y0.html).
-pub fn y0(x: f64) -> f64 {
-    xsf::bessel_y0(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn y0<T: sci_core::Float>(x: T) -> T {
+    crate::backend::cyl_bessel_y0(x).unwrap_or(T::nan())
 }
 
 /// Bessel function Y₁(x).
@@ -750,15 +941,23 @@ pub fn y0(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::y1(2.0);
+/// let value = sci_special::y1(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy y1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.y1.html).
-pub fn y1(x: f64) -> f64 {
-    xsf::bessel_y1(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn y1<T: sci_core::Float>(x: T) -> T {
+    crate::backend::cyl_bessel_y1(x).unwrap_or(T::nan())
 }
 
 /// Modified Bessel function I₀(x).
@@ -775,15 +974,23 @@ pub fn y1(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::i0(2.0);
+/// let value = sci_special::i0(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy i0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.i0.html).
-pub fn i0(x: f64) -> f64 {
-    xsf::bessel_i0(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn i0<T: sci_core::Float>(x: T) -> T {
+    crate::backend::cyl_bessel_i0(x).unwrap_or(T::nan())
 }
 
 /// Modified Bessel function I₁(x).
@@ -800,15 +1007,23 @@ pub fn i0(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::i1(2.0);
+/// let value = sci_special::i1(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy i1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.i1.html).
-pub fn i1(x: f64) -> f64 {
-    xsf::bessel_i1(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn i1<T: sci_core::Float>(x: T) -> T {
+    crate::backend::cyl_bessel_i1(x).unwrap_or(T::nan())
 }
 
 /// Scaled modified Bessel function exp(−abs(x)) I₀(x).
@@ -825,15 +1040,23 @@ pub fn i1(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::i0e(2.0);
+/// let value = sci_special::i0e(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy i0e](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.i0e.html).
-pub fn i0e(x: f64) -> f64 {
-    xsf::bessel_i0e(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn i0e<T: sci_core::Float>(x: T) -> T {
+    crate::backend::cyl_bessel_i0e(x).unwrap_or(T::nan())
 }
 
 /// Scaled modified Bessel function exp(−abs(x)) I₁(x).
@@ -850,15 +1073,23 @@ pub fn i0e(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::i1e(2.0);
+/// let value = sci_special::i1e(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy i1e](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.i1e.html).
-pub fn i1e(x: f64) -> f64 {
-    xsf::bessel_i1e(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn i1e<T: sci_core::Float>(x: T) -> T {
+    crate::backend::cyl_bessel_i1e(x).unwrap_or(T::nan())
 }
 
 /// Modified Bessel function K₀(x).
@@ -875,15 +1106,23 @@ pub fn i1e(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::k0(2.0);
+/// let value = sci_special::k0(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy k0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.k0.html).
-pub fn k0(x: f64) -> f64 {
-    xsf::bessel_k0(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn k0<T: sci_core::Float>(x: T) -> T {
+    crate::backend::cyl_bessel_k0(x).unwrap_or(T::nan())
 }
 
 /// Modified Bessel function K₁(x).
@@ -900,15 +1139,23 @@ pub fn k0(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::k1(2.0);
+/// let value = sci_special::k1(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy k1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.k1.html).
-pub fn k1(x: f64) -> f64 {
-    xsf::bessel_k1(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn k1<T: sci_core::Float>(x: T) -> T {
+    crate::backend::cyl_bessel_k1(x).unwrap_or(T::nan())
 }
 
 /// Scaled modified Bessel function exp(x) K₀(x).
@@ -925,15 +1172,23 @@ pub fn k1(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::k0e(2.0);
+/// let value = sci_special::k0e(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy k0e](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.k0e.html).
-pub fn k0e(x: f64) -> f64 {
-    xsf::bessel_k0e(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn k0e<T: sci_core::Float>(x: T) -> T {
+    crate::backend::cyl_bessel_k0e(x).unwrap_or(T::nan())
 }
 
 /// Scaled modified Bessel function exp(x) K₁(x).
@@ -950,15 +1205,23 @@ pub fn k0e(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::k1e(2.0);
+/// let value = sci_special::k1e(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy k1e](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.k1e.html).
-pub fn k1e(x: f64) -> f64 {
-    xsf::bessel_k1e(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn k1e<T: sci_core::Float>(x: T) -> T {
+    crate::backend::cyl_bessel_k1e(x).unwrap_or(T::nan())
 }
 
 /// Weighted Bessel integral ∫₀¹ x^lambda J_v(2ax) dx.
@@ -983,7 +1246,7 @@ pub fn k1e(x: f64) -> f64 {
 ///
 /// - [SciPy besselpoly](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.besselpoly.html).
 pub fn besselpoly(a: f64, lambda: f64, v: f64) -> f64 {
-    xsf::besselpoly(a, lambda, v)
+    crate::backend::legacy::besselpoly(a, lambda, v)
 }
 
 /// Integrals (∫₀ˣ J₀(t)dt, ∫₀ˣ Y₀(t)dt).
@@ -1008,7 +1271,7 @@ pub fn besselpoly(a: f64, lambda: f64, v: f64) -> f64 {
 ///
 /// - [SciPy itj0y0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.itj0y0.html).
 pub fn itj0y0(x: f64) -> (f64, f64) {
-    xsf::it1j0y0(x)
+    crate::backend::legacy::it1j0y0(x)
 }
 
 /// Integrals (∫₀ˣ (1−J₀(t))/t dt, ∫ₓ^∞ Y₀(t)/t dt).
@@ -1033,7 +1296,7 @@ pub fn itj0y0(x: f64) -> (f64, f64) {
 ///
 /// - [SciPy it2j0y0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.it2j0y0.html).
 pub fn it2j0y0(x: f64) -> (f64, f64) {
-    xsf::it2j0y0(x)
+    crate::backend::legacy::it2j0y0(x)
 }
 
 /// Integrals (∫₀ˣ I₀(t)dt, ∫₀ˣ K₀(t)dt).
@@ -1058,7 +1321,7 @@ pub fn it2j0y0(x: f64) -> (f64, f64) {
 ///
 /// - [SciPy iti0k0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.iti0k0.html).
 pub fn iti0k0(x: f64) -> (f64, f64) {
-    xsf::it1i0k0(x)
+    crate::backend::legacy::it1i0k0(x)
 }
 
 /// Integrals (∫₀ˣ (I₀(t)−1)/t dt, ∫ₓ^∞ K₀(t)/t dt).
@@ -1083,7 +1346,7 @@ pub fn iti0k0(x: f64) -> (f64, f64) {
 ///
 /// - [SciPy it2i0k0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.it2i0k0.html).
 pub fn it2i0k0(x: f64) -> (f64, f64) {
-    xsf::it2i0k0(x)
+    crate::backend::legacy::it2i0k0(x)
 }
 
 /// Struve function H_v(x), the inhomogeneous Bessel solution.
@@ -1100,15 +1363,23 @@ pub fn it2i0k0(x: f64) -> (f64, f64) {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::struve(0.5,2.0);
+/// let value = sci_special::struve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy struve](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.struve.html).
-pub fn struve(v: f64, x: f64) -> f64 {
-    xsf::struve_h(v, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn struve<T: sci_core::Float>(v: T, x: T) -> T {
+    crate::backend::struve_h(v, x).unwrap_or(T::nan())
 }
 
 /// Modified Struve function L_v(x).
@@ -1125,15 +1396,23 @@ pub fn struve(v: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::modstruve(0.5,2.0);
+/// let value = sci_special::modstruve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy modstruve](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.modstruve.html).
-pub fn modstruve(v: f64, x: f64) -> f64 {
-    xsf::struve_l(v, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn modstruve<T: sci_core::Float>(v: T, x: T) -> T {
+    crate::backend::struve_l(v, x).unwrap_or(T::nan())
 }
 
 /// Integral ∫₀ˣ H₀(t) dt.
@@ -1157,8 +1436,14 @@ pub fn modstruve(v: f64, x: f64) -> f64 {
 /// # References
 ///
 /// - [SciPy itstruve0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.itstruve0.html).
+///
+/// ## Numerical behavior and work limits
+///
+/// For `abs(x) <= 128`, bounded Gaussian quadrature evaluates the defining integral using
+/// the Struve kernel. Larger arguments use the translated asymptotic expansion. The result
+/// follows the defining integral where SciPy's large-argument implementation disagrees.
 pub fn itstruve0(x: f64) -> f64 {
-    xsf::itstruve0(x)
+    crate::backend::legacy::itstruve0(x)
 }
 
 /// Integral ∫ₓ^∞ H₀(t)/t dt.
@@ -1183,7 +1468,7 @@ pub fn itstruve0(x: f64) -> f64 {
 ///
 /// - [SciPy it2struve0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.it2struve0.html).
 pub fn it2struve0(x: f64) -> f64 {
-    xsf::it2struve0(x)
+    crate::backend::legacy::it2struve0(x)
 }
 
 /// Integral ∫₀ˣ L₀(t) dt.
@@ -1208,7 +1493,7 @@ pub fn it2struve0(x: f64) -> f64 {
 ///
 /// - [SciPy itmodstruve0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.itmodstruve0.html).
 pub fn itmodstruve0(x: f64) -> f64 {
-    xsf::itmodstruve0(x)
+    crate::backend::legacy::itmodstruve0(x)
 }
 
 /// Confluent hypergeometric limit function Σₖ x^k/((b)ₖ k!).
@@ -1225,15 +1510,23 @@ pub fn itmodstruve0(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::hyp0f1(2.5,0.5);
+/// let value = sci_special::hyp0f1(2.5_f64,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy hyp0f1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hyp0f1.html).
-pub fn hyp0f1(b: f64, x: f64) -> f64 {
-    xsf::hyp0f1(b, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn hyp0f1<T: sci_core::Float>(b: T, x: T) -> T {
+    crate::backend::hyp0f1(b, x).unwrap_or(T::nan())
 }
 
 /// Kummer function ₁F₁(a;b;x)=Σₖ (a)ₖ x^k/((b)ₖ k!).
@@ -1257,8 +1550,13 @@ pub fn hyp0f1(b: f64, x: f64) -> f64 {
 /// # References
 ///
 /// - [SciPy hyp1f1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hyp1f1.html).
+///
+/// ## Numerical behavior and work limits
+///
+/// Finite real parameters and argument; `abs(a) <= 100000`. The bounded series and
+/// asymptotic expansions can lose relative accuracy under severe cancellation.
 pub fn hyp1f1(a: f64, b: f64, x: f64) -> f64 {
-    xsf::hyp1f1(a, b, x)
+    crate::backend::legacy::hyp1f1(a, b, x)
 }
 
 /// Gauss hypergeometric function ₂F₁(a,b;c;x).
@@ -1282,8 +1580,13 @@ pub fn hyp1f1(a: f64, b: f64, x: f64) -> f64 {
 /// # References
 ///
 /// - [SciPy hyp2f1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hyp2f1.html).
+///
+/// ## Numerical behavior and work limits
+///
+/// Finite real inputs with `abs(a), abs(b), abs(c) <= 100000`. Series and continuation
+/// iterations are bounded; unsupported real continuations return NaN.
 pub fn hyp2f1(a: f64, b: f64, c: f64, x: f64) -> f64 {
-    xsf::hyp2f1(a, b, c, x)
+    crate::backend::legacy::hyp2f1(a, b, c, x)
 }
 
 /// Tricomi function U(a,b,x), the second confluent hypergeometric solution.
@@ -1307,8 +1610,13 @@ pub fn hyp2f1(a: f64, b: f64, c: f64, x: f64) -> f64 {
 /// # References
 ///
 /// - [SciPy hyperu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hyperu.html).
+///
+/// ## Numerical behavior and work limits
+///
+/// Finite real inputs with `abs(a), abs(b) <= 100000` and `x >= 0`. Series, integral, and
+/// recurrence algorithms have finite work limits; cancellation limits accuracy.
 pub fn hyperu(a: f64, b: f64, x: f64) -> f64 {
-    xsf::hypu(a, b, x)
+    crate::backend::legacy::hypu(a, b, x)
 }
 
 /// Exponential integral E₁(x)=∫ₓ^∞ exp(−t)/t dt.
@@ -1325,15 +1633,23 @@ pub fn hyperu(a: f64, b: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::exp1(0.5);
+/// let value = sci_special::exp1(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy exp1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.exp1.html).
-pub fn exp1(x: f64) -> f64 {
-    xsf::exp1(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn exp1<T: sci_core::Float>(x: T) -> T {
+    crate::backend::exp1(x).unwrap_or(T::nan())
 }
 
 /// Exponential integral Ei(x), defined by the real Cauchy principal value.
@@ -1350,15 +1666,23 @@ pub fn exp1(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::expi(0.5);
+/// let value = sci_special::expi(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy expi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.expi.html).
-pub fn expi(x: f64) -> f64 {
-    xsf::expi(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn expi<T: sci_core::Float>(x: T) -> T {
+    crate::backend::expi(x).unwrap_or(T::nan())
 }
 
 /// Generalized exponential integral E_n(x)=∫₁^∞ exp(−xt)/t^n dt.
@@ -1375,15 +1699,23 @@ pub fn expi(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::expn(3,0.5);
+/// let value = sci_special::expn(3,0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy expn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.expn.html).
-pub fn expn(n: u32, x: f64) -> f64 {
-    xsf::expn(n, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn expn<T: sci_core::Float>(n: u32, x: T) -> T {
+    crate::backend::expn(n as i32, x).unwrap_or(T::nan())
 }
 
 /// Sine and cosine integrals (Si(x),Ci(x)); Ci uses the real principal value on the negative axis.
@@ -1408,7 +1740,7 @@ pub fn expn(n: u32, x: f64) -> f64 {
 ///
 /// - [SciPy sici](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sici.html).
 pub fn sici(x: f64) -> (f64, f64) {
-    xsf::sici(x)
+    crate::backend::legacy::sici(x)
 }
 
 /// Hyperbolic sine and cosine integrals (Shi(x),Chi(x)), with real principal values.
@@ -1433,7 +1765,7 @@ pub fn sici(x: f64) -> (f64, f64) {
 ///
 /// - [SciPy shichi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.shichi.html).
 pub fn shichi(x: f64) -> (f64, f64) {
-    xsf::shichi(x)
+    crate::backend::legacy::shichi(x)
 }
 
 /// Fresnel integrals (S,C) of sin(πt²/2) and cos(πt²/2) from 0 to x.
@@ -1458,7 +1790,7 @@ pub fn shichi(x: f64) -> (f64, f64) {
 ///
 /// - [SciPy fresnel](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.fresnel.html).
 pub fn fresnel(x: f64) -> (f64, f64) {
-    xsf::fresnel(x)
+    crate::backend::legacy::fresnel(x)
 }
 
 /// Spence dilogarithm Li₂(1−x)=−∫₁ˣ ln(t)/(t−1) dt.
@@ -1475,15 +1807,23 @@ pub fn fresnel(x: f64) -> (f64, f64) {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::spence(0.5);
+/// let value = sci_special::spence(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy spence](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.spence.html).
-pub fn spence(x: f64) -> f64 {
-    xsf::spence(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn spence<T: sci_core::Float>(x: T) -> T {
+    crate::backend::spence(x).unwrap_or(T::nan())
 }
 
 /// Hurwitz zeta ζ(s,q)=Σₖ₌₀^∞ (k+q)^(−s).
@@ -1500,15 +1840,23 @@ pub fn spence(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::zeta(2.5,1.5);
+/// let value = sci_special::zeta(2.5_f64,1.5);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy zeta](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.zeta.html).
-pub fn zeta(s: f64, q: f64) -> f64 {
-    xsf::zeta(s, q)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn zeta<T: sci_core::Float>(s: T, q: T) -> T {
+    crate::backend::zeta(s, q).unwrap_or(T::nan())
 }
 
 /// Riemann zeta minus one, ζ(x)−1.
@@ -1525,15 +1873,23 @@ pub fn zeta(s: f64, q: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::zetac(2.5);
+/// let value = sci_special::zetac(2.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy zetac](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.zetac.html).
-pub fn zetac(x: f64) -> f64 {
-    xsf::zetac(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn zetac<T: sci_core::Float>(x: T) -> T {
+    crate::backend::zetac(x).unwrap_or(T::nan())
 }
 
 /// Real Wright omega, solving w+ln(w)=x with w≥0.
@@ -1550,15 +1906,23 @@ pub fn zetac(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::wrightomega(0.5);
+/// let value = sci_special::wrightomega(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy wrightomega](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.wrightomega.html).
-pub fn wrightomega(x: f64) -> f64 {
-    xsf::wrightomega(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn wrightomega<T: sci_core::Float>(x: T) -> T {
+    crate::backend::wrightomega(x).unwrap_or(T::nan())
 }
 
 /// Wright generalized Bessel function Σₖ x^k/(k! Γ(ak+b)).
@@ -1582,8 +1946,14 @@ pub fn wrightomega(x: f64) -> f64 {
 /// # References
 ///
 /// - [SciPy wright_bessel](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.wright_bessel.html).
+///
+/// ## Numerical behavior and work limits
+///
+/// The logarithmically scaled positive defining series uses at most 100000 terms. Finite
+/// nonnegative parameters are required; failure to converge within the budget returns NaN.
+/// True overflow returns infinity.
 pub fn wright_bessel(a: f64, b: f64, x: f64) -> f64 {
-    xsf::wright_bessel(a, b, x)
+    crate::backend::legacy::wright_bessel(a, b, x)
 }
 
 /// Natural logarithm of the Wright generalized Bessel function, evaluated in scaled form.
@@ -1607,8 +1977,14 @@ pub fn wright_bessel(a: f64, b: f64, x: f64) -> f64 {
 /// # References
 ///
 /// - [SciPy log_wright_bessel](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.log_wright_bessel.html).
+///
+/// ## Numerical behavior and work limits
+///
+/// The logarithmically scaled positive defining series uses at most 100000 terms. Finite
+/// nonnegative parameters are required; failure to converge within the budget returns NaN.
+/// Summation retains large logarithms without exponentiating the final result.
 pub fn log_wright_bessel(a: f64, b: f64, x: f64) -> f64 {
-    xsf::log_wright_bessel(a, b, x)
+    crate::backend::legacy::log_wright_bessel(a, b, x)
 }
 
 /// Convolution of a normal density with standard deviation sigma and a Cauchy density with half-width gamma.
@@ -1625,15 +2001,23 @@ pub fn log_wright_bessel(a: f64, b: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::voigt_profile(0.5,1.0,0.3);
+/// let value = sci_special::voigt_profile(0.5_f64,1.0,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy voigt_profile](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.voigt_profile.html).
-pub fn voigt_profile(x: f64, sigma: f64, gamma: f64) -> f64 {
-    xsf::voigt_profile(x, sigma, gamma)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn voigt_profile<T: sci_core::Float>(x: T, sigma: T, gamma: T) -> T {
+    crate::backend::voigt_profile(x, sigma, gamma).unwrap_or(T::nan())
 }
 
 /// Binomial CDF P(X≤floor(k)), X~Binomial(n,p).
@@ -1650,15 +2034,23 @@ pub fn voigt_profile(x: f64, sigma: f64, gamma: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::bdtr(2.0,5,0.3);
+/// let value = sci_special::bdtr(2.0_f64,5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy bdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bdtr.html).
-pub fn bdtr(k: f64, n: i32, p: f64) -> f64 {
-    xsf::bdtr(k, n, p)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn bdtr<T: sci_core::Float>(k: T, n: i32, p: T) -> T {
+    crate::backend::bdtr(k, n, p).unwrap_or(T::nan())
 }
 
 /// Binomial survival P(X>floor(k)), computed without subtracting the CDF.
@@ -1675,15 +2067,23 @@ pub fn bdtr(k: f64, n: i32, p: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::bdtrc(2.0,5,0.3);
+/// let value = sci_special::bdtrc(2.0_f64,5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy bdtrc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bdtrc.html).
-pub fn bdtrc(k: f64, n: i32, p: f64) -> f64 {
-    xsf::bdtrc(k, n, p)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn bdtrc<T: sci_core::Float>(k: T, n: i32, p: T) -> T {
+    crate::backend::bdtrc(k, n, p).unwrap_or(T::nan())
 }
 
 /// Inverse binomial CDF with respect to success probability p.
@@ -1700,15 +2100,23 @@ pub fn bdtrc(k: f64, n: i32, p: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::bdtri(2.0,5,0.3);
+/// let value = sci_special::bdtri(2.0_f64,5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy bdtri](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bdtri.html).
-pub fn bdtri(k: f64, n: i32, y: f64) -> f64 {
-    xsf::bdtri(k, n, y)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn bdtri<T: sci_core::Float>(k: T, n: i32, y: T) -> T {
+    crate::backend::bdtri(k, n, y).unwrap_or(T::nan())
 }
 
 /// Chi-square CDF P(df/2,x/2).
@@ -1725,15 +2133,23 @@ pub fn bdtri(k: f64, n: i32, y: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::chdtr(3.0,2.5);
+/// let value = sci_special::chdtr(3.0_f64,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy chdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chdtr.html).
-pub fn chdtr(df: f64, x: f64) -> f64 {
-    xsf::chdtr(df, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn chdtr<T: sci_core::Float>(df: T, x: T) -> T {
+    crate::backend::chdtr(df, x).unwrap_or(T::nan())
 }
 
 /// Chi-square survival Q(df/2,x/2).
@@ -1750,15 +2166,23 @@ pub fn chdtr(df: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::chdtrc(3.0,2.5);
+/// let value = sci_special::chdtrc(3.0_f64,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy chdtrc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chdtrc.html).
-pub fn chdtrc(df: f64, x: f64) -> f64 {
-    xsf::chdtrc(df, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn chdtrc<T: sci_core::Float>(df: T, x: T) -> T {
+    crate::backend::chdtrc(df, x).unwrap_or(T::nan())
 }
 
 /// Inverse chi-square survival function.
@@ -1775,15 +2199,23 @@ pub fn chdtrc(df: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::chdtri(3.0,0.3);
+/// let value = sci_special::chdtri(3.0_f64,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy chdtri](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chdtri.html).
-pub fn chdtri(df: f64, q: f64) -> f64 {
-    xsf::chdtri(df, q)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn chdtri<T: sci_core::Float>(df: T, q: T) -> T {
+    crate::backend::chdtri(df, q).unwrap_or(T::nan())
 }
 
 /// F-distribution CDF I_(dfn*x/(dfd+dfn*x))(dfn/2,dfd/2).
@@ -1800,15 +2232,23 @@ pub fn chdtri(df: f64, q: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::fdtr(3.0,5.0,2.5);
+/// let value = sci_special::fdtr(3.0_f64,5.0,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy fdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.fdtr.html).
-pub fn fdtr(dfn: f64, dfd: f64, x: f64) -> f64 {
-    xsf::fdtr(dfn, dfd, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn fdtr<T: sci_core::Float>(dfn: T, dfd: T, x: T) -> T {
+    crate::backend::fdtr(dfn, dfd, x).unwrap_or(T::nan())
 }
 
 /// F-distribution survival function, evaluated directly in the upper tail.
@@ -1825,15 +2265,23 @@ pub fn fdtr(dfn: f64, dfd: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::fdtrc(3.0,5.0,2.5);
+/// let value = sci_special::fdtrc(3.0_f64,5.0,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy fdtrc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.fdtrc.html).
-pub fn fdtrc(dfn: f64, dfd: f64, x: f64) -> f64 {
-    xsf::fdtrc(dfn, dfd, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn fdtrc<T: sci_core::Float>(dfn: T, dfd: T, x: T) -> T {
+    crate::backend::fdtrc(dfn, dfd, x).unwrap_or(T::nan())
 }
 
 /// Inverse F-distribution CDF with respect to x.
@@ -1850,15 +2298,23 @@ pub fn fdtrc(dfn: f64, dfd: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::fdtri(3.0,5.0,0.3);
+/// let value = sci_special::fdtri(3.0_f64,5.0,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy fdtri](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.fdtri.html).
-pub fn fdtri(dfn: f64, dfd: f64, p: f64) -> f64 {
-    xsf::fdtri(dfn, dfd, p)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn fdtri<T: sci_core::Float>(dfn: T, dfd: T, p: T) -> T {
+    crate::backend::fdtri(dfn, dfd, p).unwrap_or(T::nan())
 }
 
 /// Gamma CDF P(b,a*x), with rate a and shape b.
@@ -1875,15 +2331,23 @@ pub fn fdtri(dfn: f64, dfd: f64, p: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::gdtr(1.5,2.5,0.5);
+/// let value = sci_special::gdtr(1.5_f64,2.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy gdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gdtr.html).
-pub fn gdtr(a: f64, b: f64, x: f64) -> f64 {
-    xsf::gdtr(a, b, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gdtr<T: sci_core::Float>(a: T, b: T, x: T) -> T {
+    crate::backend::gdtr(a, b, x).unwrap_or(T::nan())
 }
 
 /// Gamma survival Q(b,a*x), with rate a and shape b.
@@ -1900,15 +2364,23 @@ pub fn gdtr(a: f64, b: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::gdtrc(1.5,2.5,0.5);
+/// let value = sci_special::gdtrc(1.5_f64,2.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy gdtrc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gdtrc.html).
-pub fn gdtrc(a: f64, b: f64, x: f64) -> f64 {
-    xsf::gdtrc(a, b, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gdtrc<T: sci_core::Float>(a: T, b: T, x: T) -> T {
+    crate::backend::gdtrc(a, b, x).unwrap_or(T::nan())
 }
 
 /// Inverse of gdtr with respect to shape b.
@@ -1933,7 +2405,7 @@ pub fn gdtrc(a: f64, b: f64, x: f64) -> f64 {
 ///
 /// - [SciPy gdtrib](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gdtrib.html).
 pub fn gdtrib(a: f64, p: f64, x: f64) -> f64 {
-    xsf::gdtrib(a, p, x)
+    crate::backend::legacy::gdtrib(a, p, x)
 }
 
 /// Negative-binomial CDF for k failures before n successes, I_p(n,k+1).
@@ -1950,15 +2422,23 @@ pub fn gdtrib(a: f64, p: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::nbdtr(2,5,0.3);
+/// let value = sci_special::nbdtr(2,5,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy nbdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nbdtr.html).
-pub fn nbdtr(k: i32, n: i32, p: f64) -> f64 {
-    xsf::nbdtr(k, n, p)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn nbdtr<T: sci_core::Float>(k: i32, n: i32, p: T) -> T {
+    crate::backend::nbdtr(k, n, p).unwrap_or(T::nan())
 }
 
 /// Negative-binomial survival probability.
@@ -1975,15 +2455,23 @@ pub fn nbdtr(k: i32, n: i32, p: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::nbdtrc(2,5,0.3);
+/// let value = sci_special::nbdtrc(2,5,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy nbdtrc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nbdtrc.html).
-pub fn nbdtrc(k: i32, n: i32, p: f64) -> f64 {
-    xsf::nbdtrc(k, n, p)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn nbdtrc<T: sci_core::Float>(k: i32, n: i32, p: T) -> T {
+    crate::backend::nbdtrc(k, n, p).unwrap_or(T::nan())
 }
 
 /// Inverse negative-binomial CDF with respect to p.
@@ -2000,15 +2488,23 @@ pub fn nbdtrc(k: i32, n: i32, p: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::nbdtri(2,5,0.3);
+/// let value = sci_special::nbdtri(2,5,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy nbdtri](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nbdtri.html).
-pub fn nbdtri(k: i32, n: i32, y: f64) -> f64 {
-    xsf::nbdtri(k, n, y)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn nbdtri<T: sci_core::Float>(k: i32, n: i32, y: T) -> T {
+    crate::backend::nbdtri(k, n, y).unwrap_or(T::nan())
 }
 
 /// Standard normal CDF Φ(x)=erfc(−x/√2)/2.
@@ -2025,15 +2521,23 @@ pub fn nbdtri(k: i32, n: i32, y: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::ndtr(0.5);
+/// let value = sci_special::ndtr(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy ndtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ndtr.html).
-pub fn ndtr(x: f64) -> f64 {
-    xsf::ndtr(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ndtr<T: sci_core::Float>(x: T) -> T {
+    crate::backend::ndtr(x).unwrap_or(T::nan())
 }
 
 /// Inverse standard normal CDF Φ⁻¹(p).
@@ -2050,15 +2554,23 @@ pub fn ndtr(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::ndtri(0.3);
+/// let value = sci_special::ndtri(0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy ndtri](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ndtri.html).
-pub fn ndtri(p: f64) -> f64 {
-    xsf::ndtri(p)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ndtri<T: sci_core::Float>(p: T) -> T {
+    crate::backend::ndtri(p).unwrap_or(T::nan())
 }
 
 /// Log standard normal CDF ln Φ(x), stable in the far negative tail.
@@ -2075,15 +2587,23 @@ pub fn ndtri(p: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::log_ndtr(-30.0);
+/// let value = sci_special::log_ndtr(-30.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy log_ndtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.log_ndtr.html).
-pub fn log_ndtr(x: f64) -> f64 {
-    xsf::log_ndtr(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn log_ndtr<T: sci_core::Float>(x: T) -> T {
+    crate::backend::log_ndtr(x).unwrap_or(T::nan())
 }
 
 /// Inverse log standard normal CDF, Φ⁻¹(exp(y)), without underflow.
@@ -2100,15 +2620,23 @@ pub fn log_ndtr(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::ndtri_exp(-100.0);
+/// let value = sci_special::ndtri_exp(-100.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy ndtri_exp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ndtri_exp.html).
-pub fn ndtri_exp(y: f64) -> f64 {
-    xsf::ndtri_exp(y)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ndtri_exp<T: sci_core::Float>(y: T) -> T {
+    crate::backend::ndtri_exp(y).unwrap_or(T::nan())
 }
 
 /// Poisson CDF P(X≤floor(k)), X~Poisson(m).
@@ -2125,15 +2653,23 @@ pub fn ndtri_exp(y: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::pdtr(2.0,1.5);
+/// let value = sci_special::pdtr(2.0_f64,1.5);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy pdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pdtr.html).
-pub fn pdtr(k: f64, m: f64) -> f64 {
-    xsf::pdtr(k, m)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn pdtr<T: sci_core::Float>(k: T, m: T) -> T {
+    crate::backend::pdtr(k, m).unwrap_or(T::nan())
 }
 
 /// Poisson survival P(X>floor(k)).
@@ -2150,15 +2686,23 @@ pub fn pdtr(k: f64, m: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::pdtrc(2.0,1.5);
+/// let value = sci_special::pdtrc(2.0_f64,1.5);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy pdtrc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pdtrc.html).
-pub fn pdtrc(k: f64, m: f64) -> f64 {
-    xsf::pdtrc(k, m)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn pdtrc<T: sci_core::Float>(k: T, m: T) -> T {
+    crate::backend::pdtrc(k, m).unwrap_or(T::nan())
 }
 
 /// Inverse Poisson CDF with respect to mean m.
@@ -2175,15 +2719,23 @@ pub fn pdtrc(k: f64, m: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::pdtri(2,0.3);
+/// let value = sci_special::pdtri(2,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy pdtri](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pdtri.html).
-pub fn pdtri(k: i32, p: f64) -> f64 {
-    xsf::pdtri(k, p)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn pdtri<T: sci_core::Float>(k: i32, p: T) -> T {
+    crate::backend::pdtri(k, p).unwrap_or(T::nan())
 }
 
 /// Student t CDF with df degrees of freedom.
@@ -2246,10 +2798,11 @@ pub fn stdtr(df: f64, t: f64) -> f64 {
         }
     } else if df.is_finite() && t.abs() <= df.sqrt() {
         let ratio = (t / df.sqrt()).powi(2);
-        let probability = 0.5 * xsf::betainc(0.5, 0.5 * df, ratio / (1.0 + ratio));
+        let probability =
+            0.5 * crate::backend::betainc(0.5, 0.5 * df, ratio / (1.0 + ratio)).unwrap_or(f64::NAN);
         0.5 + probability.copysign(t)
     } else {
-        xsf::stdtr(df, t)
+        crate::backend::stdtr(df, t).unwrap_or(f64::NAN)
     }
 }
 
@@ -2308,14 +2861,15 @@ pub fn stdtrit(df: f64, p: f64) -> f64 {
     } else if df == 2.0 {
         ((p - 0.5) * std::f64::consts::SQRT_2 / p.sqrt()) / (1.0 - p).sqrt()
     } else if df.is_finite() && p > 0.25 && p < 0.75 {
-        let q = xsf::betaincinv(0.5, 0.5 * df, (2.0 * p - 1.0).abs());
+        let q =
+            crate::backend::betaincinv(0.5, 0.5 * df, (2.0 * p - 1.0).abs()).unwrap_or(f64::NAN);
         if q <= 0.5 {
             (df * q / (1.0 - q)).sqrt().copysign(p - 0.5)
         } else {
-            xsf::stdtri(df, p)
+            crate::backend::stdtrit(df, p).unwrap_or(f64::NAN)
         }
     } else {
-        xsf::stdtri(df, p)
+        crate::backend::stdtrit(df, p).unwrap_or(f64::NAN)
     }
 }
 
@@ -2333,15 +2887,23 @@ pub fn stdtrit(df: f64, p: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::kolmogorov(0.5);
+/// let value = sci_special::kolmogorov(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy kolmogorov](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kolmogorov.html).
-pub fn kolmogorov(x: f64) -> f64 {
-    xsf::kolmogorov(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn kolmogorov<T: sci_core::Float>(x: T) -> T {
+    crate::backend::kolmogorov(x).unwrap_or(T::nan())
 }
 
 /// Inverse limiting Kolmogorov survival probability.
@@ -2358,15 +2920,23 @@ pub fn kolmogorov(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::kolmogi(0.3);
+/// let value = sci_special::kolmogi(0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy kolmogi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kolmogi.html).
-pub fn kolmogi(q: f64) -> f64 {
-    xsf::kolmogi(q)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn kolmogi<T: sci_core::Float>(q: T) -> T {
+    crate::backend::kolmogi(q).unwrap_or(T::nan())
 }
 
 /// One-sided Kolmogorov–Smirnov survival probability for sample size n.
@@ -2391,7 +2961,7 @@ pub fn kolmogi(q: f64) -> f64 {
 ///
 /// - [SciPy smirnov](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.smirnov.html).
 pub fn smirnov(n: i32, x: f64) -> f64 {
-    xsf::smirnov(n, x)
+    crate::backend::legacy::smirnov(n, x)
 }
 
 /// Inverse one-sided Kolmogorov–Smirnov survival probability.
@@ -2416,7 +2986,7 @@ pub fn smirnov(n: i32, x: f64) -> f64 {
 ///
 /// - [SciPy smirnovi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.smirnovi.html).
 pub fn smirnovi(n: i32, q: f64) -> f64 {
-    xsf::smirnovi(n, q)
+    crate::backend::legacy::smirnovi(n, q)
 }
 
 /// Owen's T: (1/(2π)) ∫₀ᵃ exp(−h²(1+t²)/2)/(1+t²) dt.
@@ -2441,7 +3011,7 @@ pub fn smirnovi(n: i32, q: f64) -> f64 {
 ///
 /// - [SciPy owens_t](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.owens_t.html).
 pub fn owens_t(h: f64, a: f64) -> f64 {
-    xsf::owens_t(h, a)
+    crate::backend::legacy::owens_t(h, a)
 }
 
 /// Tukey lambda CDF, inverse of (p^lambda−(1−p)^lambda)/lambda.
@@ -2458,15 +3028,23 @@ pub fn owens_t(h: f64, a: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::tklmbda(0.5,0.3);
+/// let value = sci_special::tklmbda(0.5_f64,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy tklmbda](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.tklmbda.html).
-pub fn tklmbda(x: f64, lambda: f64) -> f64 {
-    xsf::tukeylambdacdf(x, lambda)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn tklmbda<T: sci_core::Float>(x: T, lambda: T) -> T {
+    crate::backend::tukeylambdacdf(x, lambda).unwrap_or(T::nan())
 }
 
 /// Parabolic cylinder function and derivative (D_v(x),D′_v(x)).
@@ -2490,8 +3068,13 @@ pub fn tklmbda(x: f64, lambda: f64) -> f64 {
 /// # References
 ///
 /// - [SciPy pbdv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pbdv.html).
+///
+/// ## Numerical behavior and work limits
+///
+/// Finite real inputs with `abs(v) <= 4096`. Bounded forward/backward recurrences return
+/// `(value, derivative)`; larger orders or nonfinite inputs return NaN pairs.
 pub fn pbdv(v: f64, x: f64) -> (f64, f64) {
-    xsf::pbdv(v, x)
+    crate::backend::legacy::pbdv(v, x)
 }
 
 /// Parabolic cylinder function and derivative (V_v(x),V′_v(x)).
@@ -2515,8 +3098,13 @@ pub fn pbdv(v: f64, x: f64) -> (f64, f64) {
 /// # References
 ///
 /// - [SciPy pbvv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pbvv.html).
+///
+/// ## Numerical behavior and work limits
+///
+/// Finite real inputs with `abs(v) <= 4096`. Bounded forward/backward recurrences return
+/// `(value, derivative)`; larger orders or nonfinite inputs return NaN pairs.
 pub fn pbvv(v: f64, x: f64) -> (f64, f64) {
-    xsf::pbvv(v, x)
+    crate::backend::legacy::pbvv(v, x)
 }
 
 /// Parabolic cylinder function (W(a,x),W′(a,x)).
@@ -2541,7 +3129,7 @@ pub fn pbvv(v: f64, x: f64) -> (f64, f64) {
 ///
 /// - [SciPy pbwa](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pbwa.html).
 pub fn pbwa(a: f64, x: f64) -> (f64, f64) {
-    xsf::pbwa(a, x)
+    crate::backend::legacy::pbwa(a, x)
 }
 
 /// Even Mathieu characteristic value a_m(q).
@@ -2573,7 +3161,7 @@ pub fn mathieu_a(m: u32, q: f64) -> f64 {
     if m > 128 || !q.is_finite() || q.abs() > 100.0 {
         return f64::NAN;
     }
-    xsf::mathieu_a(m, q)
+    crate::backend::legacy::mathieu_a(m, q)
 }
 
 /// Odd Mathieu characteristic value b_m(q).
@@ -2605,7 +3193,7 @@ pub fn mathieu_b(m: u32, q: f64) -> f64 {
     if m > 128 || !q.is_finite() || q.abs() > 100.0 {
         return f64::NAN;
     }
-    xsf::mathieu_b(m, q)
+    crate::backend::legacy::mathieu_b(m, q)
 }
 
 /// Even Mathieu function (ce_m(x,q), derivative), with the SciPy normalization.
@@ -2637,7 +3225,7 @@ pub fn mathieu_cem(m: u32, q: f64, x: f64) -> (f64, f64) {
     if m > 128 || !q.is_finite() || q.abs() > 100.0 || !x.is_finite() {
         return (f64::NAN, f64::NAN);
     }
-    xsf::mathieu_cem(m, q, x)
+    crate::backend::legacy::mathieu_cem(m, q, x)
 }
 
 /// Odd Mathieu function (se_m(x,q), derivative), with the SciPy normalization.
@@ -2669,7 +3257,7 @@ pub fn mathieu_sem(m: u32, q: f64, x: f64) -> (f64, f64) {
     if m > 128 || !q.is_finite() || q.abs() > 100.0 || !x.is_finite() {
         return (f64::NAN, f64::NAN);
     }
-    xsf::mathieu_sem(m, q, x)
+    crate::backend::legacy::mathieu_sem(m, q, x)
 }
 
 /// Even modified Mathieu function of the first kind and derivative.
@@ -2701,7 +3289,7 @@ pub fn mathieu_modcem1(m: u32, q: f64, x: f64) -> (f64, f64) {
     if m > 128 || !q.is_finite() || q.abs() > 100.0 || !x.is_finite() {
         return (f64::NAN, f64::NAN);
     }
-    xsf::mathieu_modcem1(m, q, x)
+    crate::backend::legacy::mathieu_modcem1(m, q, x)
 }
 
 /// Even modified Mathieu function of the second kind and derivative.
@@ -2733,7 +3321,7 @@ pub fn mathieu_modcem2(m: u32, q: f64, x: f64) -> (f64, f64) {
     if m > 128 || !q.is_finite() || q.abs() > 100.0 || !x.is_finite() {
         return (f64::NAN, f64::NAN);
     }
-    xsf::mathieu_modcem2(m, q, x)
+    crate::backend::legacy::mathieu_modcem2(m, q, x)
 }
 
 /// Odd modified Mathieu function of the first kind and derivative.
@@ -2765,7 +3353,7 @@ pub fn mathieu_modsem1(m: u32, q: f64, x: f64) -> (f64, f64) {
     if m > 128 || !q.is_finite() || q.abs() > 100.0 || !x.is_finite() {
         return (f64::NAN, f64::NAN);
     }
-    xsf::mathieu_modsem1(m, q, x)
+    crate::backend::legacy::mathieu_modsem1(m, q, x)
 }
 
 /// Odd modified Mathieu function of the second kind and derivative.
@@ -2797,7 +3385,7 @@ pub fn mathieu_modsem2(m: u32, q: f64, x: f64) -> (f64, f64) {
     if m > 128 || !q.is_finite() || q.abs() > 100.0 || !x.is_finite() {
         return (f64::NAN, f64::NAN);
     }
-    xsf::mathieu_modsem2(m, q, x)
+    crate::backend::legacy::mathieu_modsem2(m, q, x)
 }
 
 /// Real part of J₀(x exp(3πi/4)), the Kelvin ber function.
@@ -2814,15 +3402,23 @@ pub fn mathieu_modsem2(m: u32, q: f64, x: f64) -> (f64, f64) {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::ber(0.5);
+/// let value = sci_special::ber(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy ber](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ber.html).
-pub fn ber(x: f64) -> f64 {
-    xsf::ber(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ber<T: sci_core::Float>(x: T) -> T {
+    crate::backend::ber(x).unwrap_or(T::nan())
 }
 
 /// Imaginary part of J₀(x exp(3πi/4)), the Kelvin bei function.
@@ -2839,15 +3435,23 @@ pub fn ber(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::bei(0.5);
+/// let value = sci_special::bei(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy bei](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bei.html).
-pub fn bei(x: f64) -> f64 {
-    xsf::bei(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn bei<T: sci_core::Float>(x: T) -> T {
+    crate::backend::bei(x).unwrap_or(T::nan())
 }
 
 /// Real part of K₀(x exp(πi/4)), the Kelvin ker function.
@@ -2864,15 +3468,23 @@ pub fn bei(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::ker(0.5);
+/// let value = sci_special::ker(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy ker](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ker.html).
-pub fn ker(x: f64) -> f64 {
-    xsf::ker(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ker<T: sci_core::Float>(x: T) -> T {
+    crate::backend::ker(x).unwrap_or(T::nan())
 }
 
 /// Imaginary part of K₀(x exp(πi/4)), the Kelvin kei function.
@@ -2889,15 +3501,23 @@ pub fn ker(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::kei(0.5);
+/// let value = sci_special::kei(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy kei](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kei.html).
-pub fn kei(x: f64) -> f64 {
-    xsf::kei(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn kei<T: sci_core::Float>(x: T) -> T {
+    crate::backend::kei(x).unwrap_or(T::nan())
 }
 
 /// Derivative of the Kelvin ber function with respect to x.
@@ -2914,15 +3534,23 @@ pub fn kei(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::berp(0.5);
+/// let value = sci_special::berp(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy berp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.berp.html).
-pub fn berp(x: f64) -> f64 {
-    xsf::berp(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn berp<T: sci_core::Float>(x: T) -> T {
+    crate::backend::berp(x).unwrap_or(T::nan())
 }
 
 /// Derivative of the Kelvin bei function with respect to x.
@@ -2939,15 +3567,23 @@ pub fn berp(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::beip(0.5);
+/// let value = sci_special::beip(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy beip](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.beip.html).
-pub fn beip(x: f64) -> f64 {
-    xsf::beip(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn beip<T: sci_core::Float>(x: T) -> T {
+    crate::backend::beip(x).unwrap_or(T::nan())
 }
 
 /// Derivative of the Kelvin ker function with respect to x.
@@ -2964,15 +3600,23 @@ pub fn beip(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::kerp(0.5);
+/// let value = sci_special::kerp(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy kerp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kerp.html).
-pub fn kerp(x: f64) -> f64 {
-    xsf::kerp(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn kerp<T: sci_core::Float>(x: T) -> T {
+    crate::backend::kerp(x).unwrap_or(T::nan())
 }
 
 /// Derivative of the Kelvin kei function with respect to x.
@@ -2989,15 +3633,23 @@ pub fn kerp(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::keip(0.5);
+/// let value = sci_special::keip(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy keip](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.keip.html).
-pub fn keip(x: f64) -> f64 {
-    xsf::keip(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn keip<T: sci_core::Float>(x: T) -> T {
+    crate::backend::keip(x).unwrap_or(T::nan())
 }
 
 /// First nt positive zeros of ber in ascending order.
@@ -3031,7 +3683,7 @@ pub fn ber_zeros(nt: usize) -> Result<Vec<f64>> {
             "requested special-function sequence is too large or empty",
         ));
     }
-    Ok(xsf::ber_zeros(nt))
+    crate::backend::legacy::ber_zeros(nt).map_err(Error::NumericalFailure)
 }
 
 /// First nt positive zeros of bei in ascending order.
@@ -3065,7 +3717,7 @@ pub fn bei_zeros(nt: usize) -> Result<Vec<f64>> {
             "requested special-function sequence is too large or empty",
         ));
     }
-    Ok(xsf::bei_zeros(nt))
+    crate::backend::legacy::bei_zeros(nt).map_err(Error::NumericalFailure)
 }
 
 /// First nt positive zeros of ker in ascending order.
@@ -3099,7 +3751,7 @@ pub fn ker_zeros(nt: usize) -> Result<Vec<f64>> {
             "requested special-function sequence is too large or empty",
         ));
     }
-    Ok(xsf::ker_zeros(nt))
+    crate::backend::legacy::ker_zeros(nt).map_err(Error::NumericalFailure)
 }
 
 /// First nt positive zeros of kei in ascending order.
@@ -3133,7 +3785,7 @@ pub fn kei_zeros(nt: usize) -> Result<Vec<f64>> {
             "requested special-function sequence is too large or empty",
         ));
     }
-    Ok(xsf::kei_zeros(nt))
+    crate::backend::legacy::kei_zeros(nt).map_err(Error::NumericalFailure)
 }
 
 /// First nt positive zeros of berp in ascending order.
@@ -3167,7 +3819,7 @@ pub fn berp_zeros(nt: usize) -> Result<Vec<f64>> {
             "requested special-function sequence is too large or empty",
         ));
     }
-    Ok(xsf::berp_zeros(nt))
+    crate::backend::legacy::berp_zeros(nt).map_err(Error::NumericalFailure)
 }
 
 /// First nt positive zeros of beip in ascending order.
@@ -3201,7 +3853,7 @@ pub fn beip_zeros(nt: usize) -> Result<Vec<f64>> {
             "requested special-function sequence is too large or empty",
         ));
     }
-    Ok(xsf::beip_zeros(nt))
+    crate::backend::legacy::beip_zeros(nt).map_err(Error::NumericalFailure)
 }
 
 /// First nt positive zeros of kerp in ascending order.
@@ -3235,49 +3887,11 @@ pub fn kerp_zeros(nt: usize) -> Result<Vec<f64>> {
             "requested special-function sequence is too large or empty",
         ));
     }
-    Ok(xsf::kerp_zeros(nt))
+    crate::backend::legacy::kerp_zeros(nt).map_err(Error::NumericalFailure)
 }
 
 // kei'(x) = Im[-a K_1(a x)], a = exp(i pi/4). Removing the
 // positive exp(-x/sqrt(2)) factor avoids underflow for long sequences.
-fn refine_keip_zero(mut x: f64) -> Result<f64> {
-    use num_complex::Complex64;
-    use std::f64::consts::FRAC_1_SQRT_2;
-    let a = Complex64::new(FRAC_1_SQRT_2, FRAC_1_SQRT_2);
-    for _ in 0..16 {
-        let z = a * x;
-        let phase = Complex64::from_polar(1., -z.im);
-        let k0 = xsf::bessel_ke(0., z);
-        let k1 = xsf::bessel_ke(1., z);
-        let value = (-a * phase * k1).im;
-        // K_1'(z) = -K_0(z) - K_1(z)/z. Include the derivative
-        // of the removed real exponential factor in the scaled function.
-        let derivative = (a * a * phase * (k0 + k1 / z)).im + FRAC_1_SQRT_2 * value;
-        let step = value / derivative;
-        if !step.is_finite() || step.abs() > 1. {
-            return Err(Error::NumericalFailure("Kelvin zero refinement failed"));
-        }
-        x -= step;
-        if step.abs() <= 8. * f64::EPSILON * x {
-            return Ok(x);
-        }
-    }
-    Err(Error::NumericalFailure(
-        "Kelvin zero refinement did not converge",
-    ))
-}
-
-fn stable_keip_zeros(nt: usize) -> Result<Vec<f64>> {
-    use std::f64::consts::{PI, SQRT_2};
-    (0..nt)
-        .map(|index| refine_keip_zero(4.93 + index as f64 * PI * SQRT_2))
-        .collect()
-}
-
-#[cfg(test)]
-#[path = "tests/kelvin_refinement.rs"]
-mod kelvin_refinement_tests;
-
 /// First nt positive zeros of keip in ascending order.
 ///
 /// ## Parameters and domain
@@ -3297,7 +3911,7 @@ mod kelvin_refinement_tests;
 ///
 /// The kei derivative zeros use `kei'(x) = Im[-a K_1(a x)]`, where
 /// `a = exp(i pi/4)`, with the private scaled complex Bessel K backend and
-/// at most 16 Newton iterations per zero. Scaling avoids exponential underflow.
+/// at most 32 bracketing steps and 64 safeguarded Newton iterations per zero. Scaling avoids exponential underflow.
 /// This avoids cancellation in the Kelvin series near x=9.4; SciPy's
 /// `keip_zeros` can differ by about 4e-10 there. Accuracy remains limited
 /// by binary64 argument reduction for large zeros.
@@ -3321,7 +3935,7 @@ pub fn keip_zeros(nt: usize) -> Result<Vec<f64>> {
             "requested special-function sequence is too large or empty",
         ));
     }
-    stable_keip_zeros(nt)
+    crate::backend::legacy::keip_zeros(nt).map_err(Error::NumericalFailure)
 }
 
 /// First nt positive zeros of ber,bei,ker,kei,berp,beip,kerp,keip, in that order.
@@ -3344,10 +3958,9 @@ pub fn keip_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// The kei derivative zeros use `kei'(x) = Im[-a K_1(a x)]`, where
 /// `a = exp(i pi/4)`, with the private scaled complex Bessel K backend and
-/// at most 16 Newton iterations per zero. Scaling avoids exponential underflow.
+/// at most 32 bracketing steps and 64 safeguarded Newton iterations per zero. Scaling avoids exponential underflow.
 /// This avoids cancellation in the Kelvin series near x=9.4; SciPy's
-/// `keip_zeros` can differ by about 4e-10 there. Other Kelvin families retain
-/// the backend's series/asymptotic accuracy limitations.
+/// `keip_zeros` can differ by about 4e-10 there. All Kelvin zero families share this bounded solver and scaled Bessel identities.
 ///
 /// # Examples
 ///
@@ -3369,14 +3982,14 @@ pub fn kelvin_zeros(nt: usize) -> Result<[Vec<f64>; 8]> {
         ));
     }
     Ok([
-        xsf::ber_zeros(nt),
-        xsf::bei_zeros(nt),
-        xsf::ker_zeros(nt),
-        xsf::kei_zeros(nt),
-        xsf::berp_zeros(nt),
-        xsf::beip_zeros(nt),
-        xsf::kerp_zeros(nt),
-        stable_keip_zeros(nt)?,
+        crate::backend::legacy::ber_zeros(nt).map_err(Error::NumericalFailure)?,
+        crate::backend::legacy::bei_zeros(nt).map_err(Error::NumericalFailure)?,
+        crate::backend::legacy::ker_zeros(nt).map_err(Error::NumericalFailure)?,
+        crate::backend::legacy::kei_zeros(nt).map_err(Error::NumericalFailure)?,
+        crate::backend::legacy::berp_zeros(nt).map_err(Error::NumericalFailure)?,
+        crate::backend::legacy::beip_zeros(nt).map_err(Error::NumericalFailure)?,
+        crate::backend::legacy::kerp_zeros(nt).map_err(Error::NumericalFailure)?,
+        crate::backend::legacy::keip_zeros(nt).map_err(Error::NumericalFailure)?,
     ])
 }
 
@@ -3401,8 +4014,13 @@ pub fn kelvin_zeros(nt: usize) -> Result<[Vec<f64>; 8]> {
 /// # References
 ///
 /// - [SciPy lpmv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.lpmv.html).
+///
+/// ## Numerical behavior and work limits
+///
+/// Finite real inputs with `abs(v) <= 100000`, `abs(m) <= 4096`, and `x` in `[-1,1]`.
+/// Larger orders or degrees return NaN before recurrence work.
 pub fn lpmv(m: i32, v: f64, x: f64) -> f64 {
-    xsf::pmv(m, v, x)
+    crate::backend::legacy::pmv(m, v, x)
 }
 
 /// Legendre polynomial P_n(x), using value-only semantics (no derivative axis).
@@ -3419,15 +4037,23 @@ pub fn lpmv(m: i32, v: f64, x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::legendre_p(3,0.3);
+/// let value = sci_special::legendre_p(3,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
 /// # References
 ///
 /// - [SciPy legendre_p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.legendre_p.html).
-pub fn legendre_p(n: i32, x: f64) -> f64 {
-    xsf::legendre_p(n, x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn legendre_p<T: sci_core::Float>(n: i32, x: T) -> T {
+    crate::backend::eval_legendre(n, x).unwrap_or(T::nan())
 }
 
 /// Unnormalized associated Legendre P_n^m(x) with branch-cut convention 2 and Condon–Shortley phase.
@@ -3452,7 +4078,7 @@ pub fn legendre_p(n: i32, x: f64) -> f64 {
 ///
 /// - [SciPy assoc_legendre_p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.assoc_legendre_p.html).
 pub fn assoc_legendre_p(n: i32, m: i32, x: f64) -> f64 {
-    xsf::assoc_legendre_p(n, m, x)
+    crate::backend::legacy::assoc_legendre_p(n, m, x)
 }
 
 /// Spherical-normalized associated Legendre value, the theta factor in a spherical harmonic.
@@ -3477,7 +4103,7 @@ pub fn assoc_legendre_p(n: i32, m: i32, x: f64) -> f64 {
 ///
 /// - [SciPy sph_legendre_p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sph_legendre_p.html).
 pub fn sph_legendre_p(n: i32, m: i32, theta: f64) -> f64 {
-    xsf::sph_legendre_p(n, m, theta)
+    crate::backend::legacy::sph_legendre_p(n, m, theta)
 }
 
 /// Legendre functions Q₀ through Q_n and their derivatives, as two vectors.
@@ -3514,7 +4140,7 @@ pub fn lqn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
             "requested special-function sequence is too large or empty",
         ));
     }
-    let (mut values, mut derivatives) = xsf::legendre_q_all(n.max(1), x);
+    let (mut values, mut derivatives) = crate::backend::legacy::legendre_q_all(n.max(1), x);
     values.truncate(n + 1);
     derivatives.truncate(n + 1);
     Ok((values, derivatives))
@@ -3556,7 +4182,7 @@ pub fn lqmn(m: usize, n: usize, x: f64) -> Result<ValueDerivativeMatrices> {
             "requested special-function sequence is too large or empty",
         ));
     }
-    let (values, derivatives) = xsf::assoc_legendre_q_all(n.max(1), m.max(1), x);
+    let (values, derivatives) = crate::backend::legacy::assoc_legendre_q_all(n.max(1), m.max(1), x);
     let crop = |matrix: Vec<Vec<f64>>| -> Result<Vec<Vec<f64>>> {
         if matrix.len() < n + 1 || matrix.iter().take(n + 1).any(|row| row.len() < m + 1) {
             return Err(Error::DimensionMismatch);
@@ -4119,7 +4745,7 @@ pub fn powm1(x: f64, y: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Uses the private xsf backend's logarithmic limit for tiny λ and scaled
+/// Uses the private Rust kernel's logarithmic limit for tiny λ and scaled
 /// exponential for large powers, preserving representable results when x^λ
 /// overflows. `boxcox1p` also preserves tiny x using `log1p`. Constant work;
 /// true overflow, underflow, and binary64 rounding remain. Correct rounding
@@ -4128,19 +4754,20 @@ pub fn powm1(x: f64, y: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_special::boxcox(4.0, 0.0), 4.0_f64.ln());
+/// assert_eq!(sci_special::boxcox(4.0_f64, 0.0), 4.0_f64.ln());
 /// ```
 ///
 /// # References
 ///
 /// [SciPy boxcox](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.boxcox.html).
-pub fn boxcox(x: f64, lambda: f64) -> f64 {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn boxcox<T: sci_core::Float>(x: T, lambda: T) -> T {
     // Preserve the exact endpoint even when the backend takes its tiny-lambda
     // logarithmic limit, which is valid only for strictly positive x.
     if x == 0.0 && lambda > 0.0 {
         -1.0 / lambda
     } else {
-        xsf::boxcox(x, lambda)
+        crate::backend::boxcox(x, lambda).unwrap_or(T::nan())
     }
 }
 
@@ -4162,7 +4789,7 @@ pub fn boxcox(x: f64, lambda: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Uses the private xsf backend's logarithmic limit for tiny λ and scaled
+/// Uses the private Rust kernel's logarithmic limit for tiny λ and scaled
 /// exponential for large powers, preserving representable results when x^λ
 /// overflows. `boxcox1p` also preserves tiny x using `log1p`. Constant work;
 /// true overflow, underflow, and binary64 rounding remain. Correct rounding
@@ -4171,17 +4798,18 @@ pub fn boxcox(x: f64, lambda: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_special::boxcox1p(3.0, 0.0), 4.0_f64.ln());
+/// assert_eq!(sci_special::boxcox1p(3.0_f64, 0.0), 4.0_f64.ln());
 /// ```
 ///
 /// # References
 ///
 /// [SciPy boxcox1p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.boxcox1p.html).
-pub fn boxcox1p(x: f64, lambda: f64) -> f64 {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn boxcox1p<T: sci_core::Float>(x: T, lambda: T) -> T {
     if x == -1.0 && lambda > 0.0 {
         -1.0 / lambda
     } else {
-        xsf::boxcox1p(x, lambda)
+        crate::backend::boxcox1p(x, lambda).unwrap_or(T::nan())
     }
 }
 

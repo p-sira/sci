@@ -105,3 +105,8 @@ classes remain deferred. See [I/O coverage and limitations](function_coverages/I
 The [non-sparse numerical accuracy audit](function_coverages/NUMERICAL_ACCURACY_AUDIT.md)
 records corrections, independent regression references, and remaining accuracy
 limits identified from the sibling `sci-testing` measurements.
+
+Special functions retain all 353 public numerical APIs with private pure Rust
+kernels. See [special-function coverage and numerical limits](function_coverages/SPECIAL_COVERAGE.md)
+for the 25 deliberate SciPy name substitutions, generic float support, overload
+gaps, and bounded-work limitations.

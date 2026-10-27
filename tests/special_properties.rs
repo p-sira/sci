@@ -95,14 +95,14 @@ fn lambert_real_branches_preserve_domains_and_inverse_identity() {
         assert_eq!(s::lambertwm1(x), f64::NEG_INFINITY);
     }
     for x in [-0.36, -1e-3, -1e-12, 1e-300, 1e-3, 0.5, 1e100, 1e300] {
-        let w = s::lambertw(x);
+        let w: f64 = s::lambertw(x);
         assert!(w >= -1.0);
         // The relative condition number of w * exp(w) is |1 + w|.
         let rtol = 8.0 * f64::EPSILON * (1.0 + w.abs());
         finite_close(w * w.exp(), x, 0.0, rtol);
     }
     for x in [-0.36, -1e-12, -1e-100, -1e-300] {
-        let w = s::lambertwm1(x);
+        let w: f64 = s::lambertwm1(x);
         assert!(w <= -1.0);
         let rtol = 8.0 * f64::EPSILON * (1.0 + w.abs());
         finite_close(w * w.exp(), x, 0.0, rtol);
@@ -196,4 +196,40 @@ fn kelvin_zero_sequences_agree_and_remain_ordered_after_exponential_underflow() 
     }
     assert!(s::keip_zeros(0).is_err());
     assert!(s::keip_zeros(4097).is_err());
+}
+
+#[test]
+fn rust_kernel_recurrences_and_reflections() {
+    for x in [0.0_f64, 0.25, 2.0, 8.0] {
+        for v in [-2.5, -0.5, 0.5, 2.5] {
+            let previous = s::pbdv(v - 1.0, x).0;
+            let (value, slope) = s::pbdv(v, x);
+            let next = s::pbdv(v + 1.0, x).0;
+            finite_close(next, x * value - v * previous, 2e-11, 2e-11);
+            finite_close(slope, 0.5 * x * value - next, 2e-11, 2e-11);
+        }
+    }
+    for x in [0.25_f64, 1.0, 8.0] {
+        let (positive, _) = s::modfresnelp(x);
+        let (negative, _) = s::modfresnelp(-x);
+        let (minus, _) = s::modfresnelm(-x);
+        let complete = (std::f64::consts::PI / 2.0).sqrt();
+        finite_close(positive.re + negative.re, complete, 1e-14, 1e-14);
+        finite_close(positive.im + negative.im, complete, 1e-14, 1e-14);
+        finite_close(minus.re, negative.re, 1e-14, 1e-14);
+        finite_close(minus.im, -negative.im, 1e-14, 1e-14);
+    }
+    for n in 0..=8 {
+        finite_close(s::pro_cv(0, n, 0.0), (n * (n + 1)) as f64, 0.0, 0.0);
+        finite_close(
+            s::pro_ang1(0, n, 0.0, 0.3).0,
+            s::eval_legendre(n as i32, 0.3),
+            2e-13,
+            2e-13,
+        );
+    }
+    assert!(s::pbdv(4097.0, 1.0).0.is_nan());
+    assert!(s::hyperu(100001.0, 1.0, 1.0).is_nan());
+    assert!(s::hyp2f1(100001.0, 1.0, 2.0, 0.5).is_nan());
+    assert!(s::lpmv(4097, 0.5, 0.3).is_nan());
 }

@@ -33,7 +33,7 @@ realfft = "3.5.0"
 special = { version = "0.14.2", default-features = false, features = ["std"] }
 statrs = { version = "0.19.1", default-features = false, features = ["std", "nalgebra"] }
 lapjv = "0.3.0"
-xsf = "0.6.0"
+complex-bessel = { version = "0.3.0", default-features = false, features = ["std"] }
 pm-remez = { version = "=0.3.5", default-features = false, features = ["nalgebra-backend"] }
 faer = { version = "0.24.4", default-features = false, features = ["std", "linalg"] }
 dyn-stack = "0.13.2"
@@ -367,3 +367,8 @@ required-features = ["stats", "special"]
 name = "generic_float"
 path = "tests/generic_float.rs"
 required-features = ["complex", "constants", "differentiate", "fft", "integrate", "interpolate", "special", "stats"]
+
+[[test]]
+name = "special_float"
+path = "tests/special_float.rs"
+required-features = ["special"]
