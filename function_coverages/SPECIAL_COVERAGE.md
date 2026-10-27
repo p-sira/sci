@@ -73,6 +73,14 @@ unbounded recurrences in the translated families:
 | Fresnel zeros | At most 64 Newton iterations per root, count at most 4096. Failed/nonfinite refinement returns an error. |
 | Airy/Struve integrals | Bounded Gaussian quadrature near the series/asymptotic transitions; translated asymptotic kernels beyond those ranges. Large oscillatory arguments remain limited by argument reduction and asymptotic truncation. |
 
+The parameter work bounds above are not uniform accuracy guarantees. In
+particular, the general 1F1 fallback still has severe cancellation for large
+positive `a` at negative `x` (for example, `a=65.1, b=-3.2, x=-20`). These
+parameters require a stronger continuation algorithm before they can be counted
+as accurately supported. The checked reference grid for the improved direct
+series covers `abs(a), abs(b) <= 64` and `abs(x) <= 100`, with representative
+large-argument asymptotic cases outside that region.
+
 Nonfinite conventions also differ from some SciPy overloads: incomplete beta
 and lower gamma require finite shape parameters; general Bessel/Struve orders
 and 0F1 parameters must be finite. Invalid infinite parameters return NaN.
