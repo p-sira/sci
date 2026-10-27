@@ -35,6 +35,9 @@ fn evaluate<T: Float>(name: &str, args: &[&str]) -> Vec<f64> {
         "complex.rgamma" => vec![s::complex::rgamma(unary).unwrap()],
         "complex.digamma" => vec![s::complex::digamma(unary).unwrap()],
         "complex.gamma" => vec![s::complex::gamma(unary).unwrap()],
+        "complex.erfcx" => vec![s::complex::erfcx(unary).unwrap()],
+        "complex.erfi" => vec![s::complex::erfi(unary).unwrap()],
+        "complex.dawsn" => vec![s::complex::dawsn(unary).unwrap()],
         "complex.erf" => vec![s::complex::erf(unary).unwrap()],
         "complex.erfc" => vec![s::complex::erfc(unary).unwrap()],
         "complex.wofz" => vec![s::complex::wofz(unary).unwrap()],
@@ -434,4 +437,148 @@ fn complex_gamma_family_contracts() {
             im: 0.75 * std::f64::consts::PI,
         },
     );
+}
+
+#[test]
+fn complex_error_family_identities_and_domains() {
+    use s::complex::{dawsn, erfcx, erfi};
+    use sci::complex::{conjugate, exp, multiply};
+    let close = |a: Complex, b: Complex| {
+        for (a, b) in [(a.re, b.re), (a.im, b.im)] {
+            assert!(
+                (a - b).abs() <= 3e-13 * b.abs().max(1e-300),
+                "{a:e} vs {b:e}"
+            );
+        }
+    };
+    for z in [
+        Complex { re: 0.1, im: 0.2 },
+        Complex { re: 1.3, im: -0.7 },
+        Complex { re: -2.0, im: 1.0 },
+    ] {
+        for f in [erfcx, erfi, dawsn] {
+            close(f(conjugate(z)).unwrap(), conjugate(f(z).unwrap()));
+        }
+        let iz = Complex {
+            re: -z.im,
+            im: z.re,
+        };
+        let z2 = multiply(z, z);
+        close(erfcx(z).unwrap(), s::complex::wofz(iz).unwrap());
+        close(
+            erfcx(z).unwrap(),
+            multiply(exp(z2), s::complex::erfc(z).unwrap()),
+        );
+        let erf_iz = s::complex::erf(iz).unwrap();
+        close(
+            erfi(z).unwrap(),
+            Complex {
+                re: erf_iz.im,
+                im: -erf_iz.re,
+            },
+        );
+        let scaled = multiply(
+            exp(Complex {
+                re: -z2.re,
+                im: -z2.im,
+            }),
+            erfi(z).unwrap(),
+        );
+        let factor = std::f64::consts::PI.sqrt() / 2.0;
+        close(
+            dawsn(z).unwrap(),
+            Complex {
+                re: factor * scaled.re,
+                im: factor * scaled.im,
+            },
+        );
+        let negative = Complex {
+            re: -z.re,
+            im: -z.im,
+        };
+        for f in [erfi, dawsn] {
+            let value = f(z).unwrap();
+            close(
+                f(negative).unwrap(),
+                Complex {
+                    re: -value.re,
+                    im: -value.im,
+                },
+            );
+        }
+    }
+    for f in [erfcx, erfi, dawsn] {
+        for z in [
+            Complex {
+                re: f64::NAN,
+                im: 0.0,
+            },
+            Complex {
+                re: 0.0,
+                im: f64::NAN,
+            },
+            Complex {
+                re: f64::INFINITY,
+                im: 0.0,
+            },
+            Complex {
+                re: 0.0,
+                im: f64::NEG_INFINITY,
+            },
+        ] {
+            assert!(matches!(f(z), Err(sci::Error::InvalidInput(_))));
+        }
+    }
+    // A finite binary64 backend result may overflow the requested precision.
+    for (f, z) in [
+        (erfcx::<f32> as fn(_) -> _, Complex { re: -10.0, im: 0.0 }),
+        (erfi::<f32>, Complex { re: 10.0, im: 0.0 }),
+        (dawsn::<f32>, Complex { re: 0.0, im: 10.0 }),
+    ] {
+        assert!(matches!(f(z), Err(sci::Error::NonFiniteEvaluation)));
+    }
+    for (f, z) in [
+        (erfcx::<f64> as fn(_) -> _, Complex { re: -30.0, im: 0.0 }),
+        (erfi::<f64>, Complex { re: 30.0, im: 0.0 }),
+        (dawsn::<f64>, Complex { re: 0.0, im: 30.0 }),
+    ] {
+        assert!(f(z).is_err());
+    }
+    // Scaling and dedicated real-axis paths retain values after naive products overflow.
+    for x in [30.0_f64, 100.0, 1e30] {
+        let z = Complex { re: x, im: 0.0 };
+        let scaled = erfcx(z).unwrap();
+        let dawson = dawsn(z).unwrap();
+        // The separate real erfcx path uses a rational approximation at these inputs.
+        assert!(
+            (scaled.re / s::erfcx(x) - 1.0).abs() < 2e-14,
+            "erfcx({x}): complex={}, real={}",
+            scaled.re,
+            s::erfcx(x)
+        );
+        assert!((dawson.re / s::dawsn(x) - 1.0).abs() < 2e-15);
+    }
+    // Erfi agrees with the real facade and preserves the input imaginary zero.
+    for y in [0.0_f64, -0.0] {
+        let value = erfi(Complex { re: 1.0, im: y }).unwrap();
+        assert_eq!(value.im.to_bits(), y.to_bits());
+        assert!((value.re / s::erfi(1.0) - 1.0).abs() < 2e-15);
+    }
+    for (f, slope) in [
+        (erfi::<f64> as fn(_) -> _, 2.0 / std::f64::consts::PI.sqrt()),
+        (dawsn::<f64>, 1.0),
+    ] {
+        let z = Complex {
+            re: 1e-200,
+            im: -2e-200,
+        };
+        let value = f(z).unwrap();
+        close(
+            value,
+            Complex {
+                re: slope * z.re,
+                im: slope * z.im,
+            },
+        );
+    }
 }

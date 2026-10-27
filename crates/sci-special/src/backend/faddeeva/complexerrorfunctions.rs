@@ -157,6 +157,9 @@ pub fn w_with_relerror(z: Complex64, mut relerr: f64) -> Complex64 {
                     let expm2ax = 1.0 - ax2 * (1.0 - ax2 * (0.5 - 0.166666666666666666667 * ax2));
                     let mut n: i32 = 1;
                     loop {
+                        if n as usize > EXPA2N2.len() {
+                            return Complex64::new(f64::NAN, f64::NAN);
+                        }
                         let coef = EXPA2N2[n as usize - 1] * expx2
                             / (a2 * (f64::from(n) * f64::from(n)) + y * y);
                         prod2ax *= exp2ax;
@@ -184,6 +187,9 @@ pub fn w_with_relerror(z: Complex64, mut relerr: f64) -> Complex64 {
                     let expm2ax = 1.0 / exp2ax;
                     let mut n: i32 = 1;
                     loop {
+                        if n as usize > EXPA2N2.len() {
+                            return Complex64::new(f64::NAN, f64::NAN);
+                        }
                         let coef = EXPA2N2[n as usize - 1] * expx2
                             / (a2 * (f64::from(n) * f64::from(n)) + y * y);
                         prod2ax *= exp2ax;
@@ -210,6 +216,9 @@ pub fn w_with_relerror(z: Complex64, mut relerr: f64) -> Complex64 {
                     expx2 = 1.0 - x2 * (1.0 - 0.5 * x2); // exp(-x*x) via Taylor
                     let mut n: i32 = 1;
                     loop {
+                        if n > 128 {
+                            return Complex64::new(f64::NAN, f64::NAN);
+                        }
                         let coef = (-a2 * f64::from(n) * f64::from(n)).exp() * expx2
                             / (a2 * (f64::from(n) * f64::from(n)) + y * y);
                         prod2ax *= exp2ax;
@@ -235,6 +244,9 @@ pub fn w_with_relerror(z: Complex64, mut relerr: f64) -> Complex64 {
                     expx2 = (-x * x).exp();
                     let mut n: i32 = 1;
                     loop {
+                        if n > 128 {
+                            return Complex64::new(f64::NAN, f64::NAN);
+                        }
                         let coef = (-a2 * (f64::from(n) * f64::from(n))).exp() * expx2
                             / (a2 * (f64::from(n) * f64::from(n)) + y * y);
                         prod2ax *= exp2ax;
@@ -319,6 +331,9 @@ pub fn w_with_relerror(z: Complex64, mut relerr: f64) -> Complex64 {
             }
 
             loop {
+                if dn > 128 {
+                    return Complex64::new(f64::NAN, f64::NAN);
+                }
                 // loop over n0+dn terms only (since n0-dn <= 0)
                 let np = n0 + dn as f64;
                 dn += 1;

@@ -39,7 +39,7 @@
         "cpu/fresnel.h"
       ],
       "disposition": "expanded",
-      "notes": "Add tested generic complex gamma/error/Bessel/Hankel/Airy/Fresnel APIs using shared Sci Complex and Result. Complex erfi/erfcx/Dawson remain deferred. Internal w_im and approximation dispatches stay private."
+      "notes": "Add tested generic complex gamma/error/Bessel/Hankel/Airy/Fresnel APIs using shared Sci Complex and Result. Complex erfi/erfcx/Dawson are tested through private Faddeeva kernels with explicit series bounds, stable scaling and shared finite-input/result errors. Internal w_im and approximation dispatches stay private."
     },
     {
       "headers": [

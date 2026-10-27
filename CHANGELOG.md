@@ -2,6 +2,9 @@
 
 ## 0.3.0
 
+- Add generic complex erfcx, erfi and Dawson integrals using private Faddeeva
+  kernels, explicit series bounds, shared Sci errors and independent references.
+
 - Fix catastrophic real 1F1 cancellation in a bounded negative-argument region
   using double-double Taylor continuation and scaled polynomial recurrences;
   add independently precision-checked references and explicit remaining limits.

@@ -116,5 +116,5 @@ gaps, and bounded-work limitations.
 
 The [native special-function audit](function_coverages/SPECIAL_NATIVE_COVERAGE.md)
 reviews the local C++ XSF public header families independently of SciPy names.
-It records eight scalar and 19 shared-complex additions, deliberate Rust
+It records eight scalar and 25 shared-complex additions, deliberate Rust
 replacements, and useful numerical capabilities that remain deferred.

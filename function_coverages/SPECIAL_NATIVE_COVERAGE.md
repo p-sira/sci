@@ -34,10 +34,10 @@ reference, not a requirement for complete API or domain parity.
 | `iv_ratioinv(v,r)` | Nonnegative inverse ratio; bounded bisection and complementary residual near `r=1` |
 | `normalized_gen_harmonic(j,k,n,a)` | Inclusive truncated power-law probability; integer indices, finite exponent, at most one million terms, shared `Result`, maximum-scaled compensated sums |
 
-**22 generic complex APIs** live in `special::complex`, avoiding C++ overload
+**25 generic complex APIs** live in `special::complex`, avoiding C++ overload
 replication and ambiguity with real scalar calls:
 
-- `gamma`, `loggamma`, `rgamma`, `digamma`, `erf`, `erfc`, `wofz`.
+- `gamma`, `loggamma`, `rgamma`, `digamma`, `erf`, `erfc`, `erfcx`, `erfi`, `dawsn`, `wofz`.
 - `jv`, `jve`, `yv`, `yve`, `iv`, `ive`, `kv`, `kve`.
 - `hankel1`, `hankel1e`, `hankel2`, `hankel2e`.
 - `airy`, `airye`, `fresnel`.
@@ -70,6 +70,25 @@ Independent fixtures include near-pole, root, Taylor/recurrence/asymptotic,
 conjugate, cut and overflow regimes; property tests check recurrences,
 reciprocity, tiny pole distances and large complex arguments.
 
+Complex `erfcx`, `erfi`, and Dawson's integral (`dawsn`) reuse the private
+Faddeeva family. Scaled erfc is evaluated as `w(iz)` rather than forming the
+potentially overflowing product `exp(z²)*erfc(z)`. Dawson uses its dedicated
+near-axis expansions instead of multiplying an overflowing erfi by a tiny
+exponential. All three are entire, share the finite-input/result error
+contract, and use generic Sci complex values. Faddeeva series have explicit
+52-term table bounds or 128-term computed-sum limits; exhaustion returns a
+numerical error. These bounds also protect the existing error-function APIs.
+There is no new dependency or public approximation/tolerance API.
+
+The added 258 reference rows cover both precisions, quadrants, axes, tiny
+arguments, approximation-region boundaries and large arguments where the
+scaled functions remain finite. Public property tests check rotation, parity,
+conjugation, scaling identities, real-facade interoperability, invalid inputs,
+binary64 overflow and conversion overflow. Close-to-zero components retain
+relative-only fixture comparisons. The real erfcx interoperability comparison
+allows 2e−14 because its separate rational approximation differs by about
+3e−15 at `x=1e30`; this does not relax the independent complex references.
+
 ## Deliberate exclusions and replacements
 
 These XSF interfaces are not sensible additions to the public Sci special API:
@@ -94,8 +113,8 @@ coherent design in the owning module; exposing the C++ machinery is unnecessary.
 
 The following remain useful candidates, rather than intentional exclusions:
 
-- Additional complex error variants,
-  exponential/sine/cosine integrals, Spence, hypergeometric, zeta and Wright
+- Complex normal probabilities and their logarithms, exponential/sine/cosine integrals,
+  Spence, hypergeometric, zeta and Wright
   functions; arbitrary complex Lambert W branches.
 - Complex Carlson integrals, Legendre and spherical-Bessel arguments;
   Legendre/harmonic derivatives and higher derivative tensors.
@@ -117,8 +136,8 @@ audit is separate from Codecov executable-line coverage; no new 99% claim is mad
 ## Independent validation
 
 `tests/scipy/generate_special_native.py` pins **NumPy 2.5.4 / SciPy 1.18.1**.
-Separate JSON inputs generate **1176 checked-in f32/f64 reference rows** for
-all 30 additions. Ordinary Rust tests exercise only public `sci` APIs and read
+Separate JSON inputs generate **1434 checked-in f32/f64 reference rows** for
+all 33 additions. Ordinary Rust tests exercise only public `sci` APIs and read
 the committed CSV, without Python or a backend reference at runtime.
 
 - Bessel ratios/complements use 100-digit standard-library Decimal defining

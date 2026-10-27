@@ -299,6 +299,125 @@ pub fn wofz<T: Float>(z: Complex<T>) -> Result<Complex<T>> {
     output(crate::backend::complex::wofz(input(z)?).map_err(Error::NumericalFailure)?)
 }
 
+/// Computes erfcx(z) = exp(z²) erfc(z) = w(iz).
+///
+/// ## Parameters and conventions
+/// `z` is dimensionless and uses Sci's shared complex type. Here
+/// `erfc(z) = 1 − (2/√π) ∫₀ᶻ exp(−t²) dt` and `w` is [`wofz`].
+///
+/// ## Domain and special values
+/// Entire, with no branch cuts or finite singularities. Requires finite input
+/// components; NaN and infinity return an error. Underflow to zero is allowed.
+///
+/// ## Returns
+/// The complex value with components in the input float type.
+///
+/// ## Errors
+/// [`Error::InvalidInput`] for nonfinite input; [`Error::NumericalFailure`] for
+/// an undefined backend result or exhausted series budget;
+/// [`Error::NonFiniteEvaluation`] for overflow or conversion overflow.
+///
+/// ## Numerical behavior
+/// Evaluates the Faddeeva function at `iz`, avoiding an overflowing `exp(z²)`
+/// multiplied by an underflowing `erfc(z)`. Large positive real arguments
+/// therefore retain their algebraically small values.
+/// Computes in binary64, then converts to `T`. The underlying Faddeeva kernel
+/// uses rational approximations and bounded series (at most 128 terms per sum,
+/// or 52 for table-based sums). No user tolerance is exposed. Relative component
+/// accuracy can deteriorate near zeros; correct rounding is not guaranteed.
+///
+/// ## Examples
+/// ```
+/// let value = sci_special::complex::erfcx(sci_complex::Complex { re: 30.0_f64, im: 0.5 })?;
+/// assert!(value.re.is_finite() && value.im.is_finite());
+/// # Ok::<(), sci_core::Error>(())
+/// ```
+///
+/// ## References
+/// [NIST DLMF §7.2](https://dlmf.nist.gov/7.2).
+pub fn erfcx<T: Float>(z: Complex<T>) -> Result<Complex<T>> {
+    output(crate::backend::complex::erfcx(input(z)?).map_err(Error::NumericalFailure)?)
+}
+
+/// Computes erfi(z) = −i erf(iz) = (2/√π) ∫₀ᶻ exp(t²) dt.
+///
+/// ## Parameters and conventions
+/// `z` is dimensionless and uses Sci's shared complex type. Integrals run from
+/// zero to `z`; the integrands are entire, so the path does not affect the value.
+///
+/// ## Domain and special values
+/// Entire, with no branch cuts or finite singularities. Requires finite input
+/// components; NaN and infinity return an error. Underflow to zero is allowed.
+///
+/// ## Returns
+/// The complex value with components in the input float type.
+///
+/// ## Errors
+/// [`Error::InvalidInput`] for nonfinite input; [`Error::NumericalFailure`] for
+/// an undefined backend result or exhausted series budget;
+/// [`Error::NonFiniteEvaluation`] for overflow or conversion overflow.
+///
+/// ## Numerical behavior
+/// Reuses the private error-function kernel with a rotated argument. Small-argument
+/// Taylor expansions preserve tiny values; exponential growth can overflow.
+/// Computes in binary64, then converts to `T`. The underlying Faddeeva kernel
+/// uses rational approximations and bounded series (at most 128 terms per sum,
+/// or 52 for table-based sums). No user tolerance is exposed. Relative component
+/// accuracy can deteriorate near zeros; correct rounding is not guaranteed.
+///
+/// ## Examples
+/// ```
+/// let value = sci_special::complex::erfi(sci_complex::Complex { re: 1.0_f64, im: 0.5 })?;
+/// assert!(value.re.is_finite() && value.im.is_finite());
+/// # Ok::<(), sci_core::Error>(())
+/// ```
+///
+/// ## References
+/// [NIST DLMF §7.2](https://dlmf.nist.gov/7.2).
+pub fn erfi<T: Float>(z: Complex<T>) -> Result<Complex<T>> {
+    output(crate::backend::complex::erfi(input(z)?).map_err(Error::NumericalFailure)?)
+}
+
+/// Computes Dawson’s integral D(z) = exp(−z²) ∫₀ᶻ exp(t²) dt.
+///
+/// ## Parameters and conventions
+/// `z` is dimensionless and uses Sci's shared complex type. Integrals run from
+/// zero to `z`; the integrands are entire, so the path does not affect the value.
+///
+/// ## Domain and special values
+/// Entire, with no branch cuts or finite singularities. Requires finite input
+/// components; NaN and infinity return an error. Underflow to zero is allowed.
+///
+/// ## Returns
+/// The complex value with components in the input float type.
+///
+/// ## Errors
+/// [`Error::InvalidInput`] for nonfinite input; [`Error::NumericalFailure`] for
+/// an undefined backend result or exhausted series budget;
+/// [`Error::NonFiniteEvaluation`] for overflow or conversion overflow.
+///
+/// ## Numerical behavior
+/// Reuses the private Dawson kernel with near-origin and near-axis Taylor
+/// expansions and Faddeeva identities elsewhere. It avoids forming an overflowing
+/// `erfi(z)` on the large real axis. Exponential growth off that axis can overflow.
+/// Computes in binary64, then converts to `T`. The underlying Faddeeva kernel
+/// uses rational approximations and bounded series (at most 128 terms per sum,
+/// or 52 for table-based sums). No user tolerance is exposed. Relative component
+/// accuracy can deteriorate near zeros; correct rounding is not guaranteed.
+///
+/// ## Examples
+/// ```
+/// let value = sci_special::complex::dawsn(sci_complex::Complex { re: 30.0_f64, im: 0.5 })?;
+/// assert!(value.re.is_finite() && value.im.is_finite());
+/// # Ok::<(), sci_core::Error>(())
+/// ```
+///
+/// ## References
+/// [NIST DLMF §7.2](https://dlmf.nist.gov/7.2).
+pub fn dawsn<T: Float>(z: Complex<T>) -> Result<Complex<T>> {
+    output(crate::backend::complex::dawsn(input(z)?).map_err(Error::NumericalFailure)?)
+}
+
 /// Computes J_v(z), solving z²w″+zw′+(z²−v²)w=0.
 ///
 /// ## Parameters and conventions

@@ -320,5 +320,8 @@ fn exp_kernel(z: Complex64) -> Complex64 {
 complex_error! {
     erf, erf, "Complex error function erf(z).";
     erfc, erfc, "Complex complementary error function erfc(z), evaluated without subtractive cancellation.";
+    erfcx, erfcx, "Complex scaled complementary error function exp(z²)*erfc(z).";
+    erfi, erfi, "Complex imaginary error function -i*erf(i*z).";
+    dawsn, dawson, "Complex Dawson integral exp(-z²)*integral(exp(t²),t=0..z).";
     wofz, w, "Faddeeva function w(z) = exp(-z²)*erfc(-i*z).";
 }

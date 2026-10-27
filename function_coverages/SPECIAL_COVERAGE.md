@@ -3,7 +3,7 @@
 Audited against [the SciPy 1.18.1 inventory](scipy_function_list/scipy.special.md).
 Run `python tests/scipy/audit_special.py` to reproduce the namespace/name audit.
 All **353 existing public numerical functions** are retained. The native API
-follow-up adds **eight scalar and 22 qualified complex APIs**; see
+follow-up adds **eight scalar and 25 qualified complex APIs**; see
 [SPECIAL_NATIVE_COVERAGE.md](SPECIAL_NATIVE_COVERAGE.md) for the XSF source
 audit, Rust adaptations, deliberate exclusions and remaining numerical gaps.
 No numerical
@@ -49,7 +49,7 @@ SciPy supplies an independent reference inventory; 100% API, signature, domain,
 or special-value parity is not required. Name coverage does **not** imply all
 SciPy overloads or domains are implemented.
 The remaining gaps include NumPy broadcasting/output buffers, additional complex
-input families beyond the 19 APIs in `special::complex`, exact-integer modes, noninteger polynomial degrees, and
+input families beyond the 25 APIs in `special::complex`, exact-integer modes, noninteger polynomial degrees, and
 Legendre/harmonic derivative-axis outputs. Sequences retain their documented
 Rust shapes and ordering. Python polynomial classes and error-state context
 managers are not reproduced.
