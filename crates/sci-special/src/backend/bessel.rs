@@ -1,7 +1,8 @@
 //! Real and complex Bessel, Hankel, and Airy functions.
 //!
-//! General orders and complex arguments reuse the pure Rust AMOS translation in
-//! `complex-bessel`. Specialized real orders zero and one use xsf's Cephes kernels.
+//! Real modified I uses Cephes/Temme kernels. Complex arguments and general K
+//! reuse the pure Rust AMOS translation in `complex-bessel`. Specialized real
+//! orders zero and one use XSF's Cephes kernels.
 //! Elliptic parameters elsewhere in the crate use m = k², as in Ellip.
 use crate::backend::{
     StrErr,
@@ -135,7 +136,7 @@ fn modified_real(v: f64, x: f64, scaled: bool, second: bool) -> f64 {
                 prefactor * (-x).exp()
             };
         }
-        let prefactor = (2.0 * core::f64::consts::PI * x).sqrt().recip();
+        let prefactor = (2.0 * core::f64::consts::PI).sqrt().recip() / x.sqrt();
         let difference = if v > 0.0 {
             -(-2.0 * x).exp_m1()
         } else {
@@ -149,6 +150,9 @@ fn modified_real(v: f64, x: f64, scaled: bool, second: bool) -> f64 {
             (value * half) * half
         };
     }
+    if !second {
+        return sign * crate::backend::cephes64::iv::iv(v, x, scaled);
+    }
     if x > 1e9_f64.max(100.0 * v * v) {
         let mu = 4.0 * v * v;
         let mut sum = 1.0;
@@ -156,47 +160,25 @@ fn modified_real(v: f64, x: f64, scaled: bool, second: bool) -> f64 {
         for k in 1..=12 {
             let odd = (2 * k - 1) as f64;
             term *= ((mu - odd * odd) / x) / (8.0 * k as f64);
-            if !second {
-                term = -term;
-            }
             sum += term;
             if term.abs() <= f64::EPSILON * sum.abs() {
                 break;
             }
         }
-        let prefactor = if second {
-            core::f64::consts::FRAC_PI_2.sqrt() / x.sqrt()
+        return if scaled {
+            core::f64::consts::FRAC_PI_2.sqrt() / x.sqrt() * sum
         } else {
-            1.0 / (2.0 * core::f64::consts::PI).sqrt() / x.sqrt()
+            0.0
         };
-        if scaled {
-            return sign * prefactor * sum;
-        }
-        return if second { 0.0 } else { sign * f64::INFINITY };
     }
-    let kernel: Kernel = match (second, scaled) {
-        (true, true) => complex_bessel::besselk_scaled,
-        (true, false) => complex_bessel::besselk,
-        (false, true) => complex_bessel::besseli_scaled,
-        (false, false) => complex_bessel::besseli,
+    let kernel: Kernel = if scaled {
+        complex_bessel::besselk_scaled
+    } else {
+        complex_bessel::besselk
     };
     match kernel(v, Complex64::new(x, 0.0)) {
-        Ok(z) => sign * z.re,
-        Err(complex_bessel::Error::Overflow) => {
-            if !second && !scaled && x > 700.0 {
-                match complex_bessel::besseli_scaled(v, Complex64::new(x, 0.0)) {
-                    Ok(z) => {
-                        let e = (0.5 * x).exp();
-                        sign * (z.re * e) * e
-                    }
-                    Err(_) => sign * f64::INFINITY,
-                }
-            } else if second || !scaled {
-                sign * f64::INFINITY
-            } else {
-                f64::NAN
-            }
-        }
+        Ok(z) => z.re,
+        Err(complex_bessel::Error::Overflow) => f64::INFINITY,
         _ => f64::NAN,
     }
 }

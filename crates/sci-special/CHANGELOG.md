@@ -1,5 +1,10 @@
 # Changelog
 
+## Real modified Bessel performance follow-up
+
+- Port Cephes' real `iv` kernel with internally scaled `ive`, replacing complex AMOS dispatch for real arguments. Bound Temme iterations and large-order asymptotics; preserve finite overflow-adjacent and subnormal values with exponential and recurrence scaling.
+- Add pinned independent SciPy fixtures for both float APIs, transition boundaries, reflection, and exceptional values, plus recurrence and scaling identities. Retain the Cephes/Boost license notices.
+
 ## Numerical coverage follow-up
 
 - Extend independent public-API references across Legendre continuation, large-order Bessel functions, error-function approximation intervals, complex Fresnel axes, integral asymptotics, and beta/gamma inverse tails.

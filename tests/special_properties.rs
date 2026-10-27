@@ -256,3 +256,82 @@ fn oblate_radial_pairs_preserve_the_defining_wronskian() {
         }
     }
 }
+
+#[test]
+fn real_modified_bessel_i_matches_scipy() {
+    // Check both public float APIs, including relative comparisons in tiny tails.
+    for row in common::rows(include_str!("fixtures/bessel_iv.csv")) {
+        let v: f64 = common::number(row[1]);
+        let x: f64 = common::number(row[2]);
+        let actual = if row[0] == "f32" {
+            [
+                s::iv(v as f32, x as f32) as f64,
+                s::ive(v as f32, x as f32) as f64,
+            ]
+        } else {
+            [s::iv(v, x), s::ive(v, x)]
+        };
+        let (rtol, atol) = if row[0] == "f32" {
+            (3e-6, 2.0 * f32::from_bits(1) as f64)
+        } else {
+            (5e-12, 2.0 * f64::from_bits(1))
+        };
+        for (value, reference) in actual.into_iter().zip(&row[3..]) {
+            let expected: f64 = common::number(reference);
+            if expected.is_nan() {
+                assert!(value.is_nan(), "{row:?}: {value}");
+            } else if expected.is_infinite() {
+                assert_eq!(value, expected, "{row:?}");
+            } else {
+                assert!(
+                    (value - expected).abs() <= atol + rtol * expected.abs(),
+                    "{row:?}: {value}, expected {expected}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn real_modified_bessel_i_recurrence_and_scaling() {
+    for v in [0.3_f64, 1.0, 3.25, 20.5, 49.0, 50.0, 51.0, 100.25] {
+        for x in [0.1, 2.0, 5.0, 20.0, 100.0, 710.0] {
+            let i = s::ive(v, x);
+            let lower = s::ive(v - 1.0, x);
+            let upper = s::ive(v + 1.0, x);
+            assert!((lower - upper - 2.0 * v / x * i).abs() <= 2e-12 * lower.abs());
+            let unscaled = s::iv(v, x);
+            let half = (0.5_f64 * x).exp();
+            let restored = (i * half) * half;
+            assert!((unscaled - restored).abs() <= 2e-12 * unscaled.abs());
+        }
+    }
+    for v in [0.0, 1.0, 2.0, 3.0, 50.0, 51.0] {
+        let sign = if v % 2.0 == 0.0 { 1.0 } else { -1.0 };
+        assert_eq!(s::iv(-v, 2.0), s::iv(v, 2.0));
+        assert_eq!(s::ive(v, -2.0), sign * s::ive(v, 2.0));
+    }
+    for v in [0.0, 0.5, 3.25, 51.0] {
+        let x = 1e300_f64;
+        let expected = (2.0 * core::f64::consts::PI).sqrt().recip() / x.sqrt();
+        assert!((s::ive(v, x) / expected - 1.0).abs() < 1e-12);
+    }
+}
+
+#[test]
+fn real_modified_bessel_i_special_values() {
+    for kernel in [s::iv::<f64>, s::ive::<f64>] {
+        assert!(kernel(f64::INFINITY, 1.0).is_nan());
+        assert!(kernel(f64::NAN, 1.0).is_nan());
+        assert!(kernel(1.0, f64::NAN).is_nan());
+        assert!(kernel(0.3, -1.0).is_nan());
+        assert_eq!(kernel(0.0, 0.0), 1.0);
+        assert_eq!(kernel(-3.0, 0.0), 0.0);
+        assert_eq!(kernel(-3.25, 0.0), f64::INFINITY);
+        assert_eq!(kernel(3.0, -1e-300).to_bits(), (-0.0_f64).to_bits());
+    }
+    assert_eq!(s::iv(0.3, f64::INFINITY), f64::INFINITY);
+    assert_eq!(s::iv(3.0, f64::NEG_INFINITY), f64::NEG_INFINITY);
+    assert_eq!(s::ive(0.3, f64::INFINITY), 0.0);
+    assert!(s::ive(0.3, f64::NEG_INFINITY).is_nan());
+}

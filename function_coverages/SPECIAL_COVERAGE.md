@@ -69,6 +69,7 @@ unbounded recurrences in the translated families:
 
 | Family | Supported work and remaining limits |
 | --- | --- |
+| Real `iv` / `ive` | Cephes Temme series and continued fractions for `abs(v) <= 50` (999 iterations each), eleven-term uniform asymptotics for larger orders, and a 100-term large-argument expansion. Internal exponential scaling and recurrence rescaling preserve finite overflow-adjacent and subnormal results; negative noninteger orders use reflection. Complex APIs retain AMOS. |
 | Mathieu | Order at most 128 and `abs(q) <= 100`; Fourier recurrences at most 251 terms; Sturm eigenvalue bisection at most 128 steps and four tridiagonal inverse iterations. Angular inputs are degrees and returned derivatives are with respect to radians, following SciPy. |
 | Spheroidal | `0 <= m <= n <= 128`, finite `abs(c) <= 64`; fixed private recurrence storage; eigenvalue bisection at most 128 iterations per value. Parameter sign is reduced by the defining `c²` convention. |
 | Parabolic cylinder | D/V require finite inputs and `abs(v) <= 4096`; W requires `abs(a), abs(x) <= 5`. Values and first derivatives are returned in that order. |
@@ -275,3 +276,13 @@ Standard-library Decimal bisection independently supplies new checked-in
 references for both branches in this region; it uses no Sci/backend coefficients.
 Signed-zero/domain checks and inverse identities remain. Both public branches
 still evaluate in binary64 before conversion to `T`.
+
+Real `iv`/`ive` regression fixtures (`bessel_iv.csv`) cover both public float
+APIs, the Temme/uniform and series/continued-fraction boundaries, negative
+orders and arguments, overflow, and subnormals. The pinned generator uses
+SciPy, with the independent defining series and positive-order reflection
+where SciPy overflows intermediate K values or AMOS loses reflection accuracy.
+The binary64 tolerance is 5e-12 relative plus two subnormal ULPs; binary32
+uses 3e-6 relative plus two subnormal ULPs. Recurrence, parity, symmetry,
+scaling, and large-argument limits are checked separately. No new inventory
+names or aliases are introduced; Python/Cython `iv`/`ive` share these real APIs.

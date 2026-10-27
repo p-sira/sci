@@ -703,10 +703,21 @@ pub fn yve<T: sci_core::Float>(v: T, x: T) -> T {
 }
 
 /// Modified Bessel function I_v(x), solving x²y″+xy′−(x²+v²)y=0.
+/// For positive `x`, its normalization is
+/// `I_v(x) = Σ_{k=0}^∞ (x/2)^(2k+v) / (k! Γ(k+v+1))`.
 ///
 /// ## Parameters and domain
 ///
-/// Real v; negative x requires integer v.
+/// Finite real order `v` and dimensionless real argument `x`; negative `x`
+/// requires integer `v`. Integer orders satisfy `I_{-n}(x) = I_n(x)`.
+///
+/// ## Domain and special values
+///
+/// NaN arguments and nonfinite orders return NaN. At zero, the result is one
+/// for order zero, zero for positive or negative integer orders, and positive
+/// infinity for negative noninteger orders (Sci's pole convention).
+/// Infinite arguments within the real domain return infinity, with odd integer
+/// parity for negative `x`.
 ///
 /// ## Returns
 ///
@@ -721,14 +732,26 @@ pub fn yve<T: sci_core::Float>(v: T, x: T) -> T {
 ///
 /// ## References
 ///
+/// - [DLMF definition](https://dlmf.nist.gov/10.25) and
+///   [uniform expansions](https://dlmf.nist.gov/10.41).
+/// - Temme, Journal of Computational Physics 21, 343 (1976).
 /// - [SciPy iv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.iv.html).
 ///
 /// ## Numerical behavior
 ///
 /// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
 /// binary64 and convert the result to `T`; this does not provide extra precision.
-/// Domain or numerical backend errors return NaN. Iterations are bounded by
-/// the private algorithm; correct rounding is not guaranteed.
+/// Real Cephes kernels use Temme's series/continued fractions for `|v| <= 50`
+/// and an eleven-term uniform asymptotic expansion above that order. Series
+/// and continued fractions allow at most 999 iterations; the large-argument
+/// expansion allows 100 terms. Work is bounded independently of large orders.
+/// Scaling is applied internally to retain finite values near overflow.
+/// Accuracy is parameter dependent, especially near zeros at negative orders;
+/// correct rounding is not guaranteed.
+///
+/// ## Errors
+///
+/// Domain violations or failure to converge within the work limit return NaN.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn iv<T: sci_core::Float>(v: T, x: T) -> T {
     crate::backend::cyl_bessel_i(v, x).unwrap_or(T::nan())
@@ -738,7 +761,14 @@ pub fn iv<T: sci_core::Float>(v: T, x: T) -> T {
 ///
 /// ## Parameters and domain
 ///
-/// Real v; negative x requires integer v.
+/// Finite real order `v` and dimensionless real argument `x`; negative `x`
+/// requires integer `v`. Scaling uses the absolute argument.
+///
+/// ## Domain and special values
+///
+/// NaN arguments and nonfinite orders return NaN. Infinite arguments return
+/// zero within the real domain. At zero, this follows [`iv`], including Sci's
+/// positive-infinity convention for negative noninteger orders.
 ///
 /// ## Returns
 ///
@@ -753,14 +783,25 @@ pub fn iv<T: sci_core::Float>(v: T, x: T) -> T {
 ///
 /// ## References
 ///
+/// - [DLMF 10.27 reflection](https://dlmf.nist.gov/10.27).
+/// - Temme, Journal of Computational Physics 21, 343 (1976).
 /// - [SciPy ive](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ive.html).
 ///
 /// ## Numerical behavior
 ///
 /// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
 /// binary64 and convert the result to `T`; this does not provide extra precision.
-/// Domain or numerical backend errors return NaN. Iterations are bounded by
-/// the private algorithm; correct rounding is not guaranteed.
+/// Real Cephes kernels use Temme's series/continued fractions for `|v| <= 50`
+/// and an eleven-term uniform asymptotic expansion above that order. Series
+/// and continued fractions allow at most 999 iterations; the large-argument
+/// expansion allows 100 terms. Work is bounded independently of large orders.
+/// Scaling is applied internally to retain finite values near overflow.
+/// Accuracy is parameter dependent, especially near zeros at negative orders;
+/// correct rounding is not guaranteed.
+///
+/// ## Errors
+///
+/// Domain violations or failure to converge within the work limit return NaN.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ive<T: sci_core::Float>(v: T, x: T) -> T {
     crate::backend::cyl_bessel_ie(v, x).unwrap_or(T::nan())
