@@ -450,7 +450,7 @@ pub fn sph_harm_y_all(n: usize, m: usize, theta: f64, phi: f64) -> Result<Vec<Ve
 ///
 /// - [SciPy legendre_p_all](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.legendre_p_all.html).
 pub fn legendre_p_all(n: usize, x: f64) -> Result<Vec<f64>> {
-    if !(n <= 128) {
+    if n > 128 {
         return Err(Error::InvalidInput(
             "sequence arguments exceed the supported domain",
         ));

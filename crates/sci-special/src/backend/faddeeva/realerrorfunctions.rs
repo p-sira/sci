@@ -53,16 +53,12 @@ impl RealErrorFunctions for f64 {
             } else {
                 erfcx_y100(400.0 / (4.0 + self))
             }
+        } else if self < -26.7 {
+            2.0 * Self::MAX // Mimicking HUGE_VAL in C++: a value larger than what can be represented with Self.
+        } else if self < -6.1 {
+            2.0 * (self * self).exp()
         } else {
-            if self < -26.7 {
-                2.0 * Self::MAX // Mimicking HUGE_VAL in C++: a value larger than what can be represented with Self.
-            } else {
-                if self < -6.1 {
-                    2.0 * (self * self).exp()
-                } else {
-                    2.0 * (self * self).exp() - erfcx_y100(400.0 / (4.0 - self))
-                }
-            }
+            2.0 * (self * self).exp() - erfcx_y100(400.0 / (4.0 - self))
         }
     }
 
@@ -71,37 +67,32 @@ impl RealErrorFunctions for f64 {
         let mx2 = -self * self;
         if mx2 < -750.0 {
             if self >= 0.0 { 1.0 } else { -1.0 }
-        } else {
-            if self >= 0.0 {
-                if self < 0.08 {
-                    // Use Taylor series for small |x|, to avoid cancellation inaccuracy
-                    //   erf(x) = 2/sqrt(pi) * x * (1 - x^2/3 + x^4/10 - x^6/42 + x^8/216 + ...)
-                    self * (core::f64::consts::FRAC_2_SQRT_PI
-                        + mx2
-                            * (0.37612638903183752464
-                                + mx2
-                                    * (0.11283791670955125739
-                                        + mx2
-                                            * (0.026866170645131251760
-                                                + mx2 * 0.0052239776254421878422))))
-                } else {
-                    1.0 - mx2.exp() * self.erfcx()
-                }
+        } else if self >= 0.0 {
+            if self < 0.08 {
+                // Use Taylor series for small |x|, to avoid cancellation inaccuracy
+                //   erf(x) = 2/sqrt(pi) * x * (1 - x^2/3 + x^4/10 - x^6/42 + x^8/216 + ...)
+                self * (core::f64::consts::FRAC_2_SQRT_PI
+                    + mx2
+                        * (0.37612638903183752464
+                            + mx2
+                                * (0.11283791670955125739
+                                    + mx2
+                                        * (0.026866170645131251760
+                                            + mx2 * 0.0052239776254421878422))))
             } else {
-                if self > -0.08 {
-                    // Use the same Taylor series as above.
-                    self * (core::f64::consts::FRAC_2_SQRT_PI
-                        + mx2
-                            * (0.37612638903183752464
-                                + mx2
-                                    * (0.11283791670955125739
-                                        + mx2
-                                            * (0.026866170645131251760
-                                                + mx2 * 0.0052239776254421878422))))
-                } else {
-                    mx2.exp() * (-self).erfcx() - 1.0
-                }
+                1.0 - mx2.exp() * self.erfcx()
             }
+        } else if self > -0.08 {
+            // Use the same Taylor series as above.
+            self * (core::f64::consts::FRAC_2_SQRT_PI
+                + mx2
+                    * (0.37612638903183752464
+                        + mx2
+                            * (0.11283791670955125739
+                                + mx2
+                                    * (0.026866170645131251760 + mx2 * 0.0052239776254421878422))))
+        } else {
+            mx2.exp() * (-self).erfcx() - 1.0
         }
     }
 
@@ -170,12 +161,10 @@ impl RealErrorFunctions for f64 {
         if self * self > 750.0 {
             // underflow
             if self >= 0.0 { 0.0 } else { 2.0 }
+        } else if self >= 0.0 {
+            (-self * self).exp() * self.erfcx()
         } else {
-            if self >= 0.0 {
-                (-self * self).exp() * self.erfcx()
-            } else {
-                2.0 - (-self * self).exp() * (-self).erfcx()
-            }
+            2.0 - (-self * self).exp() * (-self).erfcx()
         }
     }
 

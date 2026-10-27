@@ -73,18 +73,16 @@ pub fn w_with_relerror(z: Complex64, mut relerr: f64) -> Complex64 {
                     let yax = ya / xs;
                     let denom = ISPI / (xs + yax * ya);
                     ret = Complex64::new(denom * yax, denom);
-                } else {
-                    if ya.is_infinite() && ya.is_sign_positive() {
-                        if x.is_nan() || y < 0.0 {
-                            return Complex64::new(f64::NAN, f64::NAN);
-                        } else {
-                            return Complex64::new(0.0, 0.0);
-                        }
+                } else if ya.is_infinite() && ya.is_sign_positive() {
+                    if x.is_nan() || y < 0.0 {
+                        return Complex64::new(f64::NAN, f64::NAN);
                     } else {
-                        let xya = xs / ya;
-                        let denom = ISPI / (xya * xs + ya);
-                        ret = Complex64::new(denom, denom * xya);
+                        return Complex64::new(0.0, 0.0);
                     }
+                } else {
+                    let xya = xs / ya;
+                    let denom = ISPI / (xya * xs + ya);
+                    ret = Complex64::new(denom, denom * xya);
                 }
             } else {
                 // nu == 2, w(z) = i/sqrt(pi) * z / (z*z - 0.5)
@@ -554,12 +552,10 @@ pub fn erfc_with_relerror(z: Complex64, relerr: f64) -> Complex64 {
             } else {
                 return Complex64::new(2.0, -y); // Preserve sign of 0
             }
+        } else if x >= 0.0 {
+            return Complex64::new((-x * x).exp() * x.erfcx(), -y);
         } else {
-            if x >= 0.0 {
-                return Complex64::new((-x * x).exp() * x.erfcx(), -y);
-            } else {
-                return Complex64::new(2.0 - (-x * x).exp() * (-x).erfcx(), -y);
-            }
+            return Complex64::new(2.0 - (-x * x).exp() * (-x).erfcx(), -y);
         }
     }
 

@@ -4247,7 +4247,7 @@ pub fn sph_legendre_p(n: i32, m: i32, theta: f64) -> f64 {
 ///
 /// - [SciPy lqn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.lqn.html).
 pub fn lqn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(n <= 4096) {
+    if n > 4096 {
         return Err(Error::InvalidInput(
             "requested special-function sequence is too large or empty",
         ));
