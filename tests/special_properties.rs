@@ -337,6 +337,112 @@ fn real_modified_bessel_i_special_values() {
 }
 
 #[test]
+fn kelvin_first_kind_matches_references_across_kernel_switches() {
+    // References from mpmath 1.4 at 50 digits at the binary64 value of x:
+    // I0(z) and exp(iπ/4) I1(z) at z = x exp(iπ/4). The points straddle the
+    // binary64 series, double-double series and large-argument expansion
+    // used for ber, bei, ber′ and bei′.
+    let references: [(f64, [f64; 4]); 8] = [
+        (
+            0.5_f64,
+            [
+                0.99902346399083826,
+                0.062493218382199459,
+                -0.0078120761475077336,
+                0.24991862111621022,
+            ],
+        ),
+        (
+            3.99_f64,
+            [
+                -2.5321455801442405,
+                2.297480090877188,
+                -3.1195304333278595,
+                -0.4668586846429602,
+            ],
+        ),
+        (
+            4.0_f64,
+            [
+                -2.5634165572585798,
+                2.2926903226992998,
+                -3.1346539628386434,
+                -0.49113744063072261,
+            ],
+        ),
+        (
+            12.96_f64,
+            [
+                -841.208251812595,
+                653.6560322797799,
+                -1024.521731612371,
+                -158.67252147619254,
+            ],
+        ),
+        (
+            19.99_f64,
+            [
+                47971.8032028607,
+                113658.75032958809,
+                -47685.159277070146,
+                111433.5463421547,
+            ],
+        ),
+        (
+            20.0_f64,
+            [
+                47489.37026506176,
+                114775.19736006622,
+                -48803.197847170976,
+                111855.02522349712,
+            ],
+        ),
+        (
+            32.145_f64,
+            [
+                -494229336.98237234,
+                -176657800.23154956,
+                -216811482.771475,
+                -471670130.6416777,
+            ],
+        ),
+        (
+            300.0_f64,
+            [
+                -9.68152922933538e+89,
+                -2.9365929560917256e+90,
+                1.3935147324614752e+90,
+                -2.7561760396340746e+90,
+            ],
+        ),
+    ];
+    for (x, [ber, bei, berp, beip]) in references {
+        let value_scale = ber.hypot(bei);
+        let derivative_scale = berp.hypot(beip);
+        for sign in [1.0, -1.0] {
+            let got = [
+                (s::ber(sign * x), ber, value_scale),
+                (s::bei(sign * x), bei, value_scale),
+                (sign * s::berp(sign * x), berp, derivative_scale),
+                (sign * s::beip(sign * x), beip, derivative_scale),
+            ];
+            for (index, (value, expected, scale)) in got.into_iter().enumerate() {
+                assert!(
+                    (value - expected).abs() <= 2e-15 * scale,
+                    "component {index} at x = {}: {value}, expected {expected}",
+                    sign * x
+                );
+            }
+        }
+        let [be, _, bep, _] = s::kelvin(x);
+        assert!((be.re - ber).abs() <= 2e-15 * value_scale);
+        assert!((be.im - bei).abs() <= 2e-15 * value_scale);
+        assert!((bep.re - berp).abs() <= 2e-15 * derivative_scale);
+        assert!((bep.im - beip).abs() <= 2e-15 * derivative_scale);
+    }
+}
+
+#[test]
 fn real_modified_bessel_i_large_arguments_beyond_cf1() {
     // References from mpmath 1.3 at 50 digits: besseli(v, x) * exp(-x).
     // CF1 needs O(x) terms here, so these exercise the large-x expansion.

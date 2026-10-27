@@ -1,6 +1,7 @@
-//! Kelvin functions expressed through modified Bessel functions at rotated arguments.
-use crate::backend::{StrErr, bessel::backend_error, complex::finish};
-use core::f64::consts::{FRAC_1_SQRT_2, FRAC_PI_4};
+//! Kelvin functions: ber/bei from direct series and asymptotic kernels, ker/kei
+//! through modified Bessel functions at rotated arguments.
+use crate::backend::{StrErr, bessel::backend_error, complex::finish, double_double::Dd};
+use core::f64::consts::{FRAC_1_SQRT_2, FRAC_PI_4, PI, SQRT_2};
 use num_complex::{Complex, Complex64};
 #[allow(unused_imports)]
 use sci_core::Float;
@@ -65,6 +66,276 @@ enum Need {
     Both,
     Value,
     Derivative,
+}
+
+/// Below this argument, ber + i bei comes from the power series; above it,
+/// from the large-argument expansion. Both reach binary64 accuracy here: the
+/// asymptotic terms fall below 1e-17 before they start to grow.
+const ASYMPTOTIC: f64 = 20.0;
+/// 1/√2 - FRAC_1_SQRT_2 and π/8 - PI/8, the binary64 rounding errors.
+const FRAC_1_SQRT_2_LO: f64 = -4.833646656726457e-17;
+const PI_8_LO: f64 = 1.5308084989341915e-17;
+
+/// Below this argument the power series loses less than about one ulp to
+/// cancellation and is summed in binary64; above it, in double-double.
+const DOUBLE_DOUBLE: f64 = 4.0;
+
+/// ber + i bei = I₀(x e^{iπ/4}) and its x-derivative for 0.5 <= x < 20 from
+/// the power series Σ i^k (x/2)^{2k} / (k!)².
+///
+/// The absolute terms sum to I₀(x) while the result has modulus about
+/// e^{x/√2}/√(2πx), so the series loses up to e^{(1-1/√2)x} in relative
+/// accuracy. Beyond x = 4, terms and partial sums are kept in double-double.
+/// Index k mod 4 selects the +re, +im, -re or -im partial sum; the
+/// derivative series Σ i^k k (x/2)^{2k} / (k!)² is divided by x/2 at the end.
+fn first_kind_series(x: f64, need: Need) -> (Complex64, Complex64) {
+    let half = 0.5 * x;
+    let value = need != Need::Derivative;
+    let derivative = need != Need::Value;
+    let nan = Complex64::new(f64::NAN, f64::NAN);
+    let combine = |s: [f64; 4]| Complex64::new(s[0] - s[2], s[1] - s[3]);
+    if x < DOUBLE_DOUBLE {
+        let t = half * half;
+        let mut sums = [1.0, 0.0, 0.0, 0.0];
+        let mut derivative_sums = [0.0; 4];
+        let mut term = 1.0;
+        let mut k = 1.0_f64;
+        let mut slot = 1;
+        loop {
+            term *= t / (k * k);
+            sums[slot] += term;
+            derivative_sums[slot] += term * k;
+            // Terms peak by k = 2 here, and the value and derivative have
+            // moduli above 1 and 0.2, so an absolute tolerance suffices.
+            if term * k <= 1e-18 {
+                break;
+            }
+            k += 1.0;
+            slot = (slot + 1) & 3;
+        }
+        return (
+            combine(sums),
+            Complex64::new(
+                (derivative_sums[0] - derivative_sums[2]) / half,
+                (derivative_sums[1] - derivative_sums[3]) / half,
+            ),
+        );
+    }
+    let (value_sum, derivative_sum) = match need {
+        Need::Both => series_dd::<true, true>(half),
+        Need::Value => series_dd::<true, false>(half),
+        Need::Derivative => series_dd::<false, true>(half),
+    };
+    (
+        if value { value_sum } else { nan },
+        if derivative {
+            derivative_sum / half
+        } else {
+            nan
+        },
+    )
+}
+
+/// Split `a` into two halves of at most 26 significant bits (Dekker).
+#[inline(always)]
+fn split(a: f64) -> (f64, f64) {
+    let c = 134_217_729.0 * a;
+    let hi = c - (c - a);
+    (hi, a - hi)
+}
+
+/// `a * n` for a double-double `a` and an integer `n < 2^26`, whose exact
+/// product with a 26-bit half avoids a fused multiply-add.
+#[inline(always)]
+fn mul_small(a: Dd, n: f64) -> Dd {
+    let p = a.hi * n;
+    let (hi, lo) = split(a.hi);
+    let lo = ((hi * n - p) + lo * n) + a.lo * n;
+    let sum = p + lo;
+    Dd {
+        hi: sum,
+        lo: lo - (sum - p),
+    }
+}
+
+/// `a / n` for a double-double `a` and an integer `n < 2^26`.
+#[inline(always)]
+fn div_small(a: Dd, n: f64) -> Dd {
+    let q = a.hi / n;
+    let p = q * n;
+    let (hi, lo) = split(q);
+    let error = (hi * n - p) + lo * n;
+    let correction = (((a.hi - p) - error) + a.lo) / n;
+    let sum = q + correction;
+    Dd {
+        hi: sum,
+        lo: correction - (sum - q),
+    }
+}
+
+/// Double-double sums of Σ i^k t^k / (k!)² and Σ i^k k t^k / (k!)², with
+/// t = (x/2)², for 4 <= x < 20. Four terms are taken per iteration, one into
+/// each of the +re, +im, -re and -im partial sums, so that every partial sum
+/// adds terms of one sign.
+#[inline(always)]
+fn series_dd<const VALUE: bool, const DERIVATIVE: bool>(half: f64) -> (Complex64, Complex64) {
+    let (half_hi, half_lo) = split(half);
+    let t_hi = half * half;
+    let t = Dd {
+        hi: t_hi,
+        lo: (half_hi * half_hi - t_hi) + 2.0 * half_hi * half_lo + half_lo * half_lo,
+    };
+    let (t_hi_hi, t_hi_lo) = split(t.hi);
+    // term × t, with t split once.
+    let times_t = |a: Dd| {
+        let p = a.hi * t.hi;
+        let (hi, lo) = split(a.hi);
+        let error = ((hi * t_hi_hi - p) + hi * t_hi_lo + lo * t_hi_hi) + lo * t_hi_lo;
+        let lo = error + (a.hi * t.lo + a.lo * t.hi);
+        let sum = p + lo;
+        Dd {
+            hi: sum,
+            lo: lo - (sum - p),
+        }
+    };
+    let zero = Dd::from(0.0);
+    let (mut re_plus, mut im_plus, mut re_minus, mut im_minus) = (Dd::from(1.0), zero, zero, zero);
+    let (mut d_re_plus, mut d_im_plus, mut d_re_minus, mut d_im_minus) = (zero, zero, zero, zero);
+    let mut term = Dd::from(1.0);
+    let mut k = 0.0_f64;
+    let mut step = |sum: &mut Dd, derivative_sum: &mut Dd, k: f64| -> (f64, f64) {
+        term = div_small(times_t(term), k * k);
+        if VALUE {
+            *sum = sum.add_same_sign(term);
+        }
+        let mut weighted = 0.0;
+        if DERIVATIVE {
+            let product = mul_small(term, k);
+            *derivative_sum = derivative_sum.add_same_sign(product);
+            weighted = product.hi;
+        }
+        (term.hi, weighted)
+    };
+    // At most 64 groups (k <= 256) are needed for x < 20.
+    for _ in 0..64 {
+        step(&mut im_plus, &mut d_im_plus, k + 1.0);
+        step(&mut re_minus, &mut d_re_minus, k + 2.0);
+        step(&mut im_minus, &mut d_im_minus, k + 3.0);
+        let (last, last_weighted) = step(&mut re_plus, &mut d_re_plus, k + 4.0);
+        k += 4.0;
+        // Terms grow until k ≈ x/2; the last terms of the group are compared
+        // with the moduli of the series they entered.
+        if k > half {
+            let small = |last: f64, rp: Dd, ip: Dd, rm: Dd, im: Dd| {
+                last <= 1e-18 * ((rp.hi - rm.hi).abs() + (ip.hi - im.hi).abs())
+            };
+            if (!VALUE || small(last, re_plus, im_plus, re_minus, im_minus))
+                && (!DERIVATIVE
+                    || small(last_weighted, d_re_plus, d_im_plus, d_re_minus, d_im_minus))
+            {
+                break;
+            }
+        }
+    }
+    let combine = |re_plus: Dd, im_plus: Dd, re_minus: Dd, im_minus: Dd| {
+        let re = re_plus - re_minus;
+        let im = im_plus - im_minus;
+        Complex64::new(re.hi + re.lo, im.hi + im.lo)
+    };
+    (
+        combine(re_plus, im_plus, re_minus, im_minus),
+        combine(d_re_plus, d_im_plus, d_re_minus, d_im_minus),
+    )
+}
+
+/// ber + i bei and its x-derivative for x >= 20, multiplied by e^{-x/√2} when
+/// `scaled`, from DLMF 10.40.5
+/// at z = x e^{iπ/4}:
+///
+/// I_ν(z) ~ e^z/√(2πz) Σ (-1)^k a_k(ν)/z^k + e^{(ν+½)πi} e^{-z}/√(2πz) Σ a_k(ν)/z^k.
+///
+/// The recessive term is kept because its relative size e^{-√2 x} still
+/// exceeds rounding at x = 20. The derivative is e^{iπ/4} I₁(z).
+fn first_kind_asymptotic(x: f64, scaled: bool, need: Need) -> (Complex64, Complex64) {
+    let value = need != Need::Derivative;
+    let derivative = need != Need::Value;
+    // z^{-k} = e^{-ikπ/4}/x^k; the powers of x are folded into a_k.
+    let unit = Complex64::new(FRAC_1_SQRT_2, -FRAC_1_SQRT_2);
+    let mut power = Complex64::new(1.0, 0.0);
+    let (mut a0, mut a1) = (1.0_f64, 1.0_f64);
+    let one = Complex64::new(1.0, 0.0);
+    let (mut dominant0, mut recessive0) = (one, one);
+    let (mut dominant1, mut recessive1) = (one, one);
+    let mut k = 1.0_f64;
+    while k < 64.0 {
+        let odd = 2.0 * k - 1.0;
+        let odd2 = odd * odd;
+        let denominator = 8.0 * k * x;
+        a0 *= -odd2 / denominator;
+        a1 *= (4.0 - odd2) / denominator;
+        power *= unit;
+        let sign = if k as u32 % 2 == 1 { -1.0 } else { 1.0 };
+        if value {
+            let term = power * a0;
+            dominant0 += term * sign;
+            recessive0 += term;
+        }
+        if derivative {
+            let term = power * a1;
+            dominant1 += term * sign;
+            recessive1 += term;
+        }
+        if a0.abs().max(a1.abs()) <= 1e-18 {
+            break;
+        }
+        k += 1.0;
+    }
+    // e^{i x/√2} and e^{-√2 x} e^{-i x/√2}, both divided by √(2πz).
+    // The phase x/√2 - π/8 is formed in double-double: rounding it in
+    // binary64 would cost about x ulps in the oscillating result.
+    let phase = Dd::from(x).mul_f64(FRAC_1_SQRT_2) + Dd::from(x * FRAC_1_SQRT_2_LO);
+    let shifted = phase
+        - Dd {
+            hi: PI / 8.0,
+            lo: PI_8_LO,
+        };
+    let (sin, cos) = shifted.hi.sin_cos();
+    let (sin, cos) = (sin + shifted.lo * cos, cos - shifted.lo * sin);
+    let mut modulus = 1.0 / (2.0 * PI * x).sqrt();
+    // The unscaled growth e^{x/√2} is applied as two half factors so that it
+    // may overflow only together with the result, and uses the same
+    // double-double exponent (its rounding would also cost about x ulps).
+    let half_scale = if scaled {
+        1.0
+    } else {
+        modulus *= 1.0 + phase.lo;
+        (0.5 * phase.hi).exp()
+    };
+    let restore = |w: Complex64| {
+        Complex64::new(
+            (w.re * half_scale) * half_scale,
+            (w.im * half_scale) * half_scale,
+        )
+    };
+    let growing = Complex64::new(cos, sin) * modulus;
+    let phase = phase.hi;
+    let (sin, cos) = (-phase - PI / 8.0).sin_cos();
+    let decaying = Complex64::new(cos, sin) * (modulus * (-SQRT_2 * x).exp());
+    let i = Complex64::new(0.0, 1.0);
+    let nan = Complex64::new(f64::NAN, f64::NAN);
+    let rotation = Complex64::new(FRAC_1_SQRT_2, FRAC_1_SQRT_2);
+    (
+        if value {
+            restore(growing * dominant0 + i * decaying * recessive0)
+        } else {
+            nan
+        },
+        if derivative {
+            restore(rotation * (growing * dominant1 - i * decaying * recessive1))
+        } else {
+            nan
+        },
+    )
 }
 
 /// Order-zero and order-one AMOS values at `z`, computing only what `need`
@@ -132,16 +403,17 @@ fn pair_needed(
             let derivative = -rotation * k1 * scale;
             (value, derivative)
         } else {
-            let half_scale = if scaled { 1.0 } else { (z.re * 0.5).exp() };
-            let restore = |z: Complex64| {
-                Complex64::new(
-                    (z.re * half_scale) * half_scale,
-                    (z.im * half_scale) * half_scale,
-                )
+            let (value, derivative) = if a < ASYMPTOTIC {
+                let (value, derivative) = first_kind_series(a, need);
+                if scaled {
+                    let scale = (-a * FRAC_1_SQRT_2).exp();
+                    (value * scale, derivative * scale)
+                } else {
+                    (value, derivative)
+                }
+            } else {
+                first_kind_asymptotic(a, scaled, need)
             };
-            let (i0, i1) = orders(z, false, need)?;
-            let value = restore(i0);
-            let derivative = restore(rotation * i1);
             (value, derivative)
         }
     };
@@ -296,10 +568,11 @@ fn bracketed_halley(
 
 /// Fill a caller-owned slice with successive positive Kelvin zeros.
 ///
-/// The origin is excluded. Uses a bracketed Halley iteration on scaled Bessel
-/// kernels, starting from the spacing of the previous zeros. Each iteration
-/// takes both Bessel orders from one sequence call, which allocates a
-/// two-element buffer. On failure, earlier entries remain populated.
+/// The origin is excluded. Uses a bracketed Halley iteration on scaled
+/// kernels, starting from the spacing of the previous zeros. ber/bei
+/// evaluations do not allocate; each ker/kei iteration takes both Bessel
+/// orders from one sequence call, which allocates a two-element buffer.
+/// On failure, earlier entries remain populated.
 /// An empty slice succeeds without evaluating any functions.
 pub fn kelvin_zeros<T: Float>(function: KelvinFunction, zeros: &mut [T]) -> Result<(), StrErr> {
     let mut left = 0.5;

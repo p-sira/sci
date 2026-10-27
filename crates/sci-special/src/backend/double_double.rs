@@ -38,6 +38,19 @@ impl Dd {
         let product = two_prod(self.hi, rhs);
         two_sum(product.hi, product.lo + self.lo * rhs)
     }
+    /// Sum of two values of the same sign. Without cancellation, one
+    /// error-free addition of the leading parts suffices; cheaper than `+`.
+    #[inline(always)]
+    pub(crate) fn add_same_sign(self, rhs: Self) -> Self {
+        let leading = two_sum(self.hi, rhs.hi);
+        let hi = leading.hi;
+        let lo = leading.lo + (self.lo + rhs.lo);
+        let sum = hi + lo;
+        Self {
+            hi: sum,
+            lo: lo - (sum - hi),
+        }
+    }
     /// Quotient by a binary64 divisor; cheaper than promoting it to `Dd`.
     #[inline(always)]
     pub(crate) fn div_f64(self, rhs: f64) -> Self {
