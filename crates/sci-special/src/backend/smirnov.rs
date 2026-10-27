@@ -111,21 +111,54 @@ fn inverse(n: u32, p: f64, mut lower: bool) -> Result<f64, StrErr> {
         p
     };
     let target = p.ln();
-    // Bisection in log x resolves both subnormal lower probabilities and
-    // very small distances from one without an absolute x tolerance.
-    let mut left = -746.0;
-    let mut right = 0.0;
-    for _ in 0..80 {
-        let logx = 0.5 * (left + right);
-        let values = tails(n, logx.exp());
-        let value = if lower { values.0 } else { values.1 };
-        if (value < target) == lower {
+    // Safeguarded Newton iteration in log x resolves both subnormal lower
+    // probabilities and very small distances from one without an absolute x
+    // tolerance. The log tail is monotone, so each residual's sign moves one
+    // end of the bracket and steps that leave it fall back to bisection.
+    let (mut left, mut right) = (-746.0_f64, 0.0_f64);
+    // Leading behaviour of each tail: CDF ~ x near zero, SF ~ exp(-2n x^2).
+    let mut logx = if lower {
+        target
+    } else {
+        0.5 * (-target / (2.0 * n as f64)).ln()
+    };
+    if !(logx > left && logx < right) {
+        logx = 0.5 * (left + right);
+    }
+    for _ in 0..200 {
+        let x = logx.exp();
+        let (logcdf, logsf, derivative) = tails(n, x);
+        let value = if lower { logcdf } else { logsf } - target;
+        if value == 0.0 {
+            return Ok(x);
+        }
+        if (value < 0.0) == lower {
             left = logx;
         } else {
             right = logx;
         }
+        let tolerance = f64::EPSILON * logx.abs().max(0.125);
+        if right - left <= 2.0 * tolerance {
+            break;
+        }
+        // d(log tail)/d(log x) from the survival derivative.
+        let slope = if lower {
+            -x * derivative * (-logcdf).exp()
+        } else {
+            x * derivative * (-logsf).exp()
+        };
+        let step = value / slope;
+        let next = logx - step;
+        logx = if value.is_finite() && next > left && next < right {
+            if step.abs() <= 0.5 * tolerance {
+                return Ok(next.exp());
+            }
+            next
+        } else {
+            0.5 * (left + right)
+        };
     }
-    Ok((0.5 * (left + right)).exp())
+    Ok(logx.exp())
 }
 macro_rules! inverse_api {
     ($($name:ident,$lower:literal,$doc:literal;)+)=>{$(

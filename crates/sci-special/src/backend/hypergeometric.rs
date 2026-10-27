@@ -24,9 +24,11 @@ fn series_real(v: f64, z: f64) -> Option<f64> {
     let mut sr = real;
     let mut peak: f64 = 1.0;
     for k in 1..=4096 {
-        let denominator = Dd::from(v) + Dd::from((k - 1) as f64);
-        let fr = Dd::from(z) / denominator / Dd::from(k as f64);
-        real = real * fr;
+        // term_k = term_(k-1) z / ((v + k - 1) k); v + k - 1 is exact in
+        // double-double and the integer factor k needs no promotion.
+        let kf = k as f64;
+        let denominator = Dd::sum(v, kf - 1.0).mul_f64(kf);
+        real = real.mul_f64(z).div_dd(denominator);
         sr = sr + real;
         let term = real.hi.abs();
         let magnitude = sr.hi.abs();

@@ -70,24 +70,43 @@ fn associated_degrees(
         }
         return;
     }
-    let mut logarithm = -0.5 * (4.0 * PI).ln() + order as f64 * sine.abs().ln();
+    // Π (1 + 1/(2k)) grows only like sqrt(order), so the product is formed
+    // directly and needs a single logarithm.
+    let mut diagonal = 1.0;
     for k in 1..=order {
-        logarithm += 0.5 * (0.5 / k as f64).ln_1p();
+        diagonal *= 1.0 + 0.5 / k as f64;
     }
+    let half_log_four_pi = 0.5 * (4.0 * PI).ln();
+    let mut logarithm = -half_log_four_pi + order as f64 * sine.abs().ln() + 0.5 * diagonal.ln();
     let finalize = |degree: u32, current: f64, logarithm: f64| {
         if x == 0.0 && (degree - order) % 2 == 1 {
             return 0.0;
         }
         let mut logarithm = logarithm;
         if !spherical {
-            logarithm += 0.5 * ((4.0 * PI).ln() - (2.0 * degree as f64 + 1.0).ln());
-            let sign = if m < 0 { -0.5 } else { 0.5 };
+            // (4π/(2n+1)) ((n+m)!/(n-m)!)^(±1) is accumulated as products,
+            // taking a logarithm only before the product could overflow.
+            logarithm += half_log_four_pi;
+            let width = 2.0 * degree as f64 + 1.0;
+            let mut product = if m < 0 { width } else { 1.0 / width };
+            let mut sum = 0.0;
             for k in degree - order + 1..=degree + order {
-                logarithm += sign * (k as f64).ln();
+                if product > 1e280 {
+                    sum += product.ln();
+                    product = 1.0;
+                }
+                product *= k as f64;
             }
+            sum += product.ln();
+            logarithm += if m < 0 { -0.5 * sum } else { 0.5 * sum };
         }
         let parity = if (m < 0) && order % 2 == 1 { -1.0 } else { 1.0 };
-        parity * (current.abs().ln() + logarithm).exp().copysign(current)
+        let value = if (-700.0..=700.0).contains(&logarithm) {
+            current.abs() * logarithm.exp()
+        } else {
+            (current.abs().ln() + logarithm).exp()
+        };
+        parity * value.copysign(current)
     };
     let mut previous = 0.0;
     let mut current = if order % 2 == 1 { -1.0 } else { 1.0 };

@@ -35,67 +35,6 @@ macro_rules! real_kernel {
 }
 pub(crate) use real_kernel;
 
-/// Safeguarded Newton iteration for a known sign-changing bracket.
-pub(crate) fn bracketed_root(
-    left: f64,
-    right: f64,
-    mut evaluate: impl FnMut(f64) -> Result<(f64, f64), StrErr>,
-) -> Result<f64, StrErr> {
-    let fl = evaluate(left)?.0;
-    let fr = evaluate(right)?.0;
-    bracketed_root_from(left, fl, right, fr, evaluate)
-}
-
-/// [`bracketed_root`] with the endpoint values `fl = f(left)` and
-/// `fr = f(right)` already known, avoiding their re-evaluation.
-pub(crate) fn bracketed_root_from(
-    mut left: f64,
-    mut fl: f64,
-    mut right: f64,
-    fr: f64,
-    mut evaluate: impl FnMut(f64) -> Result<(f64, f64), StrErr>,
-) -> Result<f64, StrErr> {
-    if fl == 0.0 {
-        return Ok(left);
-    }
-    if fr == 0.0 {
-        return Ok(right);
-    }
-    if !fl.is_finite() || !fr.is_finite() || fl.is_sign_negative() == fr.is_sign_negative() {
-        return Err("Zero finder requires a finite sign-changing bracket.");
-    }
-    let mut x = 0.5 * (left + right);
-    for _ in 0..64 {
-        let (value, slope) = evaluate(x)?;
-        if !value.is_finite() {
-            return Err("Zero finder encountered a nonfinite value.");
-        }
-        if value == 0.0 || right - left <= 4.0 * f64::EPSILON * x.abs().max(1.0) {
-            return Ok(x);
-        }
-        if fl.is_sign_negative() != value.is_sign_negative() {
-            right = x;
-        } else {
-            left = x;
-            fl = value;
-        }
-        let step = value / slope;
-        let next = x - step;
-        x = if next > left && next < right {
-            // Once Newton has converged, its iterate sits on one bracket end
-            // and further progress would come only from bisection; stop when
-            // the correction is at rounding level instead.
-            if step.abs() <= 2.0 * f64::EPSILON * next.abs() {
-                return Ok(next);
-            }
-            next
-        } else {
-            0.5 * (left + right)
-        };
-    }
-    Err("Zero finder did not converge.")
-}
-
 /// Brent's method (Brent 1973; Numerical Recipes `zbrent`) for a root of `f`
 /// in `[a, b]`, given the residuals `fa = f(a)` and `fb = f(b)` of opposite
 /// sign (or zero). Converges to within a few ulps of the sign change.

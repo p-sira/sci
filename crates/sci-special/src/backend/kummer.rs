@@ -30,14 +30,17 @@ pub(super) fn negative_argument(a: f64, b: f64, x: f64) -> f64 {
         start *= 0.5;
     }
     let mut center = Dd::from(start.max(x));
-    let (mut term, mut y, mut slope) = (Dd::from(1.0), Dd::from(1.0), Dd::from(0.0));
+    // a + n and b + n are exact in double-double and the integer factors
+    // need no promotion. The derivative sum Σ (n+1) term_(n+1) / center is
+    // divided by the centre once, after the loop.
+    let (mut term, mut y, mut weighted) = (Dd::from(1.0), Dd::from(1.0), Dd::from(0.0));
     let mut converged = false;
     for n in 0..256 {
-        let n = Dd::from(n as f64);
-        term = term * (a + n) * center / ((b + n) * (n + Dd::from(1.0)));
+        let n = n as f64;
+        term = (term * Dd::sum(a.hi, n) * center).div_dd(Dd::sum(b.hi, n).mul_f64(n + 1.0));
         y = y + term;
-        slope = slope + (n + Dd::from(1.0)) * term / center;
-        if term.hi.abs() <= 1e-30 * y.hi.abs() && n.hi > 16.0_f64.max(-b.hi + 1.0) {
+        weighted = weighted + term.mul_f64(n + 1.0);
+        if term.hi.abs() <= 1e-30 * y.hi.abs() && n > 16.0_f64.max(-b.hi + 1.0) {
             converged = true;
             break;
         }
@@ -45,6 +48,7 @@ pub(super) fn negative_argument(a: f64, b: f64, x: f64) -> f64 {
     if !converged {
         return f64::NAN;
     }
+    let mut slope = weighted.div_dd(center);
     for _ in 0..8192 {
         let remaining = target - center;
         if remaining.hi >= 0.0 {
@@ -59,28 +63,37 @@ pub(super) fn negative_argument(a: f64, b: f64, x: f64) -> f64 {
         } else {
             Dd::from(-step)
         };
+        // a + n is exact in double-double; integer factors need no
+        // promotion; h^2 and z - b are formed once per step. The derivative
+        // sum Σ (n+2) w_n / h is divided by h once, after the loop.
+        let squared = h * h;
+        let shifted = center - b;
         let (mut u, mut v) = (y, slope * h);
+        let initial = v;
         let mut next_y = u + v;
-        let mut next_slope = slope;
+        let mut weighted = Dd::from(0.0);
         let mut small_terms = 0;
         converged = false;
         for n in 0..128 {
             // If w=sum c_n*t^n at center z, Kummer's equation gives
             // z(n+2)(n+1)c_(n+2) = (a+n)c_n + (n+1)(z-b-n)c_(n+1).
             // Store c_n*h^n so powers cannot overflow independently.
-            let n = Dd::from(n as f64);
-            let n1 = n + Dd::from(1.0);
-            let n2 = n + Dd::from(2.0);
-            let w = ((a + n) * u * h * h + n1 * (center - b - n) * v * h) / (center * n2 * n1);
+            let n = n as f64;
+            let (n1, n2) = (n + 1.0, n + 2.0);
+            let numerator =
+                Dd::sum(a.hi, n) * u * squared + (shifted.add_f64(-n) * v).mul_f64(n1) * h;
+            let w = numerator.div_dd(center.mul_f64(n2 * n1));
+            let derivative_term = w.mul_f64(n2);
             next_y = next_y + w;
-            next_slope = next_slope + n2 * w / h;
+            weighted = weighted + derivative_term;
             u = v;
             v = w;
             // Two consecutive small terms avoid stopping on an isolated zero
             // of this second-order coefficient recurrence. Check the derivative
             // as well, since it seeds the next step.
-            if n.hi > 8.0
-                && (n2 * w).hi.abs() <= 1e-30 * next_y.hi.abs().min((next_slope * h).hi.abs())
+            if n > 8.0
+                && derivative_term.hi.abs()
+                    <= 1e-30 * next_y.hi.abs().min((initial + weighted).hi.abs())
             {
                 small_terms += 1;
                 if small_terms == 2 {
@@ -91,6 +104,7 @@ pub(super) fn negative_argument(a: f64, b: f64, x: f64) -> f64 {
                 small_terms = 0;
             }
         }
+        let next_slope = slope + weighted.div_dd(h);
         if !converged || !next_y.hi.is_finite() || !next_slope.hi.is_finite() {
             return f64::NAN;
         }

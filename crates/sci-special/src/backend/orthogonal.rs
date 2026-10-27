@@ -75,13 +75,19 @@ fn chebyshev(n: i32, x: f64, second: bool) -> f64 {
     let parity = if x < 0.0 && n % 2 != 0 { -1.0 } else { 1.0 };
     let x = x.abs();
     let (mut previous, mut current) = (1.0, if second { 2.0 * x } else { x });
-    for _ in 1..n {
-        let next = 2.0 * x * current - previous;
-        previous = current;
-        current = next;
-        // For x > 1 the magnitudes grow monotonically; the final sign is known.
-        if current.is_infinite() {
-            break;
+    let twice = 2.0 * x;
+    if x < 1.0 {
+        // |T_n|, |U_n| <= n + 1 on [-1, 1], so the recurrence cannot overflow.
+        for _ in 1..n {
+            (previous, current) = (current, twice * current - previous);
+        }
+    } else {
+        for _ in 1..n {
+            (previous, current) = (current, twice * current - previous);
+            // For x > 1 the magnitudes grow monotonically; the final sign is known.
+            if current.is_infinite() {
+                break;
+            }
         }
     }
     sign * parity * current

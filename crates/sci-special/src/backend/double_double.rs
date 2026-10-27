@@ -32,6 +32,33 @@ fn two_prod(a: f64, b: f64) -> Dd {
     }
 }
 impl Dd {
+    /// Exact sum of two binary64 values.
+    #[inline(always)]
+    pub(crate) fn sum(a: f64, b: f64) -> Self {
+        two_sum(a, b)
+    }
+    /// Quotient by a double-double divisor, to about 2^-104 relative
+    /// accuracy. One correction step suffices because `hi - q*divisor.hi`
+    /// is exact; cheaper than `/`, which forms the residual with full
+    /// double-double subtraction and addition.
+    #[inline(always)]
+    pub(crate) fn div_dd(self, rhs: Self) -> Self {
+        let q = self.hi / rhs.hi;
+        let product = rhs.mul_f64(q);
+        let residual = (self.hi - product.hi) + (self.lo - product.lo);
+        let correction = residual / rhs.hi;
+        let hi = q + correction;
+        Self {
+            hi,
+            lo: correction - (hi - q),
+        }
+    }
+    /// Sum with a binary64 value; cheaper than promoting it to `Dd`.
+    #[inline(always)]
+    pub(crate) fn add_f64(self, rhs: f64) -> Self {
+        let leading = two_sum(self.hi, rhs);
+        two_sum(leading.hi, leading.lo + self.lo)
+    }
     /// Product with a binary64 factor; cheaper than promoting it to `Dd`.
     #[inline(always)]
     pub(crate) fn mul_f64(self, rhs: f64) -> Self {
