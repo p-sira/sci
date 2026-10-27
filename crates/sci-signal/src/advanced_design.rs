@@ -28,6 +28,9 @@ fn fact(n: usize) -> f64 {
 // exp(z) K_(n+1/2)(z), whose zeros are those of theta_n(z), avoiding
 // cancellation in high-order polynomial evaluation (as in SciPy besselap).
 fn refine_bessel_pole(n: usize, mut z: Complex64) -> Result<Complex64> {
+    if !z.re.is_finite() || !z.im.is_finite() || z == Complex64::new(0., 0.) {
+        return Err(Error::NonFiniteEvaluation);
+    }
     let scaled_k = |order, argument| {
         complex_bessel::besselk_scaled(order, argument)
             .map_err(|_| Error::NumericalFailure("scaled Bessel K evaluation failed"))
