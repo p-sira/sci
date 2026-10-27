@@ -14,11 +14,7 @@ fn validate_degree(n: u32) -> Result<(), StrErr> {
 // Keep the diagonal in logarithmic form and rescale the recurrence, so tiny
 // diagonals can recover in later degrees and large factorials never overflow.
 fn associated(n: u32, m: i32, x: f64, sine: f64, spherical: bool) -> f64 {
-    let order = m.unsigned_abs();
-    if order > n {
-        return 0.0;
-    }
-    if order == 0 {
+    if m == 0 {
         let value = crate::backend::orthogonal::eval_legendre(n as i32, x).unwrap_or(f64::NAN);
         return if spherical {
             value * ((2.0 * n as f64 + 1.0) / (4.0 * PI)).sqrt()
@@ -26,18 +22,78 @@ fn associated(n: u32, m: i32, x: f64, sine: f64, spherical: bool) -> f64 {
             value
         };
     }
-    if x == 0.0 && (n - order) % 2 == 1 {
-        return 0.0;
+    let mut value = f64::NAN;
+    associated_degrees(n, m, x, sine, spherical, n, |_, v| value = v);
+    value
+}
+
+/// Evaluates P_k^m for every degree k in `first..=n` in a single pass of the
+/// degree recurrence, passing `(k, value)` to `emit`. Each value is
+/// bit-identical to a separate evaluation at degree k.
+fn associated_degrees(
+    n: u32,
+    m: i32,
+    x: f64,
+    sine: f64,
+    spherical: bool,
+    first: u32,
+    mut emit: impl FnMut(u32, f64),
+) {
+    let order = m.unsigned_abs();
+    for degree in first..=n.min(order.saturating_sub(1)) {
+        if degree < order {
+            emit(degree, 0.0);
+        }
+    }
+    if order > n {
+        return;
+    }
+    let first = first.max(order);
+    if order == 0 {
+        let values = crate::backend::orthogonal::legendre_all(n as usize, x);
+        for degree in first..=n {
+            let value = values[degree as usize];
+            emit(
+                degree,
+                if spherical {
+                    value * ((2.0 * degree as f64 + 1.0) / (4.0 * PI)).sqrt()
+                } else {
+                    value
+                },
+            );
+        }
+        return;
     }
     if sine == 0.0 {
-        return 0.0;
+        for degree in first..=n {
+            emit(degree, 0.0);
+        }
+        return;
     }
     let mut logarithm = -0.5 * (4.0 * PI).ln() + order as f64 * sine.abs().ln();
     for k in 1..=order {
         logarithm += 0.5 * (0.5 / k as f64).ln_1p();
     }
+    let finalize = |degree: u32, current: f64, logarithm: f64| {
+        if x == 0.0 && (degree - order) % 2 == 1 {
+            return 0.0;
+        }
+        let mut logarithm = logarithm;
+        if !spherical {
+            logarithm += 0.5 * ((4.0 * PI).ln() - (2.0 * degree as f64 + 1.0).ln());
+            let sign = if m < 0 { -0.5 } else { 0.5 };
+            for k in degree - order + 1..=degree + order {
+                logarithm += sign * (k as f64).ln();
+            }
+        }
+        let parity = if (m < 0) && order % 2 == 1 { -1.0 } else { 1.0 };
+        parity * (current.abs().ln() + logarithm).exp().copysign(current)
+    };
     let mut previous = 0.0;
     let mut current = if order % 2 == 1 { -1.0 } else { 1.0 };
+    if first <= order {
+        emit(order, finalize(order, current, logarithm));
+    }
     for degree in order + 1..=n {
         let l = degree as f64;
         let q = order as f64;
@@ -59,16 +115,47 @@ fn associated(n: u32, m: i32, x: f64, sine: f64, spherical: bool) -> f64 {
             previous *= 1e150;
             logarithm -= 150.0 * core::f64::consts::LN_10;
         }
-    }
-    if !spherical {
-        logarithm += 0.5 * ((4.0 * PI).ln() - (2.0 * n as f64 + 1.0).ln());
-        let sign = if m < 0 { -0.5 } else { 0.5 };
-        for k in n - order + 1..=n + order {
-            logarithm += sign * (k as f64).ln();
+        if degree >= first {
+            emit(degree, finalize(degree, current, logarithm));
         }
     }
-    let parity = if (m < 0) && order % 2 == 1 { -1.0 } else { 1.0 };
-    parity * (current.abs().ln() + logarithm).exp().copysign(current)
+}
+
+/// Table `[degree][order]` of P_k^j for k in 0..=n and orders 0..=m followed
+/// by -m..=-1, computing each order with one degree recurrence.
+pub(crate) fn associated_table(
+    n: usize,
+    m: usize,
+    x: f64,
+    sine: f64,
+    spherical: bool,
+) -> Vec<Vec<f64>> {
+    let orders: Vec<i32> = (0..=m as i32).chain(-(m as i32)..0).collect();
+    let mut table = vec![vec![0.0; orders.len()]; n + 1];
+    for (column, &order) in orders.iter().enumerate() {
+        associated_degrees(n as u32, order, x, sine, spherical, 0, |degree, value| {
+            table[degree as usize][column] = value;
+        });
+    }
+    table
+}
+
+/// [`associated_table`] for Ferrers functions, with NaN outside `-1 <= x <= 1`.
+pub(crate) fn assoc_legendre_table(n: usize, m: usize, x: f64) -> Vec<Vec<f64>> {
+    if n > 1_000_000 || !(-1.0..=1.0).contains(&x) {
+        return vec![vec![f64::NAN; 2 * m + 1]; n + 1];
+    }
+    associated_table(n, m, x, ((1.0 - x) * (1.0 + x)).sqrt(), false)
+}
+
+/// [`associated_table`] with spherical normalization at polar angle `theta`.
+pub(crate) fn sph_legendre_table(n: usize, m: usize, theta: f64) -> Vec<Vec<f64>> {
+    if n > 1_000_000 || !(0.0..=PI).contains(&theta) {
+        return vec![vec![f64::NAN; 2 * m + 1]; n + 1];
+    }
+    let (sine, cosine) = theta.sin_cos();
+    let sine = if theta == PI { 0.0 } else { sine };
+    associated_table(n, m, cosine, sine, true)
 }
 
 /// Ferrers associated Legendre P_n^m(x), including the Condon–Shortley phase.
@@ -119,16 +206,55 @@ pub fn sph_harm_y<T: Float>(n: u32, m: i32, theta: T, phi: T) -> Result<Complex<
     if !phi.is_finite() {
         return Err(ERROR);
     }
+    let (sine, cosine) = harmonic_phase(m, phi);
+    Ok(Complex::new(
+        amplitude * T::from(cosine).ok_or(ERROR)?,
+        amplitude * T::from(sine).ok_or(ERROR)?,
+    ))
+}
+
+/// (sin(m phi), cos(m phi)) as used by [`sph_harm_y`], for finite `phi`.
+fn harmonic_phase(m: i32, phi: f64) -> (f64, f64) {
     let phase = m as f64 * phi;
-    let (sine, cosine) = if phase.is_finite() {
+    if phase.is_finite() {
         phase.sin_cos()
     } else {
         let (sine, cosine) = phi.sin_cos();
         let phase = num_complex::Complex64::new(cosine, sine).powu(m.unsigned_abs());
         (if m < 0 { -phase.im } else { phase.im }, phase.re)
-    };
-    Ok(Complex::new(
-        amplitude * T::from(cosine).ok_or(ERROR)?,
-        amplitude * T::from(sine).ok_or(ERROR)?,
-    ))
+    }
+}
+
+/// Table of Y_k^j(theta, phi) laid out as [`associated_table`], with NaN
+/// entries for arguments outside the domain of [`sph_harm_y`].
+pub(crate) fn sph_harm_table(
+    n: usize,
+    m: usize,
+    theta: f64,
+    phi: f64,
+) -> Vec<Vec<num_complex::Complex64>> {
+    let nan = num_complex::Complex64::new(f64::NAN, f64::NAN);
+    if !phi.is_finite() {
+        return vec![vec![nan; 2 * m + 1]; n + 1];
+    }
+    let amplitudes = sph_legendre_table(n, m, theta);
+    let phases: Vec<_> = (0..=m as i32)
+        .chain(-(m as i32)..0)
+        .map(|order| harmonic_phase(order, phi))
+        .collect();
+    amplitudes
+        .into_iter()
+        .map(|row| {
+            row.into_iter()
+                .zip(&phases)
+                .map(|(amplitude, &(sine, cosine))| {
+                    if amplitude.is_nan() {
+                        nan
+                    } else {
+                        num_complex::Complex64::new(amplitude * cosine, amplitude * sine)
+                    }
+                })
+                .collect()
+        })
+        .collect()
 }

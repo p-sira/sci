@@ -16,8 +16,13 @@ pub(super) fn lgam_sgn(x: f64, sign: &mut [i32]) -> f64 {
 
 // Fourier recurrence matrices from DLMF 28.4. The even-even first coefficient
 // has weight two, so the symmetric basis uses sqrt(2)*A_0.
-fn mathieu_spectrum(kd: i32, m: i32, q: f64) -> (f64, Vec<f64>) {
-    let size = (m as usize / 2 + 48 + (4.0 * q.abs().sqrt()) as usize).min(251);
+fn mathieu_spectrum(kd: i32, m: i32, q: f64, vectors: bool) -> (f64, Vec<f64>) {
+    // Coefficient vectors keep their established length. Characteristic
+    // values alone use a shorter truncation: Fourier coefficients beyond
+    // m/2 + 4*sqrt(|q|) decay faster than (|q|/(4j^2))^j, so twenty extra
+    // rows leave the eigenvalue unchanged at binary64 precision.
+    let margin = if vectors { 48 } else { 20 };
+    let size = (m as usize / 2 + margin + (4.0 * q.abs().sqrt()) as usize).min(251);
     let rank = match kd {
         1 | 2 => m / 2,
         3 => (m - 1) / 2,
@@ -52,31 +57,99 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64) -> (f64, Vec<f64>) {
     if kd == 1 {
         off[0] *= SQRT_2;
     }
-    // Gershgorin bounds and the Sturm count isolate only the requested
-    // eigenvalue of this symmetric tridiagonal Fourier recurrence.
-    let radius = 2.0 * SQRT_2 * q.abs();
-    let (mut lower, mut upper) = (diagonal[0] - radius, diagonal[size - 1] + radius);
-    for _ in 0..128 {
-        let midpoint = lower + 0.5 * (upper - lower);
-        if midpoint == lower || midpoint == upper {
-            break;
+    // Sturm counts isolate only the requested eigenvalue of this symmetric
+    // tridiagonal Fourier recurrence. Each pass also accumulates
+    // d/dλ log det(T − λI), so once the bracket isolates the eigenvalue,
+    // safeguarded Newton steps replace most bisection steps.
+    let sturm = |shift: f64| {
+        // A (nearly) zero pivot is perturbed to a tiny negative value before
+        // it is counted, so the count and recurrence see the same sign.
+        let mut pivot = diagonal[0] - shift;
+        let mut slope = -1.0;
+        let mut exact = pivot == 0.0;
+        if pivot.abs() < 1e-300 {
+            pivot = -1e-300;
         }
-        let mut pivot = diagonal[0] - midpoint;
         let mut count = usize::from(pivot < 0.0);
+        let mut log_derivative = slope / pivot;
         for j in 1..size {
+            let ratio = off[j - 1] * off[j - 1] / pivot;
+            slope = -1.0 + ratio * slope / pivot;
+            pivot = diagonal[j] - shift - ratio;
+            exact |= pivot == 0.0;
             if pivot.abs() < 1e-300 {
                 pivot = -1e-300;
             }
-            pivot = diagonal[j] - midpoint - off[j - 1] * off[j - 1] / pivot;
             count += usize::from(pivot < 0.0);
+            log_derivative += slope / pivot;
         }
+        (count, log_derivative, exact)
+    };
+    // The off-diagonal part has 2-norm at most `radius`, so by Weyl's
+    // inequality the requested eigenvalue lies within `radius` of the
+    // diagonal entry of the same rank. Fall back to the Gershgorin interval
+    // if rounding defeats that bracket.
+    let radius = 2.0 * SQRT_2 * q.abs();
+    let mut sorted = diagonal.clone();
+    sorted.sort_unstable_by(f64::total_cmp);
+    let (mut lower, mut upper) = (sorted[rank] - radius, sorted[rank] + radius);
+    let (mut lower_count, mut lower_slope, _) = sturm(lower);
+    let (mut upper_count, mut upper_slope, _) = sturm(upper);
+    if lower_count > rank || upper_count <= rank {
+        lower = sorted[0] - radius;
+        upper = sorted[size - 1] + radius;
+        (lower_count, lower_slope, _) = sturm(lower);
+        (upper_count, upper_slope, _) = sturm(upper);
+    }
+    let newton = |at: f64, log_derivative: f64| at - 1.0 / log_derivative;
+    let mut guess = if lower_count == rank && upper_count == rank + 1 {
+        Some(newton(lower, lower_slope))
+            .filter(|x| *x > lower && *x < upper)
+            .or(Some(newton(upper, upper_slope)))
+    } else {
+        None
+    };
+    let mut converged = None;
+    for _ in 0..128 {
+        let midpoint = match guess.take() {
+            Some(x) if x > lower && x < upper => x,
+            _ => lower + 0.5 * (upper - lower),
+        };
+        if midpoint <= lower || midpoint >= upper {
+            break;
+        }
+        let (count, log_derivative, exact) = sturm(midpoint);
         if count <= rank {
             lower = midpoint;
+            lower_count = count;
         } else {
             upper = midpoint;
+            upper_count = count;
+        }
+        if lower_count == rank && upper_count == rank + 1 && !exact && log_derivative.is_finite() {
+            let next = newton(midpoint, log_derivative);
+            if (next - midpoint).abs() <= 2.0 * f64::EPSILON * midpoint.abs().max(1.0)
+                && next >= lower
+                && next <= upper
+            {
+                // A tiny step can also come from cancellation near an
+                // eigenvalue of a leading minor; confirm with Sturm counts.
+                let delta = 4.0 * f64::EPSILON * next.abs().max(1.0);
+                let (below, above) = (next - delta, next + delta);
+                if sturm(below).0 <= rank && sturm(above).0 > rank {
+                    converged = Some(next);
+                    break;
+                }
+                // Not a verified eigenvalue: continue by bisection.
+                continue;
+            }
+            guess = Some(next);
         }
     }
-    let eigenvalue = lower + 0.5 * (upper - lower);
+    let eigenvalue = converged.unwrap_or(lower + 0.5 * (upper - lower));
+    if !vectors {
+        return (eigenvalue, Vec::new());
+    }
     // Inverse iteration computes its eigenvector with O(size) storage/work
     // per solve, avoiding a dense decomposition of all unused eigenpairs.
     let shift = eigenvalue + 8.0 * f64::EPSILON * eigenvalue.abs().max(1.0);
@@ -117,10 +190,10 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64) -> (f64, Vec<f64>) {
     (eigenvalue, coefficients)
 }
 pub(super) fn cva2(kd: i32, m: i32, q: f64) -> f64 {
-    mathieu_spectrum(kd, m, q).0
+    mathieu_spectrum(kd, m, q, false).0
 }
 pub(super) fn fcoef(kd: i32, m: i32, q: f64, _a: f64, out: &mut [f64]) {
-    let (_, coefficients) = mathieu_spectrum(kd, m, q);
+    let (_, coefficients) = mathieu_spectrum(kd, m, q, true);
     out.fill(0.0);
     for (a, b) in out.iter_mut().zip(coefficients) {
         *a = b;
@@ -147,8 +220,11 @@ fn angular(m: u32, q: f64, x: f64, odd: bool) -> (f64, f64) {
     } else {
         2
     };
-    let (_, coefficients) = mathieu_spectrum(kd, m as i32, q);
+    let (_, coefficients) = mathieu_spectrum(kd, m as i32, q, true);
     let x = x.to_radians();
+    // The coefficient vector has unit 2-norm (up to the A_0 weight), so terms
+    // with |A_k|*max(k, 1) below 1e-20 cannot affect either sum at binary64
+    // precision; skipping them avoids their trigonometric evaluations.
     coefficients
         .iter()
         .enumerate()
@@ -158,6 +234,9 @@ fn angular(m: u32, q: f64, x: f64, odd: bool) -> (f64, f64) {
                 4 => 2 * j + 2,
                 _ => 2 * j + 1,
             } as f64;
+            if a.abs() * k.max(1.0) < 1e-20 {
+                return (v, d);
+            }
             let (sin, cos) = (k * x).sin_cos();
             if odd {
                 (v + a * sin, d + a * k * cos)
@@ -206,7 +285,7 @@ fn coefficient_count(m: u32, q: f64) -> usize {
     (qm + 0.5 * m as f64) as usize
 }
 pub(crate) fn mathieu_even_coef(m: u32, q: f64) -> Result<Vec<f64>, &'static str> {
-    let (_, mut out) = mathieu_spectrum(if m.is_multiple_of(2) { 1 } else { 2 }, m as i32, q);
+    let (_, mut out) = mathieu_spectrum(if m.is_multiple_of(2) { 1 } else { 2 }, m as i32, q, true);
     out.resize(coefficient_count(m, q), 0.0);
     Ok(out)
 }
@@ -214,7 +293,7 @@ pub(crate) fn mathieu_odd_coef(m: u32, q: f64) -> Result<Vec<f64>, &'static str>
     if m == 0 {
         return Err("odd Mathieu order must be positive");
     }
-    let (_, mut out) = mathieu_spectrum(if m.is_multiple_of(2) { 4 } else { 3 }, m as i32, q);
+    let (_, mut out) = mathieu_spectrum(if m.is_multiple_of(2) { 4 } else { 3 }, m as i32, q, true);
     out.resize(coefficient_count(m, q), 0.0);
     Ok(out)
 }
@@ -307,11 +386,23 @@ pub(crate) fn gdtrib(a: f64, p: f64, x: f64) -> f64 {
         return 0.0;
     }
     let (mut lo, mut hi) = (0.0, 1.0);
+    // P(b, y) → 1 as b → 0+, so the residual at the origin is 1 − p.
+    let (mut f_lo, mut f_hi) = (1.0 - p, f64::NAN);
     for _ in 0..1024 {
-        if c::igam(hi, a * x) <= p {
+        f_hi = c::igam(hi, a * x) - p;
+        if f_hi <= 0.0 {
             break;
         }
+        lo = hi;
+        f_lo = f_hi;
         hi *= 2.0;
+    }
+    // P(b, y) decreases in b; Brent's method converges superlinearly on the
+    // bracket. Fall back to bisection if it meets a non-finite residual.
+    if f_hi <= 0.0
+        && let Some(root) = super::utils::brent_root(lo, hi, f_lo, f_hi, |b| c::igam(b, a * x) - p)
+    {
+        return root;
     }
     for _ in 0..128 {
         let mid = lo + (hi - lo) * 0.5;
@@ -584,10 +675,11 @@ pub(crate) fn airy_integrals(x: f64) -> [f64; 4] {
             let (mut tf, mut tg) = (f, g);
             for k in 1..128 {
                 let k = k as f64;
+                // Integer denominators below 2^53 are exact in binary64.
                 tf = tf * cube * Dd::from(3.0 * k - 2.0)
-                    / (Dd::from(3.0 * k + 1.0) * Dd::from(3.0 * k) * Dd::from(3.0 * k - 1.0));
+                    / Dd::from((3.0 * k + 1.0) * (3.0 * k) * (3.0 * k - 1.0));
                 tg = tg * cube * Dd::from(3.0 * k - 1.0)
-                    / (Dd::from(3.0 * k + 2.0) * Dd::from(3.0 * k) * Dd::from(3.0 * k + 1.0));
+                    / Dd::from((3.0 * k + 2.0) * (3.0 * k) * (3.0 * k + 1.0));
                 f = f + tf;
                 g = g + tg;
                 if tf.hi.abs().max(tg.hi.abs()) <= 1e-31 * f.hi.abs().max(g.hi.abs()) {
@@ -649,38 +741,16 @@ pub(crate) fn sph_legendre_p(n: i32, m: i32, x: f64) -> f64 {
     }
 }
 pub(crate) fn legendre_p_all(n: usize, x: f64) -> Vec<f64> {
-    (0..=n)
-        .map(|n| super::eval_legendre(n as i32, x).unwrap_or(f64::NAN))
-        .collect()
-}
-fn orders(m: usize) -> impl Iterator<Item = i32> {
-    (0..=m as i32).chain(-(m as i32)..0)
+    super::orthogonal::legendre_all(n, x)
 }
 pub(crate) fn assoc_legendre_p_all(n: usize, m: usize, x: f64) -> Vec<Vec<f64>> {
-    (0..=n)
-        .map(|n| {
-            orders(m)
-                .map(|m| assoc_legendre_p(n as i32, m, x))
-                .collect()
-        })
-        .collect()
+    super::legendre::assoc_legendre_table(n, m, x)
 }
 pub(crate) fn sph_legendre_p_all(n: usize, m: usize, x: f64) -> Vec<Vec<f64>> {
-    (0..=n)
-        .map(|n| orders(m).map(|m| sph_legendre_p(n as i32, m, x)).collect())
-        .collect()
+    super::legendre::sph_legendre_table(n, m, x)
 }
 pub(crate) fn sph_harm_y_all(n: usize, m: usize, theta: f64, phi: f64) -> Vec<Vec<Complex64>> {
-    (0..=n)
-        .map(|n| {
-            orders(m)
-                .map(|m| {
-                    super::sph_harm_y(n as u32, m, theta, phi)
-                        .unwrap_or(Complex64::new(f64::NAN, f64::NAN))
-                })
-                .collect()
-        })
-        .collect()
+    super::legendre::sph_harm_table(n, m, theta, phi)
 }
 pub(crate) fn legendre_q_all(n: usize, x: f64) -> (Vec<f64>, Vec<f64>) {
     let mut values = vec![0.0; n + 1];
@@ -779,8 +849,9 @@ pub(crate) fn itstruve0(x: f64) -> f64 {
         let (mut term, mut sum) = (Dd::from(1.0), Dd::from(1.0));
         for k in 1..128 {
             let k = k as f64;
+            // Integer denominators below 2^53 are exact in binary64.
             term = -term * square * Dd::from(k)
-                / (Dd::from(k + 1.0) * Dd::from(2.0 * k + 1.0) * Dd::from(2.0 * k + 1.0));
+                / Dd::from((k + 1.0) * (2.0 * k + 1.0) * (2.0 * k + 1.0));
             sum = sum + term;
             if term.hi.abs() <= 1e-31 * sum.hi.abs() {
                 break;
@@ -975,7 +1046,11 @@ pub(crate) fn owens_t(h: f64, a: f64) -> f64 {
     // Gauss–Legendre on atan(t): the denominator cancels under t=tan(theta).
     let upper = a.atan();
     let mut sum = 0.0;
-    for &(z, weight) in &*GAUSS_64 {
+    // The integrand's width in theta is about 1/h; the 32-point rule matches
+    // the 64-point rule to rounding level for h <= 12 (checked against
+    // independent Owen's T values), halving the exponential evaluations.
+    let rule: &[(f64, f64)] = if h <= 12.0 { &*GAUSS_32 } else { &*GAUSS_64 };
+    for &(z, weight) in rule {
         for theta in [0.5 * upper * (1.0 - z), 0.5 * upper * (1.0 + z)] {
             sum += weight * (-0.5 * (h / theta.cos()).powi(2)).exp();
         }

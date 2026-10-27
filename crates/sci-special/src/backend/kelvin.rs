@@ -59,7 +59,56 @@ fn argument<T: Float>(x: T) -> Result<f64, StrErr> {
     Ok(x)
 }
 
+/// Which of the value and derivative a caller needs from [`pair`].
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Need {
+    Both,
+    /// Both, from two single-order calls that avoid heap allocation.
+    BothInPlace,
+    Value,
+    Derivative,
+}
+
+/// Order-zero and order-one AMOS values at `z`, computing only what `need`
+/// requires (unused entries are NaN). Both orders come from one call.
+fn orders(z: Complex64, second: bool, need: Need) -> Result<(Complex64, Complex64), StrErr> {
+    let nan = Complex64::new(f64::NAN, f64::NAN);
+    let scaling = complex_bessel::Scaling::Exponential;
+    let single = |order: f64| {
+        if second {
+            complex_bessel::besselk_scaled(order, z)
+        } else {
+            complex_bessel::besseli_scaled(order, z)
+        }
+        .map_err(backend_error)
+    };
+    Ok(match need {
+        Need::Both => {
+            let values = if second {
+                complex_bessel::besselk_seq(0.0, z, 2, scaling)
+            } else {
+                complex_bessel::besseli_seq(0.0, z, 2, scaling)
+            }
+            .map_err(backend_error)?
+            .values;
+            (values[0], values[1])
+        }
+        Need::BothInPlace => (single(0.0)?, single(1.0)?),
+        Need::Value => (single(0.0)?, nan),
+        Need::Derivative => (nan, single(1.0)?),
+    })
+}
+
 fn pair(x: f64, second: bool, scaled: bool) -> Result<(Complex64, Complex64), StrErr> {
+    pair_needed(x, second, scaled, Need::Both)
+}
+
+fn pair_needed(
+    x: f64,
+    second: bool,
+    scaled: bool,
+    need: Need,
+) -> Result<(Complex64, Complex64), StrErr> {
     if second && x < 0.0 {
         return Err("kelvin: ker and kei require x >= 0.");
     }
@@ -81,9 +130,9 @@ fn pair(x: f64, second: bool, scaled: bool) -> Result<(Complex64, Complex64), St
         let z = rotation * a;
         if second {
             let scale = Complex64::new(if scaled { 0.0 } else { -z.re }, -z.im).exp();
-            let value = complex_bessel::besselk_scaled(0.0, z).map_err(backend_error)? * scale;
-            let derivative =
-                -rotation * complex_bessel::besselk_scaled(1.0, z).map_err(backend_error)? * scale;
+            let (k0, k1) = orders(z, true, need)?;
+            let value = k0 * scale;
+            let derivative = -rotation * k1 * scale;
             (value, derivative)
         } else {
             let half_scale = if scaled { 1.0 } else { (z.re * 0.5).exp() };
@@ -93,9 +142,9 @@ fn pair(x: f64, second: bool, scaled: bool) -> Result<(Complex64, Complex64), St
                     (z.im * half_scale) * half_scale,
                 )
             };
-            let value = restore(complex_bessel::besseli_scaled(0.0, z).map_err(backend_error)?);
-            let derivative =
-                restore(rotation * complex_bessel::besseli_scaled(1.0, z).map_err(backend_error)?);
+            let (i0, i1) = orders(z, false, need)?;
+            let value = restore(i0);
+            let derivative = restore(rotation * i1);
             (value, derivative)
         }
     };
@@ -120,7 +169,8 @@ macro_rules! kelvin_component {
     ($($name:ident, $second:literal, $index:tt, $component:ident, $doc:literal;)+) => {$(
         #[doc = $doc]
         pub fn $name<T: Float>(x: T) -> Result<T, StrErr> {
-            let value = pair(argument(x)?, $second, false)?.$index.$component;
+            let need = if $index == 0 { Need::Value } else { Need::Derivative };
+            let value = pair_needed(argument(x)?, $second, false, need)?.$index.$component;
             crate::backend::utils::finish(value, concat!(stringify!($name), ": Undefined result."))
         }
     )+};
@@ -158,6 +208,18 @@ pub enum KelvinFunction {
 }
 
 impl KelvinFunction {
+    /// Scaled value alone, for bracketing; one Bessel evaluation.
+    fn value(self, x: f64) -> Result<f64, StrErr> {
+        use KelvinFunction::*;
+        let second = matches!(self, Ker | Kei | KerPrime | KeiPrime);
+        let prime = matches!(self, BerPrime | BeiPrime | KerPrime | KeiPrime);
+        let imaginary = matches!(self, Bei | Kei | BeiPrime | KeiPrime);
+        let need = if prime { Need::Derivative } else { Need::Value };
+        let (value, derivative) = pair_needed(x, second, true, need)?;
+        let value = if prime { derivative } else { value };
+        Ok(if imaginary { value.im } else { value.re })
+    }
+
     fn value_and_slope(self, x: f64) -> Result<(f64, f64), StrErr> {
         use KelvinFunction::*;
         let second = matches!(self, Ker | Kei | KerPrime | KeiPrime);
@@ -165,7 +227,7 @@ impl KelvinFunction {
         let imaginary = matches!(self, Bei | Kei | BeiPrime | KeiPrime);
         // Scale value and actual derivative equally, retaining their Newton
         // ratio even beyond the unscaled overflow/underflow thresholds.
-        let (value, derivative) = pair(x, second, true)?;
+        let (value, derivative) = pair_needed(x, second, true, Need::BothInPlace)?;
         let (value, derivative) = if prime {
             (
                 derivative,
@@ -190,11 +252,12 @@ impl KelvinFunction {
 pub fn kelvin_zeros<T: Float>(function: KelvinFunction, zeros: &mut [T]) -> Result<(), StrErr> {
     let mut left = 0.5;
     for zero in zeros {
-        let mut fl = function.value_and_slope(left)?.0;
+        let mut fl = function.value(left)?;
         let mut right = left + 1.0;
+        let mut fr = f64::NAN;
         let mut bracketed = false;
         for _ in 0..32 {
-            let fr = function.value_and_slope(right)?.0;
+            fr = function.value(right)?;
             if fl.is_sign_negative() != fr.is_sign_negative() || fr == 0.0 {
                 bracketed = true;
                 break;
@@ -206,10 +269,14 @@ pub fn kelvin_zeros<T: Float>(function: KelvinFunction, zeros: &mut [T]) -> Resu
         if !bracketed {
             return Err("kelvin_zeros: Could not bracket a root.");
         }
-        let x =
-            crate::backend::utils::bracketed_root(left, right, |x| function.value_and_slope(x))?;
+        let x = crate::backend::utils::bracketed_root_from(left, fl, right, fr, |x| {
+            function.value_and_slope(x)
+        })?;
         *zero = T::from(x).ok_or("kelvin_zeros: Cannot represent root.")?;
-        left = x + 1.0;
+        // Consecutive positive zeros of every Kelvin function and derivative
+        // are at least 4.3 apart (asymptotically pi*sqrt(2)), so the next
+        // scan can start 3.5 beyond this zero without skipping one.
+        left = x + 3.5;
     }
     Ok(())
 }

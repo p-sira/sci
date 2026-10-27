@@ -98,7 +98,32 @@ pub fn digamma<T: sci_core::Float>(x: T) -> T {
 ///
 /// - [NIST DLMF](https://dlmf.nist.gov/5.15).
 pub fn trigamma(x: f64) -> f64 {
-    crate::backend::legacy::polygamma(1, x)
+    if x.is_finite() && x > 0.0 {
+        trigamma_positive(x)
+    } else {
+        crate::backend::legacy::polygamma(1, x)
+    }
+}
+
+/// ψ′(x) for finite x > 0: upward recurrence ψ′(x) = ψ′(x + 1) + 1/x² until
+/// x ≥ 10, then the asymptotic expansion (DLMF 5.15.8) through B₁₆.
+fn trigamma_positive(mut x: f64) -> f64 {
+    let mut shift = 0.0;
+    while x < 10.0 {
+        shift += 1.0 / (x * x);
+        x += 1.0;
+    }
+    let z = 1.0 / x;
+    let z2 = z * z;
+    // Σ B_2k / x^(2k+1) for k = 1..8.
+    let tail = z2
+        * (1.0 / 6.0
+            - z2 * (1.0 / 30.0
+                - z2 * (1.0 / 42.0
+                    - z2 * (1.0 / 30.0
+                        - z2 * (5.0 / 66.0
+                            - z2 * (691.0 / 2730.0 - z2 * (7.0 / 6.0 - z2 * (3617.0 / 510.0))))))));
+    shift + z * (1.0 + z * 0.5 + tail)
 }
 
 /// Computes erf(x) = (2/√π) ∫₀ˣ exp(−t²) dt.

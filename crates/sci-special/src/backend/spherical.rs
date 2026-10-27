@@ -86,6 +86,18 @@ fn real(n: i32, x: f64, kind: u8) -> Result<f64, StrErr> {
                 _ => core::f64::consts::FRAC_PI_2 * (-x).exp() / x,
             });
     }
+    // Elementary recurrences avoid the general half-integer AMOS kernels for
+    // the common moderate-order cases, as xsf's spherical kernels do.
+    match kind {
+        0 if x > n as f64 => return Ok(sign * upward(n, x, false)),
+        1 => return Ok(sign * upward(n, x, true)),
+        0 | 2 if n <= 256 && x <= 700.0 => {
+            if let Some(value) = downward(n, x, kind == 2) {
+                return Ok(sign * value);
+            }
+        }
+        _ => {}
+    }
     let order = n as f64 + 0.5;
     let z = Complex64::new(x, 0.0);
     let result = match kind {
@@ -102,6 +114,94 @@ fn real(n: i32, x: f64, kind: u8) -> Result<f64, StrErr> {
     .map_err(crate::backend::bessel::backend_error)?;
     Ok(sign * (core::f64::consts::FRAC_PI_2 / x).sqrt() * result.re)
 }
+/// Upward recurrence from the elementary j_0, j_1 or y_0, y_1 values. It is
+/// stable for y_n at every x > 0 and for j_n when x > n.
+fn upward(n: i32, x: f64, second: bool) -> f64 {
+    let (sin, cos) = x.sin_cos();
+    let mut s0 = if second { -cos / x } else { sin / x };
+    let mut s1 = if second {
+        (s0 - sin) / x
+    } else {
+        (s0 - cos) / x
+    };
+    for k in 1..n {
+        let next = (2.0 * k as f64 + 1.0) * s1 / x - s0;
+        s0 = s1;
+        s1 = next;
+        if next.is_infinite() {
+            break;
+        }
+    }
+    s1
+}
+
+/// Continued fraction for j_(n-1)/j_n (or i_(n-1)/i_n), followed by Miller's
+/// downward recurrence normalized by the elementary order-zero/one values.
+/// Returns `None` if the fraction does not converge within its work limit.
+fn downward(n: i32, x: f64, modified: bool) -> Option<f64> {
+    let s = if modified { 1.0 } else { -1.0 };
+    let b = |k: i32| (2.0 * k as f64 + 1.0) / x;
+    const TINY: f64 = 1e-300;
+    let mut g = b(n);
+    if g == 0.0 {
+        g = TINY;
+    }
+    let mut c = g;
+    let mut d = 0.0;
+    let mut converged = false;
+    for j in 1..=20_000 {
+        let bj = b(n + j);
+        d = bj + s * d;
+        if d == 0.0 {
+            d = TINY;
+        }
+        c = bj + s / c;
+        if c == 0.0 {
+            c = TINY;
+        }
+        d = 1.0 / d;
+        let delta = c * d;
+        g *= delta;
+        if (delta - 1.0).abs() <= f64::EPSILON {
+            converged = true;
+            break;
+        }
+    }
+    if !converged || !g.is_finite() {
+        return None;
+    }
+    // f_k is proportional to j_k (or i_k), with f_n = reference.
+    let mut reference = 1.0;
+    let mut upper = 1.0; // f_(k+1)
+    let mut current = g; // f_k
+    for k in (1..n).rev() {
+        let next = b(k) * current + s * upper;
+        upper = current;
+        current = next;
+        if current.abs() > 1e250 {
+            reference *= 1e-250;
+            upper *= 1e-250;
+            current *= 1e-250;
+        }
+    }
+    // Now current = f_0 and upper = f_1.
+    let (sin, cos) = x.sin_cos();
+    let scale = if modified {
+        let i0 = 0.5 * ((x - x.ln()).exp() - (-x - x.ln()).exp());
+        i0 / current
+    } else {
+        let j0 = sin / x;
+        let j1 = (j0 - cos) / x;
+        if j0.abs() > j1.abs() {
+            j0 / current
+        } else {
+            j1 / upper
+        }
+    };
+    let value = scale * reference;
+    value.is_finite().then_some(value)
+}
+
 macro_rules! spherical {
     ($($name:ident,$jac:ident,$kind:literal,$doc:literal;)+)=>{$(
         #[doc=$doc]

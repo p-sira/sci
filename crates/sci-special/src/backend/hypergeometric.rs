@@ -1,6 +1,5 @@
 //! Hypergeometric functions reusing Bessel kernels and shared precision arithmetic.
 use crate::backend::{StrErr, double_double::Dd};
-use num_complex::{Complex, Complex64};
 use sci_core::Float;
 
 const ERROR: StrErr =
@@ -14,28 +13,23 @@ fn validate(v: f64) -> Result<(), StrErr> {
     }
 }
 
-fn series(v: f64, z: Complex64) -> Option<Complex64> {
-    let norm = z.norm();
+/// Double-double power series for real `z`. Returns `None` when the series
+/// is outside its range or loses too much precision to cancellation.
+fn series_real(v: f64, z: f64) -> Option<f64> {
+    let norm = z.abs();
     if norm > 100.0 && !(v > 0.0 && norm / v < 16.0) {
         return None;
     }
     let mut real = Dd::from(1.0);
-    let mut imag = Dd::from(0.0);
     let mut sr = real;
-    let mut si = imag;
     let mut peak: f64 = 1.0;
     for k in 1..=4096 {
-        // Form v+(k-1) in extended precision, retaining small parameters.
         let denominator = Dd::from(v) + Dd::from((k - 1) as f64);
-        let fr = Dd::from(z.re) / denominator / Dd::from(k as f64);
-        let fi = Dd::from(z.im) / denominator / Dd::from(k as f64);
-        let next = real * fr - imag * fi;
-        imag = imag * fr + real * fi;
-        real = next;
+        let fr = Dd::from(z) / denominator / Dd::from(k as f64);
+        real = real * fr;
         sr = sr + real;
-        si = si + imag;
-        let term = real.hi.hypot(imag.hi);
-        let magnitude = sr.hi.hypot(si.hi);
+        let term = real.hi.abs();
+        let magnitude = sr.hi.abs();
         peak = peak.max(term);
         if !magnitude.is_finite() {
             return None;
@@ -44,7 +38,7 @@ fn series(v: f64, z: Complex64) -> Option<Complex64> {
             if peak * 1e-30 > 1e-13 * magnitude {
                 return None;
             }
-            return Some(Complex64::new(sr.hi, si.hi));
+            return Some(sr.hi);
         }
     }
     None
@@ -58,8 +52,8 @@ fn real_kernel(v: f64, z: f64) -> Result<f64, StrErr> {
     if z == 0.0 {
         return Ok(1.0);
     }
-    if let Some(value) = series(v, Complex64::new(z, 0.0)) {
-        return Ok(value.re);
+    if let Some(value) = series_real(v, z) {
+        return Ok(value);
     }
     let root = z.abs().sqrt();
     let bessel = if z > 0.0 {

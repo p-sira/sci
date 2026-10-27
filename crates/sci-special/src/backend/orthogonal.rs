@@ -152,6 +152,41 @@ fn legendre(n: i32, x: f64) -> f64 {
     sign * value
 }
 
+/// P_0(x), ..., P_n(x) in one pass of the recurrence used by [`legendre`];
+/// each entry is bit-identical to the corresponding single-degree value.
+pub(crate) fn legendre_all(n: usize, x: f64) -> Vec<f64> {
+    let per_degree = |k: usize| {
+        if x.is_nan() {
+            f64::NAN
+        } else {
+            legendre(k as i32, x)
+        }
+    };
+    let a = x.abs();
+    if x.is_nan() || a < 1e-5 || a == 1.0 || a.is_infinite() || n < 2 {
+        return (0..=n).map(per_degree).collect();
+    }
+    let mut out = Vec::with_capacity(n + 1);
+    out.push(1.0);
+    out.push(x);
+    let (mut difference, mut value) = (a - 1.0, a);
+    for k in 1..n {
+        if !value.is_infinite() {
+            let kf = k as f64;
+            difference = ((2.0 * kf + 1.0) * (a - 1.0) * value + kf * difference) / (kf + 1.0);
+            value += difference;
+        }
+        let degree = k + 1;
+        let sign = if x < 0.0 && degree % 2 != 0 {
+            -1.0
+        } else {
+            1.0
+        };
+        out.push(sign * value);
+    }
+    out
+}
+
 fn endpoint_binomial(n: i32, alpha: f64) -> f64 {
     (1..=n).fold(1.0, |value, k| value * ((alpha + k as f64) / k as f64))
 }
