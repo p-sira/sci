@@ -150,14 +150,14 @@ pub(super) fn integrate(f: impl Fn(f64) -> f64, a: f64, b: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::btdtria(0.3,2.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy btdtria](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.btdtria.html).
 pub fn btdtria(p: f64, b: f64, x: f64) -> f64 {
@@ -177,14 +177,14 @@ pub fn btdtria(p: f64, b: f64, x: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::btdtrib(2.5,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy btdtrib](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.btdtrib.html).
 pub fn btdtrib(a: f64, p: f64, x: f64) -> f64 {
@@ -204,14 +204,14 @@ pub fn btdtrib(a: f64, p: f64, x: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::bdtrik(0.3,5.0,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy bdtrik](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bdtrik.html).
 pub fn bdtrik(y: f64, n: f64, p: f64) -> f64 {
@@ -248,14 +248,14 @@ pub fn bdtrik(y: f64, n: f64, p: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::bdtrin(2.0,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy bdtrin](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bdtrin.html).
 pub fn bdtrin(k: f64, y: f64, p: f64) -> f64 {
@@ -275,14 +275,14 @@ pub fn bdtrin(k: f64, y: f64, p: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::nbdtrik(0.3,5.0,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nbdtrik](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nbdtrik.html).
 pub fn nbdtrik(y: f64, n: f64, p: f64) -> f64 {
@@ -302,14 +302,14 @@ pub fn nbdtrik(y: f64, n: f64, p: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::nbdtrin(2.0,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nbdtrin](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nbdtrin.html).
 pub fn nbdtrin(k: f64, y: f64, p: f64) -> f64 {
@@ -329,14 +329,14 @@ pub fn nbdtrin(k: f64, y: f64, p: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::pdtrik(0.3,5.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy pdtrik](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pdtrik.html).
 pub fn pdtrik(p: f64, m: f64) -> f64 {
@@ -356,14 +356,14 @@ pub fn pdtrik(p: f64, m: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::stdtridf(0.6742760175759245,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy stdtridf](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.stdtridf.html).
 pub fn stdtridf(p: f64, t: f64) -> f64 {
@@ -383,14 +383,14 @@ pub fn stdtridf(p: f64, t: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::fdtridfd(3.0,0.30154736269507604,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy fdtridfd](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.fdtridfd.html).
 pub fn fdtridfd(dfn: f64, p: f64, x: f64) -> f64 {
@@ -410,14 +410,14 @@ pub fn fdtridfd(dfn: f64, p: f64, x: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::chndtr(2.5,3.0,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chndtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chndtr.html).
 pub fn chndtr(x: f64, df: f64, nc: f64) -> f64 {
@@ -443,14 +443,14 @@ pub fn chndtr(x: f64, df: f64, nc: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::chndtrix(0.3,3.0,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chndtrix](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chndtrix.html).
 pub fn chndtrix(p: f64, df: f64, nc: f64) -> f64 {
@@ -470,14 +470,14 @@ pub fn chndtrix(p: f64, df: f64, nc: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::chndtridf(2.5,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chndtridf](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chndtridf.html).
 pub fn chndtridf(x: f64, p: f64, nc: f64) -> f64 {
@@ -497,14 +497,14 @@ pub fn chndtridf(x: f64, p: f64, nc: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::chndtrinc(2.5,3.0,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chndtrinc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chndtrinc.html).
 pub fn chndtrinc(x: f64, df: f64, p: f64) -> f64 {
@@ -524,14 +524,14 @@ pub fn chndtrinc(x: f64, df: f64, p: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ncfdtr(3.0,5.0,0.5,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ncfdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ncfdtr.html).
 pub fn ncfdtr(dfn: f64, dfd: f64, nc: f64, x: f64) -> f64 {
@@ -565,14 +565,14 @@ pub fn ncfdtr(dfn: f64, dfd: f64, nc: f64, x: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ncfdtri(3.0,5.0,0.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ncfdtri](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ncfdtri.html).
 pub fn ncfdtri(dfn: f64, dfd: f64, nc: f64, p: f64) -> f64 {
@@ -592,14 +592,14 @@ pub fn ncfdtri(dfn: f64, dfd: f64, nc: f64, p: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ncfdtridfd(3.0,0.25637506749643246,0.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ncfdtridfd](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ncfdtridfd.html).
 pub fn ncfdtridfd(dfn: f64, p: f64, nc: f64, x: f64) -> f64 {
@@ -619,14 +619,14 @@ pub fn ncfdtridfd(dfn: f64, p: f64, nc: f64, x: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ncfdtridfn(0.25637506749643246,5.0,0.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ncfdtridfn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ncfdtridfn.html).
 pub fn ncfdtridfn(p: f64, dfd: f64, nc: f64, x: f64) -> f64 {
@@ -646,14 +646,14 @@ pub fn ncfdtridfn(p: f64, dfd: f64, nc: f64, x: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ncfdtrinc(3.0,5.0,0.3,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ncfdtrinc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ncfdtrinc.html).
 pub fn ncfdtrinc(dfn: f64, dfd: f64, p: f64, x: f64) -> f64 {
@@ -673,14 +673,14 @@ pub fn ncfdtrinc(dfn: f64, dfd: f64, p: f64, x: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::nctdtr(3.0,0.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nctdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nctdtr.html).
 pub fn nctdtr(df: f64, nc: f64, t: f64) -> f64 {
@@ -730,14 +730,14 @@ pub fn nctdtr(df: f64, nc: f64, t: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::nctdtrit(3.0,0.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nctdtrit](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nctdtrit.html).
 pub fn nctdtrit(df: f64, nc: f64, p: f64) -> f64 {
@@ -757,14 +757,14 @@ pub fn nctdtrit(df: f64, nc: f64, p: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::nctdtrinc(3.0,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nctdtrinc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nctdtrinc.html).
 pub fn nctdtrinc(df: f64, p: f64, t: f64) -> f64 {
@@ -784,14 +784,14 @@ pub fn nctdtrinc(df: f64, p: f64, t: f64) -> f64 {
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::nctdtridf(0.4120716320853016,0.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nctdtridf](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nctdtridf.html).
 pub fn nctdtridf(p: f64, nc: f64, t: f64) -> f64 {

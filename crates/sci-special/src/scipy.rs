@@ -9,21 +9,22 @@ pub type ValueDerivativeMatrices = (Vec<Vec<f64>>, Vec<Vec<f64>>);
 ///
 /// ## Parameters and domain
 ///
-/// Nonnegative a and b; opposite signs return NaN.
+/// Finite real `a` and `b` of the same sign; opposite signs return NaN.
+/// If either input is zero, the result is zero. Two negative inputs give
+/// the negative of the mean of their absolute values. Nonfinite inputs return NaN.
 ///
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::agm(1.0_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy agm](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.agm.html).
 ///
@@ -46,17 +47,22 @@ pub fn agm<T: sci_core::Float>(a: T, b: T) -> T {
 ///
 /// ## Returns
 ///
-/// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
+/// The array `[Ai(x), Ai′(x), Bi(x), Bi′(x)]`, with derivatives with respect to `x`.
+/// Nonfinite/backend failures can produce NaNs; positive `x` can overflow the Bi components.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Uses binary64 complex-Bessel Airy kernels. Positive large arguments can
+/// underflow Ai and overflow Bi; use `airye` when scaled values are needed.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::airy(0.5);
 /// assert!(value.iter().all(|v| v.is_finite()));
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy airy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.airy.html).
 pub fn airy(x: f64) -> [f64; 4] {
@@ -71,17 +77,24 @@ pub fn airy(x: f64) -> [f64; 4] {
 ///
 /// ## Returns
 ///
-/// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
+/// The array of four scaled values in `[Ai, Ai′, Bi, Bi′]` order. Derivatives
+/// are scaled derivatives of the original functions, not derivatives of the scaled
+/// functions. For negative `x`, Ai entries are NaN; Bi entries are unscaled.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Uses binary64 complex-Bessel Airy kernels. For real `x > 0`, the scale
+/// exponent is `zeta = 2*x^(3/2)/3`; the Bi scale for `x < 0` is one.
+/// Backend failures yield NaNs. Scaling extends the usable positive-argument range.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::airye(0.5);
 /// assert!(value.iter().all(|v| v.is_finite()));
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy airye](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.airye.html).
 pub fn airye(x: f64) -> [f64; 4] {
@@ -92,30 +105,33 @@ pub fn airye(x: f64) -> [f64; 4] {
 ///
 /// ## Parameters and domain
 ///
-/// Nonnegative x.
+/// Finite real `x`, including negative upper limits. A negative upper limit
+/// reverses the oriented integral; output order remains `[∫Ai(t), ∫Bi(t), ∫Ai(−t), ∫Bi(−t)]`.
 ///
 /// ## Returns
 ///
-/// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
+/// The four oriented integrals in the order stated above. Nonfinite inputs
+/// produce `[NaN; 4]`; the Bi integral can overflow for large positive upper limits.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::itairy(0.5);
 /// assert!(value.iter().all(|v| v.is_finite()));
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy itairy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.itairy.html).
 ///
 /// ## Numerical behavior and work limits
 ///
-/// A bounded Gaussian quadrature evaluates the four defining integrals for `abs(x) <= 16`;
-/// translated asymptotic expansions apply beyond this range. Large oscillatory arguments
-/// retain asymptotic and argument-reduction limits. This corrects the early-termination
-/// error in SciPy's legacy series.
+/// An integrated Airy power series with double-double accumulation is used for
+/// `abs(x) <= 10`; cached 32-point Gaussian rules cover `10 < abs(x) <= 16`.
+/// Translated asymptotic expansions apply for larger magnitudes. Negative inputs
+/// use reflection and orientation identities. Large oscillatory arguments remain
+/// limited by argument reduction and asymptotic truncation. This corrects the
+/// early termination in SciPy's legacy series; it is not a uniform error bound.
 pub fn itairy(x: f64) -> [f64; 4] {
     crate::backend::legacy::airy_integrals(x)
 }
@@ -124,21 +140,28 @@ pub fn itairy(x: f64) -> [f64; 4] {
 ///
 /// ## Parameters and domain
 ///
-/// Finite u and m in `[0,1]`.
+/// Finite real `u` and parameter `m` in `[0,1]`; `m = k²`.
+/// The returned amplitude `phi` is in radians and satisfies `u = F(phi, m)`.
 ///
 /// ## Returns
 ///
-/// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
+/// Returns `(sn, cn, dn, phi)`, where `sn = sin(phi)`, `cn = cos(phi)`,
+/// and `dn = sqrt(1 − m*sn²)`. Invalid inputs return four NaNs.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Uses the binary64 Cephes arithmetic–geometric mean algorithm, with special
+/// approximations near `m = 0` and `m = 1`; large `u` loses phase precision.
+/// These are Jacobi functions, separate from Ellip’s integral algorithms.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ellipj(0.5,0.4);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ellipj](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ellipj.html).
 pub fn ellipj(u: f64, m: f64) -> (f64, f64, f64, f64) {
@@ -154,16 +177,15 @@ pub fn ellipj(u: f64, m: f64) -> (f64, f64, f64, f64) {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::binom(5.0_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy binom](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.binom.html).
 ///
@@ -187,16 +209,15 @@ pub fn binom<T: sci_core::Float>(n: T, k: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::erfcx(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy erfcx](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.erfcx.html).
 ///
@@ -220,16 +241,15 @@ pub fn erfcx<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::erfi(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy erfi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.erfi.html).
 ///
@@ -253,16 +273,15 @@ pub fn erfi<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::erfcinv(0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy erfcinv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.erfcinv.html).
 ///
@@ -286,16 +305,15 @@ pub fn erfcinv<T: sci_core::Float>(p: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::dawsn(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy dawsn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.dawsn.html).
 ///
@@ -319,16 +337,15 @@ pub fn dawsn<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::gammasgn(-0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy gammasgn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gammasgn.html).
 ///
@@ -352,16 +369,15 @@ pub fn gammasgn<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::gammaincc(2.5_f64,3.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy gammaincc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gammaincc.html).
 ///
@@ -385,16 +401,15 @@ pub fn gammaincc<T: sci_core::Float>(a: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::gammaincinv(2.5_f64,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy gammaincinv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gammaincinv.html).
 ///
@@ -418,16 +433,15 @@ pub fn gammaincinv<T: sci_core::Float>(a: T, p: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::gammainccinv(2.5_f64,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy gammainccinv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gammainccinv.html).
 ///
@@ -451,16 +465,15 @@ pub fn gammainccinv<T: sci_core::Float>(a: T, q: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::loggamma(2.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy loggamma](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.loggamma.html).
 ///
@@ -484,16 +497,15 @@ pub fn loggamma<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::rgamma(-2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy rgamma](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.rgamma.html).
 ///
@@ -517,16 +529,15 @@ pub fn rgamma<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::polygamma(2,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy polygamma](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.polygamma.html).
 pub fn polygamma(n: u32, x: f64) -> f64 {
@@ -545,16 +556,15 @@ pub fn polygamma(n: u32, x: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::multigammaln(3.0,2);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy multigammaln](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.multigammaln.html).
 pub fn multigammaln(a: f64, d: u32) -> f64 {
@@ -573,16 +583,15 @@ pub fn multigammaln(a: f64, d: u32) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::jv(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy jv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jv.html).
 ///
@@ -606,16 +615,15 @@ pub fn jv<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::jve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy jve](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jve.html).
 ///
@@ -639,16 +647,15 @@ pub fn jve<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::yv(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy yv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.yv.html).
 ///
@@ -672,16 +679,15 @@ pub fn yv<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::yve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy yve](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.yve.html).
 ///
@@ -705,16 +711,15 @@ pub fn yve<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::iv(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy iv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.iv.html).
 ///
@@ -738,16 +743,15 @@ pub fn iv<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ive(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ive](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ive.html).
 ///
@@ -771,16 +775,15 @@ pub fn ive<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::kv(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy kv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kv.html).
 ///
@@ -804,16 +807,15 @@ pub fn kv<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::kve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy kve](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kve.html).
 ///
@@ -837,16 +839,15 @@ pub fn kve<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::j0(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy j0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.j0.html).
 ///
@@ -870,16 +871,15 @@ pub fn j0<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::j1(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy j1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.j1.html).
 ///
@@ -903,16 +903,15 @@ pub fn j1<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::y0(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy y0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.y0.html).
 ///
@@ -936,16 +935,15 @@ pub fn y0<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::y1(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy y1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.y1.html).
 ///
@@ -969,16 +967,15 @@ pub fn y1<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::i0(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy i0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.i0.html).
 ///
@@ -1002,16 +999,15 @@ pub fn i0<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::i1(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy i1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.i1.html).
 ///
@@ -1035,16 +1031,15 @@ pub fn i1<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::i0e(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy i0e](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.i0e.html).
 ///
@@ -1068,16 +1063,15 @@ pub fn i0e<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::i1e(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy i1e](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.i1e.html).
 ///
@@ -1101,16 +1095,15 @@ pub fn i1e<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::k0(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy k0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.k0.html).
 ///
@@ -1134,16 +1127,15 @@ pub fn k0<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::k1(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy k1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.k1.html).
 ///
@@ -1167,16 +1159,15 @@ pub fn k1<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::k0e(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy k0e](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.k0e.html).
 ///
@@ -1200,16 +1191,15 @@ pub fn k0e<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::k1e(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy k1e](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.k1e.html).
 ///
@@ -1233,16 +1223,15 @@ pub fn k1e<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::besselpoly(1.0,0.5,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy besselpoly](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.besselpoly.html).
 pub fn besselpoly(a: f64, lambda: f64, v: f64) -> f64 {
@@ -1257,17 +1246,17 @@ pub fn besselpoly(a: f64, lambda: f64, v: f64) -> f64 {
 ///
 /// ## Returns
 ///
-/// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
+/// The pair `(∫₀ˣ J₀(t) dt, ∫₀ˣ Y₀(t) dt)`, with the integrable Y₀
+/// singularity interpreted as a limit. At zero both entries are zero.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::itj0y0(2.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy itj0y0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.itj0y0.html).
 pub fn itj0y0(x: f64) -> (f64, f64) {
@@ -1282,17 +1271,17 @@ pub fn itj0y0(x: f64) -> (f64, f64) {
 ///
 /// ## Returns
 ///
-/// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
+/// The pair `(∫₀ˣ (1−J₀(t))/t dt, ∫ₓ^∞ Y₀(t)/t dt)`. The first
+/// integrand has a removable endpoint value; the second integral is improper.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::it2j0y0(2.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy it2j0y0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.it2j0y0.html).
 pub fn it2j0y0(x: f64) -> (f64, f64) {
@@ -1307,17 +1296,17 @@ pub fn it2j0y0(x: f64) -> (f64, f64) {
 ///
 /// ## Returns
 ///
-/// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
+/// The pair `(∫₀ˣ I₀(t) dt, ∫₀ˣ K₀(t) dt)`. The logarithmic K₀
+/// singularity is integrable. The I₀ integral can overflow at large positive `x`.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::iti0k0(2.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy iti0k0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.iti0k0.html).
 pub fn iti0k0(x: f64) -> (f64, f64) {
@@ -1332,17 +1321,17 @@ pub fn iti0k0(x: f64) -> (f64, f64) {
 ///
 /// ## Returns
 ///
-/// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
+/// The pair `(∫₀ˣ (I₀(t)−1)/t dt, ∫ₓ^∞ K₀(t)/t dt)`. The first
+/// integrand has a removable endpoint value; the second diverges at zero.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::it2i0k0(2.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy it2i0k0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.it2i0k0.html).
 pub fn it2i0k0(x: f64) -> (f64, f64) {
@@ -1358,16 +1347,15 @@ pub fn it2i0k0(x: f64) -> (f64, f64) {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::struve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy struve](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.struve.html).
 ///
@@ -1391,16 +1379,15 @@ pub fn struve<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::modstruve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy modstruve](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.modstruve.html).
 ///
@@ -1424,16 +1411,23 @@ pub fn modstruve<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Numerical behavior and work limits
+///
+/// Uses the integrated defining series with double-double accumulation and at
+/// most 127 updates for `abs(x) <= 24`, composite 32-point Gaussian quadrature
+/// on intervals at most four units wide for `24 < abs(x) <= 128`, and the
+/// translated asymptotic expansion beyond 128. The integral is even in `x`.
+/// Nonfinite inputs return NaN. Large-argument asymptotic accuracy is limited.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::itstruve0(2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy itstruve0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.itstruve0.html).
 ///
@@ -1455,16 +1449,15 @@ pub fn itstruve0(x: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::it2struve0(2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy it2struve0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.it2struve0.html).
 pub fn it2struve0(x: f64) -> f64 {
@@ -1480,16 +1473,15 @@ pub fn it2struve0(x: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::itmodstruve0(2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy itmodstruve0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.itmodstruve0.html).
 pub fn itmodstruve0(x: f64) -> f64 {
@@ -1505,16 +1497,15 @@ pub fn itmodstruve0(x: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::hyp0f1(2.5_f64,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy hyp0f1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hyp0f1.html).
 ///
@@ -1538,16 +1529,24 @@ pub fn hyp0f1<T: sci_core::Float>(b: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Accuracy limitations
+///
+/// Parameter work bounds do not imply uniform accuracy. Cancellation and
+/// continuation can lose digits or return NaN; difficult large-parameter cases
+/// require independent validation.
+/// The general fallback is inaccurate at `a=65.1, b=-3.2, x=-20`.
+/// The improved direct series has representative checks for `abs(a), abs(b) <= 64`
+/// and `abs(x) <= 100`; this is not certification of the whole parameter box.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::hyp1f1(1.5,2.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy hyp1f1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hyp1f1.html).
 ///
@@ -1559,7 +1558,9 @@ pub fn hyp1f1(a: f64, b: f64, x: f64) -> f64 {
     crate::backend::legacy::hyp1f1(a, b, x)
 }
 
-/// Gauss hypergeometric function ₂F₁(a,b;c;x).
+/// Gauss function `₂F₁(a,b;c;x) = Σₖ (a)ₖ(b)ₖ xᵏ / [(c)ₖ k!]`.
+/// The series defines the value for `abs(x) < 1`; real continuation is used
+/// where implemented. Here `(a)ₖ = Γ(a+k)/Γ(a)` is the rising factorial.
 ///
 /// ## Parameters and domain
 ///
@@ -1568,16 +1569,21 @@ pub fn hyp1f1(a: f64, b: f64, x: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Accuracy limitations
+///
+/// Parameter work bounds do not imply uniform accuracy. Cancellation and
+/// continuation can lose digits or return NaN; difficult large-parameter cases
+/// require independent validation.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::hyp2f1(0.5,1.0,2.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy hyp2f1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hyp2f1.html).
 ///
@@ -1589,7 +1595,9 @@ pub fn hyp2f1(a: f64, b: f64, c: f64, x: f64) -> f64 {
     crate::backend::legacy::hyp2f1(a, b, c, x)
 }
 
-/// Tricomi function U(a,b,x), the second confluent hypergeometric solution.
+/// Tricomi function `U(a,b,x)`, solving `x y″ + (b−x)y′ − a y = 0`.
+/// For `a > 0` and `x > 0`, `U(a,b,x) = ∫₀^∞ exp(−xt)t^(a−1)(1+t)^(b−a−1) dt / Γ(a)`;
+/// other supported real parameters use continuation of this solution.
 ///
 /// ## Parameters and domain
 ///
@@ -1598,16 +1606,21 @@ pub fn hyp2f1(a: f64, b: f64, c: f64, x: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Accuracy limitations
+///
+/// Parameter work bounds do not imply uniform accuracy. Cancellation and
+/// continuation can lose digits or return NaN; difficult large-parameter cases
+/// require independent validation.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::hyperu(1.5,2.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy hyperu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hyperu.html).
 ///
@@ -1628,16 +1641,15 @@ pub fn hyperu(a: f64, b: f64, x: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::exp1(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy exp1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.exp1.html).
 ///
@@ -1661,16 +1673,15 @@ pub fn exp1<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::expi(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy expi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.expi.html).
 ///
@@ -1694,16 +1705,15 @@ pub fn expi<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::expn(3,0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy expn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.expn.html).
 ///
@@ -1727,16 +1737,15 @@ pub fn expn<T: sci_core::Float>(n: u32, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::sici(0.5);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy sici](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sici.html).
 pub fn sici(x: f64) -> (f64, f64) {
@@ -1752,16 +1761,15 @@ pub fn sici(x: f64) -> (f64, f64) {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::shichi(0.5);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy shichi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.shichi.html).
 pub fn shichi(x: f64) -> (f64, f64) {
@@ -1777,16 +1785,15 @@ pub fn shichi(x: f64) -> (f64, f64) {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::fresnel(0.5);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy fresnel](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.fresnel.html).
 pub fn fresnel(x: f64) -> (f64, f64) {
@@ -1802,16 +1809,15 @@ pub fn fresnel(x: f64) -> (f64, f64) {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::spence(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy spence](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.spence.html).
 ///
@@ -1835,16 +1841,15 @@ pub fn spence<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::zeta(2.5_f64,1.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy zeta](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.zeta.html).
 ///
@@ -1868,16 +1873,15 @@ pub fn zeta<T: sci_core::Float>(s: T, q: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::zetac(2.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy zetac](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.zetac.html).
 ///
@@ -1901,16 +1905,15 @@ pub fn zetac<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::wrightomega(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy wrightomega](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.wrightomega.html).
 ///
@@ -1934,16 +1937,15 @@ pub fn wrightomega<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::wright_bessel(0.5,1.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy wright_bessel](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.wright_bessel.html).
 ///
@@ -1965,16 +1967,15 @@ pub fn wright_bessel(a: f64, b: f64, x: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::log_wright_bessel(0.5,1.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy log_wright_bessel](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.log_wright_bessel.html).
 ///
@@ -1996,16 +1997,15 @@ pub fn log_wright_bessel(a: f64, b: f64, x: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::voigt_profile(0.5_f64,1.0,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy voigt_profile](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.voigt_profile.html).
 ///
@@ -2029,16 +2029,15 @@ pub fn voigt_profile<T: sci_core::Float>(x: T, sigma: T, gamma: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::bdtr(2.0_f64,5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy bdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bdtr.html).
 ///
@@ -2062,16 +2061,15 @@ pub fn bdtr<T: sci_core::Float>(k: T, n: i32, p: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::bdtrc(2.0_f64,5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy bdtrc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bdtrc.html).
 ///
@@ -2095,16 +2093,15 @@ pub fn bdtrc<T: sci_core::Float>(k: T, n: i32, p: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::bdtri(2.0_f64,5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy bdtri](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bdtri.html).
 ///
@@ -2128,16 +2125,15 @@ pub fn bdtri<T: sci_core::Float>(k: T, n: i32, y: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::chdtr(3.0_f64,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chdtr.html).
 ///
@@ -2161,16 +2157,15 @@ pub fn chdtr<T: sci_core::Float>(df: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::chdtrc(3.0_f64,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chdtrc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chdtrc.html).
 ///
@@ -2194,16 +2189,15 @@ pub fn chdtrc<T: sci_core::Float>(df: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::chdtri(3.0_f64,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chdtri](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chdtri.html).
 ///
@@ -2227,16 +2221,15 @@ pub fn chdtri<T: sci_core::Float>(df: T, q: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::fdtr(3.0_f64,5.0,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy fdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.fdtr.html).
 ///
@@ -2260,16 +2253,15 @@ pub fn fdtr<T: sci_core::Float>(dfn: T, dfd: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::fdtrc(3.0_f64,5.0,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy fdtrc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.fdtrc.html).
 ///
@@ -2293,16 +2285,15 @@ pub fn fdtrc<T: sci_core::Float>(dfn: T, dfd: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::fdtri(3.0_f64,5.0,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy fdtri](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.fdtri.html).
 ///
@@ -2326,16 +2317,15 @@ pub fn fdtri<T: sci_core::Float>(dfn: T, dfd: T, p: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::gdtr(1.5_f64,2.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy gdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gdtr.html).
 ///
@@ -2359,16 +2349,15 @@ pub fn gdtr<T: sci_core::Float>(a: T, b: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::gdtrc(1.5_f64,2.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy gdtrc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gdtrc.html).
 ///
@@ -2392,16 +2381,15 @@ pub fn gdtrc<T: sci_core::Float>(a: T, b: T, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::gdtrib(1.5,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy gdtrib](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gdtrib.html).
 pub fn gdtrib(a: f64, p: f64, x: f64) -> f64 {
@@ -2417,16 +2405,15 @@ pub fn gdtrib(a: f64, p: f64, x: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::nbdtr(2,5,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nbdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nbdtr.html).
 ///
@@ -2450,16 +2437,15 @@ pub fn nbdtr<T: sci_core::Float>(k: i32, n: i32, p: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::nbdtrc(2,5,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nbdtrc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nbdtrc.html).
 ///
@@ -2483,16 +2469,15 @@ pub fn nbdtrc<T: sci_core::Float>(k: i32, n: i32, p: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::nbdtri(2,5,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nbdtri](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nbdtri.html).
 ///
@@ -2516,16 +2501,15 @@ pub fn nbdtri<T: sci_core::Float>(k: i32, n: i32, y: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ndtr(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ndtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ndtr.html).
 ///
@@ -2549,16 +2533,15 @@ pub fn ndtr<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ndtri(0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ndtri](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ndtri.html).
 ///
@@ -2582,16 +2565,15 @@ pub fn ndtri<T: sci_core::Float>(p: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::log_ndtr(-30.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy log_ndtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.log_ndtr.html).
 ///
@@ -2615,16 +2597,15 @@ pub fn log_ndtr<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ndtri_exp(-100.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ndtri_exp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ndtri_exp.html).
 ///
@@ -2648,16 +2629,15 @@ pub fn ndtri_exp<T: sci_core::Float>(y: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::pdtr(2.0_f64,1.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy pdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pdtr.html).
 ///
@@ -2681,16 +2661,15 @@ pub fn pdtr<T: sci_core::Float>(k: T, m: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::pdtrc(2.0_f64,1.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy pdtrc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pdtrc.html).
 ///
@@ -2714,16 +2693,15 @@ pub fn pdtrc<T: sci_core::Float>(k: T, m: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::pdtri(2,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy pdtri](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pdtri.html).
 ///
@@ -2760,16 +2738,15 @@ pub fn pdtri<T: sci_core::Float>(k: i32, p: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::stdtr(3.0,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy stdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.stdtr.html).
 pub fn stdtr(df: f64, t: f64) -> f64 {
@@ -2829,16 +2806,15 @@ pub fn stdtr(df: f64, t: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::stdtrit(3.0,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy stdtrit](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.stdtrit.html).
 pub fn stdtrit(df: f64, p: f64) -> f64 {
@@ -2882,16 +2858,15 @@ pub fn stdtrit(df: f64, p: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::kolmogorov(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy kolmogorov](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kolmogorov.html).
 ///
@@ -2915,16 +2890,15 @@ pub fn kolmogorov<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::kolmogi(0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy kolmogi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kolmogi.html).
 ///
@@ -2948,16 +2922,15 @@ pub fn kolmogi<T: sci_core::Float>(q: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::smirnov(5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy smirnov](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.smirnov.html).
 pub fn smirnov(n: i32, x: f64) -> f64 {
@@ -2973,16 +2946,15 @@ pub fn smirnov(n: i32, x: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::smirnovi(5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy smirnovi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.smirnovi.html).
 pub fn smirnovi(n: i32, q: f64) -> f64 {
@@ -2998,16 +2970,15 @@ pub fn smirnovi(n: i32, q: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::owens_t(0.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy owens_t](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.owens_t.html).
 pub fn owens_t(h: f64, a: f64) -> f64 {
@@ -3023,16 +2994,15 @@ pub fn owens_t(h: f64, a: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::tklmbda(0.5_f64,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy tklmbda](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.tklmbda.html).
 ///
@@ -3055,17 +3025,24 @@ pub fn tklmbda<T: sci_core::Float>(x: T, lambda: T) -> T {
 ///
 /// ## Returns
 ///
-/// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
+/// The pair `(D_v(x), D′_v(x))`, with derivative taken with respect to `x`.
+/// Both entries are NaN on invalid inputs or backend failure.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Solves `y″ + (v + 1/2 − x²/4)y = 0` using bounded binary64 series,
+/// asymptotics, and order recurrences. Finite inputs require `abs(v) <= 4096`.
+/// The recessive normalization is `D_v(x) ~ x^v exp(−x²/4)` as `x → +∞`.
+/// Accuracy is limited near zeros and in dominant/recessive transition regions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::pbdv(0.5,1.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy pbdv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pbdv.html).
 ///
@@ -3085,17 +3062,24 @@ pub fn pbdv(v: f64, x: f64) -> (f64, f64) {
 ///
 /// ## Returns
 ///
-/// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
+/// The pair `(V_v(x), V′_v(x))`, with derivative taken with respect to `x`.
+/// Both entries are NaN on invalid inputs or backend failure.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Uses the real standard parabolic-cylinder V solution of
+/// `y″ + (v + 1/2 − x²/4)y = 0`, with the Zhang–Jin/SciPy normalization.
+/// Binary64 series, asymptotics, and bounded order recurrences require finite
+/// inputs and `abs(v) <= 4096`. Relative accuracy degrades near zeros.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::pbvv(0.5,1.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy pbvv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pbvv.html).
 ///
@@ -3115,17 +3099,24 @@ pub fn pbvv(v: f64, x: f64) -> (f64, f64) {
 ///
 /// ## Returns
 ///
-/// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
+/// The pair `(W(a,x), W′(a,x))`, with derivative taken with respect to `x`.
+/// Out-of-range or nonfinite inputs return `(NaN, NaN)`.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Solves `y″ + (x²/4 − a)y = 0` in the real standard W normalization
+/// (DLMF 12.14). Finite `abs(a), abs(x) <= 5` are required. The even and odd
+/// power series use 202 coefficient slots and 200 recurrence updates; there
+/// is no configurable tolerance. Accuracy is parameter dependent.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::pbwa(0.5,1.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy pbwa](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pbwa.html).
 pub fn pbwa(a: f64, x: f64) -> (f64, f64) {
@@ -3141,16 +3132,24 @@ pub fn pbwa(a: f64, x: f64) -> (f64, f64) {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Definition and numerical behavior
+///
+/// Solves `y″ + [a − 2q cos(2z)]y = 0`. The characteristic value selects the periodic
+/// even solution. A tridiagonal Fourier recurrence uses at most 251 terms,
+/// 128 Sturm bisections, and four inverse iterations. Work limits do not
+/// guarantee uniform accuracy near degeneracies.
+///
+/// [NIST DLMF, Mathieu functions](https://dlmf.nist.gov/28).
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::mathieu_a(2,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy mathieu_a](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.mathieu_a.html).
 /// ## Work limits
@@ -3173,16 +3172,24 @@ pub fn mathieu_a(m: u32, q: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Definition and numerical behavior
+///
+/// Solves `y″ + [a − 2q cos(2z)]y = 0`. The characteristic value selects the periodic
+/// odd solution. A tridiagonal Fourier recurrence uses at most 251 terms,
+/// 128 Sturm bisections, and four inverse iterations. Work limits do not
+/// guarantee uniform accuracy near degeneracies.
+///
+/// [NIST DLMF, Mathieu functions](https://dlmf.nist.gov/28).
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::mathieu_b(2,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy mathieu_b](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.mathieu_b.html).
 /// ## Work limits
@@ -3205,16 +3212,26 @@ pub fn mathieu_b(m: u32, q: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Definition and numerical behavior
+///
+/// Solves `y″ + [a − 2q cos(2z)]y = 0`. The input `x` is in degrees,
+/// with `z = x*π/180`, while the returned derivative is **with respect to z
+/// in radians**. Fourier coefficients have squared integral π over `[0,2π]`
+/// (at `q = 0`, `ce_0 = 1/sqrt(2)`). A bounded tridiagonal Fourier recurrence
+/// supplies the characteristic value and coefficients; large arguments lose
+/// phase precision. Returns `(value, dvalue/dz)`.
+///
+/// [NIST DLMF, Mathieu functions](https://dlmf.nist.gov/28).
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::mathieu_cem(2,0.5,30.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy mathieu_cem](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.mathieu_cem.html).
 /// ## Work limits
@@ -3237,16 +3254,26 @@ pub fn mathieu_cem(m: u32, q: f64, x: f64) -> (f64, f64) {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Definition and numerical behavior
+///
+/// Solves `y″ + [a − 2q cos(2z)]y = 0`. The input `x` is in degrees,
+/// with `z = x*π/180`, while the returned derivative is **with respect to z
+/// in radians**. Fourier coefficients have squared integral π over `[0,2π]`
+/// (at `q = 0`, `ce_0 = 1/sqrt(2)`). A bounded tridiagonal Fourier recurrence
+/// supplies the characteristic value and coefficients; large arguments lose
+/// phase precision. Returns `(value, dvalue/dz)`.
+///
+/// [NIST DLMF, Mathieu functions](https://dlmf.nist.gov/28).
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::mathieu_sem(2,0.5,30.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy mathieu_sem](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.mathieu_sem.html).
 /// ## Work limits
@@ -3269,16 +3296,24 @@ pub fn mathieu_sem(m: u32, q: f64, x: f64) -> (f64, f64) {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Definition and numerical behavior
+///
+/// Solves `y″ − [a − 2q cosh(2x)]y = 0`. The coordinate `x` is dimensionless;
+/// the returned pair is `(value, dvalue/dx)` in the real standard modified
+/// Mathieu normalization used by SciPy. Bessel-product recurrences are bounded;
+/// large `abs(x)` can overflow intermediate hyperbolic/exponential factors.
+///
+/// [NIST DLMF, Mathieu functions](https://dlmf.nist.gov/28).
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::mathieu_modcem1(2,0.5,0.3);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy mathieu_modcem1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.mathieu_modcem1.html).
 /// ## Work limits
@@ -3301,16 +3336,24 @@ pub fn mathieu_modcem1(m: u32, q: f64, x: f64) -> (f64, f64) {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Definition and numerical behavior
+///
+/// Solves `y″ − [a − 2q cosh(2x)]y = 0`. The coordinate `x` is dimensionless;
+/// the returned pair is `(value, dvalue/dx)` in the real standard modified
+/// Mathieu normalization used by SciPy. Bessel-product recurrences are bounded;
+/// large `abs(x)` can overflow intermediate hyperbolic/exponential factors.
+///
+/// [NIST DLMF, Mathieu functions](https://dlmf.nist.gov/28).
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::mathieu_modcem2(2,0.5,0.3);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy mathieu_modcem2](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.mathieu_modcem2.html).
 /// ## Work limits
@@ -3333,16 +3376,24 @@ pub fn mathieu_modcem2(m: u32, q: f64, x: f64) -> (f64, f64) {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Definition and numerical behavior
+///
+/// Solves `y″ − [a − 2q cosh(2x)]y = 0`. The coordinate `x` is dimensionless;
+/// the returned pair is `(value, dvalue/dx)` in the real standard modified
+/// Mathieu normalization used by SciPy. Bessel-product recurrences are bounded;
+/// large `abs(x)` can overflow intermediate hyperbolic/exponential factors.
+///
+/// [NIST DLMF, Mathieu functions](https://dlmf.nist.gov/28).
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::mathieu_modsem1(2,0.5,0.3);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy mathieu_modsem1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.mathieu_modsem1.html).
 /// ## Work limits
@@ -3365,16 +3416,24 @@ pub fn mathieu_modsem1(m: u32, q: f64, x: f64) -> (f64, f64) {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Definition and numerical behavior
+///
+/// Solves `y″ − [a − 2q cosh(2x)]y = 0`. The coordinate `x` is dimensionless;
+/// the returned pair is `(value, dvalue/dx)` in the real standard modified
+/// Mathieu normalization used by SciPy. Bessel-product recurrences are bounded;
+/// large `abs(x)` can overflow intermediate hyperbolic/exponential factors.
+///
+/// [NIST DLMF, Mathieu functions](https://dlmf.nist.gov/28).
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::mathieu_modsem2(2,0.5,0.3);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy mathieu_modsem2](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.mathieu_modsem2.html).
 /// ## Work limits
@@ -3397,16 +3456,15 @@ pub fn mathieu_modsem2(m: u32, q: f64, x: f64) -> (f64, f64) {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ber(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ber](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ber.html).
 ///
@@ -3430,16 +3488,15 @@ pub fn ber<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::bei(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy bei](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bei.html).
 ///
@@ -3463,16 +3520,15 @@ pub fn bei<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ker(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ker](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ker.html).
 ///
@@ -3496,16 +3552,15 @@ pub fn ker<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::kei(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy kei](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kei.html).
 ///
@@ -3529,16 +3584,15 @@ pub fn kei<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::berp(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy berp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.berp.html).
 ///
@@ -3562,16 +3616,15 @@ pub fn berp<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::beip(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy beip](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.beip.html).
 ///
@@ -3595,16 +3648,15 @@ pub fn beip<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::kerp(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy kerp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kerp.html).
 ///
@@ -3628,16 +3680,15 @@ pub fn kerp<T: sci_core::Float>(x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::keip(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy keip](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.keip.html).
 ///
@@ -3666,7 +3717,7 @@ pub fn keip<T: sci_core::Float>(x: T) -> T {
 ///
 /// Returns [`Error::InvalidInput`] when the requested count is outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ber_zeros(3)?;
@@ -3674,7 +3725,7 @@ pub fn keip<T: sci_core::Float>(x: T) -> T {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ber_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ber_zeros.html).
 pub fn ber_zeros(nt: usize) -> Result<Vec<f64>> {
@@ -3700,7 +3751,7 @@ pub fn ber_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// Returns [`Error::InvalidInput`] when the requested count is outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::bei_zeros(3)?;
@@ -3708,7 +3759,7 @@ pub fn ber_zeros(nt: usize) -> Result<Vec<f64>> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy bei_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bei_zeros.html).
 pub fn bei_zeros(nt: usize) -> Result<Vec<f64>> {
@@ -3734,7 +3785,7 @@ pub fn bei_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// Returns [`Error::InvalidInput`] when the requested count is outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ker_zeros(3)?;
@@ -3742,7 +3793,7 @@ pub fn bei_zeros(nt: usize) -> Result<Vec<f64>> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ker_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ker_zeros.html).
 pub fn ker_zeros(nt: usize) -> Result<Vec<f64>> {
@@ -3768,7 +3819,7 @@ pub fn ker_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// Returns [`Error::InvalidInput`] when the requested count is outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::kei_zeros(3)?;
@@ -3776,7 +3827,7 @@ pub fn ker_zeros(nt: usize) -> Result<Vec<f64>> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy kei_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kei_zeros.html).
 pub fn kei_zeros(nt: usize) -> Result<Vec<f64>> {
@@ -3802,7 +3853,7 @@ pub fn kei_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// Returns [`Error::InvalidInput`] when the requested count is outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::berp_zeros(3)?;
@@ -3810,7 +3861,7 @@ pub fn kei_zeros(nt: usize) -> Result<Vec<f64>> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy berp_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.berp_zeros.html).
 pub fn berp_zeros(nt: usize) -> Result<Vec<f64>> {
@@ -3836,7 +3887,7 @@ pub fn berp_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// Returns [`Error::InvalidInput`] when the requested count is outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::beip_zeros(3)?;
@@ -3844,7 +3895,7 @@ pub fn berp_zeros(nt: usize) -> Result<Vec<f64>> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy beip_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.beip_zeros.html).
 pub fn beip_zeros(nt: usize) -> Result<Vec<f64>> {
@@ -3870,7 +3921,7 @@ pub fn beip_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// Returns [`Error::InvalidInput`] when the requested count is outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::kerp_zeros(3)?;
@@ -3878,7 +3929,7 @@ pub fn beip_zeros(nt: usize) -> Result<Vec<f64>> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy kerp_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kerp_zeros.html).
 pub fn kerp_zeros(nt: usize) -> Result<Vec<f64>> {
@@ -3916,7 +3967,7 @@ pub fn kerp_zeros(nt: usize) -> Result<Vec<f64>> {
 /// `keip_zeros` can differ by about 4e-10 there. Accuracy remains limited
 /// by binary64 argument reduction for large zeros.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::keip_zeros(3)?;
@@ -3924,7 +3975,7 @@ pub fn kerp_zeros(nt: usize) -> Result<Vec<f64>> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [DLMF Kelvin definition, Eq. 10.61.2](https://dlmf.nist.gov/10.61.E2).
 /// - [DLMF Bessel K derivatives, §10.29](https://dlmf.nist.gov/10.29).
@@ -3962,7 +4013,7 @@ pub fn keip_zeros(nt: usize) -> Result<Vec<f64>> {
 /// This avoids cancellation in the Kelvin series near x=9.4; SciPy's
 /// `keip_zeros` can differ by about 4e-10 there. All Kelvin zero families share this bounded solver and scaled Bessel identities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::kelvin_zeros(3)?;
@@ -3970,7 +4021,7 @@ pub fn keip_zeros(nt: usize) -> Result<Vec<f64>> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [DLMF Kelvin definition, Eq. 10.61.2](https://dlmf.nist.gov/10.61.E2).
 /// - [DLMF Bessel K derivatives, §10.29](https://dlmf.nist.gov/10.29).
@@ -4002,16 +4053,15 @@ pub fn kelvin_zeros(nt: usize) -> Result<[Vec<f64>; 8]> {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::lpmv(1,2.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy lpmv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.lpmv.html).
 ///
@@ -4032,16 +4082,15 @@ pub fn lpmv(m: i32, v: f64, x: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::legendre_p(3,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy legendre_p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.legendre_p.html).
 ///
@@ -4065,16 +4114,15 @@ pub fn legendre_p<T: sci_core::Float>(n: i32, x: T) -> T {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::assoc_legendre_p(3,1,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy assoc_legendre_p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.assoc_legendre_p.html).
 pub fn assoc_legendre_p(n: i32, m: i32, x: f64) -> f64 {
@@ -4090,16 +4138,15 @@ pub fn assoc_legendre_p(n: i32, m: i32, x: f64) -> f64 {
 /// ## Returns
 ///
 /// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
-/// No NumPy broadcasting or output buffers are provided.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::sph_legendre_p(3,1,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy sph_legendre_p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sph_legendre_p.html).
 pub fn sph_legendre_p(n: i32, m: i32, theta: f64) -> f64 {
@@ -4123,7 +4170,7 @@ pub fn sph_legendre_p(n: i32, m: i32, theta: f64) -> f64 {
 /// the documented limits. Values of `x` are passed through to the backend,
 /// including singular and nonfinite values.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::lqn(3,0.3)?;
@@ -4131,7 +4178,7 @@ pub fn sph_legendre_p(n: i32, m: i32, theta: f64) -> f64 {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy lqn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.lqn.html).
 pub fn lqn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -4165,7 +4212,7 @@ pub fn lqn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// Returns [`Error::DimensionMismatch`] if backend output has an unexpected shape.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::lqmn(2,3,0.3)?;
@@ -4173,7 +4220,7 @@ pub fn lqn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy lqmn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.lqmn.html).
 pub fn lqmn(m: usize, n: usize, x: f64) -> Result<ValueDerivativeMatrices> {
@@ -4201,13 +4248,13 @@ pub fn lqmn(m: usize, n: usize, x: f64) -> Result<ValueDerivativeMatrices> {
 /// All real values; infinite endpoints give zero and one.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::expit(0.5).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy expit](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.expit.html).
 pub fn expit(x: f64) -> f64 {
@@ -4226,13 +4273,13 @@ pub fn expit(x: f64) -> f64 {
 /// p in `[0,1]`; endpoints give signed infinity and outside gives NaN.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::logit(0.3).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy logit](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.logit.html).
 pub fn logit(p: f64) -> f64 {
@@ -4246,13 +4293,13 @@ pub fn logit(p: f64) -> f64 {
 /// All real values.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::softplus(0.5).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy softplus](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.softplus.html).
 pub fn softplus(x: f64) -> f64 {
@@ -4270,13 +4317,13 @@ pub fn softplus(x: f64) -> f64 {
 /// All real values.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::log_expit(-100.0).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy log_expit](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.log_expit.html).
 pub fn log_expit(x: f64) -> f64 {
@@ -4290,13 +4337,13 @@ pub fn log_expit(x: f64) -> f64 {
 /// All real values.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::exprel(0.000001).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy exprel](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.exprel.html).
 pub fn exprel(x: f64) -> f64 {
@@ -4316,13 +4363,13 @@ pub fn exprel(x: f64) -> f64 {
 /// Finite real x; infinite inputs return NaN.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::sinc(0.5).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy sinc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sinc.html).
 pub fn sinc(x: f64) -> f64 {
@@ -4341,13 +4388,13 @@ pub fn sinc(x: f64) -> f64 {
 /// Finite real x in radians.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::cosm1(0.000001).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy cosm1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.cosm1.html).
 pub fn cosm1(x: f64) -> f64 {
@@ -4361,13 +4408,13 @@ pub fn cosm1(x: f64) -> f64 {
 /// Finite real x.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::sindg(30.0).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy sindg](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sindg.html).
 pub fn sindg(x: f64) -> f64 {
@@ -4390,13 +4437,13 @@ pub fn sindg(x: f64) -> f64 {
 /// Finite real x.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::cosdg(30.0).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy cosdg](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.cosdg.html).
 pub fn cosdg(x: f64) -> f64 {
@@ -4410,13 +4457,13 @@ pub fn cosdg(x: f64) -> f64 {
 /// Finite real x away from odd multiples of 90°.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::tandg(30.0).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy tandg](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.tandg.html).
 pub fn tandg(x: f64) -> f64 {
@@ -4430,13 +4477,13 @@ pub fn tandg(x: f64) -> f64 {
 /// Finite real x away from multiples of 180°.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::cotdg(30.0).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy cotdg](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.cotdg.html).
 pub fn cotdg(x: f64) -> f64 {
@@ -4450,13 +4497,13 @@ pub fn cotdg(x: f64) -> f64 {
 /// Finite real components; signs are added algebraically.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::radian(30.0,20.0,10.0).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy radian](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.radian.html).
 pub fn radian(d: f64, m: f64, s: f64) -> f64 {
@@ -4470,13 +4517,13 @@ pub fn radian(d: f64, m: f64, s: f64) -> f64 {
 /// Positive x; zero gives zero and negative x gives −∞.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::entr(0.3).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy entr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.entr.html).
 pub fn entr(x: f64) -> f64 {
@@ -4504,11 +4551,11 @@ pub fn entr(x: f64) -> f64 {
 /// Constant work. Nearby arguments use `log1p((x-y)/y)` to retain their
 /// difference. Extreme ratios use separate logarithms to avoid ratio range
 /// errors. True overflow/underflow and binary64 rounding remain.
-/// # Examples
+/// ## Examples
 /// ```
 /// assert!(sci_special::rel_entr(0.3,0.5).is_finite());
 /// ```
-/// # References
+/// ## References
 /// [SciPy rel_entr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.rel_entr.html).
 pub fn rel_entr(x: f64, y: f64) -> f64 {
     if x.is_nan() || y.is_nan() {
@@ -4548,11 +4595,11 @@ fn log_ratio(x: f64, y: f64) -> f64 {
 /// avoids cancellation, using at most 65 terms for |d|≤0.5. Other ratios use
 /// scaled logarithms and fused multiply-add. True overflow/underflow and
 /// binary64 rounding remain. Work and storage are constant.
-/// # Examples
+/// ## Examples
 /// ```
 /// assert!(sci_special::kl_div(0.3,0.5) > 0.0);
 /// ```
-/// # References
+/// ## References
 /// [SciPy kl_div](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kl_div.html).
 pub fn kl_div(x: f64, y: f64) -> f64 {
     if x.is_nan() || y.is_nan() {
@@ -4595,13 +4642,13 @@ pub fn kl_div(x: f64, y: f64) -> f64 {
 /// delta≥0; negative delta gives +∞ and NaN propagates.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::huber(1.0,2.0).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy huber](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.huber.html).
 pub fn huber(delta: f64, r: f64) -> f64 {
@@ -4629,11 +4676,11 @@ pub fn huber(delta: f64, r: f64) -> f64 {
 /// Constant work. Rationalized formulas normalize by the larger of delta and
 /// |r| before evaluating a hypot, avoiding cancellation and an overflowing
 /// denominator. True overflow/underflow and binary64 rounding remain.
-/// # Examples
+/// ## Examples
 /// ```
 /// assert_eq!(sci_special::pseudo_huber(1e308, 1.0), 0.5);
 /// ```
-/// # References
+/// ## References
 /// [SciPy pseudo_huber](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pseudo_huber.html).
 pub fn pseudo_huber(delta: f64, r: f64) -> f64 {
     if delta.is_nan() || r.is_nan() || delta < 0.0 {
@@ -4662,13 +4709,13 @@ pub fn pseudo_huber(delta: f64, r: f64) -> f64 {
 /// Real x and y≥0; negative y gives NaN unless x=0.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::xlogy(0.0,0.0).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy xlogy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.xlogy.html).
 pub fn xlogy(x: f64, y: f64) -> f64 {
@@ -4686,13 +4733,13 @@ pub fn xlogy(x: f64, y: f64) -> f64 {
 /// Real x and y≥−1; NaN propagates.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::xlog1py(0.3,0.000001).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy xlog1py](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.xlog1py.html).
 pub fn xlog1py(x: f64, y: f64) -> f64 {
@@ -4710,13 +4757,13 @@ pub fn xlog1py(x: f64, y: f64) -> f64 {
 /// Real-valued power domain: positive x, or negative x with integer y.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::powm1(1.000001,0.3).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy powm1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.powm1.html).
 pub fn powm1(x: f64, y: f64) -> f64 {
@@ -4751,13 +4798,13 @@ pub fn powm1(x: f64, y: f64) -> f64 {
 /// true overflow, underflow, and binary64 rounding remain. Correct rounding
 /// is not guaranteed. Endpoint values are handled before the limiting formula.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert_eq!(sci_special::boxcox(4.0_f64, 0.0), 4.0_f64.ln());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// [SciPy boxcox](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.boxcox.html).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
@@ -4795,13 +4842,13 @@ pub fn boxcox<T: sci_core::Float>(x: T, lambda: T) -> T {
 /// true overflow, underflow, and binary64 rounding remain. Correct rounding
 /// is not guaranteed. Endpoint values are handled before the limiting formula.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert_eq!(sci_special::boxcox1p(3.0_f64, 0.0), 4.0_f64.ln());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// [SciPy boxcox1p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.boxcox1p.html).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
@@ -4820,13 +4867,13 @@ pub fn boxcox1p<T: sci_core::Float>(x: T, lambda: T) -> T {
 /// 1+lambda*y≥0; lambda=0 uses exp(y).
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::inv_boxcox(0.5,0.3).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy inv_boxcox](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.inv_boxcox.html).
 pub fn inv_boxcox(y: f64, lambda: f64) -> f64 {
@@ -4844,13 +4891,13 @@ pub fn inv_boxcox(y: f64, lambda: f64) -> f64 {
 /// 1+lambda*y≥0; lambda=0 uses expm1(y).
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::inv_boxcox1p(0.000001,0.3).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy inv_boxcox1p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.inv_boxcox1p.html).
 pub fn inv_boxcox1p(y: f64, lambda: f64) -> f64 {
@@ -4868,13 +4915,13 @@ pub fn inv_boxcox1p(y: f64, lambda: f64) -> f64 {
 /// Finite positive a,b and x in `[0,1]`; the upper tail is evaluated directly.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::betaincc(2.5,3.5,0.7).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy betaincc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.betaincc.html).
 pub fn betaincc(a: f64, b: f64, x: f64) -> f64 {
@@ -4888,13 +4935,13 @@ pub fn betaincc(a: f64, b: f64, x: f64) -> f64 {
 /// Finite positive a,b and q in `[0,1]`.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::betainccinv(2.5,3.5,0.3).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy betainccinv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.betainccinv.html).
 pub fn betainccinv(a: f64, b: f64, q: f64) -> f64 {
@@ -4908,13 +4955,13 @@ pub fn betainccinv(a: f64, b: f64, q: f64) -> f64 {
 /// sd>0 and p in (0,1).
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::nrdtrimn(0.3,0.5,1.5).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nrdtrimn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nrdtrimn.html).
 pub fn nrdtrimn(p: f64, sd: f64, x: f64) -> f64 {
@@ -4932,13 +4979,13 @@ pub fn nrdtrimn(p: f64, sd: f64, x: f64) -> f64 {
 /// p in (0,1) excluding 1/2, and x−mean must have the same sign as Φ⁻¹(p).
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::nrdtrisd(1.5,0.3,0.5).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nrdtrisd](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nrdtrisd.html).
 pub fn nrdtrisd(mean: f64, p: f64, x: f64) -> f64 {
@@ -4953,13 +5000,13 @@ pub fn nrdtrisd(mean: f64, p: f64, x: f64) -> f64 {
 /// b,x>0 and p in `[0,1]`.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::gdtria(0.3,2.5,0.5).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy gdtria](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gdtria.html).
 pub fn gdtria(p: f64, b: f64, x: f64) -> f64 {
@@ -4977,13 +5024,13 @@ pub fn gdtria(p: f64, b: f64, x: f64) -> f64 {
 /// a,b>0 and p in `[0,1]`.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::gdtrix(1.5,2.5,0.3).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy gdtrix](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gdtrix.html).
 pub fn gdtrix(a: f64, b: f64, p: f64) -> f64 {
@@ -5001,13 +5048,13 @@ pub fn gdtrix(a: f64, b: f64, p: f64) -> f64 {
 /// x>0 and p in (0,1).
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::chdtriv(0.3,2.5).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chdtriv](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chdtriv.html).
 pub fn chdtriv(p: f64, x: f64) -> f64 {
@@ -5021,13 +5068,13 @@ pub fn chdtriv(p: f64, x: f64) -> f64 {
 /// Integer order n and real x.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::jn(2,0.5).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy jn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jn.html).
 pub fn jn(n: i32, x: f64) -> f64 {
@@ -5041,13 +5088,13 @@ pub fn jn(n: i32, x: f64) -> f64 {
 /// Integer order n and positive x.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::yn(2,0.5).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy yn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.yn.html).
 pub fn yn(n: i32, x: f64) -> f64 {
@@ -5061,13 +5108,13 @@ pub fn yn(n: i32, x: f64) -> f64 {
 /// Integer order n and positive x.
 /// NaN propagates; divergent values and overflow use IEEE infinities.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!(sci_special::kn(2,0.5).is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy kn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kn.html).
 pub fn kn(n: i32, x: f64) -> f64 {

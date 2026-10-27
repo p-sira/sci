@@ -24,16 +24,7 @@ real_kernel! {
     ///
     /// Inverts w*exp(w) for w >= -1. Preserves signed zero.
     lambertw0(x) {
-        // The backend's rational approximation has absolute error near zero.
-        // This Taylor expansion preserves relative accuracy and signed subnormals.
-        if x.abs() <= 1e-3 {
-            x * (1.0 + x * (-1.0 + x * (1.5 + x * (-8.0 / 3.0
-                + x * (125.0 / 24.0 - 10.8 * x)))))
-        } else if let Some(value) = branch_series(x, false) {
-            value
-        } else {
-            lambert_w::lambert_w0(x)
-        }
+        branch_series(x, false).unwrap_or_else(|| lambert_w::lambert_w0(x))
     }
 }
 

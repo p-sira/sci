@@ -15,11 +15,14 @@ stencil error.
 Extreme IEEE range and branch behavior are exercised separately in Rust.
 """
 import csv
+import json
 import re
 from pathlib import Path
 import numpy as np
 import scipy
 from scipy import constants, fft, fftpack, integrate, interpolate, special, stats
+
+from elliptic_reference import extended_reference
 
 if (np.__version__, scipy.__version__) != ("2.5.4", "1.18.1"):
     raise RuntimeError("Use NumPy 2.5.4 and SciPy 1.18.1")
@@ -27,8 +30,11 @@ ROOT = Path(__file__).resolve().parents[1] / "fixtures"
 
 
 def elliptic(name, x):
+    handled, value = extended_reference(name, x)
+    if handled:
+        return value
     direct = {"ellipk", "ellipe", "ellipkinc", "ellipeinc", "elliprf", "elliprd", "elliprg", "elliprj", "elliprc", "ellipkm1"}
-    if name == "ellipkinc":
+    if name in {"ellipf", "ellipkinc"}:
         return special.ellipkinc(*x)
     if name in direct:
         return getattr(special, name)(*x)
@@ -165,8 +171,14 @@ with (ROOT/"generic_float_inputs.csv").open() as source, (ROOT/"generic_float_ex
         for module in (repository / "crates" / f"sci-{group}" / "src").glob("*.rs"):
             expected_apis.update((group, name) for name in re.findall(r"pub fn (\w+)<T:", module.read_text()))
     actual_apis = {(row["group"], row["function"]) for row in cases}
-    if actual_apis != expected_apis:
-        raise RuntimeError(f"Precision coverage mismatch: {actual_apis ^ expected_apis}")
+    # The scalar migration added a separate f32/f64 fixture suite. Count its
+    # public API references without duplicating those rows in this older suite.
+    scalar_cases = json.loads((Path(__file__).parent / "special_float_cases.json").read_text())
+    separate_apis = {("special", row["name"]) for row in scalar_cases if "T" in row["types"]}
+    missing = expected_apis - actual_apis - separate_apis
+    unexpected = actual_apis - expected_apis
+    if missing or unexpected:
+        raise RuntimeError(f"Precision coverage mismatch: missing={missing}, unexpected={unexpected}")
     for i,row in enumerate(cases):
         for precision,dtype in [(32,np.float32),(64,np.float64)]:
             x=np.asarray(row["values"].split(";"),dtype=dtype).astype(np.float64)

@@ -35550,5 +35550,424 @@
       30,
       0.5
     ]
+  },
+  {
+    "name": "ellipf",
+    "args": [
+      0.4,
+      1.0
+    ]
+  },
+  {
+    "name": "ellipf",
+    "args": [
+      -0.4,
+      1.0
+    ]
+  },
+  {
+    "name": "ellipf",
+    "args": [
+      0.4,
+      2.0
+    ]
+  },
+  {
+    "name": "ellipf",
+    "args": [
+      -0.4,
+      2.0
+    ]
+  },
+  {
+    "name": "ellipf",
+    "args": [
+      0.2,
+      8.0
+    ]
+  },
+  {
+    "name": "ellipkinc",
+    "args": [
+      0.4,
+      1.0
+    ]
+  },
+  {
+    "name": "ellipkinc",
+    "args": [
+      -0.4,
+      1.0
+    ]
+  },
+  {
+    "name": "ellipkinc",
+    "args": [
+      0.4,
+      2.0
+    ]
+  },
+  {
+    "name": "ellipkinc",
+    "args": [
+      -0.4,
+      2.0
+    ]
+  },
+  {
+    "name": "ellipkinc",
+    "args": [
+      0.2,
+      8.0
+    ]
+  },
+  {
+    "name": "ellipeinc",
+    "args": [
+      0.4,
+      1.0
+    ]
+  },
+  {
+    "name": "ellipeinc",
+    "args": [
+      -0.4,
+      1.0
+    ]
+  },
+  {
+    "name": "ellipeinc",
+    "args": [
+      0.4,
+      2.0
+    ]
+  },
+  {
+    "name": "ellipeinc",
+    "args": [
+      -0.4,
+      2.0
+    ]
+  },
+  {
+    "name": "ellipeinc",
+    "args": [
+      0.2,
+      8.0
+    ]
+  },
+  {
+    "name": "ellipdinc",
+    "args": [
+      0.4,
+      1.0
+    ]
+  },
+  {
+    "name": "ellipdinc",
+    "args": [
+      -0.4,
+      1.0
+    ]
+  },
+  {
+    "name": "ellipdinc",
+    "args": [
+      0.4,
+      2.0
+    ]
+  },
+  {
+    "name": "ellipdinc",
+    "args": [
+      -0.4,
+      2.0
+    ]
+  },
+  {
+    "name": "ellipdinc",
+    "args": [
+      0.2,
+      8.0
+    ]
+  },
+  {
+    "name": "ellippi",
+    "args": [
+      2.0,
+      0.3
+    ]
+  },
+  {
+    "name": "ellippi",
+    "args": [
+      1.5,
+      -0.5
+    ]
+  },
+  {
+    "name": "ellippi",
+    "args": [
+      4.0,
+      0.8
+    ]
+  },
+  {
+    "name": "ellippiinc",
+    "args": [
+      0.4,
+      1.0,
+      0.3
+    ]
+  },
+  {
+    "name": "ellippiinc",
+    "args": [
+      0.4,
+      2.0,
+      0.3
+    ]
+  },
+  {
+    "name": "ellippiinc",
+    "args": [
+      1.2,
+      2.0,
+      0.3
+    ]
+  },
+  {
+    "name": "ellippiinc",
+    "args": [
+      -1.2,
+      2.0,
+      0.3
+    ]
+  },
+  {
+    "name": "ellippiinc",
+    "args": [
+      0.4,
+      0.2,
+      2.0
+    ]
+  },
+  {
+    "name": "ellippiinc_bulirsch",
+    "args": [
+      0.4,
+      1.0,
+      0.3
+    ]
+  },
+  {
+    "name": "ellippiinc_bulirsch",
+    "args": [
+      0.4,
+      2.0,
+      0.3
+    ]
+  },
+  {
+    "name": "ellippiinc_bulirsch",
+    "args": [
+      1.2,
+      2.0,
+      0.3
+    ]
+  },
+  {
+    "name": "ellippiinc_bulirsch",
+    "args": [
+      -1.2,
+      2.0,
+      0.3
+    ]
+  },
+  {
+    "name": "ellippiinc_bulirsch",
+    "args": [
+      0.4,
+      0.2,
+      2.0
+    ]
+  },
+  {
+    "name": "elliprc",
+    "args": [
+      1.0,
+      -2.0
+    ]
+  },
+  {
+    "name": "elliprc",
+    "args": [
+      0.0,
+      -1.0
+    ]
+  },
+  {
+    "name": "elliprj",
+    "args": [
+      1.0,
+      2.0,
+      3.0,
+      -1.0
+    ]
+  },
+  {
+    "name": "elliprj",
+    "args": [
+      0.0,
+      1.0,
+      2.0,
+      -0.5
+    ]
+  },
+  {
+    "name": "cel",
+    "args": [
+      0.8,
+      -1.0,
+      1.0,
+      0.5
+    ]
+  },
+  {
+    "name": "cel3",
+    "args": [
+      0.8,
+      -1.0
+    ]
+  },
+  {
+    "name": "el3",
+    "args": [
+      0.3,
+      0.8,
+      -1.0
+    ]
+  },
+  {
+    "name": "el3",
+    "args": [
+      2.0,
+      0.8,
+      -1.0
+    ]
+  },
+  {
+    "name": "el3",
+    "args": [
+      -2.0,
+      0.8,
+      -1.0
+    ]
+  },
+  {
+    "name": "el3",
+    "args": [
+      0.4,
+      0.8,
+      0.0
+    ]
+  },
+  {
+    "name": "jacobi_zeta",
+    "args": [
+      0.4,
+      1.0
+    ]
+  },
+  {
+    "name": "jacobi_zeta",
+    "args": [
+      2.0,
+      1.0
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      -0.3678794411714423
+    ]
+  },
+  {
+    "name": "lambertwm1",
+    "args": [
+      -0.3678794411714423
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      -0.3678794411714422
+    ]
+  },
+  {
+    "name": "lambertwm1",
+    "args": [
+      -0.3678794411714422
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      -0.36787944117144145
+    ]
+  },
+  {
+    "name": "lambertwm1",
+    "args": [
+      -0.36787944117144145
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      -0.3678794411714368
+    ]
+  },
+  {
+    "name": "lambertwm1",
+    "args": [
+      -0.3678794411714368
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      -0.3678794411658912
+    ]
+  },
+  {
+    "name": "lambertwm1",
+    "args": [
+      -0.3678794411658912
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      5e-324
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      -5e-324
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      1e-100
+    ]
+  },
+  {
+    "name": "lambertw",
+    "args": [
+      -1e-100
+    ]
   }
 ]

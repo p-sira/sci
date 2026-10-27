@@ -1,44 +1,57 @@
 //! # Elliptic integrals
 //!
-//! Legendre and Carlson integrals evaluated by ellip in the selected floating-point precision.
-//! The parameter convention is `m = k²`; amplitudes are radians.
-//! These wrappers restrict inputs to finite values and nonsingular real domains.
-//! The narrower domains make errors predictable across backend versions.
+//! Legendre, Carlson, and Bulirsch integrals use Ellip's notation and argument
+//! ordering. Evaluation runs in the selected `sci_core::Float` precision.
 //!
-//! ## Parameter conventions
+//! ## Parameters and conventions
 //!
-//! Legendre integrals use the elliptic parameter `m`, the characteristic `n`
-//! for third-kind integrals, and the amplitude `phi` in radians for incomplete
-//! integrals. Carlson integrals use real arguments `x`, `y`, and `z`;
-//! `p` is the additional third-kind argument. No modulus-to-parameter
-//! conversion is performed.
+//! `m` is the elliptic parameter (`m = k²`), `n` is the third-kind characteristic,
+//! and `phi` is an amplitude in radians. The incomplete Legendre integrals are
+//! `F(phi, m)`, `E(phi, m)`, `Π(phi, n, m)`, and `D(phi, m)`; [`ellipf`] evaluates
+//! `F`. [`ellipkinc`] remains an alias. Carlson arguments are `x`, `y`, `z`, and
+//! `p`. Bulirsch uses the complementary modulus `kc`, with `kc² = 1 − m`, the
+//! tangent amplitude `x = tan(phi)`, and `p = 1 − n`. These parameters are
+//! dimensionless. Negative `m` is supported even though it has no real modulus.
 //!
-//! ## Domain
+//! ## Domain and special values
 //!
-//! These functions evaluate ordinary real integrals without principal-value
-//! continuation. Some backend functions support larger real or principal-value
-//! domains; Sci accepts only the finite domains documented below.
-//! NaN and infinity inputs are rejected. Numerical evaluation errors use the
-//! shared error type; a nonfinite backend result is an evaluation error.
+//! Sci accepts finite inputs and finite real results. NaN and infinity inputs
+//! return [`crate::Error::InvalidInput`]; divergent poles or overflow may return a
+//! backend error or [`crate::Error::NonFiniteEvaluation`]. Ellip's supported Cauchy
+//! principal values are available for third-kind integrals and [`elliprc`].
+//! No complex continuation is performed. Each function documents its real domain.
+//!
+//! SciPy supplies independent references on shared domains. Full SciPy parity is
+//! not a design requirement; Ellip defines the elliptic notation and supported
+//! algorithms, including real and principal-value cases beyond the old wrappers.
 //!
 //! ## Numerical behavior
 //!
-//! Evaluation uses the private ellip backend in the selected type (`f32` or `f64`). Accuracy
-//! depends on the arguments; relative error can grow near zeros and singularities.
-//! Sci provides no configurable tolerance or iteration limit for these wrappers.
+//! The checked Ellip algorithms use series, transformations, and bounded
+//! duplication or Bulirsch iterations. Sci exposes no tolerance or iteration
+//! controls. Computation stays in `T`; no binary64 promotion is imposed here.
+//! Relative accuracy can deteriorate near zeros and poles, and large-amplitude
+//! reduction is limited by the selected floating-point precision.
+//!
+//! ## References
+//!
+//! - [Ellip 1.2.3](https://docs.rs/ellip/1.2.3/ellip/).
+//! - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 
 use crate::{Error, Result};
 use sci_core::Float;
 
-/// Computes K(m) = ∫₀^(π/2) (1 − m sin²θ)^(-1/2) dθ.
+/// Computes K(m) = ∫₀^(π/2) dθ / √(1 − m sin²θ).
 ///
 /// ## Parameters
 ///
 /// - `m`: Elliptic parameter `m = k²`, where `k` is the modulus.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All inputs must be finite. Required domain: m < 1.
+/// Finite `m < 1`. The pole at `m = 1` is rejected; negative parameters are supported.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -46,11 +59,18 @@ use sci_core::Float;
 ///
 /// ## Errors
 ///
-/// Returns [`Error::InvalidInput`] outside the stated domain,
-/// [`Error::NumericalFailure`] if the backend cannot evaluate the integral, and
+/// Returns [`Error::InvalidInput`] when a wrapper input check fails,
+/// [`Error::NumericalFailure`] if Ellip rejects the domain or cannot evaluate the integral, and
 /// [`Error::NonFiniteEvaluation`] if the result is nonfinite.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::ellipk(0.0)?;
@@ -58,8 +78,9 @@ use sci_core::Float;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `ellipk`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipk.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipk<T: Float>(m: T) -> Result<T> {
@@ -81,9 +102,11 @@ pub fn ellipk<T: Float>(m: T) -> Result<T> {
 ///
 /// - `m`: Elliptic parameter `m = k²`, where `k` is the modulus.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All inputs must be finite. Required domain: m ≤ 1.
+/// Finite `m <= 1`; `E(1) = 1`. Negative parameters are supported.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -91,11 +114,18 @@ pub fn ellipk<T: Float>(m: T) -> Result<T> {
 ///
 /// ## Errors
 ///
-/// Returns [`Error::InvalidInput`] outside the stated domain,
-/// [`Error::NumericalFailure`] if the backend cannot evaluate the integral, and
+/// Returns [`Error::InvalidInput`] when a wrapper input check fails,
+/// [`Error::NumericalFailure`] if Ellip rejects the domain or cannot evaluate the integral, and
 /// [`Error::NonFiniteEvaluation`] if the result is nonfinite.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::ellipe(0.0)?;
@@ -103,8 +133,9 @@ pub fn ellipk<T: Float>(m: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `ellipe`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipe.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipe<T: Float>(m: T) -> Result<T> {
@@ -120,16 +151,19 @@ pub fn ellipe<T: Float>(m: T) -> Result<T> {
     }
 }
 
-/// Computes Π(n,m) = ∫₀^(π/2) [(1 − n sin²θ)√(1 − m sin²θ)]⁻¹ dθ.
+/// Computes Π(n, m) = ∫₀^(π/2) dθ / [(1 − n sin²θ)√(1 − m sin²θ)].
 ///
 /// ## Parameters
 ///
 /// - `n`: Characteristic of a third-kind integral.
 /// - `m`: Elliptic parameter `m = k²`, where `k` is the modulus.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All inputs must be finite. Required domain: n < 1 and m < 1.
+/// Finite `m < 1` and `n != 1`. For `n > 1`, returns the Cauchy principal value across the
+/// interior pole.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -137,11 +171,18 @@ pub fn ellipe<T: Float>(m: T) -> Result<T> {
 ///
 /// ## Errors
 ///
-/// Returns [`Error::InvalidInput`] outside the stated domain,
-/// [`Error::NumericalFailure`] if the backend cannot evaluate the integral, and
+/// Returns [`Error::InvalidInput`] when a wrapper input check fails,
+/// [`Error::NumericalFailure`] if Ellip rejects the domain or cannot evaluate the integral, and
 /// [`Error::NonFiniteEvaluation`] if the result is nonfinite.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::ellippi(0.0, 0.0)?;
@@ -149,12 +190,13 @@ pub fn ellipe<T: Float>(m: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `ellippi`](https://docs.rs/ellip/1.2.3/ellip/fn.ellippi.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellippi<T: Float>(n: T, m: T) -> Result<T> {
-    if !(n.is_finite() && m.is_finite() && (n < 1.0 && m < 1.0)) {
+    if !(n.is_finite() && m.is_finite() && (n != 1.0 && m < 1.0)) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
@@ -166,15 +208,17 @@ pub fn ellippi<T: Float>(n: T, m: T) -> Result<T> {
     }
 }
 
-/// Computes D(m) = ∫₀^(π/2) sin²θ / √(1 − m sin²θ) dθ.
+/// Computes D(m) = ∫₀^(π/2) sin²θ dθ / √(1 − m sin²θ).
 ///
 /// ## Parameters
 ///
 /// - `m`: Elliptic parameter `m = k²`, where `k` is the modulus.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All inputs must be finite. Required domain: m < 1.
+/// Finite `m < 1`; `D(0) = π/4`. The singular endpoint `m = 1` is rejected.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -182,11 +226,18 @@ pub fn ellippi<T: Float>(n: T, m: T) -> Result<T> {
 ///
 /// ## Errors
 ///
-/// Returns [`Error::InvalidInput`] outside the stated domain,
-/// [`Error::NumericalFailure`] if the backend cannot evaluate the integral, and
+/// Returns [`Error::InvalidInput`] when a wrapper input check fails,
+/// [`Error::NumericalFailure`] if Ellip rejects the domain or cannot evaluate the integral, and
 /// [`Error::NonFiniteEvaluation`] if the result is nonfinite.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::ellipd(0.0)?;
@@ -194,8 +245,9 @@ pub fn ellippi<T: Float>(n: T, m: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `ellipd`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipd.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipd<T: Float>(m: T) -> Result<T> {
@@ -211,16 +263,20 @@ pub fn ellipd<T: Float>(m: T) -> Result<T> {
     }
 }
 
-/// Computes F(φ,m) = ∫₀^φ (1 − m sin²θ)^(-1/2) dθ.
+/// Computes F(phi, m) = ∫₀^phi dθ / √(1 − m sin²θ).
 ///
 /// ## Parameters
 ///
 /// - `phi`: Amplitude in radians.
 /// - `m`: Elliptic parameter `m = k²`, where `k` is the modulus.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All inputs must be finite. Required domain: m < 1, with any finite amplitude φ.
+/// Finite arguments. For `m < 1`, any real amplitude is accepted. For `m >= 1`, the path must
+/// stay before the first pole or nonreal interval: `abs(phi) < π/2` and `m sin²(phi) < 1`.
+/// Negative amplitudes give the odd continuation.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -228,33 +284,35 @@ pub fn ellipd<T: Float>(m: T) -> Result<T> {
 ///
 /// ## Errors
 ///
-/// Returns [`Error::InvalidInput`] outside the stated domain,
-/// [`Error::NumericalFailure`] if the backend cannot evaluate the integral, and
+/// Returns [`Error::InvalidInput`] when a wrapper input check fails,
+/// [`Error::NumericalFailure`] if Ellip rejects the domain or cannot evaluate the integral, and
 /// [`Error::NonFiniteEvaluation`] if the result is nonfinite.
 ///
 /// ## Numerical behavior
 ///
-/// Uses the private elliptic-integral backend with amplitude reduction and
-/// Carlson symmetric integrals. Work is independent of the amplitude magnitude;
-/// backend duplication iterations are bounded. Floating-point rounding affects
-/// large-amplitude reduction and values near the singular parameter m=1.
-/// No uniform relative-accuracy guarantee is made. This preserves Sci's finite
-/// real domain m<1; SciPy's additional m=1 and restricted m>1 cases are unsupported.
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::ellipkinc(0.5_f64, 0.0)?;
-/// assert!((value - (0.5)).abs() < 1e-12);
+/// let phi = 0.5_f64;
+/// let value = sci_special::elliptic::ellipf(phi, 1.0)?;
+/// assert!((value - phi.sin().atanh()).abs() < 1e-14);
+/// // A restricted real path also exists for m > 1.
+/// assert!(sci_special::elliptic::ellipf(0.4_f64, 2.0)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `ellipf`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipf.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
-pub fn ellipkinc<T: Float>(phi: T, m: T) -> Result<T> {
-    if !(phi.is_finite() && m.is_finite() && (m < 1.0)) {
+pub fn ellipf<T: Float>(phi: T, m: T) -> Result<T> {
+    if !(phi.is_finite() && m.is_finite()) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
@@ -266,16 +324,24 @@ pub fn ellipkinc<T: Float>(phi: T, m: T) -> Result<T> {
     }
 }
 
-/// Computes E(φ,m) = ∫₀^φ √(1 − m sin²θ) dθ.
+/// Compatibility name for [`ellipf`], with identical arguments, domain, and errors.
+/// The mathematical notation is `F(phi, m)`.
+pub use ellipf as ellipkinc;
+
+/// Computes E(phi, m) = ∫₀^phi √(1 − m sin²θ) dθ.
 ///
 /// ## Parameters
 ///
 /// - `phi`: Amplitude in radians.
 /// - `m`: Elliptic parameter `m = k²`, where `k` is the modulus.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All inputs must be finite. Required domain: m ≤ 1, with any finite amplitude φ.
+/// Finite arguments. For `m <= 1`, any real amplitude is accepted. For `m > 1`, the
+/// integration path must stay real, within the first turning point (`abs(phi) <=
+/// asin(1/sqrt(m))`). Backend failures at limiting endpoints are returned as errors.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -283,11 +349,18 @@ pub fn ellipkinc<T: Float>(phi: T, m: T) -> Result<T> {
 ///
 /// ## Errors
 ///
-/// Returns [`Error::InvalidInput`] outside the stated domain,
-/// [`Error::NumericalFailure`] if the backend cannot evaluate the integral, and
+/// Returns [`Error::InvalidInput`] when a wrapper input check fails,
+/// [`Error::NumericalFailure`] if Ellip rejects the domain or cannot evaluate the integral, and
 /// [`Error::NonFiniteEvaluation`] if the result is nonfinite.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::ellipeinc(0.5_f64, 0.0)?;
@@ -295,12 +368,13 @@ pub fn ellipkinc<T: Float>(phi: T, m: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `ellipeinc`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipeinc.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipeinc<T: Float>(phi: T, m: T) -> Result<T> {
-    if !(phi.is_finite() && m.is_finite() && (m <= 1.0)) {
+    if !(phi.is_finite() && m.is_finite()) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
@@ -312,7 +386,7 @@ pub fn ellipeinc<T: Float>(phi: T, m: T) -> Result<T> {
     }
 }
 
-/// Computes Π(φ,n,m) = ∫₀^φ [(1 − n sin²θ)√(1 − m sin²θ)]⁻¹ dθ.
+/// Computes Π(phi, n, m) = ∫₀^phi dθ / [(1 − n sin²θ)√(1 − m sin²θ)].
 ///
 /// ## Parameters
 ///
@@ -320,9 +394,14 @@ pub fn ellipeinc<T: Float>(phi: T, m: T) -> Result<T> {
 /// - `n`: Characteristic of a third-kind integral.
 /// - `m`: Elliptic parameter `m = k²`, where `k` is the modulus.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All inputs must be finite. Required domain: m < 1, n < 1, with any finite amplitude φ.
+/// Finite arguments. For `m < 1`, real amplitudes and characteristics are delegated to Ellip,
+/// including Cauchy principal values when the path crosses an interior third-kind pole. A
+/// pole at the endpoint (`n sin²(phi) = 1`) is rejected. For `m >= 1`, only Ellip’s real
+/// special cases are supported; nonreal paths and backend failures return errors.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -330,11 +409,18 @@ pub fn ellipeinc<T: Float>(phi: T, m: T) -> Result<T> {
 ///
 /// ## Errors
 ///
-/// Returns [`Error::InvalidInput`] outside the stated domain,
-/// [`Error::NumericalFailure`] if the backend cannot evaluate the integral, and
+/// Returns [`Error::InvalidInput`] when a wrapper input check fails,
+/// [`Error::NumericalFailure`] if Ellip rejects the domain or cannot evaluate the integral, and
 /// [`Error::NonFiniteEvaluation`] if the result is nonfinite.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::ellippiinc(0.5_f64, 0.0, 0.0)?;
@@ -342,12 +428,13 @@ pub fn ellipeinc<T: Float>(phi: T, m: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `ellippiinc`](https://docs.rs/ellip/1.2.3/ellip/fn.ellippiinc.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellippiinc<T: Float>(phi: T, n: T, m: T) -> Result<T> {
-    if !(phi.is_finite() && n.is_finite() && m.is_finite() && (m < 1.0 && n < 1.0)) {
+    if !(phi.is_finite() && m.is_finite() && n.is_finite()) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
@@ -359,16 +446,20 @@ pub fn ellippiinc<T: Float>(phi: T, n: T, m: T) -> Result<T> {
     }
 }
 
-/// Computes D(φ,m) = ∫₀^φ sin²θ / √(1 − m sin²θ) dθ.
+/// Computes D(phi, m) = ∫₀^phi sin²θ dθ / √(1 − m sin²θ).
 ///
 /// ## Parameters
 ///
 /// - `phi`: Amplitude in radians.
 /// - `m`: Elliptic parameter `m = k²`, where `k` is the modulus.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All inputs must be finite. Required domain: m < 1, with any finite amplitude φ.
+/// Finite arguments. For `m < 1`, any real amplitude is accepted. For `m >= 1`, the
+/// integration path must remain real and nonsingular; the endpoint condition alone does not
+/// permit crossing a nonreal interval. Backend domain and convergence errors are propagated.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -376,11 +467,18 @@ pub fn ellippiinc<T: Float>(phi: T, n: T, m: T) -> Result<T> {
 ///
 /// ## Errors
 ///
-/// Returns [`Error::InvalidInput`] outside the stated domain,
-/// [`Error::NumericalFailure`] if the backend cannot evaluate the integral, and
+/// Returns [`Error::InvalidInput`] when a wrapper input check fails,
+/// [`Error::NumericalFailure`] if Ellip rejects the domain or cannot evaluate the integral, and
 /// [`Error::NonFiniteEvaluation`] if the result is nonfinite.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::ellipdinc(0.0_f64, 0.0)?;
@@ -388,12 +486,13 @@ pub fn ellippiinc<T: Float>(phi: T, n: T, m: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `ellipdinc`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipdinc.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipdinc<T: Float>(phi: T, m: T) -> Result<T> {
-    if !(phi.is_finite() && m.is_finite() && (m < 1.0)) {
+    if !(phi.is_finite() && m.is_finite()) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
@@ -405,7 +504,7 @@ pub fn ellipdinc<T: Float>(phi: T, m: T) -> Result<T> {
     }
 }
 
-/// Computes R_F(x,y,z) = ½ ∫₀^∞ [(t+x)(t+y)(t+z)]^(-1/2) dt.
+/// Computes R_F(x, y, z) = ½ ∫₀^∞ dt / √[(t+x)(t+y)(t+z)].
 ///
 /// ## Parameters
 ///
@@ -413,9 +512,11 @@ pub fn ellipdinc<T: Float>(phi: T, m: T) -> Result<T> {
 /// - `y`: Real Carlson argument.
 /// - `z`: Real Carlson argument.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All inputs must be finite. Required domain: x,y,z ≥ 0 with at most one zero.
+/// Finite nonnegative arguments with at most one zero. Symmetric in all three arguments.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -423,11 +524,18 @@ pub fn ellipdinc<T: Float>(phi: T, m: T) -> Result<T> {
 ///
 /// ## Errors
 ///
-/// Returns [`Error::InvalidInput`] outside the stated domain,
-/// [`Error::NumericalFailure`] if the backend cannot evaluate the integral, and
+/// Returns [`Error::InvalidInput`] when a wrapper input check fails,
+/// [`Error::NumericalFailure`] if Ellip rejects the domain or cannot evaluate the integral, and
 /// [`Error::NonFiniteEvaluation`] if the result is nonfinite.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::elliprf(1.0_f64, 1.0, 1.0)?;
@@ -435,8 +543,9 @@ pub fn ellipdinc<T: Float>(phi: T, m: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `elliprf`](https://docs.rs/ellip/1.2.3/ellip/fn.elliprf.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn elliprf<T: Float>(x: T, y: T, z: T) -> Result<T> {
@@ -459,7 +568,7 @@ pub fn elliprf<T: Float>(x: T, y: T, z: T) -> Result<T> {
     }
 }
 
-/// Computes R_D(x,y,z) = R_J(x,y,z,z).
+/// Computes R_D(x, y, z) = (3/2) ∫₀^∞ dt / [(t+z)√((t+x)(t+y)(t+z))].
 ///
 /// ## Parameters
 ///
@@ -467,9 +576,12 @@ pub fn elliprf<T: Float>(x: T, y: T, z: T) -> Result<T> {
 /// - `y`: Real Carlson argument.
 /// - `z`: Real Carlson argument.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All inputs must be finite. Required domain: x,y ≥ 0, x+y > 0, and z > 0.
+/// Finite `x, y >= 0`, at least one positive, and `z > 0`. Symmetric in `x` and `y`; the last
+/// argument is distinguished.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -477,11 +589,18 @@ pub fn elliprf<T: Float>(x: T, y: T, z: T) -> Result<T> {
 ///
 /// ## Errors
 ///
-/// Returns [`Error::InvalidInput`] outside the stated domain,
-/// [`Error::NumericalFailure`] if the backend cannot evaluate the integral, and
+/// Returns [`Error::InvalidInput`] when a wrapper input check fails,
+/// [`Error::NumericalFailure`] if Ellip rejects the domain or cannot evaluate the integral, and
 /// [`Error::NonFiniteEvaluation`] if the result is nonfinite.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::elliprd(1.0_f64, 1.0, 1.0)?;
@@ -489,8 +608,9 @@ pub fn elliprf<T: Float>(x: T, y: T, z: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `elliprd`](https://docs.rs/ellip/1.2.3/ellip/fn.elliprd.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn elliprd<T: Float>(x: T, y: T, z: T) -> Result<T> {
@@ -510,7 +630,7 @@ pub fn elliprd<T: Float>(x: T, y: T, z: T) -> Result<T> {
     }
 }
 
-/// Computes Carlson's symmetric elliptic integral R_G(x,y,z).
+/// Computes R_G(x, y, z) = ¼ ∫₀^∞ [x/(t+x) + y/(t+y) + z/(t+z)] t dt / √[(t+x)(t+y)(t+z)].
 ///
 /// ## Parameters
 ///
@@ -518,9 +638,12 @@ pub fn elliprd<T: Float>(x: T, y: T, z: T) -> Result<T> {
 /// - `y`: Real Carlson argument.
 /// - `z`: Real Carlson argument.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All inputs must be finite. Required domain: x,y,z ≥ 0.
+/// Finite nonnegative arguments, including multiple zeros by continuity; `R_G(0,0,0) = 0`.
+/// Symmetric in all three arguments.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -528,11 +651,18 @@ pub fn elliprd<T: Float>(x: T, y: T, z: T) -> Result<T> {
 ///
 /// ## Errors
 ///
-/// Returns [`Error::InvalidInput`] outside the stated domain,
-/// [`Error::NumericalFailure`] if the backend cannot evaluate the integral, and
+/// Returns [`Error::InvalidInput`] when a wrapper input check fails,
+/// [`Error::NumericalFailure`] if Ellip rejects the domain or cannot evaluate the integral, and
 /// [`Error::NonFiniteEvaluation`] if the result is nonfinite.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::elliprg(1.0_f64, 1.0, 1.0)?;
@@ -540,8 +670,9 @@ pub fn elliprd<T: Float>(x: T, y: T, z: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `elliprg`](https://docs.rs/ellip/1.2.3/ellip/fn.elliprg.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn elliprg<T: Float>(x: T, y: T, z: T) -> Result<T> {
@@ -557,7 +688,7 @@ pub fn elliprg<T: Float>(x: T, y: T, z: T) -> Result<T> {
     }
 }
 
-/// Computes R_J(x,y,z,p) = (3/2) ∫₀^∞ [(t+p)√((t+x)(t+y)(t+z))]⁻¹ dt.
+/// Computes R_J(x, y, z, p) = (3/2) ∫₀^∞ dt / [(t+p)√((t+x)(t+y)(t+z))].
 ///
 /// ## Parameters
 ///
@@ -566,9 +697,12 @@ pub fn elliprg<T: Float>(x: T, y: T, z: T) -> Result<T> {
 /// - `z`: Real Carlson argument.
 /// - `p`: Additional Carlson third-kind argument.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All inputs must be finite. Required domain: x,y,z ≥ 0 with at most one zero and p > 0.
+/// Finite nonnegative `x, y, z` with at most one zero, and finite `p != 0`. For `p < 0`,
+/// returns the Cauchy principal value. Symmetric in the first three arguments.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -576,11 +710,18 @@ pub fn elliprg<T: Float>(x: T, y: T, z: T) -> Result<T> {
 ///
 /// ## Errors
 ///
-/// Returns [`Error::InvalidInput`] outside the stated domain,
-/// [`Error::NumericalFailure`] if the backend cannot evaluate the integral, and
+/// Returns [`Error::InvalidInput`] when a wrapper input check fails,
+/// [`Error::NumericalFailure`] if Ellip rejects the domain or cannot evaluate the integral, and
 /// [`Error::NonFiniteEvaluation`] if the result is nonfinite.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::elliprj(1.0_f64, 1.0, 1.0, 1.0)?;
@@ -588,8 +729,9 @@ pub fn elliprg<T: Float>(x: T, y: T, z: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `elliprj`](https://docs.rs/ellip/1.2.3/ellip/fn.elliprj.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn elliprj<T: Float>(x: T, y: T, z: T, p: T) -> Result<T> {
@@ -601,7 +743,7 @@ pub fn elliprj<T: Float>(x: T, y: T, z: T, p: T) -> Result<T> {
             && y >= 0.0
             && z >= 0.0
             && ((x == 0.0) as u8 + (y == 0.0) as u8 + (z == 0.0) as u8 <= 1)
-            && p > 0.0))
+            && p != 0.0))
     {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
@@ -614,16 +756,19 @@ pub fn elliprj<T: Float>(x: T, y: T, z: T, p: T) -> Result<T> {
     }
 }
 
-/// Computes R_C(x,y) = R_F(x,y,y).
+/// Computes R_C(x, y) = ½ ∫₀^∞ dt / [(t+y)√(t+x)] = R_F(x,y,y) for y > 0.
 ///
 /// ## Parameters
 ///
 /// - `x`: Real Carlson argument.
 /// - `y`: Real Carlson argument.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All inputs must be finite. Required domain: x ≥ 0 and y > 0.
+/// Finite `x >= 0` and `y != 0`. For `y < 0`, returns the Cauchy principal value of the
+/// defining integral, rather than a complex square-root continuation.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -631,24 +776,33 @@ pub fn elliprj<T: Float>(x: T, y: T, z: T, p: T) -> Result<T> {
 ///
 /// ## Errors
 ///
-/// Returns [`Error::InvalidInput`] outside the stated domain,
-/// [`Error::NumericalFailure`] if the backend cannot evaluate the integral, and
+/// Returns [`Error::InvalidInput`] when a wrapper input check fails,
+/// [`Error::NumericalFailure`] if Ellip rejects the domain or cannot evaluate the integral, and
 /// [`Error::NonFiniteEvaluation`] if the result is nonfinite.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::elliprc(1.0_f64, 1.0)?;
-/// assert!((value - (1.0)).abs() < 1e-12);
+/// let value = sci_special::elliptic::elliprc(1.0_f64, -2.0)?;
+/// let expected = (1.0 / 3.0_f64.sqrt()).atanh() / 3.0_f64.sqrt();
+/// assert!((value - expected).abs() < 1e-14); // Cauchy principal value
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `elliprc`](https://docs.rs/ellip/1.2.3/ellip/fn.elliprc.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn elliprc<T: Float>(x: T, y: T) -> Result<T> {
-    if !(x.is_finite() && y.is_finite() && (x >= 0.0 && y > 0.0)) {
+    if !(x.is_finite() && y.is_finite() && (x >= 0.0 && y != 0.0)) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
@@ -660,15 +814,17 @@ pub fn elliprc<T: Float>(x: T, y: T) -> Result<T> {
     }
 }
 
-/// Computes (K(m), E(m)), evaluated together.
+/// Computes (K(m), E(m)), with K(m) = ∫₀^(π/2) dθ/√(1−m sin²θ) and E(m) = ∫₀^(π/2) √(1−m sin²θ) dθ.
 ///
 /// ## Parameters
 ///
 /// - `m`: Elliptic parameter `m = k²`, where `k` is the modulus.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// Finite `m < 1`; `m = k²` is the parameter.
+/// Finite `m < 1`. Both values are evaluated together and returned in first-kind, second-kind order.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -680,7 +836,14 @@ pub fn elliprc<T: Float>(x: T, y: T) -> Result<T> {
 /// [`Error::NumericalFailure`] on backend failure, and
 /// [`Error::NonFiniteEvaluation`] if evaluation overflows.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::ellipke(0.0_f64)?;
@@ -688,8 +851,9 @@ pub fn elliprc<T: Float>(x: T, y: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `ellipke`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipke.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipke<T: Float>(m: T) -> Result<(T, T)> {
@@ -711,7 +875,7 @@ pub fn ellipke<T: Float>(m: T) -> Result<(T, T)> {
     ))
 }
 
-/// Computes ∫₀^(π/2) (a cos²θ + b sin²θ)/((cos²θ+p sin²θ)√(cos²θ+kc² sin²θ)) dθ.
+/// Computes cel(kc, p, a, b) = ∫₀^(π/2) (a cos²θ + b sin²θ) dθ / [(cos²θ + p sin²θ)√(cos²θ + kc² sin²θ)].
 ///
 /// ## Parameters
 ///
@@ -720,9 +884,12 @@ pub fn ellipke<T: Float>(m: T) -> Result<(T, T)> {
 /// - `a`: Coefficient of the cosine-squared term.
 /// - `b`: Coefficient of the sine-squared term.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// Finite arguments, nonzero complementary modulus `kc`, and `p > 0`. Negative `kc` gives the same value as positive `kc`. Principal values are excluded.
+/// Finite arguments, `kc != 0`, and `p != 0`. For `p < 0`, returns the Cauchy principal
+/// value. The sign of `kc` does not affect the value.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -734,7 +901,14 @@ pub fn ellipke<T: Float>(m: T) -> Result<(T, T)> {
 /// [`Error::NumericalFailure`] on backend failure, and
 /// [`Error::NonFiniteEvaluation`] if evaluation overflows.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::cel(1.0, 1.0, 1.0, 1.0)?;
@@ -742,12 +916,13 @@ pub fn ellipke<T: Float>(m: T) -> Result<(T, T)> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `cel`](https://docs.rs/ellip/1.2.3/ellip/fn.cel.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn cel<T: Float>(kc: T, p: T, a: T, b: T) -> Result<T> {
-    if !(kc.is_finite() && kc != 0.0 && p.is_finite() && p > 0.0 && a.is_finite() && b.is_finite())
+    if !(kc.is_finite() && kc != 0.0 && p.is_finite() && p != 0.0 && a.is_finite() && b.is_finite())
     {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
@@ -760,15 +935,17 @@ pub fn cel<T: Float>(kc: T, p: T, a: T, b: T) -> Result<T> {
     }
 }
 
-/// Computes K(1−kc²).
+/// Computes cel1(kc) = cel(kc,1,1,1) = K(1−kc²).
 ///
 /// ## Parameters
 ///
 /// - `kc`: Complementary modulus; `kc² = 1 - m`. Its sign does not affect the integral.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// Finite, nonzero complementary modulus `kc`.
+/// Finite `kc != 0`; either sign is accepted.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -780,7 +957,14 @@ pub fn cel<T: Float>(kc: T, p: T, a: T, b: T) -> Result<T> {
 /// [`Error::NumericalFailure`] on backend failure, and
 /// [`Error::NonFiniteEvaluation`] if evaluation overflows.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::cel1(1.0)?;
@@ -788,8 +972,9 @@ pub fn cel<T: Float>(kc: T, p: T, a: T, b: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `cel1`](https://docs.rs/ellip/1.2.3/ellip/fn.cel1.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn cel1<T: Float>(kc: T) -> Result<T> {
@@ -805,7 +990,7 @@ pub fn cel1<T: Float>(kc: T) -> Result<T> {
     }
 }
 
-/// Computes cel(kc,1,a,b).
+/// Computes cel2(kc, a, b) = cel(kc,1,a,b).
 ///
 /// ## Parameters
 ///
@@ -813,9 +998,11 @@ pub fn cel1<T: Float>(kc: T) -> Result<T> {
 /// - `a`: Coefficient of the cosine-squared term.
 /// - `b`: Coefficient of the sine-squared term.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// Finite `a`, `b`, and nonzero complementary modulus `kc`.
+/// Finite `a`, `b`, and `kc != 0`; either sign of `kc` is accepted.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -827,7 +1014,14 @@ pub fn cel1<T: Float>(kc: T) -> Result<T> {
 /// [`Error::NumericalFailure`] on backend failure, and
 /// [`Error::NonFiniteEvaluation`] if evaluation overflows.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::cel2(1.0, 1.0, 1.0)?;
@@ -835,8 +1029,9 @@ pub fn cel1<T: Float>(kc: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `cel2`](https://docs.rs/ellip/1.2.3/ellip/fn.cel2.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn cel2<T: Float>(kc: T, a: T, b: T) -> Result<T> {
@@ -852,16 +1047,18 @@ pub fn cel2<T: Float>(kc: T, a: T, b: T) -> Result<T> {
     }
 }
 
-/// Computes Π(1−p,1−kc²) = cel(kc,p,1,1).
+/// Computes cel3(kc, p) = cel(kc,p,1,1) = Π(1−p, 1−kc²).
 ///
 /// ## Parameters
 ///
 /// - `kc`: Complementary modulus; `kc² = 1 - m`. Its sign does not affect the integral.
 /// - `p`: Bulirsch parameter `p = 1 - n`, where `n` is the characteristic.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// Finite, nonzero complementary modulus `kc` and `p > 0`. Principal values are excluded.
+/// Finite `kc != 0` and `p != 0`. For `p < 0`, returns the Cauchy principal value.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -873,7 +1070,14 @@ pub fn cel2<T: Float>(kc: T, a: T, b: T) -> Result<T> {
 /// [`Error::NumericalFailure`] on backend failure, and
 /// [`Error::NonFiniteEvaluation`] if evaluation overflows.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::cel3(1.0, 1.0)?;
@@ -881,12 +1085,13 @@ pub fn cel2<T: Float>(kc: T, a: T, b: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `cel3`](https://docs.rs/ellip/1.2.3/ellip/fn.cel3.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn cel3<T: Float>(kc: T, p: T) -> Result<T> {
-    if !(kc.is_finite() && kc != 0.0 && p.is_finite() && p > 0.0) {
+    if !(kc.is_finite() && kc != 0.0 && p.is_finite() && p != 0.0) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
@@ -898,16 +1103,19 @@ pub fn cel3<T: Float>(kc: T, p: T) -> Result<T> {
     }
 }
 
-/// Computes F(arctan(x),1−kc²).
+/// Computes el1(x, kc) = F(atan(x), 1−kc²).
 ///
 /// ## Parameters
 ///
 /// - `x`: Tangent amplitude; the upper integration angle is `atan(x)` in radians.
 /// - `kc`: Complementary modulus; `kc² = 1 - m`. Its sign does not affect the integral.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// Finite tangent amplitude `x` and nonzero complementary modulus `kc`.
+/// Finite `x` and finite `kc != 0`. The amplitude is `atan(x)` in `(-π/2, π/2)`; either sign
+/// of `kc` is accepted.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -919,7 +1127,14 @@ pub fn cel3<T: Float>(kc: T, p: T) -> Result<T> {
 /// [`Error::NumericalFailure`] on backend failure, and
 /// [`Error::NonFiniteEvaluation`] if evaluation overflows.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::el1(0.5, 1.0)?;
@@ -927,8 +1142,9 @@ pub fn cel3<T: Float>(kc: T, p: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `el1`](https://docs.rs/ellip/1.2.3/ellip/fn.el1.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn el1<T: Float>(x: T, kc: T) -> Result<T> {
@@ -944,7 +1160,7 @@ pub fn el1<T: Float>(x: T, kc: T) -> Result<T> {
     }
 }
 
-/// Computes ∫₀^arctan(x) (a cos²θ+b sin²θ)/√(cos²θ+kc² sin²θ) dθ.
+/// Computes el2(x, kc, a, b) = ∫₀^atan(x) (a cos²θ + b sin²θ) dθ / √(cos²θ + kc² sin²θ).
 ///
 /// ## Parameters
 ///
@@ -953,9 +1169,11 @@ pub fn el1<T: Float>(x: T, kc: T) -> Result<T> {
 /// - `a`: Coefficient of the cosine-squared term.
 /// - `b`: Coefficient of the sine-squared term.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All arguments finite; `kc` is a nonzero complementary modulus, `x` is a tangent amplitude.
+/// Finite arguments and `kc != 0`. The amplitude is `atan(x)`; either sign of `kc` is accepted.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -967,7 +1185,14 @@ pub fn el1<T: Float>(x: T, kc: T) -> Result<T> {
 /// [`Error::NumericalFailure`] on backend failure, and
 /// [`Error::NonFiniteEvaluation`] if evaluation overflows.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::el2(0.5, 1.0, 1.0, 1.0)?;
@@ -975,8 +1200,9 @@ pub fn el1<T: Float>(x: T, kc: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `el2`](https://docs.rs/ellip/1.2.3/ellip/fn.el2.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn el2<T: Float>(x: T, kc: T, a: T, b: T) -> Result<T> {
@@ -992,7 +1218,7 @@ pub fn el2<T: Float>(x: T, kc: T, a: T, b: T) -> Result<T> {
     }
 }
 
-/// Computes Π(1−p; arctan(x),1−kc²).
+/// Computes el3(x, kc, p) = Π(atan(x), 1−p, 1−kc²).
 ///
 /// ## Parameters
 ///
@@ -1000,9 +1226,13 @@ pub fn el2<T: Float>(x: T, kc: T, a: T, b: T) -> Result<T> {
 /// - `kc`: Complementary modulus; `kc² = 1 - m`. Its sign does not affect the integral.
 /// - `p`: Bulirsch parameter `p = 1 - n`, where `n` is the characteristic.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// All arguments finite, `kc != 0`, and `p >= 0`. No poles are crossed; principal values are excluded.
+/// Finite arguments with `kc != 0` and `1 + p*x² != 0`. For `p < 0`, Ellip requires `abs(kc)
+/// <= 1`. If `1 + p*x² < 0`, returns the Cauchy principal value; a negative `p` is also
+/// allowed before the pole.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -1014,7 +1244,14 @@ pub fn el2<T: Float>(x: T, kc: T, a: T, b: T) -> Result<T> {
 /// [`Error::NumericalFailure`] on backend failure, and
 /// [`Error::NonFiniteEvaluation`] if evaluation overflows.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::el3(0.5, 1.0, 1.0)?;
@@ -1022,12 +1259,19 @@ pub fn el2<T: Float>(x: T, kc: T, a: T, b: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `el3`](https://docs.rs/ellip/1.2.3/ellip/fn.el3.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn el3<T: Float>(x: T, kc: T, p: T) -> Result<T> {
-    if !(x.is_finite() && kc.is_finite() && kc != 0.0 && p.is_finite() && p >= 0.0) {
+    if !(x.is_finite()
+        && kc.is_finite()
+        && kc != 0.0
+        && p.is_finite()
+        && (1.0 + p * x * x != 0.0)
+        && (p >= 0.0 || kc.abs() <= 1.0))
+    {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
@@ -1039,16 +1283,19 @@ pub fn el3<T: Float>(x: T, kc: T, p: T) -> Result<T> {
     }
 }
 
-/// Computes Z(φ,m) = E(φ,m) − E(m)F(φ,m)/K(m).
+/// Computes Z(phi, m) = E(phi,m) − E(m)F(phi,m)/K(m).
 ///
 /// ## Parameters
 ///
 /// - `phi`: Amplitude in radians.
 /// - `m`: Elliptic parameter `m = k²`, where `k` is the modulus.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// Finite amplitude `phi` in radians and finite parameter `m < 1`.
+/// Finite `phi` and `m <= 1`. At `m = 1`, Ellip evaluates the limiting branch directly; the
+/// quotient formula is interpreted by continuity.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -1060,7 +1307,14 @@ pub fn el3<T: Float>(x: T, kc: T, p: T) -> Result<T> {
 /// [`Error::NumericalFailure`] on backend failure, and
 /// [`Error::NonFiniteEvaluation`] if evaluation overflows.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::jacobi_zeta(0.5_f64, 0.0)?;
@@ -1068,12 +1322,13 @@ pub fn el3<T: Float>(x: T, kc: T, p: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `jacobi_zeta`](https://docs.rs/ellip/1.2.3/ellip/fn.jacobi_zeta.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn jacobi_zeta<T: Float>(phi: T, m: T) -> Result<T> {
-    if !(phi.is_finite() && m.is_finite() && m < 1.0) {
+    if !(phi.is_finite() && m.is_finite() && m <= 1.0) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
@@ -1085,16 +1340,19 @@ pub fn jacobi_zeta<T: Float>(phi: T, m: T) -> Result<T> {
     }
 }
 
-/// Computes Λ₀(φ,m) = F(φ,1−m)/K(1−m) + 2 K(m) Z(φ,1−m)/π.
+/// Computes Λ₀(phi, m) = F(phi,1−m)/K(1−m) + 2 K(m) Z(phi,1−m)/π.
 ///
 /// ## Parameters
 ///
 /// - `phi`: Amplitude in radians.
 /// - `m`: Elliptic parameter `m = k²`, where `k` is the modulus.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// Finite amplitude `phi` in radians and parameter `m` in `[0,1)`.
+/// Finite `phi` and `0 <= m < 1`. The formula at `m = 0` is interpreted by continuity:
+/// `Λ₀(phi,0) = sin(phi)` on the principal amplitude interval.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -1106,7 +1364,14 @@ pub fn jacobi_zeta<T: Float>(phi: T, m: T) -> Result<T> {
 /// [`Error::NumericalFailure`] on backend failure, and
 /// [`Error::NonFiniteEvaluation`] if evaluation overflows.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::heuman_lambda(0.5, 0.0)?;
@@ -1114,8 +1379,9 @@ pub fn jacobi_zeta<T: Float>(phi: T, m: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `heuman_lambda`](https://docs.rs/ellip/1.2.3/ellip/fn.heuman_lambda.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn heuman_lambda<T: Float>(phi: T, m: T) -> Result<T> {
@@ -1131,7 +1397,7 @@ pub fn heuman_lambda<T: Float>(phi: T, m: T) -> Result<T> {
     }
 }
 
-/// Computes Π(n;φ,m), using Bulirsch's algorithm.
+/// Computes Π(phi, n, m) = ∫₀^phi dθ / [(1 − n sin²θ)√(1 − m sin²θ)], evaluated with Bulirsch’s algorithm.
 ///
 /// ## Parameters
 ///
@@ -1139,9 +1405,12 @@ pub fn heuman_lambda<T: Float>(phi: T, m: T) -> Result<T> {
 /// - `n`: Characteristic of a third-kind integral.
 /// - `m`: Elliptic parameter `m = k²`, where `k` is the modulus.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// Finite radian amplitude `phi`, characteristic `n < 1`, and parameter `m < 1`.
+/// The finite-input domain and principal-value conventions match `ellippiinc`. Ellip
+/// delegates cases outside the direct Bulirsch regime to its general third-kind algorithm.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -1153,7 +1422,14 @@ pub fn heuman_lambda<T: Float>(phi: T, m: T) -> Result<T> {
 /// [`Error::NumericalFailure`] on backend failure, and
 /// [`Error::NonFiniteEvaluation`] if evaluation overflows.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::elliptic::ellippiinc_bulirsch(0.5_f64, 0.0, 0.0)?;
@@ -1161,12 +1437,13 @@ pub fn heuman_lambda<T: Float>(phi: T, m: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `ellippiinc_bulirsch`](https://docs.rs/ellip/1.2.3/ellip/fn.ellippiinc_bulirsch.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellippiinc_bulirsch<T: BulirschFloat>(phi: T, n: T, m: T) -> Result<T> {
-    if !(phi.is_finite() && n.is_finite() && n < 1.0 && m.is_finite() && m < 1.0) {
+    if !(phi.is_finite() && m.is_finite() && n.is_finite()) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
@@ -1178,16 +1455,18 @@ pub fn ellippiinc_bulirsch<T: BulirschFloat>(phi: T, n: T, m: T) -> Result<T> {
     }
 }
 
-/// Computes K(1−p) accurately near the logarithmic singularity.
+/// Computes K(1−p) = R_F(0,p,1).
 ///
 /// ## Parameters
 ///
 /// - `p`: Complementary parameter `p = 1 - m`.
 ///
-/// ## Domain
+/// ## Domain and special values
 ///
-/// `p = 1−m` is the **complementary parameter**, and must be finite and positive.
-/// The Carlson identity K(1−p) = R_F(0,p,1) avoids subtracting a tiny `p` from one.
+/// Finite `p > 0`. Here `p = 1−m` is the complementary parameter, not the characteristic or
+/// complementary modulus. Passing it directly avoids rounding `1−p` to one.
+///
+/// NaN and infinity inputs return an error; a nonfinite result is rejected.
 ///
 /// ## Returns
 ///
@@ -1198,7 +1477,14 @@ pub fn ellippiinc_bulirsch<T: BulirschFloat>(phi: T, n: T, m: T) -> Result<T> {
 /// Returns [`Error::InvalidInput`] for nonpositive or nonfinite `p`.
 /// Numerical failures follow [`elliprf`].
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Evaluates in `T` using Ellip's checked algorithms. No tolerance or iteration
+/// controls are exposed. Relative accuracy can degrade near zeros or poles;
+/// amplitude reduction, where applicable, is limited by floating-point precision.
+/// See the module documentation for shared numerical conventions.
+///
+/// ## Examples
 ///
 /// ```
 /// let k = sci_special::elliptic::ellipkm1(1e-20)?;
@@ -1206,8 +1492,9 @@ pub fn ellippiinc_bulirsch<T: BulirschFloat>(phi: T, n: T, m: T) -> Result<T> {
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
+/// - [Ellip `elliprf`](https://docs.rs/ellip/1.2.3/ellip/fn.elliprf.html).
 /// - [NIST DLMF, Carlson integrals](https://dlmf.nist.gov/19.25).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipkm1<T: Float>(p: T) -> Result<T> {

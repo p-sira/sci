@@ -23,6 +23,7 @@ NATIVE = {"cbrt", "exp10", "exp2", "expm1", "log1p", "round", "geterr", "seterr"
 def audit():
     source = "\n".join(path.read_text() for path in (ROOT / "crates/sci-special/src").glob("*.rs"))
     public = set(re.findall(r"^pub fn (\w+)", source, re.MULTILINE))
+    public.update(re.findall(r"^pub use ellipf as (\w+);", source, re.MULTILINE))
     with (ROOT / "tests/fixtures/special_extended.csv").open() as stream:
         references = {row["function"] for row in csv.DictReader(stream)}
     text = (ROOT / "function_coverages/scipy_function_list/scipy.special.md").read_text()
@@ -39,7 +40,7 @@ def audit():
             assert ALIASES[alias] in public & references, alias
         print(f"{namespace}: {len(names)} names, {len(direct)} direct, "
               f"{len(names & ALIASES.keys())} aliases, {len(names & NATIVE)} native replacements")
-    assert len(public) == 353, len(public)
+    assert len(public) == 354, len(public)
     print(f"Public numerical functions: {len(public)}; all previous names retained.")
 
 

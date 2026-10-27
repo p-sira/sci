@@ -22,4 +22,4 @@ ellip.workspace = true
 nalgebra.workspace = true
 num-complex.workspace = true
 complex-bessel.workspace = true
-lambert_w = { version = "2.0.5", default-features = false, features = ["std"] }
+lambert_w = { version = "2.0.8", default-features = false, features = ["std"] }

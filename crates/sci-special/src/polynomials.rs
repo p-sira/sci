@@ -179,7 +179,7 @@ fn quadrature(
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::jacobi(3,0.5,0.3,false)?;
@@ -187,7 +187,7 @@ fn quadrature(
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy jacobi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jacobi.html).
 pub fn jacobi(n: usize, alpha: f64, beta: f64, monic: bool) -> Result<Vec<f64>> {
@@ -213,7 +213,7 @@ pub fn jacobi(n: usize, alpha: f64, beta: f64, monic: bool) -> Result<Vec<f64>> 
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_jacobi(3,0.5,0.3)?;
@@ -221,7 +221,7 @@ pub fn jacobi(n: usize, alpha: f64, beta: f64, monic: bool) -> Result<Vec<f64>> 
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_jacobi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_jacobi.html).
 pub fn roots_jacobi(n: usize, alpha: f64, beta: f64) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -247,7 +247,7 @@ pub fn roots_jacobi(n: usize, alpha: f64, beta: f64) -> Result<(Vec<f64>, Vec<f6
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::legendre(3,false)?;
@@ -255,7 +255,7 @@ pub fn roots_jacobi(n: usize, alpha: f64, beta: f64) -> Result<(Vec<f64>, Vec<f6
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy legendre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.legendre.html).
 pub fn legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
@@ -281,7 +281,7 @@ pub fn legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_legendre(3)?;
@@ -289,7 +289,7 @@ pub fn legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_legendre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_legendre.html).
 pub fn roots_legendre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -315,7 +315,7 @@ pub fn roots_legendre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::gegenbauer(3,0.5,false)?;
@@ -323,7 +323,7 @@ pub fn roots_legendre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy gegenbauer](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gegenbauer.html).
 pub fn gegenbauer(n: usize, alpha: f64, monic: bool) -> Result<Vec<f64>> {
@@ -349,7 +349,7 @@ pub fn gegenbauer(n: usize, alpha: f64, monic: bool) -> Result<Vec<f64>> {
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_gegenbauer(3,0.5)?;
@@ -357,7 +357,7 @@ pub fn gegenbauer(n: usize, alpha: f64, monic: bool) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_gegenbauer](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_gegenbauer.html).
 pub fn roots_gegenbauer(n: usize, alpha: f64) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -383,7 +383,7 @@ pub fn roots_gegenbauer(n: usize, alpha: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::genlaguerre(3,0.5,false)?;
@@ -391,7 +391,7 @@ pub fn roots_gegenbauer(n: usize, alpha: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy genlaguerre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.genlaguerre.html).
 pub fn genlaguerre(n: usize, alpha: f64, monic: bool) -> Result<Vec<f64>> {
@@ -417,7 +417,7 @@ pub fn genlaguerre(n: usize, alpha: f64, monic: bool) -> Result<Vec<f64>> {
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_genlaguerre(3,0.5)?;
@@ -425,7 +425,7 @@ pub fn genlaguerre(n: usize, alpha: f64, monic: bool) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_genlaguerre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_genlaguerre.html).
 pub fn roots_genlaguerre(n: usize, alpha: f64) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -451,7 +451,7 @@ pub fn roots_genlaguerre(n: usize, alpha: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::laguerre(3,false)?;
@@ -459,7 +459,7 @@ pub fn roots_genlaguerre(n: usize, alpha: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy laguerre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.laguerre.html).
 pub fn laguerre(n: usize, monic: bool) -> Result<Vec<f64>> {
@@ -485,7 +485,7 @@ pub fn laguerre(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_laguerre(3)?;
@@ -493,7 +493,7 @@ pub fn laguerre(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_laguerre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_laguerre.html).
 pub fn roots_laguerre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -519,7 +519,7 @@ pub fn roots_laguerre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::hermite(3,false)?;
@@ -527,7 +527,7 @@ pub fn roots_laguerre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy hermite](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hermite.html).
 pub fn hermite(n: usize, monic: bool) -> Result<Vec<f64>> {
@@ -553,7 +553,7 @@ pub fn hermite(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_hermite(3)?;
@@ -561,7 +561,7 @@ pub fn hermite(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_hermite](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_hermite.html).
 pub fn roots_hermite(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -587,7 +587,7 @@ pub fn roots_hermite(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::hermitenorm(3,false)?;
@@ -595,7 +595,7 @@ pub fn roots_hermite(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy hermitenorm](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hermitenorm.html).
 pub fn hermitenorm(n: usize, monic: bool) -> Result<Vec<f64>> {
@@ -621,7 +621,7 @@ pub fn hermitenorm(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_hermitenorm(3)?;
@@ -629,7 +629,7 @@ pub fn hermitenorm(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_hermitenorm](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_hermitenorm.html).
 pub fn roots_hermitenorm(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -655,7 +655,7 @@ pub fn roots_hermitenorm(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::chebyt(3,false)?;
@@ -663,7 +663,7 @@ pub fn roots_hermitenorm(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chebyt.html).
 pub fn chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
@@ -689,7 +689,7 @@ pub fn chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_chebyt(3)?;
@@ -697,7 +697,7 @@ pub fn chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_chebyt.html).
 pub fn roots_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -723,7 +723,7 @@ pub fn roots_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::chebyu(3,false)?;
@@ -731,7 +731,7 @@ pub fn roots_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chebyu.html).
 pub fn chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
@@ -757,7 +757,7 @@ pub fn chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_chebyu(3)?;
@@ -765,7 +765,7 @@ pub fn chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_chebyu.html).
 pub fn roots_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -791,7 +791,7 @@ pub fn roots_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::chebyc(3,false)?;
@@ -799,7 +799,7 @@ pub fn roots_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chebyc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chebyc.html).
 pub fn chebyc(n: usize, monic: bool) -> Result<Vec<f64>> {
@@ -825,7 +825,7 @@ pub fn chebyc(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_chebyc(3)?;
@@ -833,7 +833,7 @@ pub fn chebyc(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_chebyc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_chebyc.html).
 pub fn roots_chebyc(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -859,7 +859,7 @@ pub fn roots_chebyc(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::chebys(3,false)?;
@@ -867,7 +867,7 @@ pub fn roots_chebyc(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chebys](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chebys.html).
 pub fn chebys(n: usize, monic: bool) -> Result<Vec<f64>> {
@@ -893,7 +893,7 @@ pub fn chebys(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_chebys(3)?;
@@ -901,7 +901,7 @@ pub fn chebys(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_chebys](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_chebys.html).
 pub fn roots_chebys(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -927,7 +927,7 @@ pub fn roots_chebys(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::sh_chebyt(3,false)?;
@@ -935,7 +935,7 @@ pub fn roots_chebys(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy sh_chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sh_chebyt.html).
 pub fn sh_chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
@@ -961,7 +961,7 @@ pub fn sh_chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_sh_chebyt(3)?;
@@ -969,7 +969,7 @@ pub fn sh_chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_sh_chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_sh_chebyt.html).
 pub fn roots_sh_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -995,7 +995,7 @@ pub fn roots_sh_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::sh_chebyu(3,false)?;
@@ -1003,7 +1003,7 @@ pub fn roots_sh_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy sh_chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sh_chebyu.html).
 pub fn sh_chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
@@ -1029,7 +1029,7 @@ pub fn sh_chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_sh_chebyu(3)?;
@@ -1037,7 +1037,7 @@ pub fn sh_chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_sh_chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_sh_chebyu.html).
 pub fn roots_sh_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -1063,7 +1063,7 @@ pub fn roots_sh_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::sh_legendre(3,false)?;
@@ -1071,7 +1071,7 @@ pub fn roots_sh_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy sh_legendre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sh_legendre.html).
 pub fn sh_legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
@@ -1097,7 +1097,7 @@ pub fn sh_legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_sh_legendre(3)?;
@@ -1105,7 +1105,7 @@ pub fn sh_legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_sh_legendre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_sh_legendre.html).
 pub fn roots_sh_legendre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -1131,7 +1131,7 @@ pub fn roots_sh_legendre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// [`Error::NonFiniteEvaluation`] if coefficients overflow or normalization is singular.
 /// Coefficients are ordinary vectors and can be evaluated with Horner's rule.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let coefficients = sci_special::sh_jacobi(3,2.5,1.5,false)?;
@@ -1139,7 +1139,7 @@ pub fn roots_sh_legendre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy sh_jacobi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sh_jacobi.html).
 pub fn sh_jacobi(n: usize, p: f64, q: f64, monic: bool) -> Result<Vec<f64>> {
@@ -1174,7 +1174,7 @@ pub fn sh_jacobi(n: usize, p: f64, q: f64, monic: bool) -> Result<Vec<f64>> {
 /// eigensolver failure returns [`Error::NonFiniteEvaluation`] or [`Error::NumericalFailure`].
 /// The total weight (SciPy's optional `mu`) is available by summing the returned weights.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let (nodes, weights) = sci_special::roots_sh_jacobi(3,2.5,1.5)?;
@@ -1182,7 +1182,7 @@ pub fn sh_jacobi(n: usize, p: f64, q: f64, monic: bool) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy roots_sh_jacobi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_sh_jacobi.html).
 pub fn roots_sh_jacobi(n: usize, p: f64, q: f64) -> Result<(Vec<f64>, Vec<f64>)> {

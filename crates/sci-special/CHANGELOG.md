@@ -1,5 +1,12 @@
 # Changelog
 
+## Ellip notation and documentation follow-up
+
+- Prefer `ellipf(phi, m)` for `F(phi, m)` and retain `ellipkinc` as an alias.
+- Admit Ellip-supported finite real incomplete cases and principal values; document Sci's finite-input/result restrictions separately.
+- Document elliptic definitions, wave equations, output ordering, derivative units, work bounds, and numerical limitations. SciPy parity is not a design requirement.
+- Update `lambert_w` to 2.0.8 and remove the superseded near-zero Taylor workaround; retain the branch-point Puiseux correction, verified against new independent 90-digit references.
+
 ## 0.3.0
 
 - Expand independent reference coverage and domain/work-limit regressions. Correct terminating hypergeometric series, small-argument U, oblate radial indexing/derivatives, Legendre singular endpoints, and modified-Struve series selection.

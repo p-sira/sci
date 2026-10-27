@@ -20,6 +20,11 @@ output ordering, and bounded order/size limits.
 Scalar functions return documented IEEE values; fallible integrals and
 sequences return the shared `sci_special::Result`.
 
+Elliptic integrals use Ellip's notation: `ellipf(phi, m)` computes `F(phi, m)`,
+with radians and elliptic parameter `m = k²`; incomplete third-kind arguments
+are `(phi, n, m)`. Supported principal values are documented per function.
+SciPy is an independent reference; complete SciPy parity is not required.
+
 ## Examples
 
 ```rust

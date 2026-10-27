@@ -6,7 +6,9 @@
 
 Run with ``uv run tests/scipy/generate_special.py``. Each CSV record stores
 the function, semicolon-separated arguments, and flattened real results.
-The JSON contains input cases only; expected results always come from SciPy.
+The JSON contains input cases only; references come from SciPy, independent
+defining quadrature/identities, or 90-digit Decimal inversion near Lambert W's
+branch point. No expected values come from Sci or its implementation backend.
 Real Lambert W comparisons use 8e-15 relative and zero absolute tolerance so
 tiny arguments are checked proportionally; inverse identities separately
 check the defining equation and real branch domains.
@@ -19,6 +21,8 @@ from pathlib import Path
 import numpy as np
 import scipy
 from scipy import special, integrate, optimize
+
+from elliptic_reference import extended_reference
 
 
 def stable_keip_zeros(count):
@@ -39,8 +43,36 @@ def stable_keip_zeros(count):
     ])
 
 
+def lambert_near_branch(x, lower):
+    """Independent inverse of w*exp(w), using 90-digit standard-library Decimal.
+
+    SciPy's Lambert W loses accuracy next to -1/e. Bracketed bisection of the
+    defining real equation avoids its branch-point approximation. Inputs are
+    the exact binary64 values; no Sci or backend coefficients are used.
+    """
+    from decimal import Decimal, localcontext
+    with localcontext() as context:
+        context.prec = 90
+        target = Decimal.from_float(float(x))
+        left, right = ((Decimal(-1000), Decimal(-1)) if lower
+                       else (Decimal(-1), Decimal(0)))
+        for _ in range(400):
+            middle = (left + right) / 2
+            residual = middle * middle.exp() - target
+            if (residual > 0) == lower:
+                left = middle
+            else:
+                right = middle
+        return float((left + right) / 2)
+
+
 def reference(name, args):
     """SciPy evaluations or independent quadrature for ellip-only functions."""
+    if name in {"lambertw", "lambertwm1"} and -1/np.e < args[0] < -1/np.e + 1e-6:
+        return lambert_near_branch(args[0], name == "lambertwm1")
+    handled, value = extended_reference(name, args)
+    if handled:
+        return value
     if name in {"ber", "bei", "ker", "kei", "berp", "beip", "kerp", "keip", "kelvin"} and args[0] >= 0.5:
         # DLMF 10.61: AMOS Bessel identities avoid cancellation in SciPy's
         # Kelvin power-series transition (notably bei' near x=12).

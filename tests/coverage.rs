@@ -478,7 +478,7 @@ fn elliptic_functions_reject_nonfinite_and_singular_parameters() {
     assert!(e::elliprd(0.0, 0.0, 1.0).is_err());
     assert!(e::elliprj(1.0, 1.0, 1.0, 0.0).is_err());
     assert!(e::cel(0.0, 1.0, 1.0, 1.0).is_err());
-    assert!(e::el3(0.3, 1.0, -1.0).is_err());
+    assert!(e::el3(1.0, 1.0, -1.0).is_err());
     assert!(e::heuman_lambda(0.3, -0.1).is_err());
 }
 

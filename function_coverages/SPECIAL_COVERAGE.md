@@ -41,7 +41,9 @@ references and property checks in the existing numerical suites.
 
 ## Remaining signature and precision gaps
 
-Name coverage does **not** imply all SciPy overloads or domains are implemented.
+SciPy supplies an independent reference inventory; 100% API, signature, domain,
+or special-value parity is not required. Name coverage does **not** imply all
+SciPy overloads or domains are implemented.
 The remaining gaps include NumPy broadcasting/output buffers, general complex
 input overloads, exact-integer modes, noninteger polynomial degrees, and
 Legendre/harmonic derivative-axis outputs. Sequences retain their documented
@@ -143,7 +145,8 @@ compiler or libclang is required for these special-function kernels.
 
 A clean `cargo llvm-cov --workspace --all-features --no-report` run, followed
 by LCOV reporting with `--ignore-filename-regex '(^|/)tests/'`, measures the
-following on the CI follow-up. All tests passed; the filter excludes test files
+following at commit `39ffe30`, before the documentation/dependency follow-up.
+All tests passed; the filter excludes test files
 and does not exclude numerical backends.
 
 | Scope | Covered lines | Executable lines | Coverage |
@@ -152,8 +155,9 @@ and does not exclude numerical backends.
 | `sci-special` | 16,724 | 18,370 | 91.04% |
 
 The 99% aim is not reached. Reaching it with this source layout requires at
-least 2,470 additional workspace lines, including 1,463 special-function lines,
-to be exercised. The largest special-function gaps are remaining continuation
+least 2,470 additional workspace lines to be exercised, or 1,463 lines for
+`sci-special` itself to reach 99%. These counts precede the documentation
+follow-up. The largest special-function gaps are remaining continuation
 and exceptional branches in `specfun.rs` (468 lines), Faddeeva approximation
 and exceptional paths (193 lines), and general-order Bessel J (71 lines).
 Validation/error and rare precision-failure paths also remain. These are
@@ -163,3 +167,25 @@ Codecov's patch metric has a different denominator: on `f4c7df4` it reports
 87.41%, improved from 68.91%, against the unchanged 94.90% gate. The later
 transformation fixtures require a fresh CI upload; neither this gate nor
 CodSpeed's performance gate is claimed to be resolved.
+
+## Elliptic conventions and dependency follow-up
+
+Elliptic integrals follow Ellip's notation and argument order: `F(phi, m)` is
+`ellipf`, with `ellipkinc` retained as an alias; `Π(phi, n, m)` takes amplitude,
+characteristic, then parameter. `m = k²`, `kc² = 1−m`, and Bulirsch's `p = 1−n`
+are distinct conventions. Amplitudes use radians; Bulirsch's `x` is a tangent.
+The wrappers admit supported finite real `m >= 1` incomplete cases and Cauchy
+principal values (negative `y` for `R_C`, negative `p` for `R_J` and supported
+Bulirsch cases, and supported third-kind characteristics). Finite inputs and
+finite results remain Sci restrictions; backend domain failures are shared errors.
+SciPy fixtures cover shared domains; independent defining integrals and identities
+cover extensions. Full SciPy parity is not a completion criterion.
+
+`lambert_w` is updated from 2.0.5 to 2.0.8. Its upstream near-zero expansion
+replaces Sci's Taylor workaround. The branch-point Puiseux correction remains:
+at the next binary64 value above the rounded `−1/e`, upstream's principal
+branch differs from a 90-digit defining-equation reference by about `2e-9`.
+Standard-library Decimal bisection independently supplies new checked-in
+references for both branches in this region; it uses no Sci/backend coefficients.
+Signed-zero/domain checks and inverse identities remain. Both public branches
+still evaluate in binary64 before conversion to `T`.

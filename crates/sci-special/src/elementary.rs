@@ -29,7 +29,7 @@ use sci_core::Float;
 /// Shifting by the largest element avoids overflow. No axis, weights, or signed
 /// log-sum options are provided; compose operations on ordinary vectors.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!((sci_special::logsumexp(&[1000.0,1000.0])-1000.0-2.0_f64.ln()).abs()<1e-12);
@@ -75,7 +75,7 @@ pub fn logsumexp<T: Float>(values: &[T]) -> T {
 /// Finite real inputs; nonfinite normalization propagates NaNs. An empty slice
 /// returns an empty vector. Maximum-shifting keeps the exponential bounded.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert_eq!(sci_special::softmax(&[1000.0,1000.0]),vec![0.5,0.5]);
@@ -113,7 +113,7 @@ pub fn softmax<T: Float>(values: &[T]) -> Vec<T> {
 /// Finite real inputs; nonfinite normalization propagates NaNs. Empty inputs
 /// return an empty vector. This preserves small differences even at large offsets.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!((sci_special::log_softmax(&[1000.0,1000.0])[0]+2.0_f64.ln()).abs()<1e-14);
@@ -170,14 +170,14 @@ fn bernoulli_numbers(n: usize) -> Vec<f64> {
 /// Real order v, argument in the corresponding Bessel domain, and n≤1024. High-order derivatives may suffer cancellation.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::jvp(0.5,2.0,2);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy jvp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jvp.html).
 pub fn jvp(v: f64, x: f64, n: u32) -> f64 {
@@ -191,14 +191,14 @@ pub fn jvp(v: f64, x: f64, n: u32) -> f64 {
 /// Real order v, argument in the corresponding Bessel domain, and n≤1024. High-order derivatives may suffer cancellation.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::yvp(0.5,2.0,2);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy yvp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.yvp.html).
 pub fn yvp(v: f64, x: f64, n: u32) -> f64 {
@@ -212,14 +212,14 @@ pub fn yvp(v: f64, x: f64, n: u32) -> f64 {
 /// Real order v, argument in the corresponding Bessel domain, and n≤1024. High-order derivatives may suffer cancellation.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::ivp(0.5,2.0,2);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ivp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ivp.html).
 pub fn ivp(v: f64, x: f64, n: u32) -> f64 {
@@ -233,14 +233,14 @@ pub fn ivp(v: f64, x: f64, n: u32) -> f64 {
 /// Real order v, argument in the corresponding Bessel domain, and n≤1024. High-order derivatives may suffer cancellation.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::kvp(0.5,2.0,2);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy kvp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kvp.html).
 pub fn kvp(v: f64, x: f64, n: u32) -> f64 {
@@ -254,14 +254,14 @@ pub fn kvp(v: f64, x: f64, n: u32) -> f64 {
 /// Real order v, positive real x, and n≤1024.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::h1vp(0.5,2.0,2);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy h1vp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.h1vp.html).
 pub fn h1vp(v: f64, x: f64, n: u32) -> Complex {
@@ -278,14 +278,14 @@ pub fn h1vp(v: f64, x: f64, n: u32) -> Complex {
 /// Real order v, positive real x, and n≤1024.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::h2vp(0.5,2.0,2);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy h2vp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.h2vp.html).
 pub fn h2vp(v: f64, x: f64, n: u32) -> Complex {
@@ -302,14 +302,14 @@ pub fn h2vp(v: f64, x: f64, n: u32) -> Complex {
 /// Integer degree 0≤n≤4096; real x in the corresponding Bessel domain. The modified second kind uses SciPy's π/(2x) normalization.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::spherical_jn(2,0.5_f64,false);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy spherical_jn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.spherical_jn.html).
 ///
@@ -337,14 +337,14 @@ pub fn spherical_jn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
 /// Integer degree 0≤n≤4096; real x in the corresponding Bessel domain. The modified second kind uses SciPy's π/(2x) normalization.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::spherical_yn(2,0.5_f64,false);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy spherical_yn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.spherical_yn.html).
 ///
@@ -372,14 +372,14 @@ pub fn spherical_yn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
 /// Integer degree 0≤n≤4096; real x in the corresponding Bessel domain. The modified second kind uses SciPy's π/(2x) normalization.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::spherical_in(2,0.5_f64,false);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy spherical_in](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.spherical_in.html).
 ///
@@ -407,14 +407,14 @@ pub fn spherical_in<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
 /// Integer degree 0≤n≤4096; real x in the corresponding Bessel domain. The modified second kind uses SciPy's π/(2x) normalization.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::spherical_kn(2,0.5_f64,false);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy spherical_kn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.spherical_kn.html).
 ///
@@ -442,14 +442,14 @@ pub fn spherical_kn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
 /// Integer degree 0≤n≤4096 and real x.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::eval_chebyc(3,0.3);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy eval_chebyc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_chebyc.html).
 pub fn eval_chebyc(n: i32, x: f64) -> f64 {
@@ -463,14 +463,14 @@ pub fn eval_chebyc(n: i32, x: f64) -> f64 {
 /// Integer degree 0≤n≤4096 and real x.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::eval_chebys(3,0.3);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy eval_chebys](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_chebys.html).
 pub fn eval_chebys(n: i32, x: f64) -> f64 {
@@ -484,14 +484,14 @@ pub fn eval_chebys(n: i32, x: f64) -> f64 {
 /// Integer degree 0≤n≤4096 and real x.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::eval_sh_chebyt(3,0.3);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy eval_sh_chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_sh_chebyt.html).
 pub fn eval_sh_chebyt(n: i32, x: f64) -> f64 {
@@ -505,14 +505,14 @@ pub fn eval_sh_chebyt(n: i32, x: f64) -> f64 {
 /// Integer degree 0≤n≤4096 and real x.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::eval_sh_chebyu(3,0.3);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy eval_sh_chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_sh_chebyu.html).
 pub fn eval_sh_chebyu(n: i32, x: f64) -> f64 {
@@ -526,14 +526,14 @@ pub fn eval_sh_chebyu(n: i32, x: f64) -> f64 {
 /// Integer degree 0≤n≤4096 and real x.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::eval_sh_legendre(3,0.3);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy eval_sh_legendre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_sh_legendre.html).
 pub fn eval_sh_legendre(n: i32, x: f64) -> f64 {
@@ -547,14 +547,14 @@ pub fn eval_sh_legendre(n: i32, x: f64) -> f64 {
 /// Integer 0≤n≤4096, q>0, p−q>−1, and real x.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::eval_sh_jacobi(3,2.5,1.5,0.3);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy eval_sh_jacobi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_sh_jacobi.html).
 pub fn eval_sh_jacobi(n: i32, p: f64, q: f64, x: f64) -> f64 {
@@ -570,14 +570,14 @@ pub fn eval_sh_jacobi(n: i32, p: f64, q: f64, x: f64) -> f64 {
 /// Finite real x in radians and positive integer n.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::diric(0.3,3);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy diric](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.diric.html).
 pub fn diric(x: f64, n: u32) -> f64 {
@@ -605,14 +605,14 @@ pub fn diric(x: f64, n: u32) -> f64 {
 /// Nonnegative real n; overflow gives +∞. Exact arbitrary-precision integer arithmetic is not provided.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::factorial(5.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy factorial](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.factorial.html).
 pub fn factorial(n: f64) -> f64 {
@@ -626,14 +626,14 @@ pub fn factorial(n: f64) -> f64 {
 /// Integer n; negative n gives zero in SciPy's default convention. Values above the overflow threshold return +∞.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::factorial2(7);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy factorial2](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.factorial2.html).
 pub fn factorial2(n: i32) -> f64 {
@@ -653,14 +653,14 @@ pub fn factorial2(n: i32) -> f64 {
 /// Positive integer k; negative n gives zero and n=0 gives one. n≤100000 to bound work.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::factorialk(8,3);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy factorialk](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.factorialk.html).
 pub fn factorialk(n: i32, k: u32) -> f64 {
@@ -689,14 +689,14 @@ pub fn factorialk(n: i32, k: u32) -> f64 {
 /// n,k≥0 and k≤n; outside gives zero. No exact integer or repetition option is provided.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::comb(5.0_f64,2.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy comb](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.comb.html).
 ///
@@ -722,14 +722,14 @@ pub fn comb<T: sci_core::Float>(n: T, k: T) -> T {
 /// n≥k≥0; outside gives zero. k≤100000 to bound work.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::perm(5.0,2);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy perm](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.perm.html).
 pub fn perm(n: f64, k: u32) -> f64 {
@@ -749,14 +749,14 @@ pub fn perm(n: f64, k: u32) -> f64 {
 /// Real a and m; noninteger continuations follow SciPy's real convention.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::poch(2.5_f64,3.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy poch](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.poch.html).
 ///
@@ -778,14 +778,14 @@ pub fn poch<T: sci_core::Float>(a: T, m: T) -> T {
 /// n,k≤4096; k>n gives zero. Values use f64 and may overflow; exact integer mode is omitted.
 /// Results use IEEE NaN for invalid inputs and infinities for overflow or poles.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::stirling2(5,2);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy stirling2](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.stirling2.html).
 pub fn stirling2(n: u32, k: u32) -> f64 {
@@ -813,7 +813,7 @@ pub fn stirling2(n: u32, k: u32) -> f64 {
 /// n≤256. Even entries use the gamma–zeta relation; odd entries above one are exactly zero.
 /// Invalid sizes or parameters return [`Error::InvalidInput`]. Numerical overflow returns [`Error::NonFiniteEvaluation`] where validated.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::bernoulli(8)?;
@@ -821,7 +821,7 @@ pub fn stirling2(n: u32, k: u32) -> f64 {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy bernoulli](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bernoulli.html).
 pub fn bernoulli(n: usize) -> Result<Vec<f64>> {
@@ -842,7 +842,7 @@ pub fn bernoulli(n: usize) -> Result<Vec<f64>> {
 /// n≤256; odd entries are zero. Overflow returns an error.
 /// Invalid sizes or parameters return [`Error::InvalidInput`]. Numerical overflow returns [`Error::NonFiniteEvaluation`] where validated.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::euler(8)?;
@@ -850,7 +850,7 @@ pub fn bernoulli(n: usize) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy euler](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.euler.html).
 pub fn euler(n: usize) -> Result<Vec<f64>> {
@@ -878,7 +878,7 @@ pub fn euler(n: usize) -> Result<Vec<f64>> {
 /// Finite real v≤256 and finite real x. For negative v, only the two lowest fractional orders are returned, following SciPy's sequence convention.
 /// Invalid sizes or parameters return [`Error::InvalidInput`]. Numerical overflow returns [`Error::NonFiniteEvaluation`] where validated.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::pbdv_seq(2.5,0.3)?;
@@ -886,7 +886,7 @@ pub fn euler(n: usize) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy pbdv_seq](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pbdv_seq.html).
 pub fn pbdv_seq(v: f64, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -908,7 +908,7 @@ pub fn pbdv_seq(v: f64, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// Finite real v≤256 and finite real x. For negative v, only the two lowest fractional orders are returned, following SciPy's sequence convention.
 /// Invalid sizes or parameters return [`Error::InvalidInput`]. Numerical overflow returns [`Error::NonFiniteEvaluation`] where validated.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::pbvv_seq(2.5,0.3)?;
@@ -916,7 +916,7 @@ pub fn pbdv_seq(v: f64, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy pbvv_seq](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pbvv_seq.html).
 pub fn pbvv_seq(v: f64, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -938,7 +938,7 @@ pub fn pbvv_seq(v: f64, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// n≤256 and real x; SciPy's complex-input overload is not provided.
 /// Invalid sizes or parameters return [`Error::InvalidInput`]. Numerical overflow returns [`Error::NonFiniteEvaluation`] where validated.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::pbdn_seq(3,0.3)?;
@@ -946,7 +946,7 @@ pub fn pbvv_seq(v: f64, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy pbdn_seq](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pbdn_seq.html).
 pub fn pbdn_seq(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -963,7 +963,7 @@ pub fn pbdn_seq(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// n≤4096 and positive finite real x.
 /// Invalid sizes or parameters return [`Error::InvalidInput`]. Numerical overflow returns [`Error::NonFiniteEvaluation`] where validated.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::riccati_jn(3,0.5)?;
@@ -971,7 +971,7 @@ pub fn pbdn_seq(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy riccati_jn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.riccati_jn.html).
 pub fn riccati_jn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -998,7 +998,7 @@ pub fn riccati_jn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// n≤4096 and positive finite real x.
 /// Invalid sizes or parameters return [`Error::InvalidInput`]. Numerical overflow returns [`Error::NonFiniteEvaluation`] where validated.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::riccati_yn(3,0.5)?;
@@ -1006,7 +1006,7 @@ pub fn riccati_jn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy riccati_yn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.riccati_yn.html).
 pub fn riccati_yn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -1033,7 +1033,7 @@ pub fn riccati_yn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// Finite nonnegative real order v≤256 and positive finite real x.
 /// Invalid sizes or parameters return [`Error::InvalidInput`]. Numerical overflow returns [`Error::NonFiniteEvaluation`] where validated.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let value = sci_special::lmbda(2.5,0.5)?;
@@ -1041,7 +1041,7 @@ pub fn riccati_yn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy lmbda](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.lmbda.html).
 pub fn lmbda(v: f64, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {

@@ -175,3 +175,30 @@ fn elementary_limits_preserve_parity_and_overflow_conventions() {
         assert!(function(i64::MAX, 1.0_f64, true).is_nan());
     }
 }
+
+#[test]
+fn elliptic_real_paths_and_pole_errors_match_documented_domains() {
+    use sci::special::elliptic as e;
+    let pi = std::f64::consts::PI;
+    for (phi, m) in [(pi, 2.0), (0.9, 2.0)] {
+        assert!(e::ellipf(phi, m).is_err());
+        assert!(e::ellipeinc(phi, m).is_err());
+        assert!(e::ellipdinc(phi, m).is_err());
+    }
+    assert!(e::ellipf(pi, 1.0).is_err());
+    assert!(e::ellippiinc(pi / 2.0, 1.0, 0.3).is_err());
+    assert!(e::ellippiinc_bulirsch(pi / 2.0, 1.0, 0.3).is_err());
+    assert!(e::el3(1.0, 0.8, -1.0).is_err());
+    assert!(e::el3(0.3, 1.2, -1.0).is_err());
+    assert!(e::cel3(0.8, 0.0).is_err());
+    for phi in [-0.4_f64, 0.0, 0.4] {
+        // Ellip's F(phi,1) = atanh(sin(phi)) before the first pole.
+        let value = e::ellipf(phi, 1.0).unwrap();
+        assert!((value - phi.sin().atanh()).abs() < 2e-15);
+        assert_eq!(value, e::ellipkinc(phi, 1.0).unwrap());
+    }
+    assert_eq!(
+        e::ellipf(0.4_f32, 2.0).unwrap(),
+        e::ellipkinc(0.4_f32, 2.0).unwrap()
+    );
+}
