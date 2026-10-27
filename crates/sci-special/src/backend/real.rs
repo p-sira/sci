@@ -44,11 +44,6 @@ real_kernel! {
 }
 
 real_kernel! {
-/// Beta function B(a,b), continued to real arguments where defined.
-    beta(a, b) { crate::backend::cephes64::beta(a, b) }
-}
-
-real_kernel! {
 /// Natural logarithm of the absolute beta function.
     betaln(a, b) { crate::backend::cephes64::lbeta(a, b) }
 }
@@ -346,21 +341,6 @@ pub fn zeta<T: Float>(s: T, q: T) -> Result<T, StrErr> {
 real_kernel! {
 /// Riemann zeta minus one, evaluated without cancellation.
     zetac(x) { crate::backend::cephes64::zetac(x) }
-}
-
-real_kernel! {
-/// Real Riemann zeta function.
-    riemann_zeta(x) { crate::backend::cephes64::riemann_zeta(x) }
-}
-
-real_kernel! {
-/// log Gamma(1+x), accurate near x = 0.
-    lgam1p(x) { crate::backend::cephes64::lgam1p(x) }
-}
-
-real_kernel! {
-/// log(1+x) - x, accurate near zero. Requires x >= -1.
-    log1pmx(x) { crate::backend::cephes64::log1pmx(x) }
 }
 
 real_kernel! {

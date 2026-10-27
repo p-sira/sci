@@ -122,13 +122,4 @@ pub fn gdtrc(a: f64, b: f64, x: f64) -> f64 {
     }
 }
 
-pub fn gdtri(a: f64, b: f64, y: f64) -> f64 {
-    if y < 0.0 || y > 1.0 || a <= 0.0 || b < 0.0 {
-        //sf_error("gdtri", SF_ERROR_DOMAIN, NULL);
-        f64::NAN
-    } else {
-        igamci(b, 1.0 - y) / a
-    }
-}
-
 // Very few tests due to simplicity of implementation

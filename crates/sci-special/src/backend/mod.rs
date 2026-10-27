@@ -1,10 +1,10 @@
 //! Private pure Rust numerical kernels.
-#![allow(dead_code, unused_imports, clippy::excessive_precision)]
+#![allow(unused_imports, clippy::excessive_precision)]
 
 /// Static error string, as in Ellip.
 pub type StrErr = &'static str;
 
-#[allow(dead_code, unused_imports)]
+#[allow(unused_imports)]
 mod cephes64;
 mod real;
 mod utils;
@@ -14,8 +14,6 @@ mod elementary;
 pub use elementary::*;
 mod elliptic;
 pub use elliptic::*;
-mod convex_analysis;
-pub use convex_analysis::*;
 mod boxcox;
 pub use boxcox::*;
 mod expint;
@@ -30,7 +28,7 @@ pub use bessel::{cyl_hankel_1, cyl_hankel_1e, cyl_hankel_2, cyl_hankel_2e};
 pub use bessel::{
     iv as cyl_bessel_i, ive as cyl_bessel_ie, kv as cyl_bessel_k, kve as cyl_bessel_ke,
 };
-#[allow(dead_code)]
+#[allow(dead_code)] // Private trait methods are also used by the independent unit tests.
 mod faddeeva;
 mod spherical;
 pub use complex::wofz;

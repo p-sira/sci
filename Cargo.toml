@@ -372,3 +372,8 @@ required-features = ["complex", "constants", "differentiate", "fft", "integrate"
 name = "special_float"
 path = "tests/special_float.rs"
 required-features = ["special"]
+
+[[test]]
+name = "special_domains"
+path = "tests/special_domains.rs"
+required-features = ["special", "complex"]

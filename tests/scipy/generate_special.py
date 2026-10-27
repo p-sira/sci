@@ -41,6 +41,82 @@ def stable_keip_zeros(count):
 
 def reference(name, args):
     """SciPy evaluations or independent quadrature for ellip-only functions."""
+    if name in {"ber", "bei", "ker", "kei", "berp", "beip", "kerp", "keip", "kelvin"} and args[0] >= 0.5:
+        # DLMF 10.61: AMOS Bessel identities avoid cancellation in SciPy's
+        # Kelvin power-series transition (notably bei' near x=12).
+        x, = args
+        rotation = np.exp(1j*np.pi/4)
+        z = rotation*x
+        values = (special.iv(0,z), special.kv(0,z),
+                  rotation*special.iv(1,z), -rotation*special.kv(1,z))
+        if name == "kelvin":
+            return values
+        index = {"ber":0,"bei":0,"ker":1,"kei":1,
+                 "berp":2,"beip":2,"kerp":3,"keip":3}[name]
+        return values[index].imag if name in {"bei","kei","beip","keip"} else values[index].real
+    if name == "modstruve" and -args[0]-0.5 >= 0 and (-args[0]-0.5).is_integer():
+        # DLMF 11.4.3: L_{-n-1/2}(x)=I_{n+1/2}(x). SciPy's direct
+        # Struve dispatch loses accuracy around x=12 for this exact case.
+        return special.iv(-args[0], args[1])
+    if name == "modstruve" and args[0] > -0.5 and args[1] > 0:
+        # DLMF 11.5.6: independent integral for L_v. The direct SciPy
+        # Struve transition also loses accuracy at positive half orders.
+        v, x = args
+        factor = np.exp((v+1)*np.log(x/2)-special.gammaln(v+0.5))*4/np.sqrt(np.pi)
+        value = integrate.quad(
+            lambda t: np.sinh(x*t)/x*(1+t)**(v-0.5), 0, 1,
+            weight="alg", wvar=(0, v-0.5), epsabs=2e-13, epsrel=2e-13,
+        )[0]
+        return factor*value
+    if name in {"h1vp", "h2vp"}:
+        # DLMF 10.4.3: H^(1,2)=J±iY. Evaluating the real derivatives
+        # independently avoids AMOS's cross-component cancellation when
+        # |Y| is many orders of magnitude larger than |J|.
+        sign = 1 if name == "h1vp" else -1
+        return special.jvp(*args) + sign*1j*special.yvp(*args)
+    if name == "yve" and args[1] > 0:
+        # The real-axis exponential factor is one. SciPy's scaled AMOS
+        # overflow branch can return +inf where Y_v(x) tends to -inf.
+        return special.yv(*args)
+    if name == "it2i0k0" and args[0] > 0:
+        x, = args
+        # Independent defining integrals avoid SciPy 1.18's legacy large-x
+        # transcription errors (e.g. K's tail at x=16 and I's at x=64).
+        first = integrate.quad(lambda t: (special.i0(t)-1)/t, 0, x,
+                               epsabs=2e-13, epsrel=2e-13)[0]
+        second = integrate.quad(lambda t: special.k0(t)/t, x, np.inf,
+                                epsabs=1e-300, epsrel=2e-13)[0]
+        return first, second
+    if name == "obl_rad2" and args[3] < 1.5:
+        m, n, c, x = args
+        # Continue the accurately evaluated large-argument solution using
+        # the defining radial ODE (DLMF 30.2.1, z=i*x). This avoids the
+        # incorrectly indexed qstar convolution in SciPy's small-x path.
+        cv = special.obl_cv(m, n, c)
+        initial = special.obl_rad2(m, n, c, 2.0)
+        def ode(t, state):
+            value, derivative = state
+            denominator = 1+t*t
+            return derivative, (-2*t*derivative
+                                -(c*c*t*t-cv+m*m/denominator)*value)/denominator
+        solution = integrate.solve_ivp(ode, (2.0, x), initial, method="DOP853",
+                                       rtol=2e-13, atol=2e-14)
+        if not solution.success:
+            raise RuntimeError(solution.message)
+        return tuple(solution.y[:, -1])
+    if name == "hyperu":
+        value = special.hyperu(*args)
+        a, b, x = args
+        if not np.isfinite(value) and a > 0 and x > 0:
+            # SciPy's legacy dispatch can fail for valid inputs (e.g. 12,10,.01).
+            # DLMF 13.4.4 with s=x*t supplies an independent convergent integral.
+            return integrate.quad(
+                lambda s: np.exp(-s + (a-1)*np.log(s)
+                                 + (b-a-1)*np.log1p(s/x)
+                                 - special.gammaln(a) - a*np.log(x)),
+                0, np.inf, epsabs=2e-13, epsrel=2e-13,
+            )[0]
+        return value
     if name in {"modfresnelp", "modfresnelm"} and args[0] < 0:
         # SciPy's negative-x branch overwrites Re(F) before computing Im(F).
         # Reflect the positive-x reference using the defining Fresnel integral.

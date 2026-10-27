@@ -19,17 +19,6 @@ fn branch_series(x: f64, lower: bool) -> Option<f64> {
     )
 }
 
-/// Real Lambert W on branch k = 0 or k = -1.
-///
-/// Other branches return an error; use [`crate::backend::complex::lambertw`] for complex results.
-pub fn lambertw<T: Float>(x: T, k: i32) -> Result<T, StrErr> {
-    match k {
-        0 => lambertw0(x),
-        -1 => lambertwm1(x),
-        _ => Err("lambertw: Real branches require k = 0 or k = -1."),
-    }
-}
-
 real_kernel! {
     /// Principal real Lambert W branch, for x >= -1/e.
     ///

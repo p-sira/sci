@@ -63,7 +63,7 @@ unbounded recurrences in the translated families:
 
 | Family | Supported work and remaining limits |
 | --- | --- |
-| Mathieu | Order at most 128 and `abs(q) <= 100`; Fourier matrices at most 251 by 251; eigensolver at most 100,000 QR iterations. Angular inputs are degrees and returned derivatives are with respect to radians, following SciPy. |
+| Mathieu | Order at most 128 and `abs(q) <= 100`; Fourier recurrences at most 251 terms; Sturm eigenvalue bisection at most 128 steps and four tridiagonal inverse iterations. Angular inputs are degrees and returned derivatives are with respect to radians, following SciPy. |
 | Spheroidal | `0 <= m <= n <= 128`, finite `abs(c) <= 64`; fixed private recurrence storage; eigenvalue bisection at most 128 iterations per value. Parameter sign is reduced by the defining `c²` convention. |
 | Parabolic cylinder | D/V require finite inputs and `abs(v) <= 4096`; W requires `abs(a), abs(x) <= 5`. Values and first derivatives are returned in that order. |
 | Hypergeometric | 1F1 requires `abs(a) <= 100000`; 2F1 bounds `abs(a), abs(b), abs(c)` and U bounds `abs(a), abs(b)` by 100,000. All inputs must be finite. Series/asymptotic and continuation accuracy is parameter dependent; severe cancellation can return NaN or lose relative accuracy. |
@@ -95,7 +95,7 @@ read committed CSVs. Float references quantize inputs before calling SciPy and
 round expected outputs to the selected precision. No expected values come from
 Sci or its Rust dependencies.
 
-The reference generator documents three SciPy limitations rather than weakening
+The reference generator documents SciPy limitations rather than weakening
 comparison tolerances:
 
 - Airy-integral legacy series termination loses about `4e-10` at `x=0.5`;
@@ -108,6 +108,14 @@ comparison tolerances:
   the reference and preserves complex conjugacy of the two sign conventions.
 
 The existing independent scaled-Bessel reference for `keip_zeros` remains.
+Expanded fixtures additionally verify Kelvin values through complex Bessel identities,
+modified Struve values through defining integrals, Hankel derivatives through
+independent J/Y derivatives, and oblate radial functions through ODE continuation.
+The latter caught two indexing errors inherited from the C++ translation; the
+original Fortran indexing and the radial Wronskian independently verify the fixes.
+The generator also replaces erroneous scaled-Y overflow signs and checks
+modified-Bessel integrals and the hypergeometric U failure case with quadrature.
+
 Additional checks cover parabolic-cylinder recurrences, modified-Fresnel
 reflection, zero-parameter spheroidal/Legendre agreement, inverse distributions,
 zero ordering, shared-type interoperability, and invalid inputs/work limits.
@@ -116,7 +124,7 @@ zero ordering, shared-type interoperability, and invalid inputs/work limits.
 
 Private Rust kernels supply the Cephes, Faddeeva, hypergeometric, integral, and
 wave algorithms. `complex-bessel` supplies complex Bessel/Airy/Hankel kernels;
-`ellip`, `lambert_w`, and the existing `nalgebra` solver are reused. Third-party
+`ellip`, `lambert_w`, and the existing `nalgebra` polynomial solver are reused. Third-party
 notices are packaged under `crates/sci-special/LICENSES`.
 
 The final two signal-filter calls to scaled complex K also use `complex-bessel`.

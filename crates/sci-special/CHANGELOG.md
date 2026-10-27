@@ -2,6 +2,9 @@
 
 ## 0.3.0
 
+- Expand independent reference coverage and domain/work-limit regressions. Correct terminating hypergeometric series, small-argument U, oblate radial indexing/derivatives, Legendre singular endpoints, and modified-Struve series selection.
+- Replace the dense Mathieu eigenproblem with bounded tridiagonal iteration. Cache quadrature rules and use double-double Airy/Struve integral series on common domains. Remove private copied algorithms unused by the public API.
+
 - Replace the private `xsf` and `special` dependencies with pure Rust kernels, reusing `complex-bessel`, `ellip`, `lambert_w`, and `nalgebra`. Retain all 353 public numerical functions and remove the C++/libclang build requirement.
 - Extend 104 scalar and polynomial APIs to `sci_core::Float`, with independent f32/f64 fixtures. Document overload gaps and numerical work limits in `function_coverages/SPECIAL_COVERAGE.md`.
 - Correct Airy/Struve integral transition accuracy, negative modified-Fresnel reflection, and spherical derivative/scaled-Bessel signed-zero conventions using independent references.

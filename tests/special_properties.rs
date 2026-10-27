@@ -233,3 +233,26 @@ fn rust_kernel_recurrences_and_reflections() {
     assert!(s::hyp2f1(100001.0, 1.0, 2.0, 0.5).is_nan());
     assert!(s::lpmv(4097, 0.5, 0.3).is_nan());
 }
+
+#[test]
+fn oblate_radial_pairs_preserve_the_defining_wronskian() {
+    // DLMF 30.4: W(R^(1),R^(2)) = 1/[c*(1+x^2)]. This independent
+    // identity checks values, derivatives, and normalization together,
+    // including the small-argument convolution and both parity branches.
+    for m in 0..=1 {
+        for n in [1, 3] {
+            for c in [0.01, 1.0, 5.0] {
+                for x in [0.0, 0.5, 1.01, 2.0] {
+                    let (first, first_prime) = s::obl_rad1(m, n, c, x);
+                    let (second, second_prime) = s::obl_rad2(m, n, c, x);
+                    finite_close(
+                        first * second_prime - first_prime * second,
+                        1.0 / (c * (1.0 + x * x)),
+                        2e-12,
+                        2e-10,
+                    );
+                }
+            }
+        }
+    }
+}

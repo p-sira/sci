@@ -58,18 +58,3 @@ real_kernel! {
         }
     }
 }
-real_kernel! {
-    /// Scaled exponential integral x*exp(x)*E₁(x), for x >= 0.
-    /// Evaluates without exponential overflow; tends to 1 as x tends to infinity.
-    scaled_exp1(x) {
-        if x < 0.0 { f64::NAN }
-        else if x == 0.0 { 0.0 }
-        else if x <= 1.0 { x * x.exp() * exp1_real(x) }
-        else if x <= 1250.0 {
-            let m = 20 + (80.0 / x) as i32;
-            let mut t = 0.0;
-            for k in (1..=m).rev() { let k = k as f64; t = k / (x + k / (1.0 + t)); }
-            1.0 / (1.0 + t)
-        } else { 1.0 + (-1.0 + (2.0 + (-6.0 + (24.0 - 120.0 / x) / x) / x) / x) / x }
-    }
-}

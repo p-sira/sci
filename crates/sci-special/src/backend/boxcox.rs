@@ -60,38 +60,3 @@ pub fn boxcox1p<T: Float>(x: T, lambda: T) -> Result<T, StrErr> {
         Ok(value)
     }
 }
-
-#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
-fn inverse_log<T: Float>(x: T, lambda: T) -> Result<T, StrErr> {
-    if x.is_nan() || lambda.is_nan() {
-        return Err("inv_boxcox: Arguments cannot be NAN.");
-    }
-    if lambda == 0.0 {
-        return Ok(x);
-    }
-    let product = lambda * x;
-    if product < -1.0 {
-        return Err("inv_boxcox: Requires 1 + lambda*x >= 0.");
-    }
-    if product.is_finite() {
-        Ok(product.ln_1p() / lambda)
-    } else {
-        let value =
-            ((T::one().copysign(lambda) * (x + lambda.recip())).ln() + lambda.abs().ln()) / lambda;
-        if value.is_nan() {
-            Err("inv_boxcox: Undefined result.")
-        } else {
-            Ok(value)
-        }
-    }
-}
-
-/// Inverse Box-Cox transformation. Requires 1 + lambda*x >= 0.
-pub fn inv_boxcox<T: Float>(x: T, lambda: T) -> Result<T, StrErr> {
-    Ok(inverse_log(x, lambda)?.exp())
-}
-
-/// Inverse Box-Cox transformation minus one, accurate near zero.
-pub fn inv_boxcox1p<T: Float>(x: T, lambda: T) -> Result<T, StrErr> {
-    Ok(inverse_log(x, lambda)?.exp_m1())
-}

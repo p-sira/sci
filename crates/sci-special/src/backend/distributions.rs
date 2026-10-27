@@ -113,16 +113,3 @@ pub fn pdtri<T: Float>(k: i32, y: T) -> Result<T, StrErr> {
         "pdtri: Requires k >= 0 and 0 <= y < 1.",
     )
 }
-
-crate::backend::utils::real_kernel! {
-    /// Gamma-distribution quantile, with finite rate a > 0 and finite shape b > 0.
-    /// Requires 0 <= y <= 1; returns zero at y = 0 and infinity at y = 1.
-    gdtri(a, b, y) {
-        if !a.is_finite() || !b.is_finite() || a <= 0.0 || b <= 0.0 || !(0.0..=1.0).contains(&y) {
-            f64::NAN
-        } else {
-            // Evaluate the lower-tail inverse directly, without forming 1-y.
-            cephes64::igami(b, y)/a
-        }
-    }
-}

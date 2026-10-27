@@ -3,38 +3,7 @@ use crate::backend::{cephes64, utils::real_kernel};
 #[allow(unused_imports)]
 use sci_core::Float;
 
-real_kernel! {
-    /// Inverse digamma on the positive real axis: returns x > 0 such that psi(x) = y.
-    ///
-    /// Negative infinity maps to zero; overflow and positive infinity map to infinity.
-    digammainv(y) { inverse_digamma(y) }
-}
-
 // Minka's initial estimate followed by Newton refinement, as in xsf/digammainv.h.
-fn inverse_digamma(y: f64) -> f64 {
-    if y == f64::NEG_INFINITY {
-        return 0.0;
-    }
-    let mut x = if y >= -2.22 {
-        y.exp() + 0.5
-    } else {
-        -1.0 / (y + 0.5772156649015328606)
-    };
-    // At these extremes the initial estimate is already accurate to rounding.
-    // Avoid overflowing the trigamma for tiny x or intermediate products for huge x.
-    if !x.is_finite() || x < 1e-150 || x > 1e16 {
-        return x;
-    }
-    for _ in 0..20 {
-        let step = (cephes64::psi(x) - y) / cephes64::zeta(2.0, x);
-        let next = x - step;
-        if step.abs() <= 4.0 * f64::EPSILON * x {
-            return next;
-        }
-        x = if next > 0.0 { next } else { x * 0.5 };
-    }
-    f64::NAN
-}
 
 pub(crate) fn sign_gamma(x: f64) -> f64 {
     if x > 0.0 {

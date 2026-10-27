@@ -45,20 +45,6 @@ macro_rules! bessel_complex {
         }
     )+};
 }
-bessel_complex! {
-    cyl_bessel_j, besselj, "Complex J_v(z), with a negative-real branch cut for noninteger order.";
-    cyl_bessel_je, besselj_scaled, "Complex exp(-|Im(z)|)*J_v(z).";
-    cyl_bessel_y, bessely, "Complex Y_v(z), with a branch cut on the negative real axis.";
-    cyl_bessel_ye, bessely_scaled, "Complex exp(-|Im(z)|)*Y_v(z).";
-    cyl_bessel_i, besseli, "Complex modified Bessel I_v(z).";
-    cyl_bessel_ie, besseli_scaled, "Complex exp(-|Re(z)|)*I_v(z).";
-    cyl_bessel_k, besselk, "Complex modified Bessel K_v(z); negative orders use K_-v = K_v.";
-    cyl_bessel_ke, besselk_scaled, "Complex exp(z)*K_v(z).";
-    cyl_hankel_1, hankel1, "Hankel function H_v^(1)(z).";
-    cyl_hankel_1e, hankel1_scaled, "Scaled Hankel function exp(-i*z)*H_v^(1)(z).";
-    cyl_hankel_2, hankel2, "Hankel function H_v^(2)(z).";
-    cyl_hankel_2e, hankel2_scaled, "Scaled Hankel function exp(i*z)*H_v^(2)(z).";
-}
 
 /// Tuple (Ai, Ai′, Bi, Bi′), preserving xsf's output ordering.
 pub type Airy<T> = (T, T, T, T);
@@ -85,18 +71,6 @@ fn airy_values(z: Complex64, scaled: bool) -> Result<Airy<Complex64>, StrErr> {
         bi.map_err(backend_error)?,
         bip.map_err(backend_error)?,
     ))
-}
-
-/// Complex Airy functions (Ai, Ai′, Bi, Bi′).
-pub fn airy<T: Float>(z: Complex<T>) -> Result<Airy<Complex<T>>, StrErr> {
-    let (ai, aip, bi, bip) = airy_values(promote(z)?, false)?;
-    Ok((finish(ai)?, finish(aip)?, finish(bi)?, finish(bip)?))
-}
-/// Scaled complex Airy functions (Ai*exp(ζ), Ai′*exp(ζ), Bi*exp(-|Re ζ|), Bi′*exp(-|Re ζ|)),
-/// where ζ = 2*z*sqrt(z)/3.
-pub fn airye<T: Float>(z: Complex<T>) -> Result<Airy<Complex<T>>, StrErr> {
-    let (ai, aip, bi, bip) = airy_values(promote(z)?, true)?;
-    Ok((finish(ai)?, finish(aip)?, finish(bi)?, finish(bip)?))
 }
 
 pub(crate) fn airy_real<T: Float>(x: T, scaled: bool) -> Result<Airy<T>, StrErr> {
@@ -148,6 +122,31 @@ fn modified_real(v: f64, x: f64, scaled: bool, second: bool) -> f64 {
             0.0
         } else {
             sign * f64::INFINITY
+        };
+    }
+    // DLMF 10.39.1–2: elementary half-integer values also avoid the
+    // cancellation-sensitive general AMOS transition at moderate x.
+    if v.abs() == 0.5 {
+        if second {
+            let prefactor = (core::f64::consts::FRAC_PI_2 / x).sqrt();
+            return if scaled {
+                prefactor
+            } else {
+                prefactor * (-x).exp()
+            };
+        }
+        let prefactor = (2.0 * core::f64::consts::PI * x).sqrt().recip();
+        let difference = if v > 0.0 {
+            -(-2.0 * x).exp_m1()
+        } else {
+            1.0 + (-2.0 * x).exp()
+        };
+        let value = prefactor * difference;
+        return if scaled {
+            value
+        } else {
+            let half = (0.5 * x).exp();
+            (value * half) * half
         };
     }
     if x > 1e9_f64.max(100.0 * v * v) {
@@ -231,4 +230,11 @@ pub(crate) fn real_y(v: f64, x: f64) -> f64 {
         Ok(z) => z.re,
         Err(_) => f64::NAN,
     }
+}
+
+bessel_complex! {
+    cyl_hankel_1, hankel1, "Hankel function H_v^(1)(z).";
+    cyl_hankel_1e, hankel1_scaled, "Scaled Hankel function exp(-i*z)*H_v^(1)(z).";
+    cyl_hankel_2, hankel2, "Hankel function H_v^(2)(z).";
+    cyl_hankel_2e, hankel2_scaled, "Scaled Hankel function exp(i*z)*H_v^(2)(z).";
 }

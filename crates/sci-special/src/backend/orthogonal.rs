@@ -103,22 +103,6 @@ polynomial! {
     /// Chebyshev polynomial U_n(x), with U_{-1} = 0 and U_{-n-2} = -U_n.
     eval_chebyu(n, x) { chebyshev(n, x, true) }
 }
-polynomial! {
-    /// Scaled Chebyshev polynomial C_n(x) = 2*T_n(x/2).
-    eval_chebyc(n, x) { 2.0 * chebyshev(n, 0.5 * x, false) }
-}
-polynomial! {
-    /// Scaled Chebyshev polynomial S_n(x) = U_n(x/2).
-    eval_chebys(n, x) { chebyshev(n, 0.5 * x, true) }
-}
-polynomial! {
-    /// Shifted Chebyshev polynomial T_n(2*x-1).
-    eval_sh_chebyt(n, x) { chebyshev(n, 2.0 * x - 1.0, false) }
-}
-polynomial! {
-    /// Shifted Chebyshev polynomial U_n(2*x-1).
-    eval_sh_chebyu(n, x) { chebyshev(n, 2.0 * x - 1.0, true) }
-}
 
 fn legendre(n: i32, x: f64) -> f64 {
     let n = if n < 0 { -(n + 1) } else { n };
@@ -292,41 +276,10 @@ fn jacobi(n: i32, alpha: f64, beta: f64, x: f64) -> f64 {
 
 // Monic shifted-Jacobi recurrence. Cancelling the binomial normalization in
 // each step avoids overflow of both numerator and denominator at large degree.
-fn shifted_jacobi(n: i32, p: f64, q: f64, x: f64) -> f64 {
-    if n < 0 || !p.is_finite() || !q.is_finite() || q <= 0.0 || p - q <= -1.0 {
-        return f64::NAN;
-    }
-    if n == 0 {
-        return 1.0;
-    }
-    if x.is_infinite() {
-        return if n % 2 == 0 { f64::INFINITY } else { x };
-    }
-    let (mut previous, mut value) = (1.0, x - q / (p + 1.0));
-    for k in 1..n {
-        let k = k as f64;
-        let t = 2.0 * k + p - 1.0;
-        let a = x - 0.5 + (p - 2.0 * q + 1.0) * (p - 1.0) / (2.0 * t * (t + 2.0));
-        let ratio = if k == 1.0 {
-            1.0 / (p + 1.0)
-        } else {
-            k * (k + p - 1.0) / ((t - 1.0) * t)
-        };
-        let b = ((k + p - q) / t) * ((k + q - 1.0) / (t + 1.0)) * ratio;
-        let next = a * value - b * previous;
-        previous = value;
-        value = next;
-    }
-    value
-}
 
 polynomial! {
     /// Legendre polynomial P_n(x), with P_{-n-1} = P_n.
     eval_legendre(n, x) { legendre(n, x) }
-}
-polynomial! {
-    /// Shifted Legendre polynomial P_n(2*x-1).
-    eval_sh_legendre(n, x) { legendre(n, 2.0*x-1.0) }
 }
 polynomial! {
     /// Generalized Laguerre polynomial L_n^(alpha)(x), for finite alpha > -1.
@@ -345,11 +298,4 @@ polynomial! {
 polynomial! {
     /// Jacobi polynomial P_n^(alpha,beta)(x), for n >= 0 and finite alpha,beta > -1.
     eval_jacobi(n, alpha, beta, x) { jacobi(n, alpha, beta, x) }
-}
-polynomial! {
-    /// Shifted Jacobi G_n^(p,q)(x), for n >= 0, q > 0 and p-q > -1.
-    /// Both parameters must be finite.
-    eval_sh_jacobi(n, p, q, x) {
-        shifted_jacobi(n, p, q, x)
-    }
 }

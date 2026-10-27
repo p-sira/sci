@@ -95,11 +95,6 @@ macro_rules! distribution {
     (@value $v:ident,upper)=>{if $v.1 < -core::f64::consts::LN_2 {$v.1.exp()} else {-$v.0.exp_m1()}};
     (@value $v:ident,slope)=>{$v.2};
 }
-distribution! {
-    smirnov,upper,"One-sided finite-sample Kolmogorov–Smirnov survival probability; n is in 1..=1000000.";
-    smirnovc,lower,"Complement of smirnov, evaluated directly for small arguments.";
-    smirnovp,slope,"Derivative of smirnov with respect to its argument (nonpositive).";
-}
 
 fn inverse(n: u32, p: f64, mut lower: bool) -> Result<f64, StrErr> {
     validate(n, p)?;
@@ -140,7 +135,11 @@ macro_rules! inverse_api {
         }
     )+};
 }
+
+distribution! {
+    smirnov,upper,"One-sided finite-sample Kolmogorov–Smirnov survival probability; n is in 1..=1000000.";
+}
+
 inverse_api! {
     smirnovi,false,"Inverse finite-sample Smirnov survival function, including endpoint probabilities.";
-    smirnovci,true,"Inverse finite-sample Smirnov CDF, preserving subnormal probabilities.";
 }

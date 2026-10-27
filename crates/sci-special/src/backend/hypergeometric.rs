@@ -79,28 +79,6 @@ fn real_kernel(v: f64, z: f64) -> Result<f64, StrErr> {
 // Taylor continuation across the real axis from z*f''+v*f'-f=0.
 // Keeping powers of the transverse displacement inside the recurrence avoids
 // subtracting almost equal Bessel phases to obtain a small imaginary component.
-fn near_real(v: f64, z: Complex64) -> Result<Option<Complex64>, StrErr> {
-    if z.re.abs() <= 1.0 || z.im.abs() > 0.02 * z.re.abs().sqrt() {
-        return Ok(None);
-    }
-    let base = real_kernel(v, z.re)?;
-    if !base.is_finite() {
-        return Ok(None);
-    }
-    let mut previous = Complex64::new(base, 0.0);
-    let mut current = Complex64::new(0.0, real_kernel(v + 1.0, z.re)? / v * z.im);
-    let mut sum = previous + current;
-    for k in 0..24 {
-        let k = k as f64;
-        let a = -(z.im / z.re) * z.im / ((k + 2.0) * (k + 1.0));
-        let b = -(z.im / z.re) * ((k + v) / (k + 2.0));
-        let next = a * previous + Complex64::new(0.0, b) * current;
-        sum += next;
-        previous = current;
-        current = next;
-    }
-    Ok(Some(sum))
-}
 
 /// Confluent hypergeometric limit function 0F1(;v;z) for real arguments.
 ///
@@ -111,47 +89,4 @@ pub fn hyp0f1<T: Float>(v: T, z: T) -> Result<T, StrErr> {
     let v = v.to_f64().ok_or(ERROR)?;
     let z = z.to_f64().ok_or(ERROR)?;
     crate::backend::utils::finish(real_kernel(v, z)?, ERROR)
-}
-
-/// Complex 0F1(;v;z) for a finite real parameter outside the nonpositive integers.
-///
-/// The function is entire in `z`; principal square roots in the Bessel identity
-/// cancel their apparent branch cut. A precision error is returned if a Bessel
-/// underflow prevents reliable rescaling.
-pub fn complex_hyp0f1<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>, StrErr> {
-    let v = v.to_f64().ok_or(ERROR)?;
-    validate(v)?;
-    let z = crate::backend::complex::promote(z)?;
-    if !z.re.is_finite() || !z.im.is_finite() {
-        return Err(ERROR);
-    }
-    if z.im == 0.0 {
-        return crate::backend::complex::finish(Complex64::new(real_kernel(v, z.re)?, z.im));
-    }
-    if let Some(value) = series(v, z) {
-        return crate::backend::complex::finish(value);
-    }
-    if let Some(value) = near_real(v, z)? {
-        return crate::backend::complex::finish(value);
-    }
-    let modified = z.re >= 0.0;
-    let root = if modified { z.sqrt() } else { (-z).sqrt() };
-    let bessel = if modified {
-        complex_bessel::besseli_scaled(v - 1.0, 2.0 * root)
-    } else {
-        complex_bessel::besselj_scaled(v - 1.0, 2.0 * root)
-    }
-    .map_err(crate::backend::bessel::backend_error)?;
-    if bessel == Complex64::new(0.0, 0.0) {
-        return Err("hyp0f1: Bessel kernel underflow prevents reliable rescaling.");
-    }
-    let logarithm = bessel.ln()
-        + (1.0 - v) * root.ln()
-        + crate::backend::cephes64::lgam(v)
-        + if modified {
-            2.0 * root.re
-        } else {
-            2.0 * root.im.abs()
-        };
-    crate::backend::complex::finish(logarithm.exp() * crate::backend::gammasgn(v)?)
 }

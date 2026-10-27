@@ -21,10 +21,8 @@ pub const MINLOG: f64 = -7.451332191019412076235E2; /* log(2**-1075) */
 // #endif
 
 pub const SQ2OPI: f64 = 7.9788456080286535587989E-1; /* sqrt( 2/pi ) */
-pub const LOGSQ2: f64 = 3.46573590279972654709E-1; /* log(2)/2 */
 pub const THPIO4: f64 = 2.35619449019234492885; /* 3*pi/4 */
 
-pub const M_2_SQRTPI: f64 = core::f64::consts::FRAC_2_SQRT_PI;
 pub const M_SQRT2: f64 = core::f64::consts::SQRT_2;
 pub const M_SQRT1_2: f64 = core::f64::consts::FRAC_1_SQRT_2;
 

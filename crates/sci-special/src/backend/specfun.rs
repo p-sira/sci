@@ -3067,9 +3067,11 @@ pub(super) fn qstar(
             i
         };
     }
-    qs0 = ap[(m - 1) as usize];
+    // AP(M+1) and L=1..M in the original Fortran use one-based indexing.
+    // Retain all M+1 convolution coefficients, including the m=0 case.
+    qs0 = ap[m as usize];
     l = 1;
-    while (l < m) {
+    while (l <= m) {
         {
             r = 1.0f64;
             k = 1;
@@ -3355,7 +3357,7 @@ pub(super) fn gmn(
                 }
             } else {
                 {
-                    gd0 += (((2.0f64 * ((k) as f64)) * bk[(k - 1) as usize])
+                    gd0 += (((2.0f64 * ((k) as f64)) * bk[k as usize])
                         * (x).powf(((2.0f64 * ((k) as f64)) - 1.0f64)));
                 }
             }
@@ -4471,7 +4473,7 @@ pub(super) fn chgu(mut x: f64, mut a: f64, mut b: f64, md: &mut [i32], isfer: &m
                     md[0] = 4;
                 }
             } else {
-                if ((bn != 0) && (!il1 != 0)) {
+                if ((bn != 0) && (il1 == 0)) {
                     {
                         hu = chgubi(x, a, b, std::slice::from_mut(&mut id));
                         md[0] = 3;
@@ -6336,7 +6338,7 @@ pub(super) fn vvsa(mut x: f64, mut va: f64) -> f64 {
     return pv;
 }
 
-pub(super) fn itairy(
+pub(super) fn itairy_asymptotic(
     mut x: f64,
     apt: &mut [f64],
     bpt: &mut [f64],
@@ -6344,9 +6346,6 @@ pub(super) fn itairy(
     bnt: &mut [f64],
 ) {
     let mut k: i32 = 0;
-    let mut l: i32 = 0;
-    let mut fx: f64 = 0.0;
-    let mut gx: f64 = 0.0;
     let mut r: f64 = 0.0;
     let mut su1: f64 = 0.0;
     let mut su2: f64 = 0.0;
@@ -6359,13 +6358,9 @@ pub(super) fn itairy(
     let mut xr1: f64 = 0.0;
     let mut xr2: f64 = 0.0;
     let mut pi: f64 = 3.141592653589793f64;
-    let mut c1: f64 = 0.355028053887817f64;
-    let mut c2: f64 = 0.258819403792807f64;
-    let mut sr3: f64 = 1.732050807568877f64;
     let mut q0: f64 = (1.0f64 / 3.0f64);
     let mut q1: f64 = (2.0f64 / 3.0f64);
     let mut q2: f64 = 1.4142135623730951f64;
-    let mut eps: f64 = 1e-15f64;
     let mut a = [
         0.569444444444444f64,
         0.891300154320988f64,
@@ -6384,158 +6379,68 @@ pub(super) fn itairy(
         0.231369166433050e+12f64,
         0.358622522796969e+13f64,
     ];
-    if (x == 0.0f64) {
+    xe = ((x * (x).sqrt()) / 1.5f64);
+    xp6 = (1.0f64 / ((6.0f64 * pi) * xe).sqrt());
+    su1 = 1.0f64;
+    r = 1.0f64;
+    xr1 = (1.0f64 / xe);
+    k = 1;
+    while (k < 17) {
         {
-            apt[0] = 0.0f64;
-            bpt[0] = 0.0f64;
-            ant[0] = 0.0f64;
-            bnt[0] = 0.0f64;
+            r = ((-r) * xr1);
+            su1 += (a[(k - 1) as usize] * r);
         }
-    } else {
         {
-            if ((x).abs() <= 9.25f64) {
-                {
-                    l = 0;
-                    while (l < 2) {
-                        {
-                            x = (x * ((-1) as f64).powf(((l) as f64)));
-                            fx = x;
-                            r = x;
-                            k = 1;
-                            while (k < 41) {
-                                {
-                                    r = (((((((r * ((3.0f64 * ((k) as f64)) - 2.0f64))
-                                        / ((3.0f64 * ((k) as f64)) + 1.0f64))
-                                        * x)
-                                        / (3.0f64 * ((k) as f64)))
-                                        * x)
-                                        / ((3.0f64 * ((k) as f64)) - 1.0f64))
-                                        * x);
-                                    fx += r;
-                                    if ((r).abs() < ((fx).abs() * eps)) {
-                                        {
-                                            break;
-                                        }
-                                    }
-                                }
-                                {
-                                    k += 1;
-                                    k
-                                };
-                            }
-                            gx = ((0.5f64 * x) * x);
-                            r = gx;
-                            k = 1;
-                            while (k < 41) {
-                                {
-                                    r = (((((((r * ((3.0f64 * ((k) as f64)) - 1.0f64))
-                                        / ((3.0f64 * ((k) as f64)) + 2.0f64))
-                                        * x)
-                                        / (3.0f64 * ((k) as f64)))
-                                        * x)
-                                        / ((3.0f64 * ((k) as f64)) + 1.0f64))
-                                        * x);
-                                    gx += r;
-                                    if ((r).abs() < ((gx).abs() * eps)) {
-                                        {
-                                            break;
-                                        }
-                                    }
-                                }
-                                {
-                                    k += 1;
-                                    k
-                                };
-                            }
-                            ant[0] = ((c1 * fx) - (c2 * gx));
-                            bnt[0] = (sr3 * ((c1 * fx) + (c2 * gx)));
-                            if (l == 0) {
-                                {
-                                    apt[0] = ant[0];
-                                    bpt[0] = bnt[0];
-                                }
-                            } else {
-                                {
-                                    ant[0] = (-ant[0]);
-                                    bnt[0] = (-bnt[0]);
-                                    x = (-x);
-                                }
-                            }
-                        }
-                        {
-                            l += 1;
-                            l
-                        };
-                    }
-                }
-            } else {
-                {
-                    xe = ((x * (x).sqrt()) / 1.5f64);
-                    xp6 = (1.0f64 / ((6.0f64 * pi) * xe).sqrt());
-                    su1 = 1.0f64;
-                    r = 1.0f64;
-                    xr1 = (1.0f64 / xe);
-                    k = 1;
-                    while (k < 17) {
-                        {
-                            r = ((-r) * xr1);
-                            su1 += (a[(k - 1) as usize] * r);
-                        }
-                        {
-                            k += 1;
-                            k
-                        };
-                    }
-                    su2 = 1.0f64;
-                    r = 1.0f64;
-                    k = 1;
-                    while (k < 17) {
-                        {
-                            r = (r * xr1);
-                            su2 += (a[(k - 1) as usize] * r);
-                        }
-                        {
-                            k += 1;
-                            k
-                        };
-                    }
-                    apt[0] = (q0 - (((-xe).exp() * xp6) * su1));
-                    bpt[0] = (((2.0f64 * (xe).exp()) * xp6) * su2);
-                    su3 = 1.0f64;
-                    r = 1.0f64;
-                    xr2 = (1.0f64 / (xe * xe));
-                    k = 1;
-                    while (k < 9) {
-                        {
-                            r = ((-r) * xr2);
-                            su3 += (a[((2 * k) - 1) as usize] * r);
-                        }
-                        {
-                            k += 1;
-                            k
-                        };
-                    }
-                    su4 = (a[(0) as usize] * xr1);
-                    r = xr1;
-                    k = 1;
-                    while (k < 8) {
-                        {
-                            r = ((-r) * xr2);
-                            su4 += (a[(2 * k) as usize] * r);
-                        }
-                        {
-                            k += 1;
-                            k
-                        };
-                    }
-                    su5 = (su3 + su4);
-                    su6 = (su3 - su4);
-                    ant[0] = (q1 - ((q2 * xp6) * ((su5 * (xe).cos()) - (su6 * (xe).sin()))));
-                    bnt[0] = ((q2 * xp6) * ((su5 * (xe).sin()) + (su6 * (xe).cos())));
-                }
-            }
-        }
+            k += 1;
+            k
+        };
     }
+    su2 = 1.0f64;
+    r = 1.0f64;
+    k = 1;
+    while (k < 17) {
+        {
+            r = (r * xr1);
+            su2 += (a[(k - 1) as usize] * r);
+        }
+        {
+            k += 1;
+            k
+        };
+    }
+    apt[0] = (q0 - (((-xe).exp() * xp6) * su1));
+    bpt[0] = (((2.0f64 * (xe).exp()) * xp6) * su2);
+    su3 = 1.0f64;
+    r = 1.0f64;
+    xr2 = (1.0f64 / (xe * xe));
+    k = 1;
+    while (k < 9) {
+        {
+            r = ((-r) * xr2);
+            su3 += (a[((2 * k) - 1) as usize] * r);
+        }
+        {
+            k += 1;
+            k
+        };
+    }
+    su4 = (a[(0) as usize] * xr1);
+    r = xr1;
+    k = 1;
+    while (k < 8) {
+        {
+            r = ((-r) * xr2);
+            su4 += (a[(2 * k) as usize] * r);
+        }
+        {
+            k += 1;
+            k
+        };
+    }
+    su5 = (su3 + su4);
+    su6 = (su3 - su4);
+    ant[0] = (q1 - ((q2 * xp6) * ((su5 * (xe).cos()) - (su6 * (xe).sin()))));
+    bnt[0] = ((q2 * xp6) * ((su5 * (xe).sin()) + (su6 * (xe).cos())));
 }
 
 pub(super) fn itika(mut x: f64, ti: &mut [f64], tk: &mut [f64]) {
@@ -6835,18 +6740,18 @@ pub(super) fn ittika(mut x: f64, tti: &mut [f64], ttk: &mut [f64]) {
             return;
         }
     }
-    if (x < 40.0f64) {
+    if (x < 700.0f64) {
         {
             tti[0] = 1.0f64;
             r = 1.0f64;
             let mut k: i32 = 2;
-            while (k <= 50) {
+            while (k <= 1000) {
                 {
                     r = (((((0.25f64 * r) * (((k) as f64) - 1.0f64)) / (((k * k) * k) as f64))
                         * x)
                         * x);
                     tti[0] += r;
-                    if ((r / tti[0]).abs() < 1.0e-12f64) {
+                    if ((r / tti[0]).abs() < f64::EPSILON) {
                         {
                             break;
                         }

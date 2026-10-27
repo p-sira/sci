@@ -117,25 +117,6 @@ pub fn expm1(x: f64) -> f64 {
     }
 }
 
-static COSCOF: [f64; 7] = [
-    4.7377507964246204691685E-14,
-    -1.1470284843425359765671E-11,
-    2.0876754287081521758361E-9,
-    -2.7557319214999787979814E-7,
-    2.4801587301570552304991E-5,
-    -1.3888888888888872993737E-3,
-    4.1666666666666666609054E-2,
-];
-
-pub fn cosm1(x: f64) -> f64 {
-    if (-M_PI_4..=M_PI_4).contains(&x) {
-        let xx = x * x;
-        -0.5 * xx + xx * xx * polevl(xx, &COSCOF, 6)
-    } else {
-        x.cos() - 1.0
-    }
-}
-
 /* Compute lgam(x + 1) around x = 0 using its Taylor series. */
 fn lgam1p_taylor(x: f64) -> f64 {
     if x == 0.0 {

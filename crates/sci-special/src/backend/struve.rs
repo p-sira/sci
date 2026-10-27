@@ -170,7 +170,14 @@ fn struve(v: f64, x: f64, modified: bool) -> Result<f64, StrErr> {
     // Lazy candidates avoid evaluating expensive Bessel series when an earlier
     // expansion already meets the requested accuracy.
     type Expansion = fn(f64, f64, bool) -> Option<Estimate>;
-    let candidates: [Expansion; 3] = [asymptotic, power, bessel_series];
+    // L_v's positive defining series has no cancellation for v > -1/2.
+    // Prefer it in the moderate range: a terminating algebraic asymptotic
+    // correction can still omit an exponentially small contribution.
+    let candidates: [Expansion; 3] = if modified && v > -0.5 && x <= 100.0 {
+        [power, asymptotic, bessel_series]
+    } else {
+        [asymptotic, power, bessel_series]
+    };
     for candidate in candidates {
         if let Some(estimate) = candidate(v, x, modified) {
             if estimate.acceptable(1e-12) {

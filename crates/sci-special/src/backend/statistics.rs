@@ -1,22 +1,5 @@
 //! Probability tables and distribution utilities with caller-owned storage.
 use super::{cephes64, utils::real_kernel};
-real_kernel! {
-    /// Normal mean giving CDF probability p at x, for positive finite standard deviation.
-    nrdtrimn(p, sd, x) {
-        if p <= 0.0 || p >= 1.0 || !sd.is_finite() || sd <= 0.0 { f64::NAN }
-        else { x - sd*cephes64::ndtri(p) }
-    }
-}
-real_kernel! {
-    /// Positive normal standard deviation giving CDF probability p at x.
-    /// Inconsistent inputs and the indeterminate p=1/2,x=mean case return an error.
-    nrdtrisd(mean, p, x) {
-        if p <= 0.0 || p >= 1.0 { f64::NAN } else {
-            let sd=(x-mean)/cephes64::ndtri(p);
-            if sd>0.0 {sd} else {f64::NAN}
-        }
-    }
-}
 
 fn student_tail(df: f64, x: f64) -> f64 {
     if df <= 0.0 || !df.is_finite() {
@@ -35,13 +18,6 @@ real_kernel! {
     stdtr(df,x) {
         let tail=student_tail(df,x);
         if x>0.0 {1.0-tail} else {tail}
-    }
-}
-real_kernel! {
-    /// Student's t survival function with finite positive degrees of freedom.
-    stdtrc(df,x) {
-        let tail=student_tail(df,x);
-        if x<0.0 {1.0-tail} else {tail}
     }
 }
 real_kernel! {

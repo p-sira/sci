@@ -105,19 +105,6 @@ real_kernel! {
     kolmogorov(x) { let (cdf,sf,_) = logarithms(x); if x<=0.82 {-cdf.exp_m1()} else {sf.exp()} }
 }
 real_kernel! {
-/// CDF of the limiting two-sided Kolmogorov distribution.
-/// Returns zero for x <= 0 and one at positive infinity.
-    kolmogc(x) { let (cdf,sf,_) = logarithms(x); if x<=0.82 {cdf.exp()} else {-sf.exp_m1()} }
-}
-real_kernel! {
-/// Derivative of the Kolmogorov survival function (the negative density).
-    kolmogp(x) { -logarithms(x).2.exp() }
-}
-real_kernel! {
 /// Inverse Kolmogorov survival probability, for 0 <= p <= 1.
     kolmogi(p) { inverse(p,false)? }
-}
-real_kernel! {
-/// Inverse Kolmogorov CDF, for 0 <= p <= 1.
-    kolmogci(p) { inverse(p,true)? }
 }

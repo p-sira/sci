@@ -1,8 +1,8 @@
 //! Adapters and shared algorithms for the remaining real special functions.
 use super::{cephes64 as c, specfun as s};
-use nalgebra::{DMatrix, SymmetricEigen};
 use num_complex::Complex64;
 use std::f64::consts::{FRAC_PI_2, PI, SQRT_2};
+use std::sync::LazyLock;
 
 pub(super) fn gamma_ratio(a: f64, b: f64, extra: f64) -> f64 {
     (c::lgam(a) - c::lgam(b) + extra).exp()
@@ -18,39 +18,93 @@ pub(super) fn lgam_sgn(x: f64, sign: &mut [i32]) -> f64 {
 // has weight two, so the symmetric basis uses sqrt(2)*A_0.
 fn mathieu_spectrum(kd: i32, m: i32, q: f64) -> (f64, Vec<f64>) {
     let size = (m as usize / 2 + 48 + (4.0 * q.abs().sqrt()) as usize).min(251);
-    let mut matrix = DMatrix::zeros(size, size);
-    for j in 0..size {
-        let frequency = match kd {
-            1 => 2 * j,
-            4 => 2 * j + 2,
-            _ => 2 * j + 1,
-        } as f64;
-        matrix[(j, j)] = frequency * frequency;
-        if j + 1 < size {
-            let coupling = if j == 0 && kd == 1 { SQRT_2 * q } else { q };
-            matrix[(j, j + 1)] = coupling;
-            matrix[(j + 1, j)] = coupling;
-        }
-    }
-    if kd == 2 {
-        matrix[(0, 0)] += q;
-    }
-    if kd == 3 {
-        matrix[(0, 0)] -= q;
-    }
-    // Bounded QR work; a failure becomes a NaN at the infallible facade.
-    let Some(eigen) = SymmetricEigen::try_new(matrix, f64::EPSILON, 100_000) else {
-        return (f64::NAN, vec![f64::NAN; size]);
-    };
-    let mut indices: Vec<_> = (0..size).collect();
-    indices.sort_by(|&a, &b| eigen.eigenvalues[a].total_cmp(&eigen.eigenvalues[b]));
     let rank = match kd {
         1 | 2 => m / 2,
         3 => (m - 1) / 2,
         _ => m / 2 - 1,
     } as usize;
-    let column = indices[rank];
-    let mut coefficients: Vec<_> = eigen.eigenvectors.column(column).iter().copied().collect();
+    let mut diagonal: Vec<_> = (0..size)
+        .map(|j| {
+            let frequency = match kd {
+                1 => 2 * j,
+                4 => 2 * j + 2,
+                _ => 2 * j + 1,
+            } as f64;
+            frequency * frequency
+        })
+        .collect();
+    if kd == 2 {
+        diagonal[0] += q;
+    }
+    if kd == 3 {
+        diagonal[0] -= q;
+    }
+    if q == 0.0 {
+        let mut coefficients = vec![0.0; size];
+        coefficients[rank] = if kd == 1 && rank == 0 {
+            1.0 / SQRT_2
+        } else {
+            1.0
+        };
+        return (diagonal[rank], coefficients);
+    }
+    let mut off = vec![q; size - 1];
+    if kd == 1 {
+        off[0] *= SQRT_2;
+    }
+    // Gershgorin bounds and the Sturm count isolate only the requested
+    // eigenvalue of this symmetric tridiagonal Fourier recurrence.
+    let radius = 2.0 * SQRT_2 * q.abs();
+    let (mut lower, mut upper) = (diagonal[0] - radius, diagonal[size - 1] + radius);
+    for _ in 0..128 {
+        let midpoint = lower + 0.5 * (upper - lower);
+        if midpoint == lower || midpoint == upper {
+            break;
+        }
+        let mut pivot = diagonal[0] - midpoint;
+        let mut count = usize::from(pivot < 0.0);
+        for j in 1..size {
+            if pivot.abs() < 1e-300 {
+                pivot = -1e-300;
+            }
+            pivot = diagonal[j] - midpoint - off[j - 1] * off[j - 1] / pivot;
+            count += usize::from(pivot < 0.0);
+        }
+        if count <= rank {
+            lower = midpoint;
+        } else {
+            upper = midpoint;
+        }
+    }
+    let eigenvalue = lower + 0.5 * (upper - lower);
+    // Inverse iteration computes its eigenvector with O(size) storage/work
+    // per solve, avoiding a dense decomposition of all unused eigenpairs.
+    let shift = eigenvalue + 8.0 * f64::EPSILON * eigenvalue.abs().max(1.0);
+    let mut coefficients = vec![1.0; size];
+    let mut pivots = vec![0.0; size];
+    for _ in 0..4 {
+        pivots[0] = diagonal[0] - shift;
+        if pivots[0].abs() < 1e-300 {
+            pivots[0] = 1e-300;
+        }
+        for j in 1..size {
+            let factor = off[j - 1] / pivots[j - 1];
+            pivots[j] = diagonal[j] - shift - factor * off[j - 1];
+            if pivots[j].abs() < 1e-300 {
+                pivots[j] = 1e-300;
+            }
+            coefficients[j] -= factor * coefficients[j - 1];
+        }
+        coefficients[size - 1] /= pivots[size - 1];
+        for j in (0..size - 1).rev() {
+            coefficients[j] = (coefficients[j] - off[j] * coefficients[j + 1]) / pivots[j];
+        }
+        let norm = coefficients.iter().map(|x| x * x).sum::<f64>().sqrt();
+        if !norm.is_finite() || norm == 0.0 {
+            return (f64::NAN, vec![f64::NAN; size]);
+        }
+        coefficients.iter_mut().for_each(|x| *x /= norm);
+    }
     if kd == 1 {
         coefficients[0] /= SQRT_2;
     }
@@ -60,7 +114,7 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64) -> (f64, Vec<f64>) {
         1.0
     };
     coefficients.iter_mut().for_each(|x| *x *= phase);
-    (eigen.eigenvalues[column], coefficients)
+    (eigenvalue, coefficients)
 }
 pub(super) fn cva2(kd: i32, m: i32, q: f64) -> f64 {
     mathieu_spectrum(kd, m, q).0
@@ -282,6 +336,40 @@ pub(crate) fn hyp1f1(a: f64, b: f64, x: f64) -> f64 {
     if b <= 0.0 && b == b.floor() && !(a <= 0.0 && a == a.floor() && a > b) {
         return f64::INFINITY;
     }
+    // Nonpositive integer a terminates the defining hypergeometric series.
+    // Evaluating that polynomial directly avoids the gamma poles introduced
+    // by the general asymptotic formulas for negative x.
+    if a < 0.0 && a == a.floor() {
+        let (mut term, mut sum) = (1.0, 1.0);
+        for k in 0..(-a) as usize {
+            let k = k as f64;
+            term *= (a + k) * x / ((b + k) * (k + 1.0));
+            sum += term;
+        }
+        return sum;
+    }
+    // In the moderate-argument region the defining series is more accurate
+    // than the truncated large-x expansion. Kummer's transformation makes
+    // the argument positive and avoids alternating exponential cancellation.
+    if x.abs() <= 100.0 && a.abs().max(b.abs()) <= 64.0 {
+        let (alpha, argument, scale) = if x < 0.0 {
+            (b - a, -x, x.exp())
+        } else {
+            (a, x, 1.0)
+        };
+        let (mut term, mut sum, mut correction) = (1.0, 1.0, 0.0);
+        for k in 0..1000 {
+            let k = k as f64;
+            term *= (alpha + k) * argument / ((b + k) * (k + 1.0));
+            let adjusted = term - correction;
+            let next = sum + adjusted;
+            correction = (next - sum) - adjusted;
+            sum = next;
+            if term.abs() <= f64::EPSILON * sum.abs() {
+                return scale * sum;
+            }
+        }
+    }
     s::chgm(x, a, b)
 }
 pub(crate) fn hyp2f1(a: f64, b: f64, c: f64, x: f64) -> f64 {
@@ -310,6 +398,12 @@ pub(crate) fn hypu(a: f64, b: f64, x: f64) -> f64 {
     if a == 0.0 {
         return 1.0;
     }
+    // DLMF 13.3.7 avoids the ill-conditioned b=1 series near a=0.
+    // Shift a into the stable range before calling the shared kernel.
+    if b == 1.0 && x < 1.0 && a > -0.25 && a < 0.3 {
+        return (x + 1.0 + 2.0 * a) * hypu(a + 1.0, 1.0, x)
+            - (a + 1.0).powi(2) * hypu(a + 2.0, 1.0, x);
+    }
     let mut digits = [0];
     let mut error = [0];
     s::chgu(x, a, b, &mut digits, &mut error)
@@ -323,7 +417,13 @@ pub(crate) fn pmv(m: i32, v: f64, x: f64) -> f64 {
     {
         return f64::NAN;
     }
-    s::lpmv(x, m, v)
+    let value = s::lpmv(x, m, v);
+    // Zhang–Jin uses a finite sentinel at the singular endpoint.
+    if value.abs() == 1e300 {
+        f64::INFINITY.copysign(value)
+    } else {
+        value
+    }
 }
 pub(crate) fn pbdv(v: f64, x: f64) -> (f64, f64) {
     cylinder(v, x, false)
@@ -454,6 +554,46 @@ pub(crate) fn airy_integrals(x: f64) -> [f64; 4] {
     if !x.is_finite() {
         return [f64::NAN; 4];
     }
+    if x.abs() <= 10.0 {
+        // Integrate y''=x*y's two power-series solutions. Double-double
+        // summation retains oscillatory cancellation without quadrature.
+        // Constants are Ai(0), -Ai'(0), and sqrt(3) (DLMF 9.2.3–6).
+        use super::double_double::Dd;
+        let c0 = Dd {
+            hi: 0.3550280538878172,
+            lo: 2.05233632436212e-17,
+        };
+        let c1 = Dd {
+            hi: 0.2588194037928068,
+            lo: -2.5222431116108322e-17,
+        };
+        let root3 = Dd {
+            hi: 1.7320508075688772,
+            lo: 1.0035084221806903e-16,
+        };
+        let integral = |x: f64| {
+            let x = Dd::from(x);
+            let cube = x * x * x;
+            let (mut f, mut g) = (x, x * x / Dd::from(2.0));
+            let (mut tf, mut tg) = (f, g);
+            for k in 1..128 {
+                let k = k as f64;
+                tf = tf * cube * Dd::from(3.0 * k - 2.0)
+                    / (Dd::from(3.0 * k + 1.0) * Dd::from(3.0 * k) * Dd::from(3.0 * k - 1.0));
+                tg = tg * cube * Dd::from(3.0 * k - 1.0)
+                    / (Dd::from(3.0 * k + 2.0) * Dd::from(3.0 * k) * Dd::from(3.0 * k + 1.0));
+                f = f + tf;
+                g = g + tg;
+                if tf.hi.abs().max(tg.hi.abs()) <= 1e-31 * f.hi.abs().max(g.hi.abs()) {
+                    break;
+                }
+            }
+            ((c0 * f - c1 * g).hi, (root3 * (c0 * f + c1 * g)).hi)
+        };
+        let positive = integral(x);
+        let negative = integral(-x);
+        return [positive.0, positive.1, -negative.0, -negative.1];
+    }
     if x.abs() <= 16.0 {
         return [
             quadrature(0.0, x, |t| airy(t)[0]),
@@ -463,8 +603,12 @@ pub(crate) fn airy_integrals(x: f64) -> [f64; 4] {
         ];
     }
     let (mut a, mut b, mut c, mut d) = ([0.0], [0.0], [0.0], [0.0]);
-    s::itairy(x, &mut a, &mut b, &mut c, &mut d);
-    [a[0], b[0], c[0], d[0]]
+    s::itairy_asymptotic(x.abs(), &mut a, &mut b, &mut c, &mut d);
+    if x < 0.0 {
+        [-c[0], -d[0], -a[0], -b[0]]
+    } else {
+        [a[0], b[0], c[0], d[0]]
+    }
 }
 pub(crate) fn ellipj(u: f64, m: f64) -> (f64, f64, f64, f64) {
     super::ellipj(u, m).unwrap_or((f64::NAN, f64::NAN, f64::NAN, f64::NAN))
@@ -620,6 +764,23 @@ fn bessel_integrals(x: f64, kernel: fn(f64, &mut [f64], &mut [f64]), odd: bool) 
 pub(crate) fn itstruve0(x: f64) -> f64 {
     if !x.is_finite() {
         f64::NAN
+    } else if x.abs() <= 24.0 {
+        // Integrate H_0's defining power series term by term. Double-double
+        // arithmetic preserves the cancellation near the transition without
+        // repeatedly evaluating H_0 at quadrature nodes.
+        use super::double_double::Dd;
+        let square = Dd::from(x) * Dd::from(x);
+        let (mut term, mut sum) = (Dd::from(1.0), Dd::from(1.0));
+        for k in 1..128 {
+            let k = k as f64;
+            term = -term * square * Dd::from(k)
+                / (Dd::from(k + 1.0) * Dd::from(2.0 * k + 1.0) * Dd::from(2.0 * k + 1.0));
+            sum = sum + term;
+            if term.hi.abs() <= 1e-31 * sum.hi.abs() {
+                break;
+            }
+        }
+        (square * sum / Dd::from(PI)).hi
     } else if x.abs() <= 128.0 {
         quadrature(0.0, x.abs(), |t| {
             super::struve_h(0.0, t).unwrap_or(f64::NAN)
@@ -808,24 +969,7 @@ pub(crate) fn owens_t(h: f64, a: f64) -> f64 {
     // Gauss–Legendre on atan(t): the denominator cancels under t=tan(theta).
     let upper = a.atan();
     let mut sum = 0.0;
-    for i in 0..32 {
-        let mut z = (PI * (i as f64 + 0.75) / 64.5).cos();
-        let mut derivative = 0.0;
-        for _ in 0..10 {
-            let (mut p0, mut p1) = (1.0, z);
-            for n in 2..=64 {
-                let p = ((2 * n - 1) as f64 * z * p1 - (n - 1) as f64 * p0) / n as f64;
-                p0 = p1;
-                p1 = p;
-            }
-            derivative = 64.0 * (z * p1 - p0) / (z * z - 1.0);
-            let step = p1 / derivative;
-            z -= step;
-            if step.abs() < 2.0 * f64::EPSILON {
-                break;
-            }
-        }
-        let weight = 2.0 / ((1.0 - z * z) * derivative * derivative);
+    for &(z, weight) in &*GAUSS_64 {
         for theta in [0.5 * upper * (1.0 - z), 0.5 * upper * (1.0 + z)] {
             sum += weight * (-0.5 * (h / theta.cos()).powi(2)).exp();
         }
@@ -880,6 +1024,34 @@ pub(crate) fn kerp_zeros(nt: usize) -> Result<Vec<f64>, &'static str> {
     Ok(out)
 }
 
+// Nodes and weights depend only on the rule, so compute them once rather than
+// repeating the Legendre root solves for every integral and subinterval.
+static GAUSS_32: LazyLock<[(f64, f64); 16]> = LazyLock::new(gauss_rule::<16>);
+static GAUSS_64: LazyLock<[(f64, f64); 32]> = LazyLock::new(gauss_rule::<32>);
+
+fn gauss_rule<const HALF: usize>() -> [(f64, f64); HALF] {
+    let order = 2 * HALF;
+    std::array::from_fn(|i| {
+        let mut z = (PI * (i as f64 + 0.75) / (order as f64 + 0.5)).cos();
+        let mut derivative = 0.0;
+        for _ in 0..10 {
+            let (mut p0, mut p1) = (1.0, z);
+            for n in 2..=order {
+                let p = ((2 * n - 1) as f64 * z * p1 - (n - 1) as f64 * p0) / n as f64;
+                p0 = p1;
+                p1 = p;
+            }
+            derivative = order as f64 * (z * p1 - p0) / (z * z - 1.0);
+            let step = p1 / derivative;
+            z -= step;
+            if step.abs() < f64::EPSILON {
+                break;
+            }
+        }
+        (z, 2.0 / ((1.0 - z * z) * derivative * derivative))
+    })
+}
+
 // Composite 32-point Gaussian quadrature. Intervals are at most four units;
 // callers bound their integration domains before entering this kernel.
 fn quadrature(left: f64, right: f64, evaluate: impl Fn(f64) -> f64) -> f64 {
@@ -888,24 +1060,7 @@ fn quadrature(left: f64, right: f64, evaluate: impl Fn(f64) -> f64) -> f64 {
     let mut total = 0.0;
     for piece in 0..pieces {
         let midpoint = left + (piece as f64 + 0.5) * width;
-        for i in 0..16 {
-            let mut z = (PI * (i as f64 + 0.75) / 32.5).cos();
-            let mut derivative = 0.0;
-            for _ in 0..10 {
-                let (mut p0, mut p1) = (1.0, z);
-                for n in 2..=32 {
-                    let p = ((2 * n - 1) as f64 * z * p1 - (n - 1) as f64 * p0) / n as f64;
-                    p0 = p1;
-                    p1 = p;
-                }
-                derivative = 32.0 * (z * p1 - p0) / (z * z - 1.0);
-                let step = p1 / derivative;
-                z -= step;
-                if step.abs() < f64::EPSILON {
-                    break;
-                }
-            }
-            let weight = 2.0 / ((1.0 - z * z) * derivative * derivative);
+        for &(z, weight) in &*GAUSS_32 {
             total += weight
                 * width
                 * 0.5

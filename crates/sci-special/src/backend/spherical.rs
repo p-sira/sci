@@ -134,48 +134,6 @@ spherical! {
     sph_bessel_k,sph_bessel_k_jac,3,"Modified spherical Bessel k_n(x) = sqrt(pi/(2x))*K_(n+1/2)(x), continued to negative real x by the spherical reflection identity.";
 }
 
-pub(crate) fn complex_value(n: i32, z: Complex64, kind: u8) -> Result<Complex64, StrErr> {
-    if n < 0 {
-        return Err("sph_bessel: Requires n >= 0.");
-    }
-    if z.im == 0.0 {
-        return Ok(Complex64::new(real(n, z.re, kind)?, 0.0));
-    }
-    if z == Complex64::new(0.0, 0.0) && (kind == 0 || kind == 2) {
-        return Ok(Complex64::new(if n == 0 { 1.0 } else { 0.0 }, 0.0));
-    }
-    // Tiny arguments need a series to avoid underflow in the cylindrical factor.
-    if z.norm() < 0.5 && (kind == 0 || kind == 2) {
-        let mut leading = Complex64::new(1.0, 0.0);
-        for k in 1..=n {
-            leading *= z / (2.0 * k as f64 + 1.0);
-            if leading == Complex64::new(0.0, 0.0) {
-                return Ok(leading);
-            }
-        }
-        let mut sum = Complex64::new(1.0, 0.0);
-        let mut term = sum;
-        let square = if kind == 2 { z * z } else { -z * z };
-        for k in 1..10000 {
-            term *= square / (2.0 * k as f64 * (2.0 * n as f64 + 2.0 * k as f64 + 1.0));
-            sum += term;
-            if term.norm() <= f64::EPSILON * sum.norm() {
-                return Ok(leading * sum);
-            }
-        }
-        return Err("sph_bessel: Series did not converge.");
-    }
-    let order = n as f64 + 0.5;
-    let value = match kind {
-        0 => complex_bessel::besselj(order, z),
-        1 => complex_bessel::bessely(order, z),
-        2 => complex_bessel::besseli(order, z),
-        _ => complex_bessel::besselk(order, z),
-    }
-    .map_err(crate::backend::bessel::backend_error)?;
-    Ok((core::f64::consts::FRAC_PI_2.sqrt() / z.sqrt()) * value)
-}
-
 fn series_derivative(n: i32, x: f64, modified: bool) -> f64 {
     let mut term = if n == 0 {
         if modified { x / 3.0 } else { -x / 3.0 }
@@ -202,36 +160,4 @@ fn series_derivative(n: i32, x: f64, modified: bool) -> f64 {
         }
     }
     f64::NAN
-}
-
-pub(crate) fn complex_derivative(
-    n: i32,
-    z: Complex64,
-    modified: bool,
-) -> Result<Complex64, StrErr> {
-    let mut term = if n == 0 {
-        if modified { z / 3.0 } else { -z / 3.0 }
-    } else {
-        let mut base = Complex64::new(1.0 / (2.0 * n as f64 + 1.0), 0.0);
-        for k in 1..n {
-            base *= z / (2.0 * k as f64 + 1.0);
-            if base == Complex64::new(0.0, 0.0) {
-                return Ok(base);
-            }
-        }
-        base * n as f64
-    };
-    let mut sum = term;
-    let square = if modified { z * z } else { -z * z };
-    let start = if n == 0 { 2 } else { 1 };
-    for k in start..10000 {
-        let k = k as f64;
-        term *= square / (2.0 * k * (2.0 * n as f64 + 2.0 * k + 1.0))
-            * ((n as f64 + 2.0 * k) / (n as f64 + 2.0 * k - 2.0));
-        sum += term;
-        if term.norm() <= f64::EPSILON * sum.norm() {
-            return Ok(sum);
-        }
-    }
-    Err("sph_bessel: Derivative series did not converge.")
 }
