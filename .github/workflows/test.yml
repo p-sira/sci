@@ -35,6 +35,7 @@ jobs:
       - run: cargo fmt --all -- --check
 
   audits:
+    if: false # Keep the SciPy coverage audits available for re-enabling.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

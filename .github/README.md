@@ -2,8 +2,9 @@ Tests and coverage select changed crates and their transitive dependents using
 Cargo metadata. Root integration tests and Clippy benchmark targets are selected
 from their `required-features`; their features are enabled explicitly. Changes
 to test files, referenced fixtures, or referenced inventories also select their
-consumers. Isolated feature checks follow the same selection. Formatting and
-inventory audits always run.
+consumers. Isolated feature checks follow the same selection. Formatting always
+runs. SciPy inventory and reference coverage audits are disabled in the Test
+workflow; their job and scripts are retained for re-enabling or manual local runs.
 Reference generators do not affect compiled tests until their fixtures change.
 
 Pull requests compare against the merge base with the target branch. Pushes
