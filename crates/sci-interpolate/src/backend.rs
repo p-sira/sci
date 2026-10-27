@@ -1,5 +1,5 @@
 //! Private numerical adapters; backend types never cross the public API.
-use crate::error::{finite, finite_slice};
+use crate::error::is_finite_slice;
 use crate::{Error, Result, Spline};
 use nalgebra::{DMatrix, DVector};
 
@@ -22,15 +22,18 @@ pub(crate) fn validate(s: &Spline) -> Result<()> {
     if k > MAX_DEGREE || s.knots.len() > MAX_KNOTS || n <= k || s.knots.len() != n + k + 1 {
         return Err(Error::InvalidInput("invalid spline shape or degree"));
     }
-    finite_slice(&s.knots)?;
-    finite_slice(&s.coefficients)?;
+    is_finite_slice(&s.knots)?;
+    is_finite_slice(&s.coefficients)?;
     if s.knots.windows(2).any(|p| p[1] < p[0])
         || s.knots[k] >= s.knots[n]
         || (0..n).any(|i| s.knots[i] >= s.knots[i + k + 1])
     {
         return Err(Error::InvalidInput("invalid spline knot support"));
     }
-    finite(s.knots[s.knots.len() - 1] - s.knots[0])?;
+    match s.knots[s.knots.len() - 1] - s.knots[0] {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     Ok(())
 }
 
@@ -43,16 +46,19 @@ pub(crate) fn data(x: &[f64], y: &[f64], k: usize, w: Option<&[f64]>) -> Result<
     if x.len() != y.len() || w.is_some_and(|w| w.len() != x.len()) {
         return Err(Error::DimensionMismatch);
     }
-    finite_slice(x)?;
-    finite_slice(y)?;
+    is_finite_slice(x)?;
+    is_finite_slice(y)?;
     if x.windows(2).any(|p| p[1] <= p[0]) {
         return Err(Error::InvalidInput(
             "sample coordinates must strictly increase",
         ));
     }
-    finite(x[x.len() - 1] - x[0])?;
+    match x[x.len() - 1] - x[0] {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     let weights = w.map_or_else(|| vec![1.0; x.len()], <[f64]>::to_vec);
-    finite_slice(&weights)?;
+    is_finite_slice(&weights)?;
     if weights.iter().any(|w| *w <= 0.0) {
         return Err(Error::InvalidInput("weights must be positive"));
     }
@@ -124,11 +130,13 @@ pub(crate) fn basis(t: &[f64], k: usize, x: f64) -> (usize, [f64; 33]) {
 
 pub(crate) fn evaluate(s: &Spline, x: f64) -> Result<f64> {
     let (start, b) = basis(&s.knots, s.degree, x);
-    finite(
-        (0..=s.degree)
-            .map(|j| b[j] * s.coefficients[start + j])
-            .sum(),
-    )
+    match (0..=s.degree)
+        .map(|j| b[j] * s.coefficients[start + j])
+        .sum::<f64>()
+    {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 pub(crate) fn design(x: &[f64], t: &[f64], k: usize) -> DMatrix<f64> {
@@ -148,8 +156,8 @@ pub(crate) fn least_squares(a: DMatrix<f64>, b: DVector<f64>) -> Result<Vec<f64>
     if a.nrows() < a.ncols() {
         return Err(Error::InvalidInput("underdetermined spline fit"));
     }
-    finite_slice(a.as_slice())?;
-    finite_slice(b.as_slice())?;
+    is_finite_slice(a.as_slice())?;
+    is_finite_slice(b.as_slice())?;
     // SVD avoids squaring the condition number and provides a rank check.
     let svd = nalgebra::linalg::SVD::try_new(a, true, true, f64::EPSILON, 1000).ok_or(
         Error::NumericalFailure("spline SVD iteration limit exceeded"),
@@ -162,7 +170,7 @@ pub(crate) fn least_squares(a: DMatrix<f64>, b: DVector<f64>) -> Result<Vec<f64>
     let c = svd
         .solve(&b, tolerance)
         .map_err(|_| Error::NumericalFailure("spline SVD solve failed"))?;
-    finite_slice(c.as_slice())?;
+    is_finite_slice(c.as_slice())?;
     Ok(c.as_slice().to_vec())
 }
 
@@ -238,8 +246,21 @@ fn check_residual(
     let mut residual = 0.0;
     for ((x, point), w) in x.iter().zip(points).zip(w) {
         for (s, value) in components.iter().zip(point) {
-            let r = finite(w * finite(evaluate(s, *x)? - value)?)?;
-            residual = finite(residual + finite(r * r)?)?;
+            let r = match w * match evaluate(s, *x)? - value {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }? {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
+            residual = match residual
+                + match r * r {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }? {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
         }
     }
     if residual > target && (residual - target) / target > 0.0011 {
@@ -264,7 +285,10 @@ pub(crate) fn polynomial_roots(coefficients: &[f64]) -> Result<Vec<f64>> {
         return Ok(Vec::new());
     }
     if n == 1 {
-        return Ok(vec![finite(-c[0] / c[1])?]);
+        return Ok(vec![match -c[0] / c[1] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?]);
     }
     let mut companion = DMatrix::zeros(n, n);
     for i in 1..n {
@@ -280,7 +304,10 @@ pub(crate) fn polynomial_roots(coefficients: &[f64]) -> Result<Vec<f64>> {
     let mut roots = Vec::new();
     for z in eigenvalues.iter() {
         if z.im.abs() <= 1e-10 * (1.0 + z.re.abs()) {
-            let mut root = finite(z.re)?;
+            let mut root = match z.re {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             // Refine with the polynomial itself; repeated roots may remain ill-conditioned.
             for _ in 0..4 {
                 let mut value = c[n];

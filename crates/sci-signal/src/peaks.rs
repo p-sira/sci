@@ -285,9 +285,10 @@ pub fn peak_prominences(x: &[f64], peaks: &[usize], window: Option<usize>) -> Re
                 right = i;
             }
         }
-        result
-            .values
-            .push(crate::error::finite(x[p] - x[left].max(x[right]))?);
+        result.values.push(match x[p] - x[left].max(x[right]) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?);
         result.left_bases.push(left);
         result.right_bases.push(right);
     }
@@ -359,7 +360,10 @@ pub fn peak_widths(
         right_ips: vec![],
     };
     for (j, &p) in peaks.iter().enumerate() {
-        let height = crate::error::finite(x[p] - prominence.values[j] * relative_height)?;
+        let height = match x[p] - prominence.values[j] * relative_height {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         let mut l = p;
         let mut r = p;
         while l > prominence.left_bases[j] && x[l] > height {

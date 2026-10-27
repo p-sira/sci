@@ -55,10 +55,6 @@ fn shape(rows: usize, cols: usize) -> Result<()> {
     Ok(())
 }
 
-fn finite(value: f64) -> Result<f64> {
-    sci_core::finite(value)
-}
-
 /// Validate CSR invariants without changing the represented matrix `A`.
 ///
 /// # Parameters and conventions
@@ -102,7 +98,7 @@ pub fn validate(a: &SparseMatrix) -> Result<()> {
             ));
         }
     }
-    sci_core::finite_slice(&a.data)
+    sci_core::is_finite_slice(&a.data)
 }
 
 fn entries(a: &SparseMatrix) -> impl Iterator<Item = (usize, usize, f64)> + '_ {
@@ -151,7 +147,7 @@ pub fn from_coo(
     }
     let mut coordinates = coordinates.to_vec();
     coordinates.sort_by_key(|&(r, c, _)| (r, c));
-    let mut a = SparseMatrix {
+    let mut a: SparseMatrix = SparseMatrix {
         rows,
         cols,
         indptr: vec![0; rows + 1],
@@ -162,7 +158,10 @@ pub fn from_coo(
     for (r, c, v) in coordinates {
         if previous == Some((r, c)) {
             let last = a.data.last_mut().expect("previous entry exists");
-            *last = finite(*last + v)?;
+            *last = match *last + v {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
         } else {
             a.indices.push(c);
             a.data.push(v);
@@ -620,7 +619,10 @@ pub fn scale(a: &SparseMatrix, factor: f64) -> Result<SparseMatrix> {
     }
     let mut b = a.clone();
     for v in &mut b.data {
-        *v = finite(*v * factor)?;
+        *v = match *v * factor {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     Ok(b)
 }
@@ -676,7 +678,10 @@ pub fn add(a: &SparseMatrix, b: &SparseMatrix) -> Result<SparseMatrix> {
                 j += 1;
                 (bc, v)
             } else {
-                let v = finite(a.data[i] + b.data[j])?;
+                let v = match a.data[i] + b.data[j] {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
                 i += 1;
                 j += 1;
                 (ac, v)
@@ -741,7 +746,14 @@ pub fn multiply(a: &SparseMatrix, b: &SparseMatrix) -> Result<SparseMatrix> {
                 std::cmp::Ordering::Less => i += 1,
                 std::cmp::Ordering::Greater => j += 1,
                 std::cmp::Ordering::Equal => {
-                    push(&mut out, a.indices[i], finite(a.data[i] * b.data[j])?)?;
+                    push(
+                        &mut out,
+                        a.indices[i],
+                        match a.data[i] * b.data[j] {
+                            value if value.is_finite() => Ok(value),
+                            _ => Err(Error::NonFiniteEvaluation),
+                        }?,
+                    )?;
                     i += 1;
                     j += 1;
                 }
@@ -777,10 +789,17 @@ pub fn matvec(a: &SparseMatrix, x: &[f64]) -> Result<Vec<f64>> {
     if x.len() != a.cols {
         return Err(Error::DimensionMismatch);
     }
-    sci_core::finite_slice(x)?;
+    sci_core::is_finite_slice(x)?;
     let mut out = vec![0.0; a.rows];
     for (r, c, v) in entries(a) {
-        out[r] = finite(out[r] + finite(v * x[c])?)?;
+        out[r] = match out[r]
+            + match v * x[c] {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }? {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     Ok(out)
 }
@@ -835,7 +854,14 @@ pub fn matmul(a: &SparseMatrix, b: &SparseMatrix) -> Result<SparseMatrix> {
             let k = a.indices[p];
             for q in b.indptr[k]..b.indptr[k + 1] {
                 let v = row.entry(b.indices[q]).or_default();
-                *v = finite(*v + finite(a.data[p] * b.data[q])?)?;
+                *v = match *v
+                    + match a.data[p] * b.data[q] {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }? {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
             }
         }
         for (c, v) in row {
@@ -1093,7 +1119,14 @@ pub fn kron(a: &SparseMatrix, b: &SparseMatrix) -> Result<SparseMatrix> {
     let b_entries: Vec<_> = entries(b).collect();
     for (i, j, v) in entries(a) {
         for &(k, l, w) in &b_entries {
-            coordinates.push((i * b.rows + k, j * b.cols + l, finite(v * w)?));
+            coordinates.push((
+                i * b.rows + k,
+                j * b.cols + l,
+                match v * w {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?,
+            ));
         }
     }
     from_coo(rows, cols, &coordinates)

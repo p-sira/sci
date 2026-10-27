@@ -109,7 +109,10 @@ fn decomposition(a: Mat<f64>, vectors: bool) -> Result<SvdFactors> {
         )
     };
     for x in &mut singular_values {
-        *x = crate::error::finite(*x * scale)?;
+        *x = match *x * scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     Ok(SvdFactors {
         u,
@@ -124,7 +127,10 @@ fn eigendecomposition(a: Mat<f64>) -> Result<EigenResult> {
         .map_err(|_| Error::NumericalFailure("symmetric eigensolver did not converge"))?;
     Ok(EigenResult {
         eigenvalues: (0..a.nrows())
-            .map(|i| crate::error::finite(d.S()[i] * scale))
+            .map(|i| match d.S()[i] * scale {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            })
             .collect::<Result<_>>()?,
         eigenvectors: rows(&d.U())?,
     })
@@ -135,7 +141,10 @@ fn eigenvalues(a: Mat<f64>) -> Result<Vec<f64>> {
         .self_adjoint_eigenvalues(faer::Side::Lower)
         .map_err(|_| Error::NumericalFailure("symmetric eigensolver did not converge"))?;
     for value in &mut values {
-        *value = crate::error::finite(*value * scale)?;
+        *value = match *value * scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     Ok(values)
 }
@@ -143,7 +152,7 @@ fn rhs(b: &[f64], n: usize) -> Result<Mat<f64>> {
     if b.len() != n {
         return Err(Error::DimensionMismatch);
     }
-    crate::error::finite_slice(b)?;
+    crate::error::is_finite_slice(b)?;
     Ok(Mat::from_fn(n, 1, |i, _| b[i]))
 }
 fn vector(a: Mat<f64>) -> Result<Vec<f64>> {
@@ -408,7 +417,10 @@ pub fn inv(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 ///
 /// [SciPy `det`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.det.html).
 pub fn det(a: &(impl super::MatrixInput + ?Sized)) -> Result<f64> {
-    crate::error::finite(square_ref(a)?.as_ref().determinant())
+    match square_ref(a)?.as_ref().determinant() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 /// Solves `T x=b` or `Tᵀ x=b` for a triangular matrix T.
 ///
@@ -456,7 +468,7 @@ pub fn solve_triangular(
     if b.len() != a.nrows() {
         return Err(Error::DimensionMismatch);
     }
-    crate::error::finite_slice(b)?;
+    crate::error::is_finite_slice(b)?;
     let mut x = b.to_vec();
     substitute(a, &mut x, lower, unit_diagonal, transpose)?;
     if x.iter().any(|v| !v.is_finite()) {
@@ -1031,7 +1043,10 @@ pub fn pinv(
     let rtol = relative(rtol, a.nrows(), a.ncols())?;
     tolerance(atol)?;
     let mut d = decomposition(a, true)?;
-    let cutoff = crate::error::finite(atol + rtol * d.singular_values[0])?;
+    let cutoff = match atol + rtol * d.singular_values[0] {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     let (p, rank) = pseudoinverse(&mut d, cutoff)?;
     Ok((rows(&p)?, rank))
 }
@@ -1079,11 +1094,17 @@ pub fn lstsq(
     let b = rhs(b, a.nrows())?;
     let cond = tolerance(cond.unwrap_or(f64::EPSILON))?;
     let mut d = decomposition(a.clone(), true)?;
-    let cutoff = crate::error::finite(cond * d.singular_values[0])?;
+    let cutoff = match cond * d.singular_values[0] {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     let (p, rank) = pseudoinverse(&mut d, cutoff)?;
     let x = p * &b;
     let residuals = if a.nrows() > a.ncols() && rank == a.ncols() {
-        vec![crate::error::finite((&a * &x - b).squared_norm_l2())?]
+        vec![match (&a * &x - b).squared_norm_l2() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?]
     } else {
         vec![]
     };
@@ -1131,7 +1152,10 @@ pub fn orth(a: &(impl super::MatrixInput + ?Sized), rcond: Option<f64>) -> Resul
     let a = dense(a)?;
     let r = relative(rcond, a.nrows(), a.ncols())?;
     let d = decomposition(a, true)?;
-    let cutoff = crate::error::finite(r * d.singular_values[0])?;
+    let cutoff = match r * d.singular_values[0] {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     let rank = d.singular_values.iter().filter(|&&s| s > cutoff).count();
     rows(&d.u.as_ref().unwrap().subcols(0, rank))
 }
@@ -1175,7 +1199,10 @@ pub fn null_space(a: &(impl super::MatrixInput + ?Sized), rcond: Option<f64>) ->
     // Zero rows supply the complete right basis for a wide matrix.
     let padded = Mat::from_fn(m.max(n), n, |i, j| if i < m { a[(i, j)] } else { 0.0 });
     let d = decomposition(padded, true)?;
-    let cutoff = crate::error::finite(r * d.singular_values[0])?;
+    let cutoff = match r * d.singular_values[0] {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     let rank = d.singular_values.iter().filter(|&&s| s > cutoff).count();
     rows(&d.v_t.as_ref().unwrap().subrows(rank, n - rank).transpose())
 }
@@ -1276,7 +1303,10 @@ pub fn orthogonal_procrustes(
     let d = decomposition(product, true)?;
     Ok((
         rows(&(d.u.unwrap() * d.v_t.unwrap()))?,
-        crate::error::finite(d.singular_values.iter().sum())?,
+        match d.singular_values.iter().sum::<f64>() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?,
     ))
 }
 /// Solves the standard symmetric eigenproblem `A V=V diag(w)`, `Vᵀ V=I`.
@@ -1396,7 +1426,10 @@ pub fn pinvh(
     let r = relative(rtol, n, n)?;
     tolerance(atol)?;
     let largest = d.eigenvalues.iter().fold(0.0_f64, |v, &w| v.max(w.abs()));
-    let cutoff = crate::error::finite(atol + r * largest)?;
+    let cutoff = match atol + r * largest {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     let mut rank = 0;
     let v = dense(&d.eigenvectors)?;
     let mut scaled = v.clone();
@@ -1467,8 +1500,8 @@ fn tridiagonal(d: &[f64], e: &[f64]) -> Result<Mat<f64>> {
     if e.len() != n - 1 {
         return Err(Error::DimensionMismatch);
     }
-    crate::error::finite_slice(d)?;
-    crate::error::finite_slice(e)?;
+    crate::error::is_finite_slice(d)?;
+    crate::error::is_finite_slice(e)?;
     Ok(Mat::from_fn(n, n, |i, j| {
         if i == j {
             d[i]
@@ -1720,5 +1753,8 @@ pub fn norm(a: &(impl super::MatrixInput + ?Sized), order: MatrixNorm) -> Result
             }
         }
     };
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }

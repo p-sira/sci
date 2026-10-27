@@ -1,6 +1,6 @@
 //! # Elliptic integrals
 //!
-//! Legendre and Carlson integrals evaluated by ellip in `f64` precision.
+//! Legendre and Carlson integrals evaluated by ellip in the selected floating-point precision.
 //! The parameter convention is `m = k²`; amplitudes are radians.
 //! These wrappers restrict inputs to finite values and nonsingular real domains.
 //! The narrower domains make errors predictable across backend versions.
@@ -23,11 +23,12 @@
 //!
 //! ## Numerical behavior
 //!
-//! Evaluation uses the private ellip backend in binary64 precision. Accuracy
+//! Evaluation uses the private ellip backend in the selected type (`f32` or `f64`). Accuracy
 //! depends on the arguments; relative error can grow near zeros and singularities.
 //! Sci provides no configurable tolerance or iteration limit for these wrappers.
 
 use crate::{Error, Result};
+use sci_core::Float;
 
 /// Computes K(m) = ∫₀^(π/2) (1 − m sin²θ)^(-1/2) dθ.
 ///
@@ -60,14 +61,18 @@ use crate::{Error, Result};
 /// # References
 ///
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
-pub fn ellipk(m: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ellipk<T: Float>(m: T) -> Result<T> {
     if !(m.is_finite() && (m < 1.0)) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::ellipk(m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes E(m) = ∫₀^(π/2) √(1 − m sin²θ) dθ.
@@ -101,14 +106,18 @@ pub fn ellipk(m: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
-pub fn ellipe(m: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ellipe<T: Float>(m: T) -> Result<T> {
     if !(m.is_finite() && (m <= 1.0)) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::ellipe(m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Π(n,m) = ∫₀^(π/2) [(1 − n sin²θ)√(1 − m sin²θ)]⁻¹ dθ.
@@ -143,14 +152,18 @@ pub fn ellipe(m: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
-pub fn ellippi(n: f64, m: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ellippi<T: Float>(n: T, m: T) -> Result<T> {
     if !(n.is_finite() && m.is_finite() && (n < 1.0 && m < 1.0)) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::ellippi(n, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes D(m) = ∫₀^(π/2) sin²θ / √(1 − m sin²θ) dθ.
@@ -184,14 +197,18 @@ pub fn ellippi(n: f64, m: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
-pub fn ellipd(m: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ellipd<T: Float>(m: T) -> Result<T> {
     if !(m.is_finite() && (m < 1.0)) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::ellipd(m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes F(φ,m) = ∫₀^φ (1 − m sin²θ)^(-1/2) dθ.
@@ -227,7 +244,7 @@ pub fn ellipd(m: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::ellipkinc(0.5, 0.0)?;
+/// let value = sci_special::elliptic::ellipkinc(0.5_f64, 0.0)?;
 /// assert!((value - (0.5)).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -235,14 +252,18 @@ pub fn ellipd(m: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
-pub fn ellipkinc(phi: f64, m: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ellipkinc<T: Float>(phi: T, m: T) -> Result<T> {
     if !(phi.is_finite() && m.is_finite() && (m < 1.0)) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::ellipf(phi, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes E(φ,m) = ∫₀^φ √(1 − m sin²θ) dθ.
@@ -269,7 +290,7 @@ pub fn ellipkinc(phi: f64, m: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::ellipeinc(0.5, 0.0)?;
+/// let value = sci_special::elliptic::ellipeinc(0.5_f64, 0.0)?;
 /// assert!((value - (0.5)).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -277,14 +298,18 @@ pub fn ellipkinc(phi: f64, m: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
-pub fn ellipeinc(phi: f64, m: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ellipeinc<T: Float>(phi: T, m: T) -> Result<T> {
     if !(phi.is_finite() && m.is_finite() && (m <= 1.0)) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::ellipeinc(phi, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Π(φ,n,m) = ∫₀^φ [(1 − n sin²θ)√(1 − m sin²θ)]⁻¹ dθ.
@@ -312,7 +337,7 @@ pub fn ellipeinc(phi: f64, m: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::ellippiinc(0.5, 0.0, 0.0)?;
+/// let value = sci_special::elliptic::ellippiinc(0.5_f64, 0.0, 0.0)?;
 /// assert!((value - (0.5)).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -320,14 +345,18 @@ pub fn ellipeinc(phi: f64, m: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
-pub fn ellippiinc(phi: f64, n: f64, m: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ellippiinc<T: Float>(phi: T, n: T, m: T) -> Result<T> {
     if !(phi.is_finite() && n.is_finite() && m.is_finite() && (m < 1.0 && n < 1.0)) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::ellippiinc(phi, n, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes D(φ,m) = ∫₀^φ sin²θ / √(1 − m sin²θ) dθ.
@@ -354,7 +383,7 @@ pub fn ellippiinc(phi: f64, n: f64, m: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::ellipdinc(0.0, 0.0)?;
+/// let value = sci_special::elliptic::ellipdinc(0.0_f64, 0.0)?;
 /// assert!((value - (0.0)).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -362,14 +391,18 @@ pub fn ellippiinc(phi: f64, n: f64, m: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
-pub fn ellipdinc(phi: f64, m: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ellipdinc<T: Float>(phi: T, m: T) -> Result<T> {
     if !(phi.is_finite() && m.is_finite() && (m < 1.0)) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::ellipdinc(phi, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes R_F(x,y,z) = ½ ∫₀^∞ [(t+x)(t+y)(t+z)]^(-1/2) dt.
@@ -397,7 +430,7 @@ pub fn ellipdinc(phi: f64, m: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::elliprf(1.0, 1.0, 1.0)?;
+/// let value = sci_special::elliptic::elliprf(1.0_f64, 1.0, 1.0)?;
 /// assert!((value - (1.0)).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -405,7 +438,8 @@ pub fn ellipdinc(phi: f64, m: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
-pub fn elliprf(x: f64, y: f64, z: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn elliprf<T: Float>(x: T, y: T, z: T) -> Result<T> {
     if !(x.is_finite()
         && y.is_finite()
         && z.is_finite()
@@ -419,7 +453,10 @@ pub fn elliprf(x: f64, y: f64, z: f64) -> Result<f64> {
         ));
     }
     let value = ellip::elliprf(x, y, z).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes R_D(x,y,z) = R_J(x,y,z,z).
@@ -447,7 +484,7 @@ pub fn elliprf(x: f64, y: f64, z: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::elliprd(1.0, 1.0, 1.0)?;
+/// let value = sci_special::elliptic::elliprd(1.0_f64, 1.0, 1.0)?;
 /// assert!((value - (1.0)).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -455,7 +492,8 @@ pub fn elliprf(x: f64, y: f64, z: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
-pub fn elliprd(x: f64, y: f64, z: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn elliprd<T: Float>(x: T, y: T, z: T) -> Result<T> {
     if !(x.is_finite()
         && y.is_finite()
         && z.is_finite()
@@ -466,7 +504,10 @@ pub fn elliprd(x: f64, y: f64, z: f64) -> Result<f64> {
         ));
     }
     let value = ellip::elliprd(x, y, z).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Carlson's symmetric elliptic integral R_G(x,y,z).
@@ -494,7 +535,7 @@ pub fn elliprd(x: f64, y: f64, z: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::elliprg(1.0, 1.0, 1.0)?;
+/// let value = sci_special::elliptic::elliprg(1.0_f64, 1.0, 1.0)?;
 /// assert!((value - (1.0)).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -502,14 +543,18 @@ pub fn elliprd(x: f64, y: f64, z: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
-pub fn elliprg(x: f64, y: f64, z: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn elliprg<T: Float>(x: T, y: T, z: T) -> Result<T> {
     if !(x.is_finite() && y.is_finite() && z.is_finite() && (x >= 0.0 && y >= 0.0 && z >= 0.0)) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::elliprg(x, y, z).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes R_J(x,y,z,p) = (3/2) ∫₀^∞ [(t+p)√((t+x)(t+y)(t+z))]⁻¹ dt.
@@ -538,7 +583,7 @@ pub fn elliprg(x: f64, y: f64, z: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::elliprj(1.0, 1.0, 1.0, 1.0)?;
+/// let value = sci_special::elliptic::elliprj(1.0_f64, 1.0, 1.0, 1.0)?;
 /// assert!((value - (1.0)).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -546,7 +591,8 @@ pub fn elliprg(x: f64, y: f64, z: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
-pub fn elliprj(x: f64, y: f64, z: f64, p: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn elliprj<T: Float>(x: T, y: T, z: T, p: T) -> Result<T> {
     if !(x.is_finite()
         && y.is_finite()
         && z.is_finite()
@@ -562,7 +608,10 @@ pub fn elliprj(x: f64, y: f64, z: f64, p: f64) -> Result<f64> {
         ));
     }
     let value = ellip::elliprj(x, y, z, p).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes R_C(x,y) = R_F(x,y,y).
@@ -589,7 +638,7 @@ pub fn elliprj(x: f64, y: f64, z: f64, p: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::elliprc(1.0, 1.0)?;
+/// let value = sci_special::elliptic::elliprc(1.0_f64, 1.0)?;
 /// assert!((value - (1.0)).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -597,14 +646,18 @@ pub fn elliprj(x: f64, y: f64, z: f64, p: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
-pub fn elliprc(x: f64, y: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn elliprc<T: Float>(x: T, y: T) -> Result<T> {
     if !(x.is_finite() && y.is_finite() && (x >= 0.0 && y > 0.0)) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::elliprc(x, y).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes (K(m), E(m)), evaluated together.
@@ -630,7 +683,7 @@ pub fn elliprc(x: f64, y: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::ellipke(0.0)?;
+/// let value = sci_special::elliptic::ellipke(0.0_f64)?;
 /// let (k, e) = value; assert!((k-e).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -638,7 +691,8 @@ pub fn elliprc(x: f64, y: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
-pub fn ellipke(m: f64) -> Result<(f64, f64)> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ellipke<T: Float>(m: T) -> Result<(T, T)> {
     if !(m.is_finite() && m < 1.0) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
@@ -646,8 +700,14 @@ pub fn ellipke(m: f64) -> Result<(f64, f64)> {
     }
     let value = ellip::ellipke(m).map_err(Error::NumericalFailure)?;
     Ok((
-        crate::error::finite(value.0)?,
-        crate::error::finite(value.1)?,
+        match value.0 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?,
+        match value.1 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?,
     ))
 }
 
@@ -685,7 +745,8 @@ pub fn ellipke(m: f64) -> Result<(f64, f64)> {
 /// # References
 ///
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
-pub fn cel(kc: f64, p: f64, a: f64, b: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn cel<T: Float>(kc: T, p: T, a: T, b: T) -> Result<T> {
     if !(kc.is_finite() && kc != 0.0 && p.is_finite() && p > 0.0 && a.is_finite() && b.is_finite())
     {
         return Err(Error::InvalidInput(
@@ -693,7 +754,10 @@ pub fn cel(kc: f64, p: f64, a: f64, b: f64) -> Result<f64> {
         ));
     }
     let value = ellip::cel(kc, p, a, b).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes K(1−kc²).
@@ -727,14 +791,18 @@ pub fn cel(kc: f64, p: f64, a: f64, b: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
-pub fn cel1(kc: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn cel1<T: Float>(kc: T) -> Result<T> {
     if !(kc.is_finite() && kc != 0.0) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::cel1(kc).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes cel(kc,1,a,b).
@@ -770,14 +838,18 @@ pub fn cel1(kc: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
-pub fn cel2(kc: f64, a: f64, b: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn cel2<T: Float>(kc: T, a: T, b: T) -> Result<T> {
     if !(kc.is_finite() && kc != 0.0 && a.is_finite() && b.is_finite()) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::cel2(kc, a, b).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Π(1−p,1−kc²) = cel(kc,p,1,1).
@@ -812,14 +884,18 @@ pub fn cel2(kc: f64, a: f64, b: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
-pub fn cel3(kc: f64, p: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn cel3<T: Float>(kc: T, p: T) -> Result<T> {
     if !(kc.is_finite() && kc != 0.0 && p.is_finite() && p > 0.0) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::cel3(kc, p).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes F(arctan(x),1−kc²).
@@ -854,14 +930,18 @@ pub fn cel3(kc: f64, p: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
-pub fn el1(x: f64, kc: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn el1<T: Float>(x: T, kc: T) -> Result<T> {
     if !(x.is_finite() && kc.is_finite() && kc != 0.0) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::el1(x, kc).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes ∫₀^arctan(x) (a cos²θ+b sin²θ)/√(cos²θ+kc² sin²θ) dθ.
@@ -898,14 +978,18 @@ pub fn el1(x: f64, kc: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
-pub fn el2(x: f64, kc: f64, a: f64, b: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn el2<T: Float>(x: T, kc: T, a: T, b: T) -> Result<T> {
     if !(x.is_finite() && kc.is_finite() && kc != 0.0 && a.is_finite() && b.is_finite()) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::el2(x, kc, a, b).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Π(1−p; arctan(x),1−kc²).
@@ -941,14 +1025,18 @@ pub fn el2(x: f64, kc: f64, a: f64, b: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
-pub fn el3(x: f64, kc: f64, p: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn el3<T: Float>(x: T, kc: T, p: T) -> Result<T> {
     if !(x.is_finite() && kc.is_finite() && kc != 0.0 && p.is_finite() && p >= 0.0) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::el3(x, kc, p).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Z(φ,m) = E(φ,m) − E(m)F(φ,m)/K(m).
@@ -975,7 +1063,7 @@ pub fn el3(x: f64, kc: f64, p: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::jacobi_zeta(0.5, 0.0)?;
+/// let value = sci_special::elliptic::jacobi_zeta(0.5_f64, 0.0)?;
 /// assert!(value.abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -983,14 +1071,18 @@ pub fn el3(x: f64, kc: f64, p: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
-pub fn jacobi_zeta(phi: f64, m: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn jacobi_zeta<T: Float>(phi: T, m: T) -> Result<T> {
     if !(phi.is_finite() && m.is_finite() && m < 1.0) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::jacobi_zeta(phi, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Λ₀(φ,m) = F(φ,1−m)/K(1−m) + 2 K(m) Z(φ,1−m)/π.
@@ -1025,14 +1117,18 @@ pub fn jacobi_zeta(phi: f64, m: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
-pub fn heuman_lambda(phi: f64, m: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn heuman_lambda<T: Float>(phi: T, m: T) -> Result<T> {
     if !(phi.is_finite() && m.is_finite() && (0.0..1.0).contains(&m)) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
     let value = ellip::heuman_lambda(phi, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes Π(n;φ,m), using Bulirsch's algorithm.
@@ -1060,7 +1156,7 @@ pub fn heuman_lambda(phi: f64, m: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let value = sci_special::elliptic::ellippiinc_bulirsch(0.5, 0.0, 0.0)?;
+/// let value = sci_special::elliptic::ellippiinc_bulirsch(0.5_f64, 0.0, 0.0)?;
 /// assert!((value-0.5).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1068,14 +1164,18 @@ pub fn heuman_lambda(phi: f64, m: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
-pub fn ellippiinc_bulirsch(phi: f64, n: f64, m: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ellippiinc_bulirsch<T: BulirschFloat>(phi: T, n: T, m: T) -> Result<T> {
     if !(phi.is_finite() && n.is_finite() && n < 1.0 && m.is_finite() && m < 1.0) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
         ));
     }
-    let value = ellip::ellippiinc_bulirsch(phi, n, m).map_err(Error::NumericalFailure)?;
-    crate::error::finite(value)
+    let value = T::third_kind(phi, n, m)?;
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Computes K(1−p) accurately near the logarithmic singularity.
@@ -1109,7 +1209,8 @@ pub fn ellippiinc_bulirsch(phi: f64, n: f64, m: f64) -> Result<f64> {
 /// # References
 ///
 /// - [NIST DLMF, Carlson integrals](https://dlmf.nist.gov/19.25).
-pub fn ellipkm1(p: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ellipkm1<T: Float>(p: T) -> Result<T> {
     if !p.is_finite() || p <= 0.0 {
         return Err(Error::InvalidInput(
             "complementary parameter must be finite and positive",
@@ -1117,3 +1218,24 @@ pub fn ellipkm1(p: f64) -> Result<f64> {
     }
     elliprf(0.0, p, 1.0)
 }
+
+/// Floating-point types supported by the specialized Bulirsch algorithm.
+///
+/// This dispatch keeps backend precision-control traits private. The standard
+/// `f32` and `f64` implementations evaluate directly in their own precision.
+pub trait BulirschFloat: Float {
+    /// Evaluates the incomplete third-kind integral; used by [`ellippiinc_bulirsch`].
+    #[doc(hidden)]
+    fn third_kind(phi: Self, n: Self, m: Self) -> Result<Self>;
+}
+
+macro_rules! bulirsch_float {
+    ($($t:ty),*) => {$(
+        impl BulirschFloat for $t {
+            fn third_kind(phi: Self, n: Self, m: Self) -> Result<Self> {
+                ellip::ellippiinc_bulirsch(phi, n, m).map_err(Error::NumericalFailure)
+            }
+        }
+    )*};
+}
+bulirsch_float!(f32, f64);

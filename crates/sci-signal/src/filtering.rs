@@ -171,11 +171,21 @@ fn filter_state(b: &[f64], a: &[f64], x: &[f64], initial: &[f64]) -> Result<(Vec
 /// [SciPy lfilter_zi definition](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.lfilter_zi.html).
 pub fn lfilter_zi(b: &[f64], a: &[f64]) -> Result<Vec<f64>> {
     let (b, a) = coefficients(b, a)?;
-    let denominator = crate::error::finite(a.iter().sum::<f64>())?;
+    let denominator = match a.iter().sum::<f64>() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     if denominator == 0. {
         return Err(Error::NumericalFailure("filter has a pole at DC"));
     }
-    let gain = crate::error::finite(crate::error::finite(b.iter().sum::<f64>())? / denominator)?;
+    let gain = match match b.iter().sum::<f64>() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }? / denominator
+    {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     let mut state = vec![0.; b.len() - 1];
     let mut tail = 0.;
     for j in (1..b.len()).rev() {
@@ -925,7 +935,10 @@ pub fn kaiser_atten(numtaps: usize, width: f64) -> Result<f64> {
         return Err(Error::InvalidInput("numtaps must be positive"));
     }
     positive(width)?;
-    crate::error::finite(2.285 * (numtaps - 1) as f64 * PI * width + 7.95)
+    match 2.285 * (numtaps - 1) as f64 * PI * width + 7.95 {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 /// Estimates `numtaps=ceil((|ripple|-7.95)/(2.285 π width)+1)` and Kaiser beta.
 ///
@@ -1238,15 +1251,17 @@ pub fn wiener(x: &[f64], kernel: usize, noise: Option<f64>) -> Result<Vec<f64>> 
             })
             .collect();
         let mean = local.iter().sum::<f64>() / kernel as f64;
-        let var = crate::error::finite(
-            local.iter().map(|v| v * v).sum::<f64>() / kernel as f64 - mean * mean,
-        )?;
+        let var = match local.iter().map(|v| v * v).sum::<f64>() / kernel as f64 - mean * mean {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         means.push(mean);
         variances.push(var.max(0.));
     }
-    let noise = crate::error::finite(
-        noise.unwrap_or_else(|| variances.iter().sum::<f64>() / x.len() as f64),
-    )?;
+    let noise = match noise.unwrap_or_else(|| variances.iter().sum::<f64>() / x.len() as f64) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     checked(
         x.iter()
             .zip(means)

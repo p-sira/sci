@@ -4,7 +4,7 @@
 //!
 //! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
-//! Second-order central finite differences on `f64` values. Gradient vectors
+//! Second-order central finite differences on `T: sci_core::Float` values (`f32` or `f64`). Gradient vectors
 //! and Jacobian/Hessian matrices share the slice and row-major conventions of
 //! `sci_optimize` and `sci_linalg`.
 //!

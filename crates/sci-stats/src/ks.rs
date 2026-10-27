@@ -99,7 +99,10 @@ pub fn ks_1samp(
     };
     Ok(KsResult {
         statistic,
-        pvalue: finite(pvalue)?,
+        pvalue: match pvalue {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?,
         location,
         sign,
     })
@@ -180,7 +183,10 @@ pub fn ks_2samp(first: &[f64], second: &[f64], alternative: Alternative) -> Resu
     };
     Ok(KsResult {
         statistic,
-        pvalue: finite(pvalue)?,
+        pvalue: match pvalue {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?,
         location,
         sign,
     })

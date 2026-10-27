@@ -11,4 +11,4 @@ installation or runtime data file.
 
 Constants are expressed in SI units unless a function documents another
 unit. Conversion functions multiply by the exact scale represented by their
-arguments and return `f64`; they do not attach or infer unit metadata.
+arguments and retain their `T: sci_core::Float` precision; they do not attach or infer unit metadata.

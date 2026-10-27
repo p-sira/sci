@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Add native `f32` and `f64` Fourier, real, cosine/sine, multidimensional, and periodic transforms with independent bounded per-precision caches. FFTLog remains binary64.
+
 - Remove the real selector from next_fast_len and prev_fast_len. Both use an 11-smooth size heuristic based on RustFFT guidance, with no promise of optimal CPU-specific performance.
 - Update workspace dependencies for the new minor releases.
 

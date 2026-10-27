@@ -1,10 +1,7 @@
 mod derivatives;
 pub use derivatives::*;
 
-use crate::{
-    Error, Result,
-    error::{finite, finite_slice},
-};
+use crate::{Error, Result, error::is_finite_slice};
 
 const MAX_COORDINATES: usize = 1_000_000;
 const MAX_WORK: u64 = 16_777_216;
@@ -83,8 +80,11 @@ where
     type Output = f64;
     type Error = Error;
     fn cost(&self, point: &Vec<f64>) -> Result<f64> {
-        finite_slice(point)?;
-        finite((self.function)(point)?)
+        is_finite_slice(point)?;
+        match (self.function)(point)? {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }
     }
 }
 
@@ -95,7 +95,7 @@ where
 {
     type Gradient = Vec<f64>;
     fn gradient(&self, point: &Vec<f64>) -> Result<Vec<f64>> {
-        finite_slice(point)?;
+        is_finite_slice(point)?;
         let gradient = (self.gradient)(point)?;
         if gradient.len() != point.len() {
             return Err(Error::DimensionMismatch);
@@ -114,7 +114,7 @@ fn validate(start: &[f64], options: Options) -> Result<()> {
         ));
     }
     bounded_work(start.len(), options.max_iterations)?;
-    finite_slice(start)?;
+    is_finite_slice(start)?;
     if !options.tolerance.is_finite() || options.tolerance <= 0.0 {
         return Err(Error::InvalidInput("tolerance must be finite and positive"));
     }

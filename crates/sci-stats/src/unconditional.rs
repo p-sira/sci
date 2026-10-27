@@ -352,8 +352,14 @@ pub fn poisson_means_test(
             "Poisson rate difference must be finite and nonnegative",
         ));
     }
-    let total = finite(n1 + n2)?;
-    let lambda2 = finite((k1 + k2) / total - diff * (n1 / total))?;
+    let total = match n1 + n2 {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
+    let lambda2 = match (k1 + k2) / total - diff * (n1 / total) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     if lambda2 <= 0. {
         return Ok(TestResult {
             statistic: 0.,
@@ -361,23 +367,44 @@ pub fn poisson_means_test(
         });
     }
     let pivot = |x: f64, y: f64| -> Result<f64> {
-        let rate1 = finite(x / n1)?;
-        let rate2 = finite(y / n2)?;
-        let variance = finite(rate1 / n1 + rate2 / n2)?;
-        let numerator = finite(rate1 - rate2 - diff)?;
+        let rate1 = match x / n1 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
+        let rate2 = match y / n2 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
+        let variance = match rate1 / n1 + rate2 / n2 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
+        let numerator = match rate1 - rate2 - diff {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
         let value = numerator / variance.sqrt();
         if variance == 0. {
             Ok(value)
         } else {
-            finite(value)
+            match value {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }
         }
     };
     let statistic = pivot(k1, k2)?;
     let d1 = Distribution::Poisson {
-        rate: finite(n1 * (lambda2 + diff))?,
+        rate: match n1 * (lambda2 + diff) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?,
     };
     let d2 = Distribution::Poisson {
-        rate: finite(n2 * lambda2)?,
+        rate: match n2 * lambda2 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?,
     };
     let lower1 = ppf(d1, 1e-10)? as usize;
     let lower2 = ppf(d2, 1e-10)? as usize;

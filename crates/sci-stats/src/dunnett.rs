@@ -97,7 +97,10 @@ fn dunnett_probability(
         }
         probability += weight * conditional;
     }
-    finite((1. - probability).clamp(0., 1.))
+    match (1. - probability).clamp(0., 1.) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Dunnett multiple treatment-versus-control t tests with a shared control.
@@ -194,7 +197,10 @@ pub fn dunnett(
     let mut correlations = Vec::with_capacity(treatments.len());
     for (i, treatment) in treatments.iter().enumerate() {
         let factor = 1. / nc + 1. / treatment.len() as f64;
-        statistic.push(finite((means[i + 1] - means[0]) / (mse * factor).sqrt())?);
+        statistic.push(match (means[i + 1] - means[0]) / (mse * factor).sqrt() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?);
         let r = ((1. / nc) / factor).sqrt();
         correlations.push((r, (1. - r * r).sqrt()));
     }

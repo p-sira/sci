@@ -1,5 +1,5 @@
 //! Euclidean vector quantization and bounded Lloyd k-means.
-use crate::error::{finite, finite_slice};
+use crate::error::is_finite_slice;
 use crate::{Error, Result};
 
 fn shape(data: &[Vec<f64>]) -> Result<usize> {
@@ -18,7 +18,7 @@ fn shape(data: &[Vec<f64>]) -> Result<usize> {
         if row.len() != columns {
             return Err(Error::DimensionMismatch);
         }
-        finite_slice(row)?;
+        is_finite_slice(row)?;
     }
     Ok(columns)
 }
@@ -51,14 +51,20 @@ fn assign(obs: &[Vec<f64>], codes: &[Vec<f64>]) -> Result<(Vec<usize>, Vec<f64>)
         for (i, code) in codes.iter().enumerate() {
             let mut distance = 0.0_f64;
             for (a, b) in row.iter().zip(code) {
-                distance = distance.hypot(finite(a - b)?);
+                distance = distance.hypot(match a - b {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?);
             }
             if distance < best.1 {
                 best = (i, distance);
             }
         }
         labels.push(best.0);
-        distances.push(finite(best.1)?);
+        distances.push(match best.1 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?);
     }
     Ok((labels, distances))
 }
@@ -76,7 +82,10 @@ fn update(
     let mut sums = vec![vec![0.0; codes[0].len()]; codes.len()];
     for (row, label) in obs.iter().zip(labels) {
         for (sum, value) in sums[*label].iter_mut().zip(row) {
-            *sum = finite(*sum + value / counts[*label] as f64)?;
+            *sum = match *sum + value / counts[*label] as f64 {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
         }
     }
     let mut result = Vec::new();
@@ -159,7 +168,10 @@ pub fn whiten(obs: &[Vec<f64>]) -> Result<Vec<Vec<f64>>> {
     let scales: Vec<f64> = (0..columns)
         .map(|j| {
             let column: Vec<f64> = obs.iter().map(|row| row[j]).collect();
-            let scale = finite(crate::stats::std(&column, 0)?)?;
+            let scale = match crate::stats::std(&column, 0)? {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             Ok(if scale == 0.0 { 1.0 } else { scale })
         })
         .collect::<Result<_>>()?;
@@ -167,7 +179,10 @@ pub fn whiten(obs: &[Vec<f64>]) -> Result<Vec<Vec<f64>>> {
         .map(|row| {
             row.iter()
                 .zip(&scales)
-                .map(|(v, s)| finite(v / s))
+                .map(|(v, s)| match v / s {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                })
                 .collect()
         })
         .collect()
@@ -276,7 +291,10 @@ pub fn kmeans(
     let mut previous = f64::INFINITY;
     for _ in 0..max_iterations {
         let (labels, distances) = assign(obs, &codes)?;
-        let distortion = finite(distances.iter().map(|v| v / obs.len() as f64).sum())?;
+        let distortion = match distances.iter().map(|v| v / obs.len() as f64).sum::<f64>() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         if (previous - distortion).abs() <= threshold {
             return Ok((codes, distortion));
         }
@@ -284,7 +302,10 @@ pub fn kmeans(
         previous = distortion;
     }
     let (_, distances) = assign(obs, &codes)?;
-    let distortion = finite(distances.iter().map(|v| v / obs.len() as f64).sum())?;
+    let distortion = match distances.iter().map(|v| v / obs.len() as f64).sum::<f64>() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     if (previous - distortion).abs() <= threshold {
         Ok((codes, distortion))
     } else {

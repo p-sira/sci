@@ -146,7 +146,7 @@ fn block_eigen(a: &SparseMatrix, x: &Matrix, largest: bool) -> Result<EigenResul
         return Err(Error::DimensionMismatch);
     }
     for r in x {
-        sci_core::finite_slice(r)?;
+        sci_core::is_finite_slice(r)?;
     }
     // SciPy also falls back to a full symmetric decomposition for small blocks.
     // This bounded implementation consistently takes that branch.
@@ -168,8 +168,8 @@ fn exponential_action(a: &SparseMatrix, b: &[f64], times: &[f64]) -> Result<Matr
     if b.len() != a.rows {
         return Err(Error::DimensionMismatch);
     }
-    sci_core::finite_slice(b)?;
-    sci_core::finite_slice(times)?;
+    sci_core::is_finite_slice(b)?;
+    sci_core::is_finite_slice(times)?;
     if times.len() > 64 {
         return Err(Error::InvalidInput(
             "exponential action supports at most 64 times",
@@ -180,12 +180,18 @@ fn exponential_action(a: &SparseMatrix, b: &[f64], times: &[f64]) -> Result<Matr
         .iter()
         .map(|&t| {
             for (r, c, v) in entries(a) {
-                scaled[r][c] = finite(t * v)?;
+                scaled[r][c] = match t * v {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?;
             }
             let e = sci_linalg::expm(&scaled)?;
             let mut y = vec![0.; a.rows];
             for (i, r) in e.iter().enumerate() {
-                y[i] = finite(r.iter().zip(b).map(|(x, y)| x * y).sum())?;
+                y[i] = match r.iter().zip(b).map(|(x, y)| x * y).sum::<f64>() {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?;
             }
             Ok(y)
         })
@@ -224,7 +230,7 @@ fn krylov<F: FnMut(Complex) -> Complex>(
     if b.len() != a.rows {
         return Err(Error::DimensionMismatch);
     }
-    sci_core::finite_slice(b)?;
+    sci_core::is_finite_slice(b)?;
     if !o.time.is_finite()
         || !o.rtol.is_finite()
         || !o.atol.is_finite()
@@ -239,28 +245,52 @@ fn krylov<F: FnMut(Complex) -> Complex>(
     if beta == 0. {
         return Ok(vec![Complex { re: 0., im: 0. }; b.len()]);
     }
-    finite(beta)?;
+    if !beta.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     let m = o.max_basis.min(a.rows);
     let mut q = vec![b.iter().map(|v| v / beta).collect::<Vec<_>>()];
     let mut h = vec![vec![0.; m]; m + 1];
-    let matrix_scale = finite(a.data.iter().fold(0f64, |s, &v| s.hypot(v)))?;
+    let matrix_scale = match a.data.iter().fold(0f64, |s, &v| s.hypot(v)) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     let mut previous: Option<Vec<Complex>> = None;
     for j in 0..m {
         let mut w = matvec(a, &q[j])?;
         // Two-pass modified Gram–Schmidt reduces loss of orthogonality.
         for _ in 0..2 {
             for i in 0..=j {
-                let c = finite(q[i].iter().zip(&w).map(|(x, y)| x * y).sum())?;
-                h[i][j] = finite(h[i][j] + c)?;
+                let c = match q[i].iter().zip(&w).map(|(x, y)| x * y).sum::<f64>() {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?;
+                h[i][j] = match h[i][j] + c {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?;
                 for (w, &v) in w.iter_mut().zip(&q[i]) {
-                    *w = finite(*w - c * v)?;
+                    *w = match *w - c * v {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(crate::Error::NonFiniteEvaluation),
+                    }?;
                 }
             }
         }
         h[j + 1][j] = w.iter().fold(0f64, |s, &v| s.hypot(v));
-        finite(h[j + 1][j])?;
+        match h[j + 1][j] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
         let projected: Matrix = (0..=j)
-            .map(|i| (0..=j).map(|k| finite(o.time * h[i][k])).collect())
+            .map(|i| {
+                (0..=j)
+                    .map(|k| match o.time * h[i][k] {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(crate::Error::NonFiniteEvaluation),
+                    })
+                    .collect()
+            })
             .collect::<Result<_>>()?;
         let fm = sci_linalg::funm(&projected, &mut f)?;
         let mut y = vec![Complex { re: 0., im: 0. }; b.len()];
@@ -269,8 +299,14 @@ fn krylov<F: FnMut(Complex) -> Complex>(
                 y[i].re += beta * q[k][i] * fm[k][0].re;
                 y[i].im += beta * q[k][i] * fm[k][0].im;
             }
-            finite(y[i].re)?;
-            finite(y[i].im)?;
+            match y[i].re {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?;
+            match y[i].im {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?;
         }
         let happy = h[j + 1][j] <= 64. * f64::EPSILON * matrix_scale;
         if happy || j + 1 == a.rows {
@@ -282,8 +318,16 @@ fn krylov<F: FnMut(Complex) -> Complex>(
                 .zip(old)
                 .fold(0f64, |s, (v, w)| s.hypot((v.re - w.re).hypot(v.im - w.im)));
             let length = y.iter().fold(0f64, |s, v| s.hypot(v.re.hypot(v.im)));
-            if diff <= o.atol.max(finite(o.rtol * length)?)
-                && h[j + 1][j] <= o.atol.max(finite(o.rtol * matrix_scale)?)
+            if diff
+                <= o.atol.max(match o.rtol * length {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?)
+                && h[j + 1][j]
+                    <= o.atol.max(match o.rtol * matrix_scale {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(crate::Error::NonFiniteEvaluation),
+                    }?)
             {
                 return Ok(y);
             }
@@ -581,13 +625,15 @@ pub fn norm_axis(a: &SparseMatrix, p: f64, axis: usize) -> Result<Vec<f64>> {
             if scale == 0. {
                 return Ok(0.);
             }
-            finite(
-                scale
-                    * v.iter()
-                        .map(|&x| (x / scale).powf(p))
-                        .sum::<f64>()
-                        .powf(1. / p),
-            )
+            match scale
+                * v.iter()
+                    .map(|&x| (x / scale).powf(p))
+                    .sum::<f64>()
+                    .powf(1. / p)
+            {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }
         })
         .collect()
 }

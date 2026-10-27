@@ -2,7 +2,7 @@
 //!
 //! Complex discrete Fourier transforms using RustFFT internally. Inputs and
 //! outputs use [`sci_complex::Complex`]; real-input transforms accept the
-//! same `f64` slices used by statistics and linear algebra.
+//! same `f32` or `f64` slices used by descriptive statistics.
 //!
 //! ## Conventions
 //!
@@ -24,7 +24,8 @@
 
 use crate::complex::{Complex, native, owned};
 
-use num_complex::Complex64;
+use super::FftFloat;
+use num_complex::Complex as Native;
 use std::{cell::RefCell, sync::Arc};
 
 // Keep only the most recent plan of each kind. Larger transforms use temporary
@@ -32,41 +33,69 @@ use std::{cell::RefCell, sync::Arc};
 const CACHE_LENGTH: usize = 65_536;
 
 #[derive(Default)]
-struct Cache {
-    forward: Option<ComplexWorkspace>,
-    inverse: Option<ComplexWorkspace>,
-    real: Option<RealWorkspace>,
+struct Cache<T: FftFloat> {
+    forward: Option<ComplexWorkspace<T>>,
+    inverse: Option<ComplexWorkspace<T>>,
+    real: Option<RealWorkspace<T>>,
 }
 thread_local! {
-    static CACHE: RefCell<Cache> = RefCell::new(Cache::default());
+    static CACHE_F32: RefCell<Cache<f32>> = RefCell::new(Cache::default());
+    static CACHE_F64: RefCell<Cache<f64>> = RefCell::new(Cache::default());
 }
 
-struct ComplexWorkspace {
-    plan: Arc<dyn rustfft::Fft<f64>>,
-    buffer: Vec<Complex64>,
-    scratch: Vec<Complex64>,
+// Dispatch to independent per-precision caches without exposing backend types.
+pub(super) mod private {
+    use super::*;
+    pub trait Backend: rustfft::FftNum {
+        fn transform(input: &[Complex<Self>], inverse: bool) -> Vec<Complex<Self>>;
+        fn real(input: &[Self]) -> Vec<Complex<Self>>;
+    }
+    macro_rules! backend {
+        ($t:ty, $cache:ident) => {
+            impl Backend for $t {
+                fn transform(input: &[Complex<Self>], inverse: bool) -> Vec<Complex<Self>> {
+                    $cache.with_borrow_mut(|cache| transform(input, inverse, cache))
+                }
+                fn real(input: &[Self]) -> Vec<Complex<Self>> {
+                    $cache.with_borrow_mut(|cache| real_transform(input, cache))
+                }
+            }
+        };
+    }
+    backend!(f32, CACHE_F32);
+    backend!(f64, CACHE_F64);
 }
-impl ComplexWorkspace {
+
+struct ComplexWorkspace<T: FftFloat> {
+    plan: Arc<dyn rustfft::Fft<T>>,
+    buffer: Vec<Native<T>>,
+    scratch: Vec<Native<T>>,
+}
+impl<T: FftFloat> ComplexWorkspace<T> {
     fn new(n: usize, inverse: bool) -> Self {
-        let mut planner = rustfft::FftPlanner::<f64>::new();
+        let mut planner = rustfft::FftPlanner::<T>::new();
         let plan = if inverse {
             planner.plan_fft_inverse(n)
         } else {
             planner.plan_fft_forward(n)
         };
         Self {
-            scratch: vec![Complex64::default(); plan.get_inplace_scratch_len()],
-            buffer: vec![Complex64::default(); n],
+            scratch: vec![Native::new(T::zero(), T::zero()); plan.get_inplace_scratch_len()],
+            buffer: vec![Native::new(T::zero(), T::zero()); n],
             plan,
         }
     }
-    fn run(&mut self, input: &[Complex], inverse: bool) -> Vec<Complex> {
+    fn run(&mut self, input: &[Complex<T>], inverse: bool) -> Vec<Complex<T>> {
         for (buffer, &value) in self.buffer.iter_mut().zip(input) {
             *buffer = native(value);
         }
         self.plan
             .process_with_scratch(&mut self.buffer, &mut self.scratch);
-        let scale = if inverse { input.len() as f64 } else { 1.0 };
+        let scale = if inverse {
+            T::from(input.len()).unwrap()
+        } else {
+            T::one()
+        };
         self.buffer
             .iter()
             .map(|&value| owned(value / scale))
@@ -74,15 +103,15 @@ impl ComplexWorkspace {
     }
 }
 
-struct RealWorkspace {
-    plan: Arc<dyn realfft::RealToComplex<f64>>,
-    buffer: Vec<f64>,
-    output: Vec<Complex64>,
-    scratch: Vec<Complex64>,
+struct RealWorkspace<T: FftFloat> {
+    plan: Arc<dyn realfft::RealToComplex<T>>,
+    buffer: Vec<T>,
+    output: Vec<Native<T>>,
+    scratch: Vec<Native<T>>,
 }
-impl RealWorkspace {
+impl<T: FftFloat> RealWorkspace<T> {
     fn new(n: usize) -> Self {
-        let plan = realfft::RealFftPlanner::<f64>::new().plan_fft_forward(n);
+        let plan = realfft::RealFftPlanner::<T>::new().plan_fft_forward(n);
         Self {
             buffer: plan.make_input_vec(),
             output: plan.make_output_vec(),
@@ -90,7 +119,7 @@ impl RealWorkspace {
             plan,
         }
     }
-    fn run(&mut self, input: &[f64]) -> Vec<Complex> {
+    fn run(&mut self, input: &[T]) -> Vec<Complex<T>> {
         self.buffer.copy_from_slice(input);
         if self
             .plan
@@ -99,7 +128,10 @@ impl RealWorkspace {
         {
             // Preserve the infallible API if the backend rejects a workspace.
             // These buffers are always sized by the same plan.
-            let values: Vec<_> = input.iter().map(|&re| Complex { re, im: 0.0 }).collect();
+            let values: Vec<_> = input
+                .iter()
+                .map(|&re| Complex { re, im: T::zero() })
+                .collect();
             let mut result = ComplexWorkspace::new(input.len(), false).run(&values, false);
             result.truncate(input.len() / 2 + 1);
             return result;
@@ -108,25 +140,27 @@ impl RealWorkspace {
     }
 }
 
-fn transform(input: &[Complex], inverse: bool) -> Vec<Complex> {
+fn transform<T: FftFloat>(
+    input: &[Complex<T>],
+    inverse: bool,
+    cache: &mut Cache<T>,
+) -> Vec<Complex<T>> {
     if input.is_empty() {
         return Vec::new();
     }
     if input.len() > CACHE_LENGTH {
         return ComplexWorkspace::new(input.len(), inverse).run(input, inverse);
     }
-    CACHE.with_borrow_mut(|cache| {
-        let slot = if inverse {
-            &mut cache.inverse
-        } else {
-            &mut cache.forward
-        };
-        let workspace = slot.get_or_insert_with(|| ComplexWorkspace::new(input.len(), inverse));
-        if workspace.buffer.len() != input.len() {
-            *workspace = ComplexWorkspace::new(input.len(), inverse);
-        }
-        workspace.run(input, inverse)
-    })
+    let slot = if inverse {
+        &mut cache.inverse
+    } else {
+        &mut cache.forward
+    };
+    let workspace = slot.get_or_insert_with(|| ComplexWorkspace::new(input.len(), inverse));
+    if workspace.buffer.len() != input.len() {
+        *workspace = ComplexWorkspace::new(input.len(), inverse);
+    }
+    workspace.run(input, inverse)
 }
 
 /// Computes `X[k] = Σ x[j] exp(−2πi j k / n)`.
@@ -148,7 +182,8 @@ fn transform(input: &[Complex], inverse: bool) -> Vec<Complex> {
 /// O(n log n) private backend computation. Each thread retains the most recent
 /// forward, inverse, and real FFT plans and work buffers for lengths up to
 /// 65,536. Larger lengths use temporary workspaces. Plan storage does not grow
-/// with the number of different lengths. Roundoff depends on length and data.
+/// with the number of different lengths. Each precision has its own cache.
+/// Roundoff depends on the selected type, length, and data.
 ///
 /// # Examples
 ///
@@ -157,8 +192,8 @@ fn transform(input: &[Complex], inverse: bool) -> Vec<Complex> {
 /// assert_eq!(fft::fft(&[Complex { re: 2.0, im: 1.0 }]),
 ///            vec![Complex { re: 2.0, im: 1.0 }]);
 /// ```
-pub fn fft(input: &[Complex]) -> Vec<Complex> {
-    transform(input, false)
+pub fn fft<T: FftFloat>(input: &[Complex<T>]) -> Vec<Complex<T>> {
+    T::transform(input, false)
 }
 
 /// Computes `x[j] = (1/n) Σ X[k] exp(2πi j k / n)`.
@@ -181,7 +216,8 @@ pub fn fft(input: &[Complex]) -> Vec<Complex> {
 /// O(n log n) private backend computation. Each thread retains the most recent
 /// forward, inverse, and real FFT plans and work buffers for lengths up to
 /// 65,536. Larger lengths use temporary workspaces. Plan storage does not grow
-/// with the number of different lengths. Roundoff depends on length and data.
+/// with the number of different lengths. Each precision has its own cache.
+/// Roundoff depends on the selected type, length, and data.
 ///
 /// # Examples
 ///
@@ -190,8 +226,8 @@ pub fn fft(input: &[Complex]) -> Vec<Complex> {
 /// let input = [Complex { re: 3.0, im: -2.0 }];
 /// assert_eq!(fft::ifft(&fft::fft(&input)), input);
 /// ```
-pub fn ifft(input: &[Complex]) -> Vec<Complex> {
-    transform(input, true)
+pub fn ifft<T: FftFloat>(input: &[Complex<T>]) -> Vec<Complex<T>> {
+    T::transform(input, true)
 }
 
 /// Computes the nonnegative-frequency half of a real-input DFT.
@@ -216,7 +252,8 @@ pub fn ifft(input: &[Complex]) -> Vec<Complex> {
 /// O(n log n) private backend computation. Each thread retains the most recent
 /// forward, inverse, and real FFT plans and work buffers for lengths up to
 /// 65,536. Larger lengths use temporary workspaces. Plan storage does not grow
-/// with the number of different lengths. Roundoff depends on length and data.
+/// with the number of different lengths. Each precision has its own cache.
+/// Roundoff depends on the selected type, length, and data.
 ///
 /// # Examples
 ///
@@ -225,20 +262,22 @@ pub fn ifft(input: &[Complex]) -> Vec<Complex> {
 /// assert_eq!(result.len(), 3);
 /// assert_eq!(result[0].re, 4.0);
 /// ```
-pub fn rfft(input: &[f64]) -> Vec<Complex> {
+pub fn rfft<T: FftFloat>(input: &[T]) -> Vec<Complex<T>> {
+    T::real(input)
+}
+
+fn real_transform<T: FftFloat>(input: &[T], cache: &mut Cache<T>) -> Vec<Complex<T>> {
     if input.is_empty() {
         return Vec::new();
     }
     if input.len() > CACHE_LENGTH {
         return RealWorkspace::new(input.len()).run(input);
     }
-    CACHE.with_borrow_mut(|cache| {
-        let workspace = cache
-            .real
-            .get_or_insert_with(|| RealWorkspace::new(input.len()));
-        if workspace.buffer.len() != input.len() {
-            *workspace = RealWorkspace::new(input.len());
-        }
-        workspace.run(input)
-    })
+    let workspace = cache
+        .real
+        .get_or_insert_with(|| RealWorkspace::new(input.len()));
+    if workspace.buffer.len() != input.len() {
+        *workspace = RealWorkspace::new(input.len());
+    }
+    workspace.run(input)
 }

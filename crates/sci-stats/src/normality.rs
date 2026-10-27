@@ -261,7 +261,10 @@ pub fn obrientransform(groups: &[&[f64]]) -> Result<Vec<Vec<f64>>> {
                 .iter()
                 .map(|v| {
                     let r = ((n - 1.5) * n * v * v - 0.5 * ss) / ((n - 1.) * (n - 2.));
-                    finite((r * scale) * scale)
+                    match (r * scale) * scale {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(crate::Error::NonFiniteEvaluation),
+                    }
                 })
                 .collect()
         })
@@ -423,8 +426,14 @@ pub fn shapiro(values: &[f64]) -> Result<TestResult> {
         });
     }
     let r = shapiro_backend::evaluate(&normalized)?;
-    let statistic = finite(r.statistic)?;
-    let pvalue = finite(r.pvalue)?;
+    let statistic = match r.statistic {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
+    let pvalue = match r.pvalue {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     if !(0. ..=1.).contains(&statistic) || !(0. ..=1.).contains(&pvalue) {
         return Err(Error::NumericalFailure(
             "Shapiro-Wilk backend returned invalid result",

@@ -1,15 +1,19 @@
 //! # Sci
 //!
-//! A unified interface to scientific computing in Rust: free functions, `f64`
+//! A unified interface to scientific computing in Rust: free functions, floating-point
 //! scalars, shared data types, and consistent errors across the Sci crate family.
 //!
 //! Sci favors established Rust crates maintained by domain experts for complex
 //! algorithms. It adds validation and interoperability around private backends;
 //! simple formulas use standard-library operations or direct implementations.
 //! Numerical behavior is defined by each module's Rust API and documentation:
-//! shared `f64` values, explicit shapes and units, bounded work, and shared
+//! shared floating-point values, explicit shapes and units, bounded work, and shared
 //! error handling. External libraries are implementation details, not runtime
 //! compatibility requirements.
+//!
+//! Generic APIs follow `T: Float`, as in ellip. Shared containers default to
+//! `f64`; generic algorithms also accept `f32`. Read each module for precision
+//! support and backend limits.
 //!
 //! All numerical modules are enabled by default. Select individual Cargo features
 //! with `default-features = false`, or use the `sci-*` crates directly. A module's
@@ -29,7 +33,8 @@
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]
 
 pub use sci_core::{
-    Error, Matrix, Mode, ParametricSpline, Result, SparseArray, SparseMatrix, Spline, SurfaceSpline,
+    Error, Float, Matrix, Mode, ParametricSpline, Result, SparseArray, SparseMatrix, Spline,
+    SurfaceSpline,
 };
 
 /// Clustering and hierarchy; requires the `cluster` feature.

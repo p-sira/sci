@@ -27,7 +27,10 @@ fn ranked_distances(points: &[&[f64]]) -> Result<RankedDistances> {
     let mut largest = 0_f64;
     for i in 0..n {
         for j in i + 1..n {
-            let distance = finite(transport::euclidean(points[i], points[j]))?;
+            let distance = match transport::euclidean(points[i], points[j]) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?;
             distances[i][j] = distance;
             distances[j][i] = distance;
             largest = largest.max(distance);
@@ -281,12 +284,17 @@ pub fn multiscale_graphcorr(
     let y = ranked_distances(y)?;
     let map = mgc_map(&x, &y);
     let (statistic, optimal_scale) = smoothed_maximum(&map, n)?;
-    finite(statistic)?;
+    if !statistic.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     let mut null_distribution = Vec::with_capacity(permutations.len());
     for permutation in permutations {
         let permuted = permuted_distances(&y, permutation);
         let local = mgc_map(&x, &permuted);
-        null_distribution.push(finite(smoothed_maximum(&local, n)?.0)?);
+        null_distribution.push(match smoothed_maximum(&local, n)?.0 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?);
     }
     let tolerance = 100. * f64::EPSILON * statistic.abs();
     let extreme = null_distribution

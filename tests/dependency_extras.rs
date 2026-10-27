@@ -109,7 +109,10 @@ fn identities_recurrences_and_shared_complex_operations() {
     let a = s::ln_multinomial(30, &[5, 10, 15]).unwrap();
     let b = s::ln_multinomial(30, &[15, 5, 10]).unwrap();
     assert!((a - b).abs() < 2e-13);
-    let z = c::Complex { re: 3.0, im: -4.0 };
+    let z = c::Complex {
+        re: 3.0_f64,
+        im: -4.0,
+    };
     let restored = c::powu(c::cbrt(z), 3);
     assert!((restored.re - z.re).abs() < 2e-14);
     assert!((restored.im - z.im).abs() < 2e-14);
@@ -119,7 +122,10 @@ fn identities_recurrences_and_shared_complex_operations() {
     let upper = c::cbrt(c::Complex { re: -8.0, im: 0.0 });
     let lower = c::cbrt(c::Complex { re: -8.0, im: -0.0 });
     assert_eq!(upper, c::conjugate(lower));
-    let zero = c::cbrt(c::Complex { re: 0.0, im: -0.0 });
+    let zero = c::cbrt(c::Complex {
+        re: 0.0_f64,
+        im: -0.0,
+    });
     assert_eq!(zero.im.to_bits(), (-0.0_f64).to_bits());
     assert!(
         c::cbrt(c::Complex {

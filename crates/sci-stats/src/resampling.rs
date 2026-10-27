@@ -107,7 +107,10 @@ where
             "exact permutation combined sample limit is 20",
         ));
     }
-    let observed = finite(statistic(x, y)?)?;
+    let observed = match statistic(x, y)? {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     let pooled = x.iter().chain(y).copied().collect::<Vec<_>>();
     let mut partition = (0..x.len()).collect::<Vec<_>>();
     let mut null = Vec::new();
@@ -125,7 +128,10 @@ where
                 second.push(v);
             }
         }
-        null.push(finite(statistic(&first, &second)?)?);
+        null.push(match statistic(&first, &second)? {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?);
         let Some(i) = (0..partition.len())
             .rev()
             .find(|&i| partition[i] < total - partition.len() + i)
@@ -205,10 +211,16 @@ where
         }
         sample(row, 1)?;
     }
-    let observed = finite(statistic(values)?)?;
+    let observed = match statistic(values)? {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     let null = null_samples
         .iter()
-        .map(|row| finite(statistic(row)?))
+        .map(|row| match statistic(row)? {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        })
         .collect::<Result<Vec<_>>>()?;
     Ok(ResamplingResult {
         statistic: observed,
@@ -313,22 +325,34 @@ where
             return Err(Error::InvalidInput("bootstrap index out of bounds"));
         }
     }
-    let observed = finite(statistic(values)?)?;
+    let observed = match statistic(values)? {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     let mut resample = vec![0.; values.len()];
     let mut distribution = Vec::with_capacity(indices.len());
     for row in indices {
         for (v, &i) in resample.iter_mut().zip(*row) {
             *v = values[i];
         }
-        distribution.push(finite(statistic(&resample)?)?);
+        distribution.push(match statistic(&resample)? {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?);
     }
     let standard_error = std(&distribution, 1)?;
     let mut lower = quantile(&distribution, (1. - confidence) / 2.)?;
     let mut upper = quantile(&distribution, 0.5 + confidence / 2.)?;
     if method == BootstrapMethod::Basic {
         (lower, upper) = (
-            finite(observed + (observed - upper))?,
-            finite(observed + (observed - lower))?,
+            match observed + (observed - upper) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?,
+            match observed + (observed - lower) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?,
         );
     }
     Ok(BootstrapResult {

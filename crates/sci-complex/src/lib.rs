@@ -5,7 +5,7 @@
 //! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Scalar functional operations on [`Complex`], shared with `sci_fft` and
-//! `sci_special`. Components use `f64`; angles use radians. Elementary
+//! `sci_special`. Components use `T: sci_core::Float` (default `f64`); angles use radians. Elementary
 //! functions use principal branches and a private Rust backend.
 //!
 //! Array broadcasting, operators, and backend types are not part of this API.
@@ -33,7 +33,7 @@
 //!
 //! ```
 //! use sci_complex::{self as complex, Complex};
-//! let z = Complex { re: 3.0, im: 4.0 };
+//! let z = Complex { re: 3.0_f64, im: 4.0 };
 //! assert_eq!(complex::abs(z), 5.0);
 //! assert_eq!(complex::conjugate(z), Complex { re: 3.0, im: -4.0 });
 //! let (radius, phase) = complex::to_polar(z);

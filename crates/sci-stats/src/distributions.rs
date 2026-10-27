@@ -224,7 +224,10 @@ fn shape(x: f64) -> Result<f64> {
 }
 fn reciprocal(x: f64) -> Result<f64> {
     positive(x)?;
-    finite(1. / x)
+    match 1. / x {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 fn count(x: f64) -> Result<u64> {
     if x.is_finite() && (0. ..=MAX_SAMPLES as f64).contains(&x) && x.fract() == 0. {
@@ -245,7 +248,10 @@ fn normal_value(mean: f64, std_dev: f64, x: f64, op: Operation) -> Result<f64> {
         return if x == 0. || x == 1. {
             Ok(value)
         } else {
-            finite(value)
+            match value {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }
         };
     }
     let delta = x - mean;
@@ -257,19 +263,28 @@ fn normal_value(mean: f64, std_dev: f64, x: f64, op: Operation) -> Result<f64> {
         x / std_dev - mean / std_dev
     };
     match op {
-        Operation::Cdf => finite(crate::special::ndtr(z)),
-        Operation::Sf => finite(crate::special::ndtr(-z)),
+        Operation::Cdf => match crate::special::ndtr(z) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        },
+        Operation::Sf => match crate::special::ndtr(-z) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        },
         Operation::LogDensity => Ok(standard.ln_pdf(z) - std_dev.ln()),
         Operation::Density => {
             let density = standard.pdf(z) / std_dev;
             // A standardized tail can underflow before division by a tiny
             // scale restores a representable density. Log space also confirms
             // whether an overflowing quotient is a true density overflow.
-            finite(if density == 0. || density.is_infinite() {
+            match if density == 0. || density.is_infinite() {
                 (standard.ln_pdf(z) - std_dev.ln()).exp()
             } else {
                 density
-            })
+            } {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }
         }
         Operation::Ppf => unreachable!(),
     }
@@ -284,7 +299,9 @@ fn levy_value(location: f64, scale: f64, x: f64, op: Operation) -> Result<f64> {
         LogDensity,
         Density,
     }
-    finite(location)?;
+    if !location.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     positive(scale)?;
     let standard = make(Levy::new(0., 1.))?;
     let observation = match op {
@@ -295,7 +312,10 @@ fn levy_value(location: f64, scale: f64, x: f64, op: Operation) -> Result<f64> {
             if x == 1. {
                 return Ok(f64::INFINITY);
             }
-            return finite(scale.mul_add(standard.inverse_cdf(x), location));
+            return match scale.mul_add(standard.inverse_cdf(x), location) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            };
         }
         Operation::Cdf => Observation::Cdf,
         Operation::Sf => Observation::Sf,
@@ -324,14 +344,20 @@ fn levy_value(location: f64, scale: f64, x: f64, op: Operation) -> Result<f64> {
             Observation::Cdf => Ok(statrs::function::erf::erfc(root)),
             Observation::Sf => Ok(statrs::function::erf::erf(root)),
             Observation::LogDensity => Ok(log_density),
-            Observation::Density => finite(log_density.exp()),
+            Observation::Density => match log_density.exp() {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            },
         };
     }
     match observation {
         Observation::Cdf => Ok(standard.cdf(z)),
         Observation::Sf => Ok(standard.sf(z)),
         Observation::LogDensity => Ok(standard.ln_pdf(z) - scale.ln()),
-        Observation::Density => finite((standard.ln_pdf(z) - scale.ln()).exp()),
+        Observation::Density => match (standard.ln_pdf(z) - scale.ln()).exp() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        },
     }
 }
 
@@ -425,7 +451,9 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
         }
         Distribution::Cauchy { location, scale } => continuous(
             &{
-                finite(location)?;
+                if !location.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
                 positive(scale)?;
                 make(Cauchy::new(location, scale))?
             },
@@ -434,7 +462,9 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
         )?,
         Distribution::Laplace { location, scale } => continuous(
             &{
-                finite(location)?;
+                if !location.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
                 positive(scale)?;
                 make(Laplace::new(location, scale))?
             },
@@ -443,7 +473,9 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
         )?,
         Distribution::LogNormal { log_mean, log_std } => continuous(
             &{
-                finite(log_mean)?;
+                if !log_mean.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
                 positive(log_std)?;
                 make(LogNormal::new(log_mean, log_std))?
             },
@@ -452,8 +484,12 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
         )?,
         Distribution::Uniform { low, high } => continuous(
             &{
-                finite(low)?;
-                finite(high)?;
+                if !low.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
+                if !high.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
                 positive(high - low)?;
                 make(Uniform::new(low, high))?
             },
@@ -490,7 +526,9 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
         Distribution::Levy { location, scale } => levy_value(location, scale, x, op)?,
         Distribution::Gumbel { location, scale } => continuous(
             &{
-                finite(location)?;
+                if !location.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
                 positive(scale)?;
                 make(Gumbel::new(location, scale))?
             },
@@ -499,9 +537,15 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
         )?,
         Distribution::Triangular { low, high, mode } => continuous(
             &{
-                finite(low)?;
-                finite(high)?;
-                finite(mode)?;
+                if !low.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
+                if !high.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
+                if !mode.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
                 positive(high - low)?;
                 make(Triangular::new(low, high, mode))?
             },

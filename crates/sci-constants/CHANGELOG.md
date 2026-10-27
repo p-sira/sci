@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Make temperature, wavelength, and frequency conversions generic over `Float`; retain the pinned binary64 CODATA database.
+
 - Update shared Sci dependency requirements to the new minor versions.
 
 ## 0.2.0

@@ -1,9 +1,15 @@
 # Data and numerical conventions
 
-Real scalars use `f64`; vectors accept `&[f64]` and return `Vec<f64>`.
-Matrices use `Vec<Vec<f64>>` with one vector per row. Jacobians use output
+Generic numerical APIs use `T: sci::Float`, following ellip's `num_traits::Float`
+convention. Vectors accept `&[T]` and return `Vec<T>`; matrices use
+`Matrix<T> = Vec<Vec<T>>` with one vector per row. Shared containers default to
+`f64`, and generic algorithms also compute natively in `f32`. Precision is
+inferred from typed inputs; empty inputs or unconstrained expressions may need
+an explicit type. FFTs use the `fft::FftFloat` bound for supported native types.
+See [precision coverage](../function_coverages/GENERIC_FLOAT_COVERAGE.md) for
+APIs that still require `f64`. Jacobians use output
 components as rows and input coordinates as columns. Complex values use
-`complex::Complex { re: f64, im: f64 }`. Fallible functions share
+`complex::Complex<T = f64> { re: T, im: T }`. Fallible functions share
 `sci::Error` and `sci::Result`.
 
 These conventions let differentiation feed optimization and matrix operations,

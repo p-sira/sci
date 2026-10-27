@@ -100,7 +100,10 @@ pub fn tukey_hsd(groups: &[&[f64]]) -> Result<PairwiseTest> {
     for i in 0..k {
         for j in i + 1..k {
             let delta = means[i] - means[j];
-            let difference = finite(delta * centered.scale)?;
+            let difference = match delta * centered.scale {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?;
             let se =
                 (mse / 2. * (1. / groups[i].len() as f64 + 1. / groups[j].len() as f64)).sqrt();
             let q = delta.abs() / se;

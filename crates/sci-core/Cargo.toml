@@ -13,3 +13,6 @@ categories = ["mathematics", "science"]
 keywords = ["numerics", "scientific-computing", "mathematics", "data-types", "errors"]
 readme = false
 include = ["/src/**", "/LICENSE"]
+
+[dependencies]
+num-traits.workspace = true

@@ -88,8 +88,8 @@ pub fn margins(table: &[f64], rows: usize, columns: usize) -> Result<(Vec<f64>, 
             c[j] += table[i * columns + j];
         }
     }
-    finite_slice(&r).map_err(|_| Error::NonFiniteEvaluation)?;
-    finite_slice(&c).map_err(|_| Error::NonFiniteEvaluation)?;
+    is_finite_slice(&r).map_err(|_| Error::NonFiniteEvaluation)?;
+    is_finite_slice(&c).map_err(|_| Error::NonFiniteEvaluation)?;
     Ok((r, c))
 }
 /// Independent expected counts `E_ij=row_sum_i*column_sum_j/total`.
@@ -129,12 +129,18 @@ pub fn margins(table: &[f64], rows: usize, columns: usize) -> Result<(Vec<f64>, 
 /// [SciPy `contingency.expected_freq`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.contingency.expected_freq.html).
 pub fn expected_freq(table: &[f64], rows: usize, columns: usize) -> Result<Vec<f64>> {
     let (r, c) = margins(table, rows, columns)?;
-    let total = finite(r.iter().sum())?;
+    let total = match r.iter().sum::<f64>() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     positive(total)?;
     let mut out = Vec::with_capacity(table.len());
     for a in r {
         for &b in &c {
-            out.push(finite((a / total) * b)?);
+            out.push(match (a / total) * b {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?);
         }
     }
     Ok(out)
@@ -193,19 +199,21 @@ pub fn chi2_contingency(
             expected,
         });
     }
-    let statistic = finite(
-        table
-            .iter()
-            .zip(&expected)
-            .map(|(o, e)| {
-                let mut d = (o - e).abs();
-                if correction && df == 1 {
-                    d = (d - 0.5).max(0.);
-                }
-                d * d / e
-            })
-            .sum(),
-    )?;
+    let statistic = match table
+        .iter()
+        .zip(&expected)
+        .map(|(o, e)| {
+            let mut d = (o - e).abs();
+            if correction && df == 1 {
+                d = (d - 0.5).max(0.);
+            }
+            d * d / e
+        })
+        .sum::<f64>()
+    {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     let pvalue = super::sf(Distribution::ChiSquared { df: df as f64 }, statistic)?;
     Ok(ContingencyResult {
         statistic,
@@ -263,7 +271,10 @@ pub fn association(
         ));
     }
     let chi = chi2_contingency(table, rows, columns, correction)?.statistic;
-    let n = finite(table.iter().sum())?;
+    let n = match table.iter().sum::<f64>() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     Ok(match method {
         Association::Cramer => (chi / n / (rows - 1).min(columns - 1) as f64).sqrt(),
         Association::Tschuprow => (chi / n / (((rows - 1) * (columns - 1)) as f64).sqrt()).sqrt(),

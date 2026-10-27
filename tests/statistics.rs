@@ -20,7 +20,7 @@ fn trimming_preserves_signed_zero_and_empty_samples() {
         bits(trim1(&input, 0.5, Tail::Upper).unwrap()),
         vec![(-1.0_f64).to_bits(), (-0.0_f64).to_bits()]
     );
-    assert!(trimboth(&[], 0.25).unwrap().is_empty());
+    assert!(trimboth::<f64>(&[], 0.25).unwrap().is_empty());
     for tail in [Tail::Lower, Tail::Upper] {
         assert!(trim1(&[], 0.5, tail).unwrap().is_empty());
     }
@@ -1012,7 +1012,7 @@ fn studentized_range_scipy_references() -> Result<()> {
 #[test]
 fn invalid_domains_and_shapes() {
     let bad = [f64::NAN];
-    assert!(mean(&[]).is_err());
+    assert!(mean::<f64>(&[]).is_err());
     assert!(mean(&bad).is_err());
     assert!(variance(&[1.], 1).is_err());
     assert!(sem(&[1.], 0).is_err());
@@ -1081,7 +1081,7 @@ fn remaining_domains_and_work_limits() {
     let x = [1., 2., 3., 4.];
     let nan = [f64::NAN];
     assert!(std(&nan, 0).is_err());
-    assert!(median(&[]).is_err());
+    assert!(median::<f64>(&[]).is_err());
     assert!(iqr(&nan).is_err());
     assert!(mode(&nan).is_err());
     assert!(describe(&x, 4, true).is_err());
@@ -1734,11 +1734,11 @@ fn native_gap_groups_validate_domains_and_preserve_identities() -> Result<()> {
 
 #[test]
 fn standardized_scores_preserve_scale_and_special_values() -> Result<()> {
-    let base = [0., 1., 4.];
+    let base = [0.0_f64, 1., 4.];
     for ddof in [0, 1, 2] {
         let expected = zscore(&base, ddof)?;
         for transformed in [
-            [1e16, 1e16 + 2., 1e16 + 8.],
+            [1e16_f64, 1e16 + 2., 1e16 + 8.],
             [0., 1e-308, 4e-308],
             [0., -1e307, -4e307],
         ] {
@@ -1760,16 +1760,16 @@ fn standardized_scores_preserve_scale_and_special_values() -> Result<()> {
             assert!(gzscore(&[constant; 3], 0).is_err());
         }
     }
-    assert!(gzscore(&[2.; 3], 0)?.iter().all(|x| x.is_nan()));
+    assert!(gzscore(&[2.0_f64; 3], 0)?.iter().all(|x| x.is_nan()));
     let special = zmap(&[1., 2., 3.], &[2., 2.], 0)?;
     assert_eq!(special[0], f64::NEG_INFINITY);
     assert!(special[1].is_nan());
     assert_eq!(special[2], f64::INFINITY);
     assert!(zmap(&[1.], &[0., 1e-308], 0).is_err());
-    assert!(zmap(&[], &[1., 2.], 2).is_err());
-    assert!(zmap(&[], &[f64::INFINITY], 0).is_err());
-    assert!(zmap(&[], &[], 0).is_err());
-    assert_eq!(zmap(&[], &[1., 2.], 0)?, Vec::<f64>::new());
+    assert!(zmap::<f64>(&[], &[1., 2.], 2).is_err());
+    assert!(zmap::<f64>(&[], &[f64::INFINITY], 0).is_err());
+    assert!(zmap::<f64>(&[], &[], 0).is_err());
+    assert_eq!(zmap::<f64>(&[], &[1., 2.], 0)?, Vec::<f64>::new());
     Ok(())
 }
 
@@ -1779,7 +1779,7 @@ fn scaling_and_independent_properties() -> Result<()> {
     assert_eq!(mean(&[-f64::MAX, f64::MAX])?, 0.);
     assert_eq!(variance(&[f64::MAX, f64::MAX], 0)?, 0.);
     assert_eq!(std(&[-f64::MAX, f64::MAX], 0)?, f64::MAX);
-    assert!((mean(&[1e16, 1., -1e16])? - 1. / 3.).abs() < 1e-15);
+    assert!((mean(&[1e16_f64, 1., -1e16])? - 1. / 3.).abs() < 1e-15);
     assert_eq!(
         hmean(&[f64::MIN_POSITIVE / 16.; 2])?,
         f64::MIN_POSITIVE / 16.
@@ -1827,7 +1827,7 @@ fn scaling_and_independent_properties() -> Result<()> {
     );
     let q = multivariate_normal_pdf(&[1., 2.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]])?;
     assert!((q - normal_pdf(1., 0., 1.)? * normal_pdf(2., 0., 1.)?).abs() < 1e-14);
-    let z = zscore(&[2., 3., 7., 11.], 0)?;
+    let z = zscore(&[2.0_f64, 3., 7., 11.], 0)?;
     assert!(mean(&z)?.abs() < 1e-14);
     assert!((variance(&z, 0)? - 1.).abs() < 1e-14);
     let d = Distribution::Normal {

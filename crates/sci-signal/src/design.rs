@@ -1260,7 +1260,13 @@ fn minimum_order(
     } else {
         cutoff
     };
-    Ok((n as usize, crate::error::finite(cutoff)?))
+    Ok((
+        n as usize,
+        match cutoff {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?,
+    ))
 }
 macro_rules! order_function {
     ($name:ident,$family:expr,$equation:literal) => {

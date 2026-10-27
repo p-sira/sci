@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Support `Complex<T = f64>` and native generic arithmetic; derive binary scaling and overflow thresholds from the selected precision.
+
 - Update shared Sci dependency requirements to the new minor versions.
 
 ## 0.2.0

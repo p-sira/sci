@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Make descriptive statistics generic over `Float`, including summaries, quantiles, moments, trimming, and standardized scores.
+
 - Remove the two-sample-only kstest alias; select ks_1samp or ks_2samp explicitly.
 
 - Remove abs, exp and log scalar wrappers. Use f64::abs, f64::exp and f64::ln.

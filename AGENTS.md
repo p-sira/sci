@@ -1,7 +1,7 @@
 # Implementation policy
 
 - Implement trivial numerical functions directly; delegate complex algorithms to suitable private backends.
-- Expose functional APIs using `f64` and shared Sci types. Keep backend APIs private and modules interoperable.
+- Expose functional APIs using generic floats where supported and shared Sci types; default shared containers to `f64`. Keep backend APIs private and modules interoperable.
 - Validate inputs, bound numerical work, and handle errors explicitly. Preserve unrelated user changes.
 
 ## Documentation

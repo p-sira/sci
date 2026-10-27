@@ -15,6 +15,7 @@ readme = false
 include = ["/src/**", "/LICENSE", "/SCIPY_LICENSE.txt"]
 
 [dependencies]
+numeric_literals.workspace = true
 sci-core.workspace = true
 sci-special.workspace = true
 nalgebra.workspace = true

@@ -1,4 +1,14 @@
-use crate::error::{finite, finite_slice};
+use num_traits::{Float, FloatConst};
+
+/// Floating-point types supported by Sci Fourier and cosine/sine transforms.
+///
+/// Sealed to `f32` and `f64`. Computation and cached plans use the selected
+/// precision, with independent bounded caches for each type.
+pub trait FftFloat: Float + FloatConst + fourier::private::Backend {}
+impl FftFloat for f32 {}
+impl FftFloat for f64 {}
+
+use crate::error::is_finite_slice;
 mod fourier;
 #[cfg(feature = "hankel")]
 mod hankel;
@@ -18,13 +28,13 @@ fn length(n: usize) -> Result<()> {
         Ok(())
     }
 }
-fn values(x: &[Complex]) -> Result<()> {
+fn values<T: Float>(x: &[Complex<T>]) -> Result<()> {
     if x.len() > LIMIT || x.iter().any(|v| !v.re.is_finite() || !v.im.is_finite()) {
         return Err(Error::InvalidInput("invalid FFT input"));
     }
     Ok(())
 }
-fn inferred(x: &[Complex], n: Option<usize>) -> Result<usize> {
+fn inferred<T: Float>(x: &[Complex<T>], n: Option<usize>) -> Result<usize> {
     values(x)?;
     let n = n.unwrap_or_else(|| x.len().saturating_sub(1) * 2);
     length(n)?;
@@ -58,11 +68,17 @@ fn tensor(shape: &[usize], axes: &[usize], len: usize) -> Result<usize> {
     }
     Ok(size)
 }
-fn nd(x: &[Complex], shape: &[usize], axes: &[usize], inverse: bool) -> Result<Vec<Complex>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn nd<T: FftFloat>(
+    x: &[Complex<T>],
+    shape: &[usize],
+    axes: &[usize],
+    inverse: bool,
+) -> Result<Vec<Complex<T>>> {
     tensor(shape, axes, x.len())?;
     values(x)?;
     let mut out = x.to_vec();
-    let mut planner = rustfft::FftPlanner::<f64>::new();
+    let mut planner = rustfft::FftPlanner::<T>::new();
     for &axis in axes {
         let n = shape[axis];
         let stride = shape[axis + 1..].iter().product::<usize>();
@@ -72,21 +88,27 @@ fn nd(x: &[Complex], shape: &[usize], axes: &[usize], inverse: bool) -> Result<V
         } else {
             planner.plan_fft_forward(n)
         };
-        let mut line = vec![num_complex::Complex64::new(0.0, 0.0); n];
+        let mut line = vec![num_complex::Complex::<T>::new(0.0, 0.0); n];
         let mut scratch =
-            vec![num_complex::Complex64::new(0.0, 0.0); plan.get_inplace_scratch_len()];
+            vec![num_complex::Complex::<T>::new(0.0, 0.0); plan.get_inplace_scratch_len()];
         for base in (0..out.len()).step_by(block) {
             for offset in 0..stride {
                 for (k, v) in line.iter_mut().enumerate() {
                     let z = out[base + offset + k * stride];
-                    *v = num_complex::Complex64::new(z.re, z.im);
+                    *v = num_complex::Complex::<T>::new(z.re, z.im);
                 }
                 plan.process_with_scratch(&mut line, &mut scratch);
-                let scale = if inverse { n as f64 } else { 1.0 };
+                let scale = if inverse { T::from(n).unwrap() } else { 1.0 };
                 for (k, v) in line.iter().enumerate() {
                     out[base + offset + k * stride] = Complex {
-                        re: finite(v.re / scale)?,
-                        im: finite(v.im / scale)?,
+                        re: match v.re / scale {
+                            value if value.is_finite() => Ok(value),
+                            _ => Err(Error::NonFiniteEvaluation),
+                        }?,
+                        im: match v.im / scale {
+                            value if value.is_finite() => Ok(value),
+                            _ => Err(Error::NonFiniteEvaluation),
+                        }?,
                     };
                 }
             }
@@ -142,14 +164,15 @@ fn reshape<T: Clone>(x: &[T], columns: usize) -> Vec<Vec<T>> {
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::irfft(&sci_fft::rfft(&[1.0,2.0,3.0]),Some(3))?;
+/// let x=sci_fft::irfft(&sci_fft::rfft(&[1.0_f64,2.0,3.0]),Some(3))?;
 /// assert!((x[1]-2.0).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
 ///
 /// [SciPy irfft](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.irfft.html).
-pub fn irfft(input: &[Complex], n: Option<usize>) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn irfft<T: FftFloat>(input: &[Complex<T>], n: Option<usize>) -> Result<Vec<T>> {
     let n = inferred(input, n)?;
     let mut full = vec![Complex { re: 0.0, im: 0.0 }; n];
     for (k, &v) in input.iter().take(n / 2 + 1).enumerate() {
@@ -163,7 +186,13 @@ pub fn irfft(input: &[Complex], n: Option<usize>) -> Result<Vec<f64>> {
             };
         }
     }
-    ifft(&full).iter().map(|v| finite(v.re)).collect()
+    ifft(&full)
+        .iter()
+        .map(|v| match v.re {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
+        .collect()
 }
 
 /// Transforms Hermitian time data to a real spectrum: `H(x)=n*irfft(conj(x))`.
@@ -193,7 +222,7 @@ pub fn irfft(input: &[Complex], n: Option<usize>) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy hfft](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.hfft.html).
-pub fn hfft(input: &[Complex], n: Option<usize>) -> Result<Vec<f64>> {
+pub fn hfft<T: FftFloat>(input: &[Complex<T>], n: Option<usize>) -> Result<Vec<T>> {
     let n = inferred(input, n)?;
     let conjugate = input
         .iter()
@@ -204,7 +233,10 @@ pub fn hfft(input: &[Complex], n: Option<usize>) -> Result<Vec<f64>> {
         .collect::<Vec<_>>();
     irfft(&conjugate, Some(n))?
         .into_iter()
-        .map(|v| finite(v * n as f64))
+        .map(|v| match v * T::from(n).unwrap() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
         .collect()
 }
 
@@ -235,11 +267,12 @@ pub fn hfft(input: &[Complex], n: Option<usize>) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy ihfft](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.ihfft.html).
-pub fn ihfft(input: &[f64], n: Option<usize>) -> Result<Vec<Complex>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ihfft<T: FftFloat>(input: &[T], n: Option<usize>) -> Result<Vec<Complex<T>>> {
     if input.len() > LIMIT {
         return Err(Error::InvalidInput("FFT input size"));
     }
-    finite_slice(input)?;
+    is_finite_slice(input)?;
     let n = n.unwrap_or(input.len());
     length(n)?;
     let mut padded = vec![0.0; n];
@@ -249,8 +282,14 @@ pub fn ihfft(input: &[f64], n: Option<usize>) -> Result<Vec<Complex>> {
         .into_iter()
         .map(|v| {
             Ok(Complex {
-                re: finite(v.re / n as f64)?,
-                im: finite(-v.im / n as f64)?,
+                re: match v.re / T::from(n).unwrap() {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?,
+                im: match -v.im / T::from(n).unwrap() {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?,
             })
         })
         .collect()
@@ -283,7 +322,11 @@ pub fn ihfft(input: &[f64], n: Option<usize>) -> Result<Vec<Complex>> {
 /// # References
 ///
 /// [SciPy fftn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.fftn.html).
-pub fn fftn(input: &[Complex], shape: &[usize], axes: &[usize]) -> Result<Vec<Complex>> {
+pub fn fftn<T: FftFloat>(
+    input: &[Complex<T>],
+    shape: &[usize],
+    axes: &[usize],
+) -> Result<Vec<Complex<T>>> {
     nd(input, shape, axes, false)
 }
 
@@ -314,7 +357,11 @@ pub fn fftn(input: &[Complex], shape: &[usize], axes: &[usize]) -> Result<Vec<Co
 /// # References
 ///
 /// [SciPy ifftn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.ifftn.html).
-pub fn ifftn(input: &[Complex], shape: &[usize], axes: &[usize]) -> Result<Vec<Complex>> {
+pub fn ifftn<T: FftFloat>(
+    input: &[Complex<T>],
+    shape: &[usize],
+    axes: &[usize],
+) -> Result<Vec<Complex<T>>> {
     nd(input, shape, axes, true)
 }
 
@@ -345,9 +392,14 @@ pub fn ifftn(input: &[Complex], shape: &[usize], axes: &[usize]) -> Result<Vec<C
 /// # References
 ///
 /// [SciPy rfftn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.rfftn.html).
-pub fn rfftn(input: &[f64], shape: &[usize], axes: &[usize]) -> Result<(Vec<Complex>, Vec<usize>)> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn rfftn<T: FftFloat>(
+    input: &[T],
+    shape: &[usize],
+    axes: &[usize],
+) -> Result<(Vec<Complex<T>>, Vec<usize>)> {
     tensor(shape, axes, input.len())?;
-    finite_slice(input)?;
+    is_finite_slice(input)?;
     let (small, axis) = reduced(shape, axes)?;
     let complex = input
         .iter()
@@ -383,7 +435,7 @@ pub fn rfftn(input: &[f64], shape: &[usize], axes: &[usize]) -> Result<(Vec<Comp
 /// # Examples
 ///
 /// ```
-/// let (s,_)=sci_fft::rfftn(&[1.0,2.0,3.0],&[1,3],&[0,1])?;
+/// let (s,_)=sci_fft::rfftn(&[1.0_f64,2.0,3.0],&[1,3],&[0,1])?;
 /// let x=sci_fft::irfftn(&s,&[1,3],&[0,1])?;
 /// assert!((x[1]-2.0).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
@@ -391,7 +443,12 @@ pub fn rfftn(input: &[f64], shape: &[usize], axes: &[usize]) -> Result<(Vec<Comp
 /// # References
 ///
 /// [SciPy irfftn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.irfftn.html).
-pub fn irfftn(input: &[Complex], shape: &[usize], axes: &[usize]) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn irfftn<T: FftFloat>(
+    input: &[Complex<T>],
+    shape: &[usize],
+    axes: &[usize],
+) -> Result<Vec<T>> {
     let full_len = shape
         .iter()
         .try_fold(1usize, |p, n| p.checked_mul(*n))
@@ -458,7 +515,7 @@ pub fn irfftn(input: &[Complex], shape: &[usize], axes: &[usize]) -> Result<Vec<
 /// # References
 ///
 /// [SciPy hfftn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.hfftn.html).
-pub fn hfftn(input: &[Complex], shape: &[usize], axes: &[usize]) -> Result<Vec<f64>> {
+pub fn hfftn<T: FftFloat>(input: &[Complex<T>], shape: &[usize], axes: &[usize]) -> Result<Vec<T>> {
     values(input)?;
     let conjugate = input
         .iter()
@@ -468,8 +525,16 @@ pub fn hfftn(input: &[Complex], shape: &[usize], axes: &[usize]) -> Result<Vec<f
         })
         .collect::<Vec<_>>();
     let out = irfftn(&conjugate, shape, axes)?;
-    let scale = axes.iter().map(|a| shape[*a] as f64).product::<f64>();
-    out.into_iter().map(|v| finite(v * scale)).collect()
+    let scale = axes
+        .iter()
+        .map(|a| T::from(shape[*a]).unwrap())
+        .fold(T::one(), |a, b| a * b);
+    out.into_iter()
+        .map(|v| match v * scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
+        .collect()
 }
 
 /// Inverts a real multidimensional spectrum: `IH(y)=conj(rfftn(y))/Πₐ nₐ`.
@@ -499,16 +564,25 @@ pub fn hfftn(input: &[Complex], shape: &[usize], axes: &[usize]) -> Result<Vec<f
 /// # References
 ///
 /// [SciPy ihfftn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.ihfftn.html).
-pub fn ihfftn(
-    input: &[f64],
+pub fn ihfftn<T: FftFloat>(
+    input: &[T],
     shape: &[usize],
     axes: &[usize],
-) -> Result<(Vec<Complex>, Vec<usize>)> {
+) -> Result<(Vec<Complex<T>>, Vec<usize>)> {
     let (mut out, small) = rfftn(input, shape, axes)?;
-    let scale = axes.iter().map(|a| shape[*a] as f64).product::<f64>();
+    let scale = axes
+        .iter()
+        .map(|a| T::from(shape[*a]).unwrap())
+        .fold(T::one(), |a, b| a * b);
     for v in &mut out {
-        v.re = finite(v.re / scale)?;
-        v.im = finite(-v.im / scale)?;
+        v.re = match v.re / scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
+        v.im = match -v.im / scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     Ok((out, small))
 }
@@ -540,7 +614,7 @@ pub fn ihfftn(
 /// # References
 ///
 /// [SciPy fft2](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.fft2.html).
-pub fn fft2(input: &[Vec<Complex>]) -> Result<Vec<Vec<Complex>>> {
+pub fn fft2<T: FftFloat>(input: &[Vec<Complex<T>>]) -> Result<Vec<Vec<Complex<T>>>> {
     let (flat, shape) = rows(input)?;
     let out = fftn(&flat, &shape, &[0, 1])?;
     Ok(reshape(&out, shape[1]))
@@ -573,7 +647,7 @@ pub fn fft2(input: &[Vec<Complex>]) -> Result<Vec<Vec<Complex>>> {
 /// # References
 ///
 /// [SciPy ifft2](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.ifft2.html).
-pub fn ifft2(input: &[Vec<Complex>]) -> Result<Vec<Vec<Complex>>> {
+pub fn ifft2<T: FftFloat>(input: &[Vec<Complex<T>>]) -> Result<Vec<Vec<Complex<T>>>> {
     let (flat, shape) = rows(input)?;
     let out = ifftn(&flat, &shape, &[0, 1])?;
     Ok(reshape(&out, shape[1]))
@@ -606,7 +680,7 @@ pub fn ifft2(input: &[Vec<Complex>]) -> Result<Vec<Vec<Complex>>> {
 /// # References
 ///
 /// [SciPy rfft2](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.rfft2.html).
-pub fn rfft2(input: &[Vec<f64>]) -> Result<Vec<Vec<Complex>>> {
+pub fn rfft2<T: FftFloat>(input: &[Vec<T>]) -> Result<Vec<Vec<Complex<T>>>> {
     let (flat, shape) = rows(input)?;
     let (out, small) = rfftn(&flat, &shape, &[0, 1])?;
     Ok(reshape(&out, small[1]))
@@ -639,7 +713,7 @@ pub fn rfft2(input: &[Vec<f64>]) -> Result<Vec<Vec<Complex>>> {
 /// # References
 ///
 /// [SciPy irfft2](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.irfft2.html).
-pub fn irfft2(input: &[Vec<Complex>], n: usize) -> Result<Vec<Vec<f64>>> {
+pub fn irfft2<T: FftFloat>(input: &[Vec<Complex<T>>], n: usize) -> Result<Vec<Vec<T>>> {
     let (flat, mut shape) = rows(input)?;
     shape[1] = n;
     let out = irfftn(&flat, &shape, &[0, 1])?;
@@ -673,7 +747,7 @@ pub fn irfft2(input: &[Vec<Complex>], n: usize) -> Result<Vec<Vec<f64>>> {
 /// # References
 ///
 /// [SciPy hfft2](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.hfft2.html).
-pub fn hfft2(input: &[Vec<Complex>], n: usize) -> Result<Vec<Vec<f64>>> {
+pub fn hfft2<T: FftFloat>(input: &[Vec<Complex<T>>], n: usize) -> Result<Vec<Vec<T>>> {
     let (flat, mut shape) = rows(input)?;
     shape[1] = n;
     let out = hfftn(&flat, &shape, &[0, 1])?;
@@ -707,7 +781,7 @@ pub fn hfft2(input: &[Vec<Complex>], n: usize) -> Result<Vec<Vec<f64>>> {
 /// # References
 ///
 /// [SciPy ihfft2](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.ihfft2.html).
-pub fn ihfft2(input: &[Vec<f64>]) -> Result<Vec<Vec<Complex>>> {
+pub fn ihfft2<T: FftFloat>(input: &[Vec<T>]) -> Result<Vec<Vec<Complex<T>>>> {
     let (flat, shape) = rows(input)?;
     let (out, small) = ihfftn(&flat, &shape, &[0, 1])?;
     Ok(reshape(&out, small[1]))
@@ -739,23 +813,29 @@ pub fn ihfft2(input: &[Vec<f64>]) -> Result<Vec<Vec<Complex>>> {
 /// # References
 ///
 /// [SciPy fftfreq](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.fftfreq.html).
-pub fn fftfreq(n: usize, d: f64) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn fftfreq<T: Float>(n: usize, d: T) -> Result<Vec<T>> {
     length(n)?;
     if !d.is_finite() || d == 0.0 {
         return Err(Error::InvalidInput(
             "sample spacing must be finite and nonzero",
         ));
     }
-    let scale = finite((1.0 / n as f64) / d)?;
+    let scale = match (1.0 / T::from(n).unwrap()) / d {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     (0..n)
         .map(|k| {
-            finite(
-                if k < n.div_ceil(2) {
-                    k as f64
-                } else {
-                    k as f64 - n as f64
-                } * scale,
-            )
+            match if k < n.div_ceil(2) {
+                T::from(k).unwrap()
+            } else {
+                T::from(k).unwrap() - T::from(n).unwrap()
+            } * scale
+            {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }
         })
         .collect()
 }
@@ -786,15 +866,24 @@ pub fn fftfreq(n: usize, d: f64) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy rfftfreq](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.rfftfreq.html).
-pub fn rfftfreq(n: usize, d: f64) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn rfftfreq<T: Float>(n: usize, d: T) -> Result<Vec<T>> {
     length(n)?;
     if !d.is_finite() || d == 0.0 {
         return Err(Error::InvalidInput(
             "sample spacing must be finite and nonzero",
         ));
     }
-    let scale = finite((1.0 / n as f64) / d)?;
-    (0..n / 2 + 1).map(|k| finite(k as f64 * scale)).collect()
+    let scale = match (1.0 / T::from(n).unwrap()) / d {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
+    (0..n / 2 + 1)
+        .map(|k| match T::from(k).unwrap() * scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
+        .collect()
 }
 
 /// Centers the zero-frequency bin by rotating DFT data left by ceil(n/2).
@@ -824,7 +913,7 @@ pub fn rfftfreq(n: usize, d: f64) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy fftshift](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.fftshift.html).
-pub fn fftshift(input: &[Complex]) -> Result<Vec<Complex>> {
+pub fn fftshift<T: Float>(input: &[Complex<T>]) -> Result<Vec<Complex<T>>> {
     values(input)?;
     let mut out = input.to_vec();
     let mid = out.len().div_ceil(2);
@@ -859,7 +948,7 @@ pub fn fftshift(input: &[Complex]) -> Result<Vec<Complex>> {
 /// # References
 ///
 /// [SciPy ifftshift](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.ifftshift.html).
-pub fn ifftshift(input: &[Complex]) -> Result<Vec<Complex>> {
+pub fn ifftshift<T: Float>(input: &[Complex<T>]) -> Result<Vec<Complex<T>>> {
     values(input)?;
     let mut out = input.to_vec();
     let mid = out.len() / 2;
@@ -967,20 +1056,20 @@ pub enum RealTransformType {
     /// Half-shifted input and output grids; self-inverse up to scaling.
     IV,
 }
-type RealPlan = Box<dyn Fn(&mut [f64], &mut [f64])>;
-fn real_plan(
-    planner: &mut rustdct::DctPlanner<f64>,
+type RealPlan<T> = Box<dyn Fn(&mut [T], &mut [T])>;
+fn real_plan<T: FftFloat>(
+    planner: &mut rustdct::DctPlanner<T>,
     n: usize,
     kind: RealTransformType,
     sine: bool,
-) -> (usize, RealPlan) {
+) -> (usize, RealPlan<T>) {
     macro_rules! plan {
         ($build:ident,$run:ident) => {{
             let plan = planner.$build(n);
             let scratch = plan.get_scratch_len();
             (
                 scratch,
-                Box::new(move |x: &mut [f64], s: &mut [f64]| plan.$run(x, s)) as RealPlan,
+                Box::new(move |x: &mut [T], s: &mut [T]| plan.$run(x, s)) as RealPlan<T>,
             )
         }};
     }
@@ -995,16 +1084,17 @@ fn real_plan(
         (true, RealTransformType::IV) => plan!(plan_dst4, process_dst4_with_scratch),
     }
 }
-fn real_nd(
-    input: &[f64],
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn real_nd<T: FftFloat>(
+    input: &[T],
     shape: &[usize],
     axes: &[usize],
     kind: RealTransformType,
     sine: bool,
     inverse: bool,
-) -> Result<Vec<f64>> {
+) -> Result<Vec<T>> {
     tensor(shape, axes, input.len())?;
-    finite_slice(input)?;
+    is_finite_slice(input)?;
     if !sine && kind == RealTransformType::I && axes.iter().any(|a| shape[*a] == 1) {
         return Err(Error::InvalidInput("DCT I needs at least two samples"));
     }
@@ -1029,9 +1119,13 @@ fn real_nd(
         let scale = if !inverse {
             2.0
         } else if kind == RealTransformType::I {
-            1.0 / if sine { (n + 1) as f64 } else { (n - 1) as f64 }
+            1.0 / if sine {
+                T::from(n + 1).unwrap()
+            } else {
+                T::from(n - 1).unwrap()
+            }
         } else {
-            1.0 / n as f64
+            1.0 / T::from(n).unwrap()
         };
         for base in (0..out.len()).step_by(block) {
             for offset in 0..stride {
@@ -1040,7 +1134,10 @@ fn real_nd(
                 }
                 plan(&mut line, &mut scratch);
                 for (k, v) in line.iter().enumerate() {
-                    out[base + offset + k * stride] = finite(v * scale)?;
+                    out[base + offset + k * stride] = match *v * scale {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }?;
                 }
             }
         }
@@ -1075,7 +1172,7 @@ fn real_nd(
 /// # References
 ///
 /// [SciPy dct](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.dct.html).
-pub fn dct(input: &[f64], kind: RealTransformType) -> Result<Vec<f64>> {
+pub fn dct<T: FftFloat>(input: &[T], kind: RealTransformType) -> Result<Vec<T>> {
     real_nd(input, &[input.len()], &[0], kind, false, false)
 }
 
@@ -1106,7 +1203,7 @@ pub fn dct(input: &[f64], kind: RealTransformType) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy idct](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.idct.html).
-pub fn idct(input: &[f64], kind: RealTransformType) -> Result<Vec<f64>> {
+pub fn idct<T: FftFloat>(input: &[T], kind: RealTransformType) -> Result<Vec<T>> {
     real_nd(input, &[input.len()], &[0], kind, false, true)
 }
 
@@ -1137,7 +1234,7 @@ pub fn idct(input: &[f64], kind: RealTransformType) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy dst](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.dst.html).
-pub fn dst(input: &[f64], kind: RealTransformType) -> Result<Vec<f64>> {
+pub fn dst<T: FftFloat>(input: &[T], kind: RealTransformType) -> Result<Vec<T>> {
     real_nd(input, &[input.len()], &[0], kind, true, false)
 }
 
@@ -1168,7 +1265,7 @@ pub fn dst(input: &[f64], kind: RealTransformType) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy idst](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.idst.html).
-pub fn idst(input: &[f64], kind: RealTransformType) -> Result<Vec<f64>> {
+pub fn idst<T: FftFloat>(input: &[T], kind: RealTransformType) -> Result<Vec<T>> {
     real_nd(input, &[input.len()], &[0], kind, true, true)
 }
 
@@ -1199,12 +1296,12 @@ pub fn idst(input: &[f64], kind: RealTransformType) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy dctn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.dctn.html).
-pub fn dctn(
-    input: &[f64],
+pub fn dctn<T: FftFloat>(
+    input: &[T],
     shape: &[usize],
     axes: &[usize],
     kind: RealTransformType,
-) -> Result<Vec<f64>> {
+) -> Result<Vec<T>> {
     real_nd(input, shape, axes, kind, false, false)
 }
 
@@ -1235,12 +1332,12 @@ pub fn dctn(
 /// # References
 ///
 /// [SciPy idctn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.idctn.html).
-pub fn idctn(
-    input: &[f64],
+pub fn idctn<T: FftFloat>(
+    input: &[T],
     shape: &[usize],
     axes: &[usize],
     kind: RealTransformType,
-) -> Result<Vec<f64>> {
+) -> Result<Vec<T>> {
     real_nd(input, shape, axes, kind, false, true)
 }
 
@@ -1271,12 +1368,12 @@ pub fn idctn(
 /// # References
 ///
 /// [SciPy dstn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.dstn.html).
-pub fn dstn(
-    input: &[f64],
+pub fn dstn<T: FftFloat>(
+    input: &[T],
     shape: &[usize],
     axes: &[usize],
     kind: RealTransformType,
-) -> Result<Vec<f64>> {
+) -> Result<Vec<T>> {
     real_nd(input, shape, axes, kind, true, false)
 }
 
@@ -1307,11 +1404,11 @@ pub fn dstn(
 /// # References
 ///
 /// [SciPy idstn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fft.idstn.html).
-pub fn idstn(
-    input: &[f64],
+pub fn idstn<T: FftFloat>(
+    input: &[T],
     shape: &[usize],
     axes: &[usize],
     kind: RealTransformType,
-) -> Result<Vec<f64>> {
+) -> Result<Vec<T>> {
     real_nd(input, shape, axes, kind, true, true)
 }

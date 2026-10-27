@@ -1,23 +1,25 @@
-use crate::error::{finite, finite_slice};
+use super::FftFloat;
+use crate::error::is_finite_slice;
 use crate::{Error, Result, complex::Complex};
-use std::f64::consts::{LN_2, TAU};
 
-fn samples(x: &[f64]) -> Result<()> {
+fn samples<T: FftFloat>(x: &[T]) -> Result<()> {
     super::length(x.len())?;
-    finite_slice(x)
+    is_finite_slice(x)
 }
-fn period(p: f64) -> Result<()> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn period<T: FftFloat>(p: T) -> Result<()> {
     if !p.is_finite() || p <= 0.0 {
         Err(Error::InvalidInput("period must be finite and positive"))
     } else {
         Ok(())
     }
 }
-fn multiplier(
-    x: &[f64],
-    period_value: f64,
-    mut symbol: impl FnMut(usize, f64, usize) -> Result<Complex>,
-) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn multiplier<T: FftFloat>(
+    x: &[T],
+    period_value: T,
+    mut symbol: impl FnMut(usize, T, usize) -> Result<Complex<T>>,
+) -> Result<Vec<T>> {
     samples(x)?;
     period(period_value)?;
     let n = x.len();
@@ -26,36 +28,60 @@ fn multiplier(
         let w = if k == 0 {
             0.0
         } else {
-            finite(k as f64 * (TAU / period_value))?
+            match T::from(k).unwrap() * (T::TAU() / period_value) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?
         };
         let m = symbol(k, w, n)?;
         let result = crate::complex::multiply(*z, m);
-        z.re = finite(result.re)?;
-        z.im = finite(result.im)?;
+        z.re = match result.re {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
+        z.im = match result.im {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     crate::irfft(&bins, Some(n))
 }
-fn real(re: f64) -> Result<Complex> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn real<T: FftFloat>(re: T) -> Result<Complex<T>> {
     Ok(Complex {
-        re: finite(re)?,
+        re: match re {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?,
         im: 0.0,
     })
 }
-fn imaginary(im: f64) -> Result<Complex> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn imaginary<T: FftFloat>(im: T) -> Result<Complex<T>> {
     Ok(Complex {
         re: 0.0,
-        im: finite(im)?,
+        im: match im {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?,
     })
 }
-fn log_cosh(x: f64) -> f64 {
-    x.abs() + (-2.0 * x.abs()).exp().ln_1p() - LN_2
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn log_cosh<T: FftFloat>(x: T) -> T {
+    x.abs() + (-2.0 * x.abs()).exp().ln_1p() - T::LN_2()
 }
-fn log_sinh(x: f64) -> f64 {
-    x.abs() + (-(-2.0 * x.abs()).exp_m1()).ln() - LN_2
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn log_sinh<T: FftFloat>(x: T) -> T {
+    x.abs() + (-(-2.0 * x.abs()).exp_m1()).ln() - T::LN_2()
 }
-fn ratio(a: f64, b: f64, sinh_a: bool, sinh_b: bool) -> Result<f64> {
-    finite(a)?;
-    finite(b)?;
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn ratio<T: FftFloat>(a: T, b: T, sinh_a: bool, sinh_b: bool) -> Result<T> {
+    if !a.is_finite() {
+        return Err(Error::NonFiniteEvaluation);
+    }
+    if !b.is_finite() {
+        return Err(Error::NonFiniteEvaluation);
+    }
     if sinh_b && b == 0.0 {
         return Err(Error::InvalidInput("zero hyperbolic denominator"));
     }
@@ -66,7 +92,10 @@ fn ratio(a: f64, b: f64, sinh_a: bool, sinh_b: bool) -> Result<f64> {
     let log_b = if sinh_b { log_sinh(b) } else { log_cosh(b) };
     let sign_a = if sinh_a { a.signum() } else { 1.0 };
     let sign_b = if sinh_b { b.signum() } else { 1.0 };
-    finite((log_a - log_b).exp() * sign_a * sign_b)
+    match (log_a - log_b).exp() * sign_a * sign_b {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Differentiates/integrates a periodic sequence with Fourier symbol `(i*2πk/period)^order`.
@@ -96,7 +125,8 @@ fn ratio(a: f64, b: f64, sinh_a: bool, sinh_b: bool) -> Result<f64> {
 /// # References
 ///
 /// [SciPy diff](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fftpack.diff.html).
-pub fn diff(input: &[f64], order: i32, period_value: f64) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn diff<T: FftFloat>(input: &[T], order: i32, period_value: T) -> Result<Vec<T>> {
     if !(-64..=64).contains(&order) {
         return Err(Error::InvalidInput("periodic derivative order limit"));
     }
@@ -109,7 +139,10 @@ pub fn diff(input: &[f64], order: i32, period_value: f64) -> Result<Vec<f64>> {
         if k == 0 || n.is_multiple_of(2) && k == n / 2 && order.rem_euclid(2) == 1 {
             return real(0.0);
         }
-        let power = finite(w.powi(order))?;
+        let power = match w.powi(order) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         match order.rem_euclid(4) {
             0 => real(power),
             1 => imaginary(power),
@@ -145,8 +178,9 @@ pub fn diff(input: &[f64], order: i32, period_value: f64) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy hilbert](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fftpack.hilbert.html).
-pub fn hilbert(input: &[f64]) -> Result<Vec<f64>> {
-    multiplier(input, TAU, |k, _, n| {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn hilbert<T: FftFloat>(input: &[T]) -> Result<Vec<T>> {
+    multiplier(input, T::TAU(), |k, _, n| {
         if k == 0 || n.is_multiple_of(2) && k == n / 2 {
             real(0.0)
         } else {
@@ -181,8 +215,9 @@ pub fn hilbert(input: &[f64]) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy ihilbert](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fftpack.ihilbert.html).
-pub fn ihilbert(input: &[f64]) -> Result<Vec<f64>> {
-    multiplier(input, TAU, |k, _, n| {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ihilbert<T: FftFloat>(input: &[T]) -> Result<Vec<T>> {
+    multiplier(input, T::TAU(), |k, _, n| {
         if k == 0 || n.is_multiple_of(2) && k == n / 2 {
             real(0.0)
         } else {
@@ -218,8 +253,9 @@ pub fn ihilbert(input: &[f64]) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy tilbert](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fftpack.tilbert.html).
-pub fn tilbert(input: &[f64], h: f64, period_value: f64) -> Result<Vec<f64>> {
-    finite_slice(&[h])?;
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn tilbert<T: FftFloat>(input: &[T], h: T, period_value: T) -> Result<Vec<T>> {
+    is_finite_slice(&[h])?;
     if h == 0.0 {
         return Err(Error::InvalidInput("Tilbert height must be nonzero"));
     }
@@ -227,7 +263,13 @@ pub fn tilbert(input: &[f64], h: f64, period_value: f64) -> Result<Vec<f64>> {
         if k == 0 || n.is_multiple_of(2) && k == n / 2 {
             real(0.0)
         } else {
-            imaginary(1.0 / finite(w * h)?.tanh())
+            imaginary(
+                1.0 / match w * h {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?
+                .tanh(),
+            )
         }
     })
 }
@@ -259,13 +301,20 @@ pub fn tilbert(input: &[f64], h: f64, period_value: f64) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy itilbert](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fftpack.itilbert.html).
-pub fn itilbert(input: &[f64], h: f64, period_value: f64) -> Result<Vec<f64>> {
-    finite_slice(&[h])?;
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn itilbert<T: FftFloat>(input: &[T], h: T, period_value: T) -> Result<Vec<T>> {
+    is_finite_slice(&[h])?;
     multiplier(input, period_value, |k, w, n| {
         if k == 0 || n.is_multiple_of(2) && k == n / 2 {
             real(0.0)
         } else {
-            imaginary(-finite(w * h)?.tanh())
+            imaginary(
+                -match w * h {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?
+                .tanh(),
+            )
         }
     })
 }
@@ -296,10 +345,13 @@ pub fn itilbert(input: &[f64], h: f64, period_value: f64) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy shift](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fftpack.shift.html).
-pub fn shift(input: &[f64], a: f64, period_value: f64) -> Result<Vec<f64>> {
-    finite_slice(&[a])?;
+pub fn shift<T: FftFloat>(input: &[T], a: T, period_value: T) -> Result<Vec<T>> {
+    is_finite_slice(&[a])?;
     multiplier(input, period_value, |k, w, n| {
-        let phase = finite(w * a)?;
+        let phase = match w * a {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         let (sin, cos) = phase.sin_cos();
         if n.is_multiple_of(2) && k == n / 2 {
             real(cos + sin)
@@ -336,13 +388,25 @@ pub fn shift(input: &[f64], a: f64, period_value: f64) -> Result<Vec<f64>> {
 /// # References
 ///
 /// [SciPy cc_diff](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fftpack.cc_diff.html).
-pub fn cc_diff(input: &[f64], a: f64, b: f64, period_value: f64) -> Result<Vec<f64>> {
-    finite_slice(&[a, b])?;
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn cc_diff<T: FftFloat>(input: &[T], a: T, b: T, period_value: T) -> Result<Vec<T>> {
+    is_finite_slice(&[a, b])?;
     multiplier(input, period_value, |k, w, _| {
         if k == 0 {
             return real(1.0);
         }
-        let value = ratio(finite(w * a)?, finite(w * b)?, false, false)?;
+        let value = ratio(
+            match w * a {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?,
+            match w * b {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?,
+            false,
+            false,
+        )?;
         real(value)
     })
 }
@@ -374,8 +438,9 @@ pub fn cc_diff(input: &[f64], a: f64, b: f64, period_value: f64) -> Result<Vec<f
 /// # References
 ///
 /// [SciPy cs_diff](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fftpack.cs_diff.html).
-pub fn cs_diff(input: &[f64], a: f64, b: f64, period_value: f64) -> Result<Vec<f64>> {
-    finite_slice(&[a, b])?;
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn cs_diff<T: FftFloat>(input: &[T], a: T, b: T, period_value: T) -> Result<Vec<T>> {
+    is_finite_slice(&[a, b])?;
     if b == 0.0 {
         return Err(Error::InvalidInput(
             "hyperbolic denominator parameter must be nonzero",
@@ -388,7 +453,18 @@ pub fn cs_diff(input: &[f64], a: f64, b: f64, period_value: f64) -> Result<Vec<f
         if n.is_multiple_of(2) && k == n / 2 {
             return real(0.0);
         }
-        let value = ratio(finite(w * a)?, finite(w * b)?, false, true)?;
+        let value = ratio(
+            match w * a {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?,
+            match w * b {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?,
+            false,
+            true,
+        )?;
         imaginary(-value)
     })
 }
@@ -420,8 +496,9 @@ pub fn cs_diff(input: &[f64], a: f64, b: f64, period_value: f64) -> Result<Vec<f
 /// # References
 ///
 /// [SciPy sc_diff](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fftpack.sc_diff.html).
-pub fn sc_diff(input: &[f64], a: f64, b: f64, period_value: f64) -> Result<Vec<f64>> {
-    finite_slice(&[a, b])?;
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn sc_diff<T: FftFloat>(input: &[T], a: T, b: T, period_value: T) -> Result<Vec<T>> {
+    is_finite_slice(&[a, b])?;
     multiplier(input, period_value, |k, w, n| {
         if k == 0 {
             return real(0.0);
@@ -429,7 +506,18 @@ pub fn sc_diff(input: &[f64], a: f64, b: f64, period_value: f64) -> Result<Vec<f
         if n.is_multiple_of(2) && k == n / 2 {
             return real(0.0);
         }
-        let value = ratio(finite(w * a)?, finite(w * b)?, true, false)?;
+        let value = ratio(
+            match w * a {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?,
+            match w * b {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?,
+            true,
+            false,
+        )?;
         imaginary(value)
     })
 }
@@ -461,8 +549,9 @@ pub fn sc_diff(input: &[f64], a: f64, b: f64, period_value: f64) -> Result<Vec<f
 /// # References
 ///
 /// [SciPy ss_diff](https://docs.scipy.org/doc/scipy/reference/generated/scipy.fftpack.ss_diff.html).
-pub fn ss_diff(input: &[f64], a: f64, b: f64, period_value: f64) -> Result<Vec<f64>> {
-    finite_slice(&[a, b])?;
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn ss_diff<T: FftFloat>(input: &[T], a: T, b: T, period_value: T) -> Result<Vec<T>> {
+    is_finite_slice(&[a, b])?;
     if b == 0.0 {
         return Err(Error::InvalidInput(
             "hyperbolic denominator parameter must be nonzero",
@@ -473,7 +562,18 @@ pub fn ss_diff(input: &[f64], a: f64, b: f64, period_value: f64) -> Result<Vec<f
             return real(a / b);
         }
         let _ = n;
-        let value = ratio(finite(w * a)?, finite(w * b)?, true, true)?;
+        let value = ratio(
+            match w * a {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?,
+            match w * b {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?,
+            true,
+            true,
+        )?;
         real(value)
     })
 }

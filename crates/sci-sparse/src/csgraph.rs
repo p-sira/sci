@@ -668,7 +668,10 @@ fn lap(a: &SparseMatrix, normed: bool, out: bool, symmetrized: bool) -> Result<L
         for r in 0..a.rows {
             let (head, tail) = weights.split_at_mut(r + 1);
             for (forward, reverse) in head[r][r + 1..].iter_mut().zip(tail) {
-                let v = finite(*forward + reverse[r])?;
+                let v = match *forward + reverse[r] {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?;
                 *forward = v;
                 reverse[r] = v;
             }
@@ -678,7 +681,10 @@ fn lap(a: &SparseMatrix, normed: bool, out: bool, symmetrized: bool) -> Result<L
     for (r, row) in weights.iter().enumerate() {
         for (c, &v) in row.iter().enumerate() {
             let i = if out { r } else { c };
-            d[i] = finite(d[i] + v)?;
+            d[i] = match d[i] + v {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?;
         }
     }
     let diagonal = if normed {
@@ -707,7 +713,14 @@ fn lap(a: &SparseMatrix, normed: bool, out: bool, symmetrized: bool) -> Result<L
                 -weights[r][c]
             };
             if v != 0. {
-                triples.push((r, c, finite(v)?));
+                triples.push((
+                    r,
+                    c,
+                    match v {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(crate::Error::NonFiniteEvaluation),
+                    }?,
+                ));
             }
         }
     }
@@ -798,7 +811,14 @@ fn from_masked(a: &MaskedGraph) -> Result<SparseMatrix> {
     for r in 0..n {
         for c in 0..n {
             if !a.mask[r][c] {
-                t.push((r, c, finite(a.values[r][c])?));
+                t.push((
+                    r,
+                    c,
+                    match a.values[r][c] {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(crate::Error::NonFiniteEvaluation),
+                    }?,
+                ));
             }
         }
     }
@@ -866,7 +886,10 @@ fn distances_from_pred(
                 let p = pred[s][u].ok_or(Error::InvalidInput(
                     "predecessor chain does not reach source",
                 ))?;
-                sum = finite(sum + adj[p][&u])?;
+                sum = match sum + adj[p][&u] {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?;
                 u = p;
                 steps += 1;
                 if steps > a.rows {
@@ -954,7 +977,10 @@ fn k_paths(
         return Ok(result);
     }
     if let Some((w, p)) = shortest_single(&adj, source, sink, &BTreeSet::new(), &BTreeSet::new()) {
-        result.distances.push(finite(w)?);
+        result.distances.push(match w {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?);
         result.paths.push(p);
     } else {
         return Ok(result);
@@ -982,10 +1008,19 @@ fn k_paths(
                 joined.extend(path);
                 if !result.paths.contains(&joined) && !candidates.iter().any(|(_, p)| p == &joined)
                 {
-                    candidates.push((finite(root_weight + weight)?, joined));
+                    candidates.push((
+                        match root_weight + weight {
+                            value if value.is_finite() => Ok(value),
+                            _ => Err(crate::Error::NonFiniteEvaluation),
+                        }?,
+                        joined,
+                    ));
                 }
             }
-            root_weight = finite(root_weight + adj[last[spur]][&last[spur + 1]])?;
+            root_weight = match root_weight + adj[last[spur]][&last[spur + 1]] {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?;
         }
         if candidates.is_empty() {
             break;
@@ -999,7 +1034,10 @@ fn k_paths(
             })
             .ok_or(Error::NumericalFailure("missing Yen candidate"))?;
         let (w, p) = candidates.swap_remove(i);
-        result.distances.push(finite(w)?);
+        result.distances.push(match w {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?);
         result.paths.push(p);
     }
     result.predecessors = result

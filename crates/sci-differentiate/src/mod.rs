@@ -1,7 +1,5 @@
-use crate::{
-    Error, Result,
-    error::{finite, finite_slice},
-};
+use crate::{Error, Result, error::is_finite_slice};
+use sci_core::Float;
 
 const WORK_LIMIT: usize = 1_000_000;
 
@@ -13,12 +11,13 @@ fn validate_work(count: Option<usize>) -> Result<()> {
     }
 }
 
-fn perturbations(point: &[f64], step: f64) -> Result<Vec<(f64, f64)>> {
-    finite_slice(point)?;
+fn perturbations<T: Float>(point: &[T], step: T) -> Result<Vec<(T, T)>> {
+    is_finite_slice(point)?;
     point.iter().map(|&value| neighbors(value, step)).collect()
 }
 
-fn validate_step(step: f64) -> Result<()> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn validate_step<T: Float>(step: T) -> Result<()> {
     if step.is_finite() && step > 0.0 {
         Ok(())
     } else {
@@ -26,7 +25,7 @@ fn validate_step(step: f64) -> Result<()> {
     }
 }
 
-fn neighbors(value: f64, step: f64) -> Result<(f64, f64)> {
+fn neighbors<T: Float>(value: T, step: T) -> Result<(T, T)> {
     let upper = value + step;
     let lower = value - step;
     if !value.is_finite()
@@ -42,21 +41,27 @@ fn neighbors(value: f64, step: f64) -> Result<(f64, f64)> {
     Ok((upper, lower))
 }
 
-fn difference(upper: f64, lower: f64, coordinates: (f64, f64)) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn difference<T: Float>(upper: T, lower: T, coordinates: (T, T)) -> Result<T> {
     difference_with_factor(upper, lower, coordinates, 1.0)
 }
 
-fn difference_with_factor(
-    upper: f64,
-    lower: f64,
-    coordinates: (f64, f64),
-    factor: f64,
-) -> Result<f64> {
-    finite(upper)?;
-    finite(lower)?;
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn difference_with_factor<T: Float>(
+    upper: T,
+    lower: T,
+    coordinates: (T, T),
+    factor: T,
+) -> Result<T> {
+    if !upper.is_finite() {
+        return Err(Error::NonFiniteEvaluation);
+    }
+    if !lower.is_finite() {
+        return Err(Error::NonFiniteEvaluation);
+    }
     let width = coordinates.0 - coordinates.1;
     let delta = upper - lower;
-    finite(if width.is_finite() {
+    match if width.is_finite() {
         if delta.is_finite() {
             let numerator = factor * delta;
             if numerator.is_finite() {
@@ -71,7 +76,10 @@ fn difference_with_factor(
         // Both spans may exceed the finite range; their ratio can still fit.
         let half_width = 0.5 * coordinates.0 - 0.5 * coordinates.1;
         ((0.5 * upper - 0.5 * lower) / half_width) * factor
-    })
+    } {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Approximates `f′(x)` by the secant `(f(x₊) − f(x₋))/(x₊ − x₋)`,
@@ -115,13 +123,13 @@ fn difference_with_factor(
 /// # Examples
 ///
 /// ```
-/// let slope = sci_differentiate::derivative(|x| x * x, 3.0, 1e-5)?;
+/// let slope = sci_differentiate::derivative(|x| x * x, 3.0_f64, 1e-5)?;
 /// assert!((slope - 6.0).abs() < 1e-8);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
-pub fn derivative<F>(function: F, x: f64, step: f64) -> Result<f64>
+pub fn derivative<T: Float, F>(function: F, x: T, step: T) -> Result<T>
 where
-    F: Fn(f64) -> f64,
+    F: Fn(T) -> T,
 {
     validate_step(step)?;
     let (upper, lower) = neighbors(x, step)?;
@@ -172,15 +180,15 @@ where
 ///
 /// ```
 /// let gradient = sci_differentiate::gradient(
-///     |x| x[0] * x[0] + 3.0 * x[1], &[2.0, 4.0], 1e-5,
+///     |x| x[0] * x[0] + 3.0_f64 * x[1], &[2.0, 4.0], 1e-5,
 /// )?;
 /// assert!((gradient[0] - 4.0).abs() < 1e-8);
 /// assert!((gradient[1] - 3.0).abs() < 1e-8);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
-pub fn gradient<F>(function: F, point: &[f64], step: f64) -> Result<Vec<f64>>
+pub fn gradient<T: Float, F>(function: F, point: &[T], step: T) -> Result<Vec<T>>
 where
-    F: Fn(&[f64]) -> f64,
+    F: Fn(&[T]) -> T,
 {
     validate_step(step)?;
     validate_work(point.len().checked_mul(2))?;
@@ -245,15 +253,16 @@ where
 ///
 /// ```
 /// let jacobian = sci_differentiate::jacobian(
-///     |x| vec![x[0] * x[1]], &[2.0, 3.0], 1e-5,
+///     |x| vec![x[0] * x[1]], &[2.0_f64, 3.0], 1e-5,
 /// )?;
 /// assert!((jacobian[0][0] - 3.0).abs() < 1e-8);
 /// assert!((jacobian[0][1] - 2.0).abs() < 1e-8);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
-pub fn jacobian<F>(function: F, point: &[f64], step: f64) -> Result<Vec<Vec<f64>>>
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn jacobian<T: Float, F>(function: F, point: &[T], step: T) -> Result<Vec<Vec<T>>>
 where
-    F: Fn(&[f64]) -> Vec<f64>,
+    F: Fn(&[T]) -> Vec<T>,
 {
     validate_step(step)?;
     validate_work(point.len().checked_mul(2))?;
@@ -262,12 +271,14 @@ where
         let values = function(point);
         validate_work(Some(values.len()))?;
         for value in &values {
-            finite(*value)?;
+            if !value.is_finite() {
+                return Err(Error::NonFiniteEvaluation);
+            }
         }
         return Ok(vec![Vec::new(); values.len()]);
     }
     let mut sample = point.to_vec();
-    let mut result: Option<Vec<Vec<f64>>> = None;
+    let mut result: Option<Vec<Vec<T>>> = None;
     for (column, &value) in point.iter().enumerate() {
         let (upper, lower) = offsets[column];
         sample[column] = upper;
@@ -335,7 +346,7 @@ where
 /// error; diagonal asymmetry adds error proportional to `|h₊−h₋|`, and mixed
 /// entries estimate curvature at their rounded rectangle's midpoint. Symmetric
 /// matrix entries reuse the same estimate. Roundoff grows approximately as `1/step²`; at unit scale a step
-/// near `f64::EPSILON.powf(0.25)` is a starting point, not an accuracy guarantee.
+/// near `T::epsilon().powf(T::from(0.25).unwrap())` is a starting point, not an accuracy guarantee.
 /// Large constant offsets can destroy precision. Unlike SciPy's nested adaptive
 /// Jacobians, this uses direct fixed stencils without diagnostics or batching.
 /// Calls are limited to 1,000,000 evaluations and output entries.
@@ -344,7 +355,7 @@ where
 ///
 /// ```
 /// let h = sci_differentiate::hessian(
-///     |x| x[0] * x[0] + x[0] * x[1], &[2.0, 3.0], 1e-3,
+///     |x| x[0] * x[0] + x[0] * x[1], &[2.0_f64, 3.0], 1e-3,
 /// )?;
 /// assert!((h[0][0] - 2.0).abs() < 1e-7);
 /// assert!((h[0][1] - 1.0).abs() < 1e-7);
@@ -355,9 +366,10 @@ where
 /// # References
 ///
 /// [SciPy Hessian definition and conventions](https://docs.scipy.org/doc/scipy/reference/generated/scipy.differentiate.hessian.html).
-pub fn hessian<F>(function: F, point: &[f64], step: f64) -> Result<Vec<Vec<f64>>>
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn hessian<T: Float, F>(function: F, point: &[T], step: T) -> Result<Vec<Vec<T>>>
 where
-    F: Fn(&[f64]) -> f64,
+    F: Fn(&[T]) -> T,
 {
     validate_step(step)?;
     let n = point.len();
@@ -372,15 +384,24 @@ where
     if n == 0 {
         return Ok(Vec::new());
     }
-    let center = finite(function(point))?;
+    let center = match function(point) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     let mut sample = point.to_vec();
     let mut result = vec![vec![0.0; n]; n];
     for i in 0..n {
         let (upper, lower) = offsets[i];
         sample[i] = upper;
-        let positive = finite(function(&sample))?;
+        let positive = match function(&sample) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         sample[i] = lower;
-        let negative = finite(function(&sample))?;
+        let negative = match function(&sample) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         sample[i] = point[i];
         // Unequal three-point divided differences remove the false curvature
         // caused by rounded, asymmetric coordinate increments.
@@ -390,14 +411,26 @@ where
         for j in 0..i {
             sample[i] = upper;
             sample[j] = offsets[j].0;
-            let pp = finite(function(&sample))?;
+            let pp = match function(&sample) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             sample[j] = offsets[j].1;
-            let pm = finite(function(&sample))?;
+            let pm = match function(&sample) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             sample[i] = lower;
             sample[j] = offsets[j].0;
-            let mp = finite(function(&sample))?;
+            let mp = match function(&sample) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             sample[j] = offsets[j].1;
-            let mm = finite(function(&sample))?;
+            let mm = match function(&sample) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             sample[i] = point[i];
             sample[j] = point[j];
             let value = difference(

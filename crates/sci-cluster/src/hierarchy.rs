@@ -3,7 +3,6 @@
 //! Linkages use shared row matrices: row `i` is `[left, right, height, count]`,
 //! creates node `n+i`, and refers only to earlier nodes. Leaves are `0..n`.
 //! All functions reject nonfinite linkages and bound trees to 512 leaves.
-use crate::error::finite;
 use crate::{Error, Result, linalg::Matrix};
 use std::collections::HashMap;
 
@@ -750,10 +749,19 @@ pub fn inconsistent(z: &[Vec<f64>], depth: usize) -> Result<Matrix> {
         };
         let coeff = if sd == 0.0 { 0.0 } else { (r[2] - mean) / sd };
         out.push(vec![
-            finite(mean)?,
-            finite(sd)?,
+            match mean {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?,
+            match sd {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?,
             count as f64,
-            finite(coeff)?,
+            match coeff {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?,
         ]);
     }
     Ok(out)

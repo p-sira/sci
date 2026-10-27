@@ -190,7 +190,10 @@ impl<F: Fn(f64) -> Result<f64>> basin::CostFunction for BoundedObjective<F> {
     type Output = f64;
     type Error = Error;
     fn cost(&self, x: &f64) -> Result<f64> {
-        finite((self.function)(*x)?)
+        match (self.function)(*x)? {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }
     }
 }
 impl<F: Fn(f64) -> Result<f64>> basin::BoxConstraints for BoundedObjective<F> {
@@ -219,8 +222,14 @@ fn search_sample(values: &[f64]) -> Result<()> {
 fn bounded_minimum(lower: f64, upper: f64, function: impl Fn(f64) -> Result<f64>) -> Result<f64> {
     search_bounds(lower, upper)?;
     // Evaluate endpoints explicitly; Brent generally returns an interior point.
-    let left = finite(function(lower)?)?;
-    let right = finite(function(upper)?)?;
+    let left = match function(lower)? {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
+    let right = match function(upper)? {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     let result = basin::Executor::new(
         BoundedObjective {
             function: &function,

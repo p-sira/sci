@@ -507,5 +507,8 @@ pub fn expm_cond(a: &(impl super::MatrixInput + ?Sized)) -> Result<f64> {
             }
         }
     }
-    crate::error::finite((svdvals(&operator)?[0] / exp_norm) * norm)
+    match (svdvals(&operator)?[0] / exp_norm) * norm {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }

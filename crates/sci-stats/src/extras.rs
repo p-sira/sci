@@ -406,7 +406,7 @@ pub fn kstat(values: &[f64], order: usize) -> Result<f64> {
     }
     sample(values, order)?;
     let n = values.len() as f64;
-    finite(match order {
+    match match order {
         1 => mean(values)?,
         2 => variance(values, 1)?,
         3 => n * n * moment(values, 3)? / ((n - 1.) * (n - 2.)),
@@ -414,7 +414,10 @@ pub fn kstat(values: &[f64], order: usize) -> Result<f64> {
             n * n * ((n + 1.) * moment(values, 4)? - 3. * (n - 1.) * moment(values, 2)?.powi(2))
                 / ((n - 1.) * (n - 2.) * (n - 3.))
         }
-    })
+    } {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Unbiased estimated variance of k₁ or k₂.
 ///
@@ -454,7 +457,7 @@ pub fn kstat(values: &[f64], order: usize) -> Result<f64> {
 pub fn kstatvar(values: &[f64], order: usize) -> Result<f64> {
     let n = values.len() as f64;
     let k2 = kstat(values, 2)?;
-    finite(match order {
+    match match order {
         1 => k2 / n,
         2 => (2. * n * k2 * k2 + (n - 1.) * kstat(values, 4)?) / (n * (n + 1.)),
         _ => {
@@ -462,7 +465,10 @@ pub fn kstatvar(values: &[f64], order: usize) -> Result<f64> {
                 "k-statistic variance order must be one or two",
             ));
         }
-    })
+    } {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Combined significance test for independent uniformly distributed null p-values.
 ///
@@ -625,8 +631,14 @@ pub fn sigmaclip(values: &[f64], low: f64, high: f64) -> Result<SigmaClip> {
     for _ in 0..128 {
         let m = mean(&current)?;
         let s = std(&current, 0)?;
-        let lower = finite(m - low * s)?;
-        let upper = finite(m + high * s)?;
+        let lower = match m - low * s {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
+        let upper = match m + high * s {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
         let next = current
             .iter()
             .copied()

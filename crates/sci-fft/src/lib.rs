@@ -2,6 +2,9 @@
 //!
 //! Fourier transforms on shared real and complex data.
 //!
+//! Fourier, cosine/sine, and periodic operators use [`FftFloat`] (`f32` or
+//! `f64`) with native precision. FFTLog Hankel transforms currently use `f64`.
+//!
 //! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Forward transforms are unnormalized; inverses divide by transformed lengths.
@@ -34,10 +37,10 @@ use sci_core as error;
 pub use sci_core::{Error, Result};
 mod complex {
     pub use sci_complex::*;
-    pub(crate) fn native(z: Complex) -> num_complex::Complex64 {
-        num_complex::Complex64::new(z.re, z.im)
+    pub(crate) fn native<T: sci_core::Float>(z: Complex<T>) -> num_complex::Complex<T> {
+        num_complex::Complex::new(z.re, z.im)
     }
-    pub(crate) fn owned(z: num_complex::Complex64) -> Complex {
+    pub(crate) fn owned<T: sci_core::Float>(z: num_complex::Complex<T>) -> Complex<T> {
         Complex { re: z.re, im: z.im }
     }
 }

@@ -99,7 +99,7 @@ fn domains_and_signed_zero_conventions() {
             Err(Error::InvalidInput(_))
         ));
     }
-    let z = Complex { re: 0.0, im: 0.0 };
+    let z: Complex = Complex { re: 0.0, im: 0.0 };
     for result in [
         c::divide(Complex { re: 1.0, im: 2.0 }, z),
         c::reciprocal(z),
@@ -202,11 +202,11 @@ fn real_powers_reuse_roots_and_preserve_axis_components() {
         Complex { re: -2.0, im: 0.0 },
         Complex { re: -2.0, im: -0.0 },
         Complex {
-            re: 1e308,
+            re: 1e308_f64,
             im: 1e-300,
         },
         Complex {
-            re: 1e308,
+            re: 1e308_f64,
             im: 1e308,
         },
     ] {
@@ -228,7 +228,7 @@ fn real_powers_reuse_roots_and_preserve_axis_components() {
     }
     let z = c::powf(
         Complex {
-            re: 1e308,
+            re: 1e308_f64,
             im: 1e-300,
         },
         1.5,
@@ -241,7 +241,7 @@ fn real_powers_reuse_roots_and_preserve_axis_components() {
 fn products_preserve_components_and_exact_cancellation_residuals() {
     let z = c::multiply(
         Complex {
-            re: 1e308,
+            re: 1e308_f64,
             im: 1e308,
         },
         Complex { re: 2.0, im: 2.0 },

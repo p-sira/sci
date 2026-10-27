@@ -1,5 +1,5 @@
 use crate::backend;
-use crate::error::{finite, finite_slice};
+use crate::error::is_finite_slice;
 use crate::{Error, Result, Spline, SurfaceSpline};
 
 /// Interpolation method for scalar regular grids.
@@ -80,7 +80,7 @@ pub fn interpn(
             .checked_mul(axis.len())
             .filter(|n| *n <= 1_000_000)
             .ok_or(Error::InvalidInput("grid size limit exceeded"))?;
-        finite_slice(axis)?;
+        is_finite_slice(axis)?;
         if axis.windows(2).any(|p| p[1] == p[0])
             || (axis.len() > 1
                 && axis
@@ -89,14 +89,17 @@ pub fn interpn(
         {
             return Err(Error::InvalidInput("grid axes must be strictly monotonic"));
         }
-        finite(axis[axis.len() - 1] - axis[0])?;
+        match axis[axis.len() - 1] - axis[0] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     if values.len() != count || queries.iter().any(|q| q.len() != dim) {
         return Err(Error::DimensionMismatch);
     }
-    finite_slice(values)?;
+    is_finite_slice(values)?;
     for q in queries {
-        finite_slice(q)?;
+        is_finite_slice(q)?;
     }
     let mut strides = vec![1usize; dim];
     for j in (0..dim - 1).rev() {
@@ -129,7 +132,10 @@ pub fn interpn(
                     .partition_point(|v| if ascending { *v <= q[j] } else { *v >= q[j] })
                     .saturating_sub(1)
                     .min(a.len() - 2);
-                let u = finite((q[j] - a[i]) / (a[i + 1] - a[i]))?;
+                let u = match (q[j] - a[i]) / (a[i + 1] - a[i]) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
                 if method == GridMethod::Nearest {
                     indices[j] = i + usize::from(if ascending { u > 0.5 } else { u >= 0.5 });
                 } else {
@@ -159,7 +165,10 @@ pub fn interpn(
                     index += (indices[j] + upper) * strides[j];
                 }
                 if weight != 0.0 {
-                    sum = finite(sum + weight * values[index])?;
+                    sum = match sum + weight * values[index] {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }?;
                 }
             }
             Ok(sum)
@@ -221,9 +230,9 @@ pub fn griddata(
         return Err(Error::DimensionMismatch);
     }
     backend::bound(&[points.len(), queries.len(), dim])?;
-    finite_slice(values)?;
+    is_finite_slice(values)?;
     for p in points.iter().chain(queries) {
-        finite_slice(p)?;
+        is_finite_slice(p)?;
     }
     if method == ScatteredMethod::Cubic && dim != 1 || method == ScatteredMethod::Linear && dim > 2
     {
@@ -243,19 +252,25 @@ pub fn griddata(
     let widths = lo
         .iter()
         .zip(&hi)
-        .map(|(a, b)| finite(b - a))
+        .map(|(a, b)| match b - a {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
         .collect::<Result<Vec<_>>>()?;
     let transform = |p: &Vec<f64>| -> Result<Vec<f64>> {
         (0..dim)
             .map(|j| {
-                finite(
-                    finite(p[j] - lo[j])?
-                        / if rescale && widths[j] != 0.0 {
-                            widths[j]
-                        } else {
-                            1.0
-                        },
-                )
+                match match p[j] - lo[j] {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }? / if rescale && widths[j] != 0.0 {
+                    widths[j]
+                } else {
+                    1.0
+                } {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }
             })
             .collect()
     };
@@ -280,10 +295,15 @@ pub fn griddata(
                 let mut index = 0;
                 let mut distance = f64::INFINITY;
                 for (i, p) in p.iter().enumerate() {
-                    let d = p
-                        .iter()
-                        .zip(q)
-                        .try_fold(0.0_f64, |d, (a, b)| finite(d.hypot(finite(a - b)?)))?;
+                    let d = p.iter().zip(q).try_fold(0.0_f64, |d, (a, b)| {
+                        match d.hypot(match a - b {
+                            value if value.is_finite() => Ok(value),
+                            _ => Err(Error::NonFiniteEvaluation),
+                        }?) {
+                            value if value.is_finite() => Ok(value),
+                            _ => Err(Error::NonFiniteEvaluation),
+                        }
+                    })?;
                     if d < distance {
                         distance = d;
                         index = i;
@@ -368,9 +388,13 @@ pub fn griddata(
                 let u = 1.0 - v - w;
                 let tolerance = 64.0 * f64::EPSILON;
                 if u >= -tolerance && v >= -tolerance && w >= -tolerance {
-                    return finite(
-                        u * values[triangle[0]] + v * values[triangle[1]] + w * values[triangle[2]],
-                    );
+                    return match u * values[triangle[0]]
+                        + v * values[triangle[1]]
+                        + w * values[triangle[2]]
+                    {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    };
                 }
             }
             Ok(fill_value)
@@ -441,9 +465,9 @@ pub fn bisplev(
         return Err(Error::DimensionMismatch);
     }
     backend::bound(&[x.len().max(1), y.len().max(1), nx, ny])?;
-    finite_slice(x)?;
-    finite_slice(y)?;
-    finite_slice(&spline.coefficients)?;
+    is_finite_slice(x)?;
+    is_finite_slice(y)?;
+    is_finite_slice(&spline.coefficients)?;
     if x.windows(2).any(|p| p[1] < p[0]) || y.windows(2).any(|p| p[1] < p[0]) {
         return Err(Error::InvalidInput("surface queries must be nondecreasing"));
     }

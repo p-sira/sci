@@ -110,11 +110,14 @@ fn rescale_ratio(value: f64, numerator: f64, denominator: f64) -> Result<f64> {
         return Ok(0.0);
     }
     let ratio = numerator / denominator;
-    finite(if ratio.is_normal() {
+    match if ratio.is_normal() {
         value * ratio
     } else {
         (value * numerator) / denominator
-    })
+    } {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 pub(super) fn correlation(x: &[f64], y: &[f64]) -> Result<f64> {
     let a = centered(x)?;
@@ -168,7 +171,9 @@ pub(super) fn correlation(x: &[f64], y: &[f64]) -> Result<f64> {
 /// [SciPy `ttest_1samp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_1samp.html).
 pub fn ttest_1samp(values: &[f64], popmean: f64, alternative: Alternative) -> Result<TTestResult> {
     sample(values, 2)?;
-    finite(popmean)?;
+    if !popmean.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     t_result(
         mean(values)? - popmean,
         sem(values, 1)?,
@@ -282,7 +287,9 @@ pub fn ttest_ind_from_stats(
         }
     }
     for v in [mean1, mean2, std1, std2] {
-        finite(v)?;
+        if !v.is_finite() {
+            return Err(crate::Error::NonFiniteEvaluation);
+        }
     }
     if std1 < 0. || std2 < 0. {
         return Err(Error::InvalidInput(
@@ -594,7 +601,10 @@ pub fn linregress(x: &[f64], y: &[f64], alternative: Alternative) -> Result<Regr
     let ab = a.iter().zip(b).map(|(u, v)| u * v).sum::<f64>();
     let slope = rescale_ratio(ab / aa, sy, sx)?;
     let mx = mean(x)?;
-    let intercept = finite(mean(y)? - slope * mx)?;
+    let intercept = match mean(y)? - slope * mx {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     let r = if bb == 0. {
         0.
     } else {
@@ -612,7 +622,10 @@ pub fn linregress(x: &[f64], y: &[f64], alternative: Alternative) -> Result<Regr
     let intercept_stderr = if x.len() == 2 {
         f64::NAN
     } else {
-        finite(stderr * mx.hypot(sx * (aa / x.len() as f64).sqrt()))?
+        match stderr * mx.hypot(sx * (aa / x.len() as f64).sqrt()) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?
     };
     Ok(Regression {
         slope,
@@ -711,14 +724,22 @@ pub fn power_divergence(
             "chi-square degrees of freedom must be positive",
         ));
     }
-    finite(lambda)?;
+    if !lambda.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     if observed.iter().any(|x| *x < 0.) || expected.iter().any(|x| *x <= 0.) {
         return Err(Error::InvalidInput(
             "frequencies must be nonnegative with positive expectations",
         ));
     }
-    let o = finite(observed.iter().sum())?;
-    let e = finite(expected.iter().sum())?;
+    let o = match observed.iter().sum::<f64>() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
+    let e = match expected.iter().sum::<f64>() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     if (o - e).abs() > f64::EPSILON.sqrt() * o.min(e) {
         return Err(Error::InvalidInput("observed and expected totals differ"));
     }
@@ -894,8 +915,12 @@ pub fn f_oneway(groups: &[&[f64]]) -> Result<TestResult> {
         between += x.len() as f64 * (m - center).powi(2);
         within += variance(x, 0)? * x.len() as f64;
     }
-    finite(between)?;
-    finite(within)?;
+    if !between.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
+    if !within.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     let statistic = (between / (k - 1) as f64) / (within / (n - k) as f64);
     let pvalue = if statistic.is_nan() {
         f64::NAN

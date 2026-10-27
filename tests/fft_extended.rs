@@ -302,13 +302,13 @@ fn validation_and_special_values() {
     assert!(f::fftn(&[bad], &[1], &[0]).is_err());
     assert!(f::rfftn(&[f64::INFINITY], &[1], &[0]).is_err());
     assert!(f::irfft(&[c], None).is_err());
-    assert!(f::irfft(&[], None).is_err());
+    assert!(f::irfft::<f64>(&[], None).is_err());
     assert!(f::irfft(&[bad], Some(1)).is_err());
     assert!(f::hfft(&[c], Some(0)).is_err());
     assert!(f::ihfft(&[f64::NAN], None).is_err());
-    assert_eq!(f::irfft(&[], Some(3)).unwrap(), vec![0.0; 3]);
-    assert_eq!(f::hfft(&[], Some(3)).unwrap(), vec![0.0; 3]);
-    assert_eq!(f::ihfft(&[], Some(3)).unwrap().len(), 2);
+    assert_eq!(f::irfft::<f64>(&[], Some(3)).unwrap(), vec![0.0; 3]);
+    assert_eq!(f::hfft::<f64>(&[], Some(3)).unwrap(), vec![0.0; 3]);
+    assert_eq!(f::ihfft::<f64>(&[], Some(3)).unwrap().len(), 2);
     let a = f::irfft(
         &[
             Complex { re: 1.0, im: 100.0 },
@@ -319,7 +319,7 @@ fn validation_and_special_values() {
     .unwrap();
     assert_eq!(a, vec![1.5, -0.5]);
     assert!(f::fft2(&[vec![c], vec![]]).is_err());
-    assert!(f::rfft2(&[vec![]]).is_err());
+    assert!(f::rfft2::<f64>(&[vec![]]).is_err());
     assert!(f::irfft2(&[vec![c]], 0).is_err());
     assert!(f::irfft2(&[vec![c]], 4).is_err());
     for d in [0.0, f64::NAN, f64::INFINITY, f64::from_bits(1)] {
@@ -331,9 +331,9 @@ fn validation_and_special_values() {
     assert!(f::prev_fast_len(usize::MAX).is_err());
     assert!(f::fftshift(&[bad]).is_err());
     assert!(f::ifftshift(&[bad]).is_err());
-    assert!(f::fftshift(&[]).unwrap().is_empty());
+    assert!(f::fftshift::<f64>(&[]).unwrap().is_empty());
     assert!(f::dct(&[1.0], T::I).is_err());
-    assert!(f::idct(&[], T::II).is_err());
+    assert!(f::idct::<f64>(&[], T::II).is_err());
     assert!(f::dst(&[f64::INFINITY], T::III).is_err());
     assert!(f::idst(&[f64::NAN], T::IV).is_err());
     assert!(f::dctn(&[1.0], &[1], &[0], T::I).is_err());
