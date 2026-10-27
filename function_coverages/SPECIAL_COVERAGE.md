@@ -138,3 +138,28 @@ notices are packaged under `crates/sci-special/LICENSES`.
 The final two signal-filter calls to scaled complex K also use `complex-bessel`.
 The workspace no longer depends on `xsf`, `bindgen`, or `clang-sys`, and no C++
 compiler or libclang is required for these special-function kernels.
+
+## Executable line coverage
+
+A clean `cargo llvm-cov --workspace --all-features --no-report` run, followed
+by LCOV reporting with `--ignore-filename-regex '(^|/)tests/'`, measures the
+following on the CI follow-up. All tests passed; the filter excludes test files
+and does not exclude numerical backends.
+
+| Scope | Covered lines | Executable lines | Coverage |
+| --- | ---: | ---: | ---: |
+| Workspace | 40,611 | 43,516 | 93.32% |
+| `sci-special` | 16,724 | 18,370 | 91.04% |
+
+The 99% aim is not reached. Reaching it with this source layout requires at
+least 2,470 additional workspace lines, including 1,463 special-function lines,
+to be exercised. The largest special-function gaps are remaining continuation
+and exceptional branches in `specfun.rs` (468 lines), Faddeeva approximation
+and exceptional paths (193 lines), and general-order Bessel J (71 lines).
+Validation/error and rare precision-failure paths also remain. These are
+executable-line gaps, distinct from the numerical-function inventory above.
+
+Codecov's patch metric has a different denominator: on `f4c7df4` it reports
+87.41%, improved from 68.91%, against the unchanged 94.90% gate. The later
+transformation fixtures require a fresh CI upload; neither this gate nor
+CodSpeed's performance gate is claimed to be resolved.
