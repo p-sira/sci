@@ -136,7 +136,7 @@ audit is separate from Codecov executable-line coverage; no new 99% claim is mad
 ## Independent validation
 
 `tests/scipy/generate_special_native.py` pins **NumPy 2.5.4 / SciPy 1.18.1**.
-Separate JSON inputs generate **1434 checked-in f32/f64 reference rows** for
+Separate JSON inputs generate **1976 checked-in f32/f64 reference rows** for
 all 33 additions. Ordinary Rust tests exercise only public `sci` APIs and read
 the committed CSV, without Python or a backend reference at runtime.
 

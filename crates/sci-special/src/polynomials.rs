@@ -259,11 +259,6 @@ pub fn roots_jacobi(n: usize, alpha: f64, beta: f64) -> Result<(Vec<f64>, Vec<f6
 ///
 /// - [SciPy legendre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.legendre.html).
 pub fn legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
     coefficients(n, Family::Jacobi(0.0, 0.0), monic, 1.0, 0.0, 1.0)
 }
 
@@ -293,11 +288,6 @@ pub fn legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_legendre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_legendre.html).
 pub fn roots_legendre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
-    }
     quadrature(n, Family::Jacobi(0.0, 0.0), 1.0, 0.0, 1.0)
 }
 
@@ -463,11 +453,6 @@ pub fn roots_genlaguerre(n: usize, alpha: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy laguerre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.laguerre.html).
 pub fn laguerre(n: usize, monic: bool) -> Result<Vec<f64>> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
     coefficients(n, Family::Laguerre(0.0), monic, 1.0, 0.0, 1.0)
 }
 
@@ -497,11 +482,6 @@ pub fn laguerre(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_laguerre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_laguerre.html).
 pub fn roots_laguerre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
-    }
     quadrature(n, Family::Laguerre(0.0), 1.0, 0.0, 1.0)
 }
 
@@ -531,11 +511,6 @@ pub fn roots_laguerre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy hermite](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hermite.html).
 pub fn hermite(n: usize, monic: bool) -> Result<Vec<f64>> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
     coefficients(n, Family::Hermite(false), monic, 1.0, 0.0, 1.0)
 }
 
@@ -565,11 +540,6 @@ pub fn hermite(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_hermite](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_hermite.html).
 pub fn roots_hermite(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
-    }
     quadrature(n, Family::Hermite(false), 1.0, 0.0, 1.0)
 }
 
@@ -599,11 +569,6 @@ pub fn roots_hermite(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy hermitenorm](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hermitenorm.html).
 pub fn hermitenorm(n: usize, monic: bool) -> Result<Vec<f64>> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
     coefficients(n, Family::Hermite(true), monic, 1.0, 0.0, 1.0)
 }
 
@@ -633,11 +598,6 @@ pub fn hermitenorm(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_hermitenorm](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_hermitenorm.html).
 pub fn roots_hermitenorm(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
-    }
     quadrature(n, Family::Hermite(true), 1.0, 0.0, 1.0)
 }
 
@@ -667,11 +627,6 @@ pub fn roots_hermitenorm(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chebyt.html).
 pub fn chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
     coefficients(n, Family::Chebyt, monic, 1.0, 0.0, 1.0)
 }
 
@@ -701,11 +656,6 @@ pub fn chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_chebyt.html).
 pub fn roots_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
-    }
     quadrature(n, Family::Jacobi(-0.5, -0.5), 1.0, 0.0, 1.0)
 }
 
@@ -735,11 +685,6 @@ pub fn roots_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chebyu.html).
 pub fn chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
     coefficients(n, Family::Chebyu, monic, 1.0, 0.0, 1.0)
 }
 
@@ -769,11 +714,6 @@ pub fn chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_chebyu.html).
 pub fn roots_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
-    }
     quadrature(n, Family::Jacobi(0.5, 0.5), 1.0, 0.0, 1.0)
 }
 
@@ -803,11 +743,6 @@ pub fn roots_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy chebyc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chebyc.html).
 pub fn chebyc(n: usize, monic: bool) -> Result<Vec<f64>> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
     coefficients(n, Family::Chebyt, monic, 0.5, 0.0, 2.0)
 }
 
@@ -837,11 +772,6 @@ pub fn chebyc(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_chebyc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_chebyc.html).
 pub fn roots_chebyc(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
-    }
     quadrature(n, Family::Jacobi(-0.5, -0.5), 2.0, 0.0, 2.0)
 }
 
@@ -871,11 +801,6 @@ pub fn roots_chebyc(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy chebys](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chebys.html).
 pub fn chebys(n: usize, monic: bool) -> Result<Vec<f64>> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
     coefficients(n, Family::Chebyu, monic, 0.5, 0.0, 1.0)
 }
 
@@ -905,11 +830,6 @@ pub fn chebys(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_chebys](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_chebys.html).
 pub fn roots_chebys(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
-    }
     quadrature(n, Family::Jacobi(0.5, 0.5), 2.0, 0.0, 2.0)
 }
 
@@ -939,11 +859,6 @@ pub fn roots_chebys(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy sh_chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sh_chebyt.html).
 pub fn sh_chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
     coefficients(n, Family::Chebyt, monic, 2.0, -1.0, 1.0)
 }
 
@@ -973,11 +888,6 @@ pub fn sh_chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_sh_chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_sh_chebyt.html).
 pub fn roots_sh_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
-    }
     quadrature(n, Family::Jacobi(-0.5, -0.5), 0.5, 0.5, 1.0)
 }
 
@@ -1007,11 +917,6 @@ pub fn roots_sh_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy sh_chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sh_chebyu.html).
 pub fn sh_chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
     coefficients(n, Family::Chebyu, monic, 2.0, -1.0, 1.0)
 }
 
@@ -1041,11 +946,6 @@ pub fn sh_chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_sh_chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_sh_chebyu.html).
 pub fn roots_sh_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
-    }
     quadrature(n, Family::Jacobi(0.5, 0.5), 0.5, 0.5, 0.25)
 }
 
@@ -1075,11 +975,6 @@ pub fn roots_sh_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy sh_legendre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sh_legendre.html).
 pub fn sh_legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
     coefficients(n, Family::Jacobi(0.0, 0.0), monic, 2.0, -1.0, 1.0)
 }
 
@@ -1109,11 +1004,6 @@ pub fn sh_legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_sh_legendre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_sh_legendre.html).
 pub fn roots_sh_legendre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(true) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
-    }
     quadrature(n, Family::Jacobi(0.0, 0.0), 0.5, 0.5, 0.5)
 }
 

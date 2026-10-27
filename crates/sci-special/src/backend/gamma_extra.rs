@@ -86,13 +86,32 @@ real_kernel! {
 // Refine Cephes' inverse in the smaller probability tail. Its interval-halving
 // stopping criterion otherwise loses digits for strongly unequal beta shapes.
 pub(crate) fn inverse_beta(a: f64, b: f64, p: f64) -> f64 {
+    // Select the smaller tail before refinement. Keep a direct-coordinate
+    // estimate when subtracting the reflected quantile would lose digits.
+    let reflected = if p > 0.5 {
+        let reflected = 1.0 - inverse_beta(b, a, 1.0 - p);
+        if reflected >= 0.125 {
+            return reflected;
+        }
+        Some(reflected)
+    } else {
+        None
+    };
     let mut x = cephes64::incbi(a, b, p);
+    if let Some(reflected) = reflected {
+        // Here the direct coordinate is small. Cephes can instead return a
+        // spurious near-one estimate when its CDF saturates, so reject that
+        // estimate in favor of the reflected seed before Newton refinement.
+        if !(0.0..0.125).contains(&x) || x == 0.0 {
+            x = reflected;
+        }
+    }
     if p == 0.0 || p == 1.0 || x == 0.0 || x == 1.0 {
         return x;
     }
     let log_beta = cephes64::lbeta(a, b);
     for _ in 0..4 {
-        let residual = if p > 0.5 {
+        let residual = if p > 0.5 && x >= 0.125 {
             (1.0 - p) - cephes64::incbet(b, a, 1.0 - x)
         } else {
             cephes64::incbet(a, b, x) - p

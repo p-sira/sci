@@ -149,7 +149,10 @@ pub fn incbi(aa: f64, bb: f64, yy0: f64) -> f64 {
                         di = (y0 - y) / (yh - yl);
                     }
                     dir += 1;
-                    if x0 > 0.75 {
+                    // Reflect only while the target tail survives subtraction.
+                    // For tiny yy0, 1-yy0 rounds to one and destroys the
+                    // quantile (e.g. a=1000, b=.1, yy0=1e-20).
+                    if x0 > 0.75 && (rflg != 0 || 1.0 - yy0 < 1.0) {
                         if rflg == 1 {
                             rflg = 0;
                             a = aa;

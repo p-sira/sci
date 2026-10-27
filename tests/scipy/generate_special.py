@@ -12,10 +12,18 @@ branch point. No expected values come from Sci or its implementation backend.
 Real Lambert W comparisons use 8e-15 relative and zero absolute tolerance so
 tiny arguments are checked proportionally; inverse identities separately
 check the defining equation and real branch domains.
+Explicit case tolerances retain relative checks in probability tails. The
+a=0.001/0.01 beta quantiles allow 3e-12/a relative error: the x^a limiting CDF
+amplifies normalization error by 1/a (the observed forward-CDF discrepancy
+at a=.001,b=1000,p=.6 is 1.3e-13). U cases at x=10 allow 2e-9 because the
+legacy integral dispatch supplies about nine digits, even after cancellation
+is removed. Other newly added inverse/U cases use 3e-11 with a 1e-300 floor.
 """
 
 import csv
 import json
+import math
+from decimal import Decimal, localcontext
 from pathlib import Path
 
 import numpy as np
@@ -67,7 +75,56 @@ def lambert_near_branch(x, lower):
 
 
 def reference(name, args):
-    """SciPy evaluations or independent quadrature for ellip-only functions."""
+    """SciPy values, using independent integrals/inversions for oracle gaps."""
+    if name == "jv":
+        n, x = args
+        if n == int(n) and 170 <= n <= 4096 and 0 < x*x <= 40*n:
+            # DLMF 10.2.2 with an exact integer factorial. AMOS can flush
+            # representable subnormal J_n values; Decimal keeps the defining
+            # series and its prefactor independent of binary64 underflow.
+            with localcontext() as context:
+                context.prec = 100
+                n, x = int(n), Decimal.from_float(float(x))
+                term = total = Decimal(1)
+                for k in range(1, 1000):
+                    term *= -x*x/(4*k*(n+k))
+                    total += term
+                    if abs(term) <= abs(total)*Decimal('1e-95'):
+                        return float(total*(x/2)**n/Decimal(math.factorial(n)))
+                raise RuntimeError(("Bessel reference series did not converge", args))
+    if name == "betaincinv":
+        value = special.betaincinv(*args)
+        if np.isnan(value):
+            # SciPy's inverse can fail in the extreme lower tail, e.g.
+            # I_x(2,5)=1e-300. Invert its independent forward CDF in log x;
+            # near x=0 the defining integral gives I_x~x^a/(a*B(a,b)).
+            a, b, probability = args
+            log_target = np.log(probability)
+            def residual(t):
+                x = np.exp(t)
+                cdf = special.betainc(a, b, x)
+                log_cdf = np.log(cdf) if cdf > 0 else a*t-np.log(a)-special.betaln(a,b)
+                return log_cdf-log_target
+            root = optimize.brentq(residual, -745, 0, xtol=5e-13, rtol=1e-15)
+            value = np.exp(root)
+            if not np.isclose(special.betainc(a,b,value), probability, rtol=2e-10, atol=0):
+                raise RuntimeError(("beta reference inversion failed", args, value))
+            return value
+        return value
+    if name in {"ive", "kve"} and args[1] >= 1e9:
+        # SciPy's AMOS range check returns NaN here despite finite results.
+        # Defining integrals, DLMF 10.32.4 and 10.32.9, with t=u/sqrt(x).
+        # For these modest orders the omitted u>40 tail is below 1e-300;
+        # the second I integral is bounded by exp(-2*x) times a modest factor.
+        v, x = args
+        root = np.sqrt(x)
+        if name == "ive":
+            integrand = lambda u: np.exp(-2*x*np.sin(u/(2*root))**2)*np.cos(v*u/root)
+            divisor = np.pi*root
+        else:
+            integrand = lambda u: np.exp(-2*x*np.sinh(u/(2*root))**2)*np.cosh(v*u/root)
+            divisor = root
+        return integrate.quad(integrand, 0, 40, epsabs=2e-13, epsrel=2e-13)[0]/divisor
     if name in {"lambertw", "lambertwm1"} and -1/np.e < args[0] < -1/np.e + 1e-6:
         return lambert_near_branch(args[0], name == "lambertwm1")
     handled, value = extended_reference(name, args)
@@ -137,8 +194,25 @@ def reference(name, args):
             raise RuntimeError(solution.message)
         return tuple(solution.y[:, -1])
     if name == "hyperu":
-        value = special.hyperu(*args)
         a, b, x = args
+        if b == 0 and a != 0 and x > 0:
+            # SciPy can also return finite but incorrect answers in this gap,
+            # e.g. U(-.99,0,.01)~12881 instead of ~.0205.
+            return x*reference(name, [a+1, 2, x])
+        value = special.hyperu(*args)
+        if b == 2 and 1 < a < 2 and 0 < x <= 10:
+            # The integer-b series near a=1 can be catastrophically wrong
+            # even when SciPy reports a finite answer. Use DLMF 13.4.4.
+            return integrate.quad(
+                lambda s: np.exp(-s+(a-1)*np.log(s)
+                                 +(b-a-1)*np.log1p(s/x)
+                                 -special.gammaln(a)-a*np.log(x)),
+                0, np.inf, epsabs=2e-13, epsrel=2e-13,
+            )[0]
+        if not np.isfinite(value) and a <= 0 and 1+a-b > 0 and x > 0:
+            # Kummer's U transformation moves the defining Laplace integral
+            # into its convergent positive-a domain (DLMF 13.2.40, 13.4.4).
+            return x**(1-b)*reference(name, [1+a-b, 2-b, x])
         if not np.isfinite(value) and a > 0 and x > 0:
             # SciPy's legacy dispatch can fail for valid inputs (e.g. 12,10,.01).
             # DLMF 13.4.4 with s=x*t supplies an independent convergent integral.
@@ -166,8 +240,11 @@ def reference(name, args):
         # SciPy's legacy series stops at 1e-5 and loses ~4e-10 already at x=0.5.
         # Independent quadrature verifies the improved 1e-15 series termination.
         x, = args
+        # Large negative Airy arguments oscillate rapidly. Permit enough
+        # subintervals to resolve their phase instead of accepting QUADPACK's
+        # default subdivision-limit result.
         return tuple(integrate.quad(lambda t: special.airy(sign*t)[index], 0, x,
-                                    epsabs=2e-13, epsrel=2e-13)[0]
+                                    limit=1000, epsabs=2e-13, epsrel=2e-13)[0]
                      for sign in (1, -1) for index in (0, 2))
     if name == "keip_zeros":
         return stable_keip_zeros(*args)
@@ -259,11 +336,11 @@ def generate():
                     for arg in case["args"]
                 ),
                 ";".join(map(str, result)),
-                1e-4 if case["name"] in {"ncfdtridfd", "ncfdtridfn", "ncfdtrinc"}
+                case.get("rtol", 1e-4 if case["name"] in {"ncfdtridfd", "ncfdtridfn", "ncfdtrinc"}
                 else 5e-6 if case["name"].startswith("nctdtr")
-                else 8e-15 if case["name"] in {"lambertw", "lambertwm1"} else 2e-11,
-                1e-7 if case["name"].startswith("nctdtr")
-                else 0.0 if case["name"] in {"lambertw", "lambertwm1"} else 2e-11,
+                else 8e-15 if case["name"] in {"lambertw", "lambertwm1"} else 2e-11),
+                case.get("atol", 1e-7 if case["name"].startswith("nctdtr")
+                else 0.0 if case["name"] in {"lambertw", "lambertwm1"} else 2e-11),
             ])
 
 

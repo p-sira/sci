@@ -301,6 +301,13 @@ pub fn betainc<T: sci_core::Float>(a: T, b: T, x: T) -> T {
 ///
 /// ## Numerical behavior
 ///
+/// Quantile refinement selects the smaller probability tail while retaining
+/// small output coordinates. Very small shape parameters amplify errors in
+/// the forward beta kernel: when `I_x(a,b)` behaves like a constant times
+/// `x^a`, relative CDF errors are amplified by roughly `1/a` in the quantile.
+/// For example, tested cases with `a=0.001, b=1000` have relative quantile
+/// errors around `3e-10`; uniform machine precision is not guaranteed.
+///
 /// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
 /// binary64 and convert the result to `T`; this does not provide extra precision.
 /// Domain or numerical backend errors return NaN. Iterations are bounded by

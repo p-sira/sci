@@ -495,11 +495,23 @@ pub(crate) fn hypu(a: f64, b: f64, x: f64) -> f64 {
     if a == 0.0 {
         return 1.0;
     }
-    // DLMF 13.3.7 avoids the ill-conditioned b=1 series near a=0.
+    // At b=0 the legacy dispatcher can leave its initialized zero for
+    // negative a, or accept a cancellation-damaged approximation near a=0.
+    // Kummer's U(a,0,x)=x U(a+1,2,x) supplies a regular evaluation. Retain
+    // the original path if intermediate rescaling exceeds binary64 range.
+    if b == 0.0 {
+        let transformed = x * hypu(a + 1.0, 2.0, x);
+        if transformed.is_finite() {
+            return transformed;
+        }
+    }
+    // DLMF 13.3.7 avoids the ill-conditioned integer-b series near a=0
+    // for b=1 and near a=1 for b=2.
     // Shift a into the stable range before calling the shared kernel.
-    if b == 1.0 && x < 1.0 && a > -0.25 && a < 0.3 {
-        return (x + 1.0 + 2.0 * a) * hypu(a + 1.0, 1.0, x)
-            - (a + 1.0).powi(2) * hypu(a + 2.0, 1.0, x);
+    if (b == 1.0 && x < 1.0 && a > -0.25 && a < 0.3) || (b == 2.0 && x < 1.0 && a > 1.0 && a < 2.0)
+    {
+        return (x + 2.0 + 2.0 * a - b) * hypu(a + 1.0, b, x)
+            - (a + 1.0) * (a + 2.0 - b) * hypu(a + 2.0, b, x);
     }
     let mut digits = [0];
     let mut error = [0];
@@ -823,7 +835,22 @@ pub(crate) fn it1i0k0(x: f64) -> (f64, f64) {
     bessel_integrals(x, s::itika, true)
 }
 pub(crate) fn it2i0k0(x: f64) -> (f64, f64) {
-    bessel_integrals(x, s::ittika, false)
+    let (first, mut second) = bessel_integrals(x, s::ittika, false);
+    if x >= 4.0 && x.is_finite() {
+        // Shift the defining K tail: exp(-x) ∫ exp(-u) K0e(x+u)/(x+u) du.
+        // The old eight-term asymptotic loses ~2e-6 relatively at x=19.9;
+        // the small-x series also cancels before its x=12 transition.
+        // A single cached 32-point Gaussian rule resolves the smooth shifted
+        // integrand on [0,48]; the omitted tail is below 1e-20 relatively.
+        second = 0.0;
+        for &(z, weight) in &*GAUSS_32 {
+            for u in [24.0 * (1.0 - z), 24.0 * (1.0 + z)] {
+                second += 24.0 * weight * (-u).exp() * c::k0e(x + u) / (x + u);
+            }
+        }
+        second *= (-x).exp();
+    }
+    (first, second)
 }
 fn bessel_integrals(x: f64, kernel: fn(f64, &mut [f64], &mut [f64]), odd: bool) -> (f64, f64) {
     if !x.is_finite() {

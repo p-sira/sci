@@ -1334,6 +1334,13 @@ pub fn iti0k0(x: f64) -> (f64, f64) {
 /// ## References
 ///
 /// - [SciPy it2i0k0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.it2i0k0.html).
+///
+/// ## Numerical behavior
+///
+/// For `x >= 4`, the K₀ tail uses a shifted, exponentially scaled integrand
+/// with a cached 32-point Gaussian rule over `[0,48]`. The omitted tail is
+/// below `1e-20` relatively; floating-point quadrature error also remains.
+/// Smaller arguments use a series. True underflow returns zero.
 pub fn it2i0k0(x: f64) -> (f64, f64) {
     crate::backend::legacy::it2i0k0(x)
 }
@@ -1639,6 +1646,12 @@ pub fn hyp2f1(a: f64, b: f64, c: f64, x: f64) -> f64 {
 ///
 /// Finite real inputs with `abs(a), abs(b) <= 100000` and `x >= 0`. Series, integral, and
 /// recurrence algorithms have finite work limits; cancellation limits accuracy.
+/// For `b=0`, use `U(a,0,x)=x U(a+1,2,x)` when intermediate values are finite;
+/// SciPy's legacy dispatcher can return zero, NaN, or incorrect finite values
+/// in this region, so references use the transformed, regular evaluation.
+/// A bounded recurrence also avoids cancellation near `a=1, b=2, 0<x<1`.
+/// Some remaining legacy integral paths supply about nine digits; parameter
+/// bounds alone do not imply machine precision throughout the domain.
 pub fn hyperu(a: f64, b: f64, x: f64) -> f64 {
     crate::backend::legacy::hypu(a, b, x)
 }

@@ -242,3 +242,68 @@ fn hyp1f1_continuation_identities_and_work_limits() {
     assert!(s::hyp1f1(65.1, -3.0, -20.0).is_infinite()); // Denominator pole unchanged.
     assert_eq!(s::hyp1f1(65.1, 65.1, -20.0), (-20.0_f64).exp());
 }
+
+#[test]
+fn beta_quantiles_preserve_extreme_tails_and_small_coordinates() {
+    let mut previous = 0.0;
+    for p in [1e-300_f64, 1e-20, 1e-12, 0.01, 0.4] {
+        let x = s::betaincinv(1000.0, 0.1, p);
+        assert!(x > previous && x < 1.0);
+        assert!((s::betainc(1000.0, 0.1, x) / p - 1.0).abs() < 3e-11);
+        previous = x;
+    }
+    for p in [0.9_f64, 1.0 - 1e-12] {
+        let x = s::betaincinv(0.1, 1000.0, p);
+        assert!((0.0..0.1).contains(&x));
+        assert!((s::betaincc(0.1, 1000.0, x) / (1.0 - p) - 1.0).abs() < 3e-11);
+    }
+    // For b=1, I_x(a,1)=x^a. Reflection must not erase a tiny x even
+    // when p is near one half rather than in the extreme probability tail.
+    for a in [0.001_f64, 0.01] {
+        for p in [0.6_f64, 0.9, 0.99] {
+            let expected = (p.ln() / a).exp();
+            let x = s::betaincinv(a, 1.0, p);
+            assert!(x > 0.0 && (x / expected - 1.0).abs() < 3e-11);
+        }
+    }
+    let x = s::betaincinv(1000.0_f32, 0.1, 1e-20);
+    assert!((x as f64 / s::betaincinv(1000.0, 0.1, 1e-20) - 1.0).abs() < 1e-7);
+}
+
+#[test]
+fn hyperu_zero_second_parameter_continues_negative_noninteger_orders() {
+    for a in [-5.5_f64, -2.5, -1.5, -0.99, -0.25] {
+        for x in [0.01_f64, 0.1, 2.0, 30.0] {
+            let value = s::hyperu(a, 0.0, x);
+            assert!(value.is_finite() && value != 0.0);
+            let contiguous = (x + 2.0 * a) * value - a * (1.0 + a) * s::hyperu(a + 1.0, 0.0, x);
+            let previous = s::hyperu(a - 1.0, 0.0, x);
+            assert!(
+                (contiguous - previous).abs() < 3e-10 * previous.abs(),
+                "a={a}, x={x}: contiguous={contiguous:e}, previous={previous:e}"
+            );
+        }
+    }
+    assert!(s::itairy(150.0)[1].is_infinite());
+}
+
+#[test]
+fn bessel_recurrence_and_integral_tails_retain_small_results() {
+    let (v, x) = (30.25_f64, 1e-4_f64);
+    let value = s::jv(v, x);
+    let recurrence = x / (2.0 * v) * (s::jv(v - 1.0, x) + s::jv(v + 1.0, x));
+    assert!(value > 0.0 && (value / recurrence - 1.0).abs() < 3e-11);
+    let mut previous = f64::INFINITY;
+    for x in [4.0_f64, 12.0, 19.9, 30.0, 100.0] {
+        let tail = s::it2i0k0(x).1;
+        assert!(tail > 0.0 && tail < previous);
+        previous = tail;
+        let h = 1e-4;
+        let derivative = (s::it2i0k0(x + h).1 - s::it2i0k0(x - h).1) / (2.0 * h);
+        // A centered difference has O(h²) truncation error. Avoid the
+        // algorithm transition at x=4 when checking the derivative.
+        if x > 4.0 {
+            assert!((derivative / (-s::k0(x) / x) - 1.0).abs() < 3e-8);
+        }
+    }
+}

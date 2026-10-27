@@ -94,11 +94,13 @@ pub fn jv(n: f64, x: f64) -> f64 {
         if nint != 0 {
             k = 0.0;
             q = recur(&mut n, x, &mut k, 1);
-            if k == 0.0 {
+            // A recurrence all the way to J0/J1 can overflow for a tiny
+            // but representable J_n. Use the shorter, scaled-seed path below.
+            if k == 0.0 && q.is_finite() && q != 0.0 {
                 // case 10
                 y = j0(x) / q;
                 return sign as f64 * y;
-            } else if k == 1.0 {
+            } else if k == 1.0 && q.is_finite() && q != 0.0 {
                 // case 11
                 y = j1(x) / q;
                 return sign as f64 * y;
@@ -122,7 +124,7 @@ pub fn jv(n: f64, x: f64) -> f64 {
             }
             y = n + (y - n).floor();
             q = recur(&mut y, x, &mut k, 0);
-            y = jvs(y, x) * q;
+            y = jvs_scaled(y, x, q);
             return sign as f64 * y;
         }
 
@@ -363,6 +365,12 @@ fn recur(n: &mut f64, x: f64, newn: &mut f64, cancel: isize) -> f64 {
 */
 
 fn jvs(n: f64, x: f64) -> f64 {
+    jvs_scaled(n, x, 1.0)
+}
+
+// Include the backward-recurrence multiplier before exponentiation. The
+// higher-order seed can underflow even when the rescaled J_n is representable.
+fn jvs_scaled(n: f64, x: f64, scale: f64) -> f64 {
     let mut sgngam: isize = 0; // Value doesn't matter, will be overwritten
 
     let z = -x * x / 4.0;
@@ -382,9 +390,9 @@ fn jvs(n: f64, x: f64) -> f64 {
 
     let (_, mut ex) = frexp(0.5 * x);
     ex = (ex as f64 * n) as i32;
-    if (ex > -1023) && (ex < 1023) && (n > 0.0) && (n < (MAXGAM - 1.0)) {
+    if scale == 1.0 && (ex > -1023) && (ex < 1023) && (n > 0.0) && (n < (MAXGAM - 1.0)) {
         let t = (0.5 * x).powf(n) / gamma(n + 1.0);
-        y * t
+        y * t * scale
     } else {
         let mut t = n * (0.5 * x).ln() - lgam_sgn(n + 1.0, &mut sgngam);
         if y < 0.0 {
@@ -392,11 +400,13 @@ fn jvs(n: f64, x: f64) -> f64 {
             y = -y;
         }
         t += y.ln();
-        if t < -MAXLOG {
-            return 0.0;
-        } else if t > MAXLOG {
+        t += scale.abs().ln();
+        if scale < 0.0 {
+            sgngam = -sgngam;
+        }
+        if t > MAXLOG {
             //sf_error("Jv", SF_ERROR_OVERFLOW, NULL);
-            return f64::INFINITY;
+            return sgngam as f64 * f64::INFINITY;
         }
         sgngam as f64 * t.exp()
     }

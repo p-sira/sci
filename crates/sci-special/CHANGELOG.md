@@ -1,5 +1,13 @@
 # Changelog
 
+## Numerical coverage follow-up
+
+- Extend independent public-API references across Legendre continuation, large-order Bessel functions, error-function approximation intervals, complex Fresnel axes, integral asymptotics, and beta/gamma inverse tails.
+- Preserve tiny beta probabilities during inverse reflection and retain small quantile coordinates. Repair Tricomi U's zero-second-parameter dispatch and near-integer cancellation with shared transformations and recurrences.
+- Combine Bessel J recurrence scales before exponentiation, retain subnormal results, and fall back to the shorter recurrence when normalization to J₀/J₁ overflows.
+- Evaluate the K₀ integral tail with a shifted, scaled Gaussian rule instead of cancellation-prone series and a short asymptotic expansion.
+- Remove constant-false validation blocks from parameter-free polynomial constructors. Document measured coverage and remaining numerical accuracy limits.
+
 ## Ellip notation and documentation follow-up
 
 - Prefer `ellipf(phi, m)` for `F(phi, m)` and retain `ellipkinc` as an alias.

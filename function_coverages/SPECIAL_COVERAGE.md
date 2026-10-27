@@ -150,32 +150,109 @@ The final two signal-filter calls to scaled complex K also use `complex-bessel`.
 The workspace no longer depends on `xsf`, `bindgen`, or `clang-sys`, and no C++
 compiler or libclang is required for these special-function kernels.
 
+## Coverage-driven numerical regressions
+
+The coverage follow-up adds **557 scalar reference rows** and **542 f32/f64
+native reference rows**, plus public recurrence, tail round-trip and derivative
+tests. The scalar fixture now has 5165 rows; the native fixture has 1976.
+These exercise noninteger Legendre continuation, large-order Bessel transitions,
+all reachable error-function Chebyshev intervals, complex Fresnel axes and nearby
+points, integral asymptotics, and extreme beta/gamma inverse probabilities.
+Inputs remain separate from generated results, with NumPy 2.5.4 / SciPy 1.18.1
+pinned. Tests do not call Python or private backends at runtime.
+
+The stricter comparisons exposed and corrected these failures:
+
+- Beta inverse reflection discarded probabilities when `1-p` rounded to one.
+  `betaincinv(1000,0.1,1e-20)` formerly returned about `1.11e-16` instead of
+  `0.960342172976`. Upper-tail refinement also retains small output coordinates;
+  analytic `I_x(a,1)=x^a` tests prevent reflection from erasing tiny quantiles.
+- Tricomi U's `b=0` dispatcher could return an initialized zero or a badly
+  cancelled finite answer. It now reuses `U(a,0,x)=x U(a+1,2,x)` when the
+  intermediate values are finite, with a bounded contiguous recurrence near
+  `a=1,b=2,0<x<1`. Defining Laplace quadrature replaces incorrect SciPy
+  references in that near-integer region.
+- Bessel J's high-order seed could underflow before a recurrence multiplier
+  restored it. Multipliers now enter before exponentiation, and a shorter
+  recurrence replaces overflowing normalization to J₀/J₁. For example,
+  `J_499.5(120)` is about `2.00954e-248`, and `J_499(88)` is a representable
+  subnormal near `1.01693e-313`. A 100-digit Decimal defining series with exact
+  integer factorials supplies independent references where AMOS flushes results.
+- The K₀ tail from `it2i0k0(19.9)` had about `2e-6` relative error, previously
+  hidden by an absolute tolerance. For `x>=4`, a cached 32-point Gaussian rule
+  integrates the shifted scaled kernel over `[0,48]`; the omitted tail is below
+  `1e-20` relatively. Boundary and derivative tests check the transition and
+  defining integrand.
+
+New cases use relative comparisons with a `1e-300` absolute floor, reduced to
+`1e-323` for explicit subnormal Bessel regressions. Small beta shapes amplify
+CDF normalization errors by roughly `1/a`: at `a=.001,b=1000,p=.6`, a forward
+CDF discrepancy around `1.3e-13` gives about `2.2e-10` relative quantile error.
+Those cases allow `3e-12/a`, rather than hiding nonzero outputs with a large
+absolute tolerance. U cases at `x=10` retain a `2e-9` relative allowance because
+the legacy integral dispatch supplies about nine digits. These are remaining
+accuracy limits, not uniform machine-precision claims.
+
+The follow-up also removes 22 constant-false validation blocks (`if !(true)`)
+from polynomial constructors without parameter-domain checks. Degree and
+numerical validation remain in the shared helpers; no coverage filters were
+added for numerical kernels.
+
+References: [Bessel defining series](https://dlmf.nist.gov/10.2.E2),
+[U transformation](https://dlmf.nist.gov/13.2.E40),
+[U recurrence](https://dlmf.nist.gov/13.3.E7), and
+[U defining integral](https://dlmf.nist.gov/13.4.E4).
+
 ## Executable line coverage
 
-A clean `cargo llvm-cov --workspace --all-features --no-report` run, followed
-by LCOV reporting with `--ignore-filename-regex '(^|/)tests/'`, measures the
-following at commit `39ffe30`, before the documentation/dependency follow-up.
-All tests passed; the filter excludes test files
-and does not exclude numerical backends.
+The current measurement starts with `cargo llvm-cov clean --workspace`, then
+runs:
 
-| Scope | Covered lines | Executable lines | Coverage |
+```sh
+cargo llvm-cov --workspace --all-features --locked --lcov \
+  --output-path /tmp/sci-coverage.info --ignore-filename-regex '(^|/)tests/'
+```
+
+All instrumented tests pass. The file filter matches CI and excludes test files;
+numerical backends remain included. These are local LLVM executable-line totals,
+not a claim about a completed remote Codecov upload or its patch metric.
+
+| Run and scope | Covered lines | Executable lines | Coverage |
 | --- | ---: | ---: | ---: |
-| Workspace | 40,611 | 43,516 | 93.32% |
-| `sci-special` | 16,724 | 18,370 | 91.04% |
+| Initial local run at `d21d103`: workspace | 40,092 | 42,757 | 93.77% |
+| Initial local run at `d21d103`: `sci-special` | 17,222 | 18,807 | 91.57% |
+| Coverage follow-up including CodSpeed `a620025`: workspace | 40,575 | 43,063 | 94.22% |
+| Coverage follow-up including CodSpeed `a620025`: `sci-special` | 17,705 | 19,113 | 92.63% |
 
-The 99% aim is not reached. Reaching it with this source layout requires at
-least 2,470 additional workspace lines to be exercised, or 1,463 lines for
-`sci-special` itself to reach 99%. These counts precede the documentation
-follow-up. The largest special-function gaps are remaining continuation
-and exceptional branches in `specfun.rs` (468 lines), Faddeeva approximation
-and exceptional paths (193 lines), and general-order Bessel J (71 lines).
-Validation/error and rare precision-failure paths also remain. These are
-executable-line gaps, distinct from the numerical-function inventory above.
+The denominator changed because this follow-up incorporates CodSpeed's new
+performance implementations, numerical corrections, and removal of unreachable
+constant-false checks. The change in percentages is not attributable solely to
+added tests.
 
-Codecov's patch metric has a different denominator: on `f4c7df4` it reports
-87.41%, improved from 68.91%, against the unchanged 94.90% gate. The later
-transformation fixtures require a fresh CI upload; neither this gate nor
-CodSpeed's performance gate is claimed to be resolved.
+The **99% aim remains unmet**. There are **2,488 uncovered workspace lines** and
+**1,408 uncovered `sci-special` lines**. With the current executable-line counts,
+99% requires exercising at least **2,058 additional workspace lines**, or
+**1,217 additional special-function lines** if targeting that crate alone.
+
+| Largest remaining special-function source gaps | Uncovered lines |
+| --- | ---: |
+| `backend/specfun.rs`: continuation, recurrence and exceptional paths | 426 |
+| Faddeeva complex error functions and auxiliary approximation paths | 155 |
+| `backend/legacy.rs`: dispatch, validation and integral paths | 67 |
+| Cephes general-order Bessel J | 64 |
+| Struve algorithms | 48 |
+| Orthogonal polynomial kernels | 38 |
+| Beta kernels | 33 |
+| Spherical Bessel kernels | 33 |
+| Inverse incomplete beta | 31 |
+
+Other gaps include exceptional evaluation/convergence paths, argument/domain
+boundaries, and recently added performance branches. Some internal precision
+options and defensive branches may not be reachable through current public
+APIs; they need a reachability audit before being classified as removable.
+These executable-line gaps are distinct from missing numerical API/domain
+coverage. Neither coverage thresholds nor benchmark baselines were changed;
+remote Codecov and CodSpeed gate results require fresh CI analysis.
 
 ## Elliptic conventions and dependency follow-up
 
