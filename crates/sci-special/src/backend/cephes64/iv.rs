@@ -213,8 +213,10 @@ fn cf2(u: f64, x: f64) -> Option<(f64, f64)> {
     let mut c = -a;
     let mut q_sum = c;
     let mut sum = 1.0 + q_sum * delta;
-    for k in 2..MAX_ITER {
-        a -= 2.0 * (k - 1) as f64;
+    let mut k = 1.0;
+    for _ in 2..MAX_ITER {
+        a -= 2.0 * k;
+        k += 1.0;
         b += 2.0;
         d = (b + a * d).recip();
         delta *= b * d - 1.0;
@@ -222,7 +224,7 @@ fn cf2(u: f64, x: f64) -> Option<(f64, f64)> {
         let q = (previous - (b - 2.0) * current) / a;
         previous = current;
         current = q;
-        c *= -a / k as f64;
+        c *= -a / k;
         q_sum += c * q;
         sum += q_sum * delta;
         if (q_sum * delta).abs() < sum.abs() * MACHEP {
@@ -239,8 +241,11 @@ fn cf1(v: f64, x: f64) -> Option<f64> {
     let mut c = tiny;
     let mut f = tiny;
     let mut d = 0.0;
-    for k in 1..MAX_ITER {
-        let b = 2.0 * (v + k as f64) / x;
+    let two_over_x = 2.0 / x;
+    let mut vk = v;
+    for _ in 1..MAX_ITER {
+        vk += 1.0;
+        let b = vk * two_over_x;
         c = b + c.recip();
         d += b;
         if c == 0.0 {
@@ -275,7 +280,9 @@ pub(crate) fn iv(v: f64, x: f64, scaled: bool) -> f64 {
     }
     let a = v.abs();
     let lim = (4.0 * a * a + 10.0) / x / 8.0;
-    if x > 100.0 && lim.powi(4) / 24.0 < 10.0 * MACHEP {
+    // CF1 needs O(x) terms and exhausts MAX_ITER for large x. Beyond x = 1000
+    // the large-x expansion has peak terms of order one for |v| <= 50.
+    if x > 1000.0 || (x > 100.0 && lim.powi(4) / 24.0 < 10.0 * MACHEP) {
         return unscale(asymptotic(a, x), x, scaled);
     }
     let n = a.round() as usize;

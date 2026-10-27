@@ -110,7 +110,13 @@ fn modified_real(v: f64, x: f64, scaled: bool, second: bool) -> f64 {
     if !second && x < 0.0 && v != v.floor() {
         return f64::NAN;
     }
-    let sign = if x < 0.0 && v % 2.0 != 0.0 { -1.0 } else { 1.0 };
+    // `frem` is speculatable in LLVM, so keep the libm `fmod` call behind an
+    // explicit branch rather than a short-circuiting condition.
+    let sign = if x < 0.0 {
+        if v % 2.0 != 0.0 { -1.0 } else { 1.0 }
+    } else {
+        1.0
+    };
     let x = x.abs();
     if x == 0.0 {
         if second || (v < 0.0 && v != v.floor()) {

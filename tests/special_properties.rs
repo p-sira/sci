@@ -335,3 +335,30 @@ fn real_modified_bessel_i_special_values() {
     assert_eq!(s::ive(0.3, f64::INFINITY), 0.0);
     assert!(s::ive(0.3, f64::NEG_INFINITY).is_nan());
 }
+
+#[test]
+fn real_modified_bessel_i_large_arguments_beyond_cf1() {
+    // References from mpmath 1.3 at 50 digits: besseli(v, x) * exp(-x).
+    // CF1 needs O(x) terms here, so these exercise the large-x expansion.
+    for (v, x, expected) in [
+        (40.0_f64, 5e4_f64, 0.0017558093952007944237_f64),
+        (-20.7, 1e5, 0.0012588678717760909479),
+        (12.5, 3e4, 0.002297313443476216919),
+        (3.25, 2e3, 0.0088976459940930979845),
+        (0.0, 1500.0, 0.010301504096519597732),
+    ] {
+        let value = s::ive(v, x);
+        assert!(
+            (value - expected).abs() <= 1e-13 * expected,
+            "ive({v}, {x}) = {value}, expected {expected}"
+        );
+    }
+    for v in [0.3_f64, 7.0, 25.5, 49.0] {
+        for x in [1e3_f64, 1.5e3, 4e4, 1e5, 1e7] {
+            let i = s::ive(v, x);
+            let lower = s::ive(v - 1.0, x);
+            let upper = s::ive(v + 1.0, x);
+            assert!((lower - upper - 2.0 * v / x * i).abs() <= 1e-11 * lower.abs());
+        }
+    }
+}
