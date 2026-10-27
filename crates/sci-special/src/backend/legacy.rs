@@ -680,28 +680,40 @@ pub(crate) fn airy_integrals(x: f64) -> [f64; 4] {
             hi: 1.7320508075688772,
             lo: 1.0035084221806903e-16,
         };
-        let integral = |x: f64| {
-            let x = Dd::from(x);
-            let cube = x * x * x;
-            let (mut f, mut g) = (x, x * x / Dd::from(2.0));
-            let (mut tf, mut tg) = (f, g);
-            for k in 1..128 {
-                let k = k as f64;
-                // Integer denominators below 2^53 are exact in binary64.
-                tf = tf * cube * Dd::from(3.0 * k - 2.0)
-                    / Dd::from((3.0 * k + 1.0) * (3.0 * k) * (3.0 * k - 1.0));
-                tg = tg * cube * Dd::from(3.0 * k - 1.0)
-                    / Dd::from((3.0 * k + 2.0) * (3.0 * k) * (3.0 * k + 1.0));
-                f = f + tf;
-                g = g + tg;
-                if tf.hi.abs().max(tg.hi.abs()) <= 1e-31 * f.hi.abs().max(g.hi.abs()) {
-                    break;
-                }
+        // The terms at -x are those at x with signs (-1)^(k+1) for f and
+        // (-1)^k for g, so sum even and odd k separately and evaluate both
+        // arguments from one pass over the terms.
+        let x = Dd::from(x);
+        let cube = x * x * x;
+        let (mut tf, mut tg) = (x, (x * x).mul_f64(0.5));
+        let (mut f_even, mut f_odd) = (tf, Dd::from(0.0));
+        let (mut g_even, mut g_odd) = (tg, Dd::from(0.0));
+        for n in 1..128u32 {
+            let k = f64::from(n);
+            // Integer factors below 2^53 are exact in binary64.
+            tf = (tf * cube)
+                .mul_f64(3.0 * k - 2.0)
+                .div_f64((3.0 * k + 1.0) * (3.0 * k) * (3.0 * k - 1.0));
+            tg = (tg * cube)
+                .mul_f64(3.0 * k - 1.0)
+                .div_f64((3.0 * k + 2.0) * (3.0 * k) * (3.0 * k + 1.0));
+            if n % 2 == 0 {
+                f_even = f_even + tf;
+                g_even = g_even + tg;
+            } else {
+                f_odd = f_odd + tf;
+                g_odd = g_odd + tg;
             }
-            ((c0 * f - c1 * g).hi, (root3 * (c0 * f + c1 * g)).hi)
-        };
-        let positive = integral(x);
-        let negative = integral(-x);
+            let scale = |f: f64, g: f64| f.abs().max(g.abs());
+            let positive = scale(f_even.hi + f_odd.hi, g_even.hi + g_odd.hi);
+            let negative = scale(f_odd.hi - f_even.hi, g_even.hi - g_odd.hi);
+            if tf.hi.abs().max(tg.hi.abs()) <= 1e-31 * positive.min(negative) {
+                break;
+            }
+        }
+        let integral = |f: Dd, g: Dd| ((c0 * f - c1 * g).hi, (root3 * (c0 * f + c1 * g)).hi);
+        let positive = integral(f_even + f_odd, g_even + g_odd);
+        let negative = integral(f_odd - f_even, g_even - g_odd);
         return [positive.0, positive.1, -negative.0, -negative.1];
     }
     if x.abs() <= 16.0 {
@@ -877,8 +889,9 @@ pub(crate) fn itstruve0(x: f64) -> f64 {
         for k in 1..128 {
             let k = k as f64;
             // Integer denominators below 2^53 are exact in binary64.
-            term = -term * square * Dd::from(k)
-                / Dd::from((k + 1.0) * (2.0 * k + 1.0) * (2.0 * k + 1.0));
+            term = (term * square)
+                .mul_f64(-k)
+                .div_f64((k + 1.0) * (2.0 * k + 1.0) * (2.0 * k + 1.0));
             sum = sum + term;
             if term.hi.abs() <= 1e-31 * sum.hi.abs() {
                 break;

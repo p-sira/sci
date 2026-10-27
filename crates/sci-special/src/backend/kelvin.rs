@@ -63,8 +63,6 @@ fn argument<T: Float>(x: T) -> Result<f64, StrErr> {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Need {
     Both,
-    /// Both, from two single-order calls that avoid heap allocation.
-    BothInPlace,
     Value,
     Derivative,
 }
@@ -93,7 +91,6 @@ fn orders(z: Complex64, second: bool, need: Need) -> Result<(Complex64, Complex6
             .values;
             (values[0], values[1])
         }
-        Need::BothInPlace => (single(0.0)?, single(1.0)?),
         Need::Value => (single(0.0)?, nan),
         Need::Derivative => (nan, single(1.0)?),
     })
@@ -220,59 +217,137 @@ impl KelvinFunction {
         Ok(if imaginary { value.im } else { value.re })
     }
 
-    fn value_and_slope(self, x: f64) -> Result<(f64, f64), StrErr> {
+    /// Scaled value and its first two derivatives at `x > 0`.
+    ///
+    /// Both w = ber + i bei and w = ker + i kei satisfy
+    /// w'' = i w - w'/x (DLMF 10.61), so the second derivative needs no extra
+    /// Bessel evaluation. Value and derivatives share one scale factor, which
+    /// leaves the Newton and Halley ratios unchanged.
+    fn derivatives(self, x: f64) -> Result<(f64, f64, f64), StrErr> {
         use KelvinFunction::*;
         let second = matches!(self, Ker | Kei | KerPrime | KeiPrime);
         let prime = matches!(self, BerPrime | BeiPrime | KerPrime | KeiPrime);
         let imaginary = matches!(self, Bei | Kei | BeiPrime | KeiPrime);
-        // Scale value and actual derivative equally, retaining their Newton
-        // ratio even beyond the unscaled overflow/underflow thresholds.
-        let (value, derivative) = pair_needed(x, second, true, Need::BothInPlace)?;
-        let (value, derivative) = if prime {
-            (
-                derivative,
-                Complex64::new(-value.im, value.re) - derivative / x,
-            )
+        let (value, derivative) = pair_needed(x, second, true, Need::Both)?;
+        let i = Complex64::new(0.0, 1.0);
+        let curvature = i * value - derivative / x;
+        let (f, slope, curvature) = if prime {
+            let third = i * derivative - curvature / x + derivative / (x * x);
+            (derivative, curvature, third)
         } else {
-            (value, derivative)
+            (value, derivative, curvature)
         };
         Ok(if imaginary {
-            (value.im, derivative.im)
+            (f.im, slope.im, curvature.im)
         } else {
-            (value.re, derivative.re)
+            (f.re, slope.re, curvature.re)
         })
     }
 }
 
+/// Halley iteration started at `x` and safeguarded by the sign-changing
+/// bracket `[left, right]`, where `left_negative` is the sign of the function
+/// at `left`. Steps leaving the bracket fall back to bisection.
+fn bracketed_halley(
+    function: KelvinFunction,
+    mut left: f64,
+    left_negative: bool,
+    mut right: f64,
+    mut x: f64,
+) -> Result<f64, StrErr> {
+    for _ in 0..64 {
+        let (value, slope, curvature) = function.derivatives(x)?;
+        if !value.is_finite() {
+            return Err("Zero finder encountered a nonfinite value.");
+        }
+        if value == 0.0 || right - left <= 4.0 * f64::EPSILON * x.abs().max(1.0) {
+            return Ok(x);
+        }
+        if value.is_sign_negative() == left_negative {
+            left = x;
+        } else {
+            right = x;
+        }
+        let denominator = 2.0 * slope * slope - value * curvature;
+        let step = if denominator != 0.0 && denominator.is_finite() {
+            2.0 * value * slope / denominator
+        } else {
+            value / slope
+        };
+        let next = x - step;
+        // At rounding level, a further evaluation cannot improve x. Accept it
+        // even when rounding noise points the step just outside the bracket,
+        // which would otherwise restart from a bisection.
+        if step.abs() <= 2.0 * f64::EPSILON * x.abs() {
+            return Ok(if next >= left && next <= right {
+                next
+            } else {
+                x
+            });
+        }
+        x = if next > left && next < right {
+            next
+        } else {
+            0.5 * (left + right)
+        };
+    }
+    Err("Zero finder did not converge.")
+}
+
 /// Fill a caller-owned slice with successive positive Kelvin zeros.
 ///
-/// The origin is excluded. Uses a bracketed Newton iteration and scaled Bessel
-/// kernels without allocating. On failure, earlier entries remain populated.
+/// The origin is excluded. Uses a bracketed Halley iteration on scaled Bessel
+/// kernels, starting from the spacing of the previous zeros. Each iteration
+/// takes both Bessel orders from one sequence call, which allocates a
+/// two-element buffer. On failure, earlier entries remain populated.
 /// An empty slice succeeds without evaluating any functions.
 pub fn kelvin_zeros<T: Float>(function: KelvinFunction, zeros: &mut [T]) -> Result<(), StrErr> {
     let mut left = 0.5;
+    // Previous zero and spacing, used to predict the next zero.
+    let mut previous: Option<(f64, f64)> = None;
     for zero in zeros {
         let mut fl = function.value(left)?;
-        let mut right = left + 1.0;
-        let mut fr = f64::NAN;
-        let mut bracketed = false;
-        for _ in 0..32 {
-            fr = function.value(right)?;
+        // (right end, its value, Halley starting point)
+        let mut bracket = None;
+        if let Some((last, spacing)) = previous {
+            // Spacings vary slowly (towards pi*sqrt(2)), so the previous one
+            // predicts the next zero closely. The trial bracket
+            // [last + 3.5, guess + 0.5] is shorter than the minimum spacing,
+            // so a sign change there isolates exactly the next zero.
+            let guess = last + spacing;
+            let right = (guess + 0.5).min(left + 4.0);
+            let fr = function.value(right)?;
             if fl.is_sign_negative() != fr.is_sign_negative() || fr == 0.0 {
-                bracketed = true;
-                break;
+                bracket = Some((right, fr, guess.clamp(left, right)));
             }
-            left = right;
-            fl = fr;
-            right += 1.0;
         }
-        if !bracketed {
-            return Err("kelvin_zeros: Could not bracket a root.");
+        if bracket.is_none() {
+            let mut right = left + 1.0;
+            for _ in 0..32 {
+                let fr = function.value(right)?;
+                if fl.is_sign_negative() != fr.is_sign_negative() || fr == 0.0 {
+                    bracket = Some((right, fr, 0.5 * (left + right)));
+                    break;
+                }
+                left = right;
+                fl = fr;
+                right += 1.0;
+            }
         }
-        let x = crate::backend::utils::bracketed_root_from(left, fl, right, fr, |x| {
-            function.value_and_slope(x)
-        })?;
+        let (right, fr, start) = bracket.ok_or("kelvin_zeros: Could not bracket a root.")?;
+        let x = if fl == 0.0 {
+            left
+        } else if fr == 0.0 {
+            right
+        } else {
+            bracketed_halley(function, left, fl.is_sign_negative(), right, start)?
+        };
         *zero = T::from(x).ok_or("kelvin_zeros: Cannot represent root.")?;
+        let spacing = match previous {
+            Some((last, _)) => x - last,
+            None => core::f64::consts::PI * core::f64::consts::SQRT_2,
+        };
+        previous = Some((x, spacing));
         // Consecutive positive zeros of every Kelvin function and derivative
         // are at least 4.3 apart (asymptotically pi*sqrt(2)), so the next
         // scan can start 3.5 beyond this zero without skipping one.
