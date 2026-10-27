@@ -202,3 +202,43 @@ fn elliptic_real_paths_and_pole_errors_match_documented_domains() {
         e::ellipkinc(0.4_f32, 2.0).unwrap()
     );
 }
+
+#[test]
+fn hyp1f1_cancellation_matches_independent_precision_checked_series() {
+    for row in include_str!("fixtures/hyp1f1_cancellation.csv")
+        .lines()
+        .skip(1)
+    {
+        let fields: Vec<f64> = row.split(',').map(|value| value.parse().unwrap()).collect();
+        let actual = s::hyp1f1(fields[0], fields[1], fields[2]);
+        let expected = fields[3];
+        // Relative accuracy matters for exponentially small functions as well.
+        // No absolute floor hides cancellation or premature underflow to zero.
+        assert!(
+            (actual - expected).abs() <= 3e-12 * expected.abs(),
+            "{row}: got {actual:e}"
+        );
+    }
+}
+
+#[test]
+fn hyp1f1_continuation_identities_and_work_limits() {
+    for (a, b, x) in [
+        (65.1, -3.2, -20.0),
+        (1000.0, 0.2, -100.0),
+        (32.0, 3.2, -50.0),
+    ] {
+        let value = s::hyp1f1(a, b, x);
+        let contiguous =
+            s::hyp1f1(a, b + 1.0, x) + a * x / (b * (b + 1.0)) * s::hyp1f1(a + 1.0, b + 2.0, x);
+        assert!((value - contiguous).abs() <= 3e-12 * value.abs());
+    }
+    for x in [-20.0_f64, -100.0, -1000.0] {
+        let scale = (x * 0.5).exp();
+        let expected = ((1.0 + x) * scale) * scale;
+        assert_eq!(s::hyp1f1(2.0, 1.0, x), expected);
+    }
+    assert!(s::hyp1f1(100000.0, 0.2, -1000.0).is_nan()); // Continuation step budget.
+    assert!(s::hyp1f1(65.1, -3.0, -20.0).is_infinite()); // Denominator pole unchanged.
+    assert_eq!(s::hyp1f1(65.1, 65.1, -20.0), (-20.0_f64).exp());
+}

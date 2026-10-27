@@ -70,5 +70,6 @@ pub use statistics::*;
 mod smirnov;
 pub use smirnov::*;
 
+mod kummer;
 pub(crate) mod legacy;
 mod specfun;

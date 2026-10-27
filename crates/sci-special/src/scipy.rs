@@ -1535,9 +1535,13 @@ pub fn hyp0f1<T: sci_core::Float>(b: T, x: T) -> T {
 /// Parameter work bounds do not imply uniform accuracy. Cancellation and
 /// continuation can lose digits or return NaN; difficult large-parameter cases
 /// require independent validation.
-/// The general fallback is inaccurate at `a=65.1, b=-3.2, x=-20`.
-/// The improved direct series has representative checks for `abs(a), abs(b) <= 64`
-/// and `abs(x) <= 100`; this is not certification of the whole parameter box.
+/// For `a > 0`, `b < a`, `-8 <= b <= 64` and `-1000 <= x < 0`,
+/// outward Taylor continuation avoids cancellation of the defining series.
+/// Integer `a-b` uses a normalized Laguerre recurrence with exponential scaling
+/// instead, since that solution is recessive on the negative ray.
+/// More negative `b`, other parameter regions, proximity to poles/zeros and
+/// work-limit exhaustion remain accuracy limitations; there is no uniform
+/// certification of the whole parameter box.
 ///
 /// ## Examples
 ///
@@ -1552,8 +1556,15 @@ pub fn hyp0f1<T: sci_core::Float>(b: T, x: T) -> T {
 ///
 /// ## Numerical behavior and work limits
 ///
-/// Finite real parameters and argument; `abs(a) <= 100000`. The bounded series and
-/// asymptotic expansions can lose relative accuracy under severe cancellation.
+/// Finite real parameters and argument; `abs(a) <= 100000`. Continuation uses
+/// double-double arithmetic, at most 256 origin-series terms and 8192 Taylor
+/// steps of at most 128 terms each. The integer-difference recurrence takes at
+/// most 100008 steps. Failed convergence, nonfinite continuation intermediates
+/// or exhausted continuation work return NaN. Other regions use bounded series
+/// and asymptotic expansions that can lose relative accuracy under cancellation.
+///
+/// [NIST DLMF §13.29(ii)](https://dlmf.nist.gov/13.29#ii) describes outward
+/// integration; [§13.2](https://dlmf.nist.gov/13.2) gives the defining equation.
 pub fn hyp1f1(a: f64, b: f64, x: f64) -> f64 {
     crate::backend::legacy::hyp1f1(a, b, x)
 }

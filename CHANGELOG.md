@@ -2,6 +2,10 @@
 
 ## 0.3.0
 
+- Fix catastrophic real 1F1 cancellation in a bounded negative-argument region
+  using double-double Taylor continuation and scaled polynomial recurrences;
+  add independently precision-checked references and explicit remaining limits.
+
 - Add generic complex log-gamma, reciprocal gamma and digamma with shared errors,
   signed branch-cut banks, overflow-resistant evaluation and independent fixtures.
 

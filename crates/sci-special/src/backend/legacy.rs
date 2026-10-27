@@ -348,6 +348,12 @@ pub(crate) fn hyp1f1(a: f64, b: f64, x: f64) -> f64 {
         }
         return sum;
     }
+    // The Kummer-transformed series still has catastrophic cancellation when
+    // b-a is large and negative. Continue the analytic solution outwards instead
+    // of summing exponentially larger alternating terms at the target.
+    if a > 0.0 && b < a && (-1000.0..0.0).contains(&x) && (-8.0..=64.0).contains(&b) {
+        return super::kummer::negative_argument(a, b, x);
+    }
     // In the moderate-argument region the defining series is more accurate
     // than the truncated large-x expansion. Kummer's transformation makes
     // the argument positive and avoids alternating exponential cancellation.

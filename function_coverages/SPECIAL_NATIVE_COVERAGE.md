@@ -105,8 +105,9 @@ The following remain useful candidates, rather than intentional exclusions:
   Wilcoxon distribution tables, Cramér–von Mises, generalized hyperbolic/inverse
   Gaussian densities and multivariate normal CDFs, where the owning stats module
   does not already provide the requested operation.
-- Existing real-kernel accuracy/work limitations, especially the general 1F1
-  cancellation case and bounded wave-function orders, remain as recorded in
+- Existing real-kernel accuracy/work limitations, including 1F1 outside its
+  improved negative-argument continuation range and bounded wave-function
+  orders, remain as recorded in
   [SPECIAL_COVERAGE.md](SPECIAL_COVERAGE.md).
 
 These gaps are not counted as implemented. Full XSF/SciPy overload parity and

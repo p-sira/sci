@@ -79,13 +79,18 @@ unbounded recurrences in the translated families:
 | Fresnel zeros | At most 64 Newton iterations per root, count at most 4096. Failed/nonfinite refinement returns an error. |
 | Airy/Struve integrals | Bounded Gaussian quadrature near the series/asymptotic transitions; translated asymptotic kernels beyond those ranges. Large oscillatory arguments remain limited by argument reduction and asymptotic truncation. |
 
-The parameter work bounds above are not uniform accuracy guarantees. In
-particular, the general 1F1 fallback still has severe cancellation for large
-positive `a` at negative `x` (for example, `a=65.1, b=-3.2, x=-20`). These
-parameters require a stronger continuation algorithm before they can be counted
-as accurately supported. The checked reference grid for the improved direct
-series covers `abs(a), abs(b) <= 64` and `abs(x) <= 100`, with representative
-large-argument asymptotic cases outside that region.
+The parameter work bounds above are not uniform accuracy guarantees. Real 1F1
+now uses double-double outward Taylor continuation for `a > 0`, `b < a`,
+`-8 <= b <= 64` and `-1000 <= x < 0`. This fixes the former catastrophic
+cancellation at `a=65.1, b=-3.2, x=-20`. An integer `a-b` uses a scaled,
+normalized Laguerre recurrence to avoid propagating a recessive ODE solution.
+Continuation permits 256 origin terms and 8192 steps of 128 terms; nonconvergence,
+nonfinite continuation intermediates and budget exhaustion return NaN. The
+integer-difference recurrence takes at most 100008 steps. More negative `b`,
+other parameter regions and near-zero/pole conditioning remain accuracy gaps.
+See [the investigation](HYP1F1_CANCELLATION.md) for the failure mechanism,
+independent references and tested limits. Existing direct-series fixtures and
+representative large-argument asymptotic cases are retained.
 
 Nonfinite conventions also differ from some SciPy overloads: incomplete beta
 and lower gamma require finite shape parameters; general Bessel/Struve orders
