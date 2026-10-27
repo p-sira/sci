@@ -2,6 +2,10 @@
 
 ## 0.3.0
 
+- Add eight generic scalar special functions and 19 shared-complex functions,
+  with bounded numerical work, independent precision fixtures and an explicit
+  native XSF capability audit. See function_coverages/SPECIAL_NATIVE_COVERAGE.md.
+
 - Add ellip-style generic floats to 142 numerical APIs, with native `f32`/`f64`
   arithmetic, generic shared containers defaulting to `f64`, independent reference
   fixtures, and documented remaining binary64 APIs. See MIGRATING.md and

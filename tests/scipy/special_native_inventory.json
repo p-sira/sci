@@ -1,0 +1,138 @@
+{
+  "xsf_revision": "8e321105803530610770bcb6c6db2017322c976b",
+  "scope": "Direct include/xsf/*.h and include/xsf/cpu/*.h; cephes, AMOS, specfun, Carlson and third_party descendants are private algorithm implementations. Header-family review is not overload/domain coverage.",
+  "groups": [
+    {
+      "headers": [
+        "wright_bessel.h",
+        "boxcox.h",
+        "beta.h",
+        "binom.h",
+        "agm.h",
+        "convex_analysis.h",
+        "ndtri_exp.h",
+        "trig.h",
+        "log_exp.h",
+        "stirling2.h"
+      ],
+      "disposition": "covered",
+      "notes": "Existing real functional APIs cover the numerical families. Float width overloads collapse into sci_core::Float; aliases and private approximation routines are not separate APIs."
+    },
+    {
+      "headers": [
+        "gamma.h",
+        "digammainv.h",
+        "iv_ratio.h",
+        "expint.h",
+        "gen_harmonic.h",
+        "log.h"
+      ],
+      "disposition": "expanded",
+      "notes": "Add gamma_ratio, digammainv, iv_ratio, iv_ratio_c, iv_ratioinv, scaled_exp1, normalized_gen_harmonic, and log1pmx. Complex exp1/expi/xlogy/xlog1py remain deferred; complex log1p belongs to sci::complex."
+    },
+    {
+      "headers": [
+        "erf.h",
+        "faddeeva.h",
+        "cpu/bessel.h",
+        "cpu/airy.h",
+        "cpu/fresnel.h"
+      ],
+      "disposition": "expanded",
+      "notes": "Add tested generic complex gamma/error/Bessel/Hankel/Airy/Fresnel APIs using shared Sci Complex and Result. Complex erfi/erfcx/Dawson remain deferred. Internal w_im and approximation dispatches stay private."
+    },
+    {
+      "headers": [
+        "digamma.h",
+        "loggamma.h",
+        "spence.h",
+        "hyp2f1.h",
+        "zeta.h",
+        "lambertw.h",
+        "wright.h",
+        "cpu/hyp0f1.h",
+        "cpu/hyperu.h",
+        "cpu/specfun.h"
+      ],
+      "disposition": "partial",
+      "notes": "Existing real APIs remain covered; additional complex digamma/loggamma/rgamma/Spence/hypergeometric/zeta/Lambert branches/Wright omega require further algorithm and reference work. Existing private helpers do not constitute tested public coverage."
+    },
+    {
+      "headers": [
+        "orthogonal_eval.h",
+        "cpu/orthogonal_eval.h"
+      ],
+      "disposition": "adapted",
+      "notes": "Integer degrees and recurrence evaluators are implemented; noninteger hypergeometric degree continuations are deferred. Backend _l suffixes and duplicate order/precision overloads are not exported."
+    },
+    {
+      "headers": [
+        "ellip.h",
+        "cpu/ellint_carlson.h"
+      ],
+      "disposition": "adapted",
+      "notes": "Use Ellip notation, domains and Sci shared errors. Complex Carlson integrals remain deferred. Unchecked/precision-control helpers are private."
+    },
+    {
+      "headers": [
+        "cpu/legendre.h",
+        "cpu/sph_harm.h",
+        "cpu/sph_bessel.h"
+      ],
+      "disposition": "partial",
+      "notes": "Real bounded value and sequence APIs and shared complex harmonic results exist. General complex arguments and derivative tensors remain deferred; callback, mdspan, normalization-policy and dual-number plumbing is not reproduced."
+    },
+    {
+      "headers": [
+        "mathieu.h",
+        "cpu/mathieu_legacy.h",
+        "cpu/par_cyl.h",
+        "cpu/sphd_wave.h",
+        "cpu/kelvin.h",
+        "cpu/struve.h",
+        "sici.h",
+        "cdflib.h"
+      ],
+      "disposition": "covered",
+      "notes": "Reuse existing bounded Rust wave, integral, zero, distribution and sequence APIs; callbacks, raw output pointers, legacy argument permutations and algorithm subroutines stay private. This is family coverage, not a claim of every domain or signature."
+    },
+    {
+      "headers": [
+        "cosine.h",
+        "stats.h",
+        "cpu/stats.h",
+        "multivariate_normal.h"
+      ],
+      "disposition": "outside-special",
+      "notes": "Retain existing documented distribution functions in special. New cosine/von-Mises/Tukey-lambda, Poisson-binomial, Wilcoxon distribution tables, Cramer-von-Mises, generalized hyperbolic/inverse Gaussian densities, and multivariate normal CDFs belong to a coherent sci::stats API; missing stats operations are deferred, not counted as implemented."
+    },
+    {
+      "headers": [
+        "alg.h",
+        "cpu/exp.h",
+        "cpu/numbers.h",
+        "zlog1.h",
+        "evalpoly.h"
+      ],
+      "disposition": "reuse",
+      "notes": "Use standard float methods/constants, sci::complex arithmetic and sci::polynomials evaluation. Do not duplicate cbrt/exp2/exp10/expm1/log1p/constants or expose raw polynomial-array conventions. Cancellation-sensitive new arithmetic should be implemented in its owning module."
+    },
+    {
+      "headers": [
+        "config.h",
+        "error.h",
+        "tools.h",
+        "fp_error_metrics.h",
+        "mdspan.h",
+        "relaxed_layout.h",
+        "numpy.h",
+        "cupy.h",
+        "cpu/dual.h",
+        "cpu/recur.h",
+        "cpu/amos.h"
+      ],
+      "disposition": "exclude",
+      "notes": "C++/NumPy/CuPy adapters, device configuration, layouts, dual-number internals, callback recurrence engines, low-level solvers/error hooks and test error metrics are infrastructure. Use Rust types, slices/iterators, shared Result and existing Sci algorithms. Internal numerical kernels are not public coverage targets."
+    }
+  ]
+}

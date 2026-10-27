@@ -53,6 +53,8 @@ mod legendre;
 pub use legendre::*;
 
 mod double_double;
+mod ratios;
+pub(crate) use ratios::iv_ratio_pair;
 mod hypergeometric;
 pub use hypergeometric::hyp0f1;
 

@@ -1,0 +1,3753 @@
+[
+  {
+    "name": "log1pmx",
+    "args": [
+      -0.999
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      -0.5
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      -0.1
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      -1e-05
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      -1e-15
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      -1e-30
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      0
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      1e-30
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      1e-15
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      1e-05
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      0.1
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      0.49
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      0.5
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      1
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      100
+    ]
+  },
+  {
+    "name": "log1pmx",
+    "args": [
+      1e+30
+    ]
+  },
+  {
+    "name": "digammainv",
+    "args": [
+      -1e+30
+    ]
+  },
+  {
+    "name": "digammainv",
+    "args": [
+      -1000
+    ]
+  },
+  {
+    "name": "digammainv",
+    "args": [
+      -100
+    ]
+  },
+  {
+    "name": "digammainv",
+    "args": [
+      -10
+    ]
+  },
+  {
+    "name": "digammainv",
+    "args": [
+      -3
+    ]
+  },
+  {
+    "name": "digammainv",
+    "args": [
+      -2.22
+    ]
+  },
+  {
+    "name": "digammainv",
+    "args": [
+      -1
+    ]
+  },
+  {
+    "name": "digammainv",
+    "args": [
+      0
+    ]
+  },
+  {
+    "name": "digammainv",
+    "args": [
+      1
+    ]
+  },
+  {
+    "name": "digammainv",
+    "args": [
+      5
+    ]
+  },
+  {
+    "name": "digammainv",
+    "args": [
+      20
+    ]
+  },
+  {
+    "name": "digammainv",
+    "args": [
+      36
+    ]
+  },
+  {
+    "name": "digammainv",
+    "args": [
+      50
+    ]
+  },
+  {
+    "name": "digammainv",
+    "args": [
+      80
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      1,
+      1
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      1,
+      2
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      0.5,
+      1.5
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      1.5,
+      0.5
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      0.3,
+      4.2
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      4.2,
+      0.3
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      201,
+      200
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      200,
+      201
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      1000,
+      1001
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      1001,
+      1000
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      10000,
+      10001
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      10001,
+      10000
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      100,
+      200
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      200,
+      100
+    ]
+  },
+  {
+    "name": "scaled_exp1",
+    "args": [
+      0
+    ]
+  },
+  {
+    "name": "scaled_exp1",
+    "args": [
+      1e-30
+    ]
+  },
+  {
+    "name": "scaled_exp1",
+    "args": [
+      1e-10
+    ]
+  },
+  {
+    "name": "scaled_exp1",
+    "args": [
+      0.01
+    ]
+  },
+  {
+    "name": "scaled_exp1",
+    "args": [
+      0.1
+    ]
+  },
+  {
+    "name": "scaled_exp1",
+    "args": [
+      1
+    ]
+  },
+  {
+    "name": "scaled_exp1",
+    "args": [
+      1.001
+    ]
+  },
+  {
+    "name": "scaled_exp1",
+    "args": [
+      2
+    ]
+  },
+  {
+    "name": "scaled_exp1",
+    "args": [
+      10
+    ]
+  },
+  {
+    "name": "scaled_exp1",
+    "args": [
+      100
+    ]
+  },
+  {
+    "name": "scaled_exp1",
+    "args": [
+      1000
+    ]
+  },
+  {
+    "name": "scaled_exp1",
+    "args": [
+      1250
+    ]
+  },
+  {
+    "name": "scaled_exp1",
+    "args": [
+      10000000000.0
+    ]
+  },
+  {
+    "name": "scaled_exp1",
+    "args": [
+      1e+30
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.5,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.5,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.5,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.5,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.5,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.5,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.51,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.51,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.51,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.51,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.51,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.51,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.75,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.75,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.75,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.75,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.75,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.75,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      2,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      2,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      2,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      2,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      2,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      2,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      10,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      10,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      10,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      10,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      10,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      10,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      100,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      100,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      100,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      100,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      100,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      100,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1000,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1000,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1000,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1000,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1000,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1000,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.51,
+      1000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.51,
+      10000000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.51,
+      1e+30
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.75,
+      1000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.75,
+      10000000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      0.75,
+      1e+30
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1,
+      1000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1,
+      10000000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      1,
+      1e+30
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      2,
+      1000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      2,
+      10000000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      2,
+      1e+30
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      10,
+      1000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      10,
+      10000000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio",
+    "args": [
+      10,
+      1e+30
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.5,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.5,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.5,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.5,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.5,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.5,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.51,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.51,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.51,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.51,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.51,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.51,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.75,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.75,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.75,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.75,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.75,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.75,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      2,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      2,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      2,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      2,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      2,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      2,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      10,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      10,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      10,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      10,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      10,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      10,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      100,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      100,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      100,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      100,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      100,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      100,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1000,
+      1e-06
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1000,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1000,
+      1
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1000,
+      10
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1000,
+      100
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1000,
+      1000
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.51,
+      1000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.51,
+      10000000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.51,
+      1e+30
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.75,
+      1000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.75,
+      10000000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      0.75,
+      1e+30
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1,
+      1000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1,
+      10000000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      1,
+      1e+30
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      2,
+      1000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      2,
+      10000000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      2,
+      1e+30
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      10,
+      1000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      10,
+      10000000000.0
+    ]
+  },
+  {
+    "name": "iv_ratio_c",
+    "args": [
+      10,
+      1e+30
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      0.5,
+      1e-05
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      0.5,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      0.5,
+      0.5
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      0.5,
+      0.9
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      0.5,
+      0.99
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      0.51,
+      1e-05
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      0.51,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      0.51,
+      0.5
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      0.51,
+      0.9
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      0.51,
+      0.99
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      1,
+      1e-05
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      1,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      1,
+      0.9
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      1,
+      0.99
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      10,
+      1e-05
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      10,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      10,
+      0.5
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      10,
+      0.9
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      10,
+      0.99
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      1000,
+      1e-05
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      1000,
+      0.1
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      1000,
+      0.5
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      1000,
+      0.9
+    ]
+  },
+  {
+    "name": "iv_ratioinv",
+    "args": [
+      1000,
+      0.99
+    ]
+  },
+  {
+    "name": "normalized_gen_harmonic",
+    "args": [
+      1,
+      1,
+      1,
+      2
+    ]
+  },
+  {
+    "name": "normalized_gen_harmonic",
+    "args": [
+      1,
+      5,
+      5,
+      2
+    ]
+  },
+  {
+    "name": "normalized_gen_harmonic",
+    "args": [
+      2,
+      4,
+      5,
+      0
+    ]
+  },
+  {
+    "name": "normalized_gen_harmonic",
+    "args": [
+      2,
+      4,
+      5,
+      2
+    ]
+  },
+  {
+    "name": "normalized_gen_harmonic",
+    "args": [
+      2,
+      4,
+      5,
+      -2
+    ]
+  },
+  {
+    "name": "normalized_gen_harmonic",
+    "args": [
+      5,
+      5,
+      5,
+      -1000
+    ]
+  },
+  {
+    "name": "normalized_gen_harmonic",
+    "args": [
+      1,
+      1,
+      5,
+      1000
+    ]
+  },
+  {
+    "name": "normalized_gen_harmonic",
+    "args": [
+      3,
+      7,
+      10,
+      0.25
+    ]
+  },
+  {
+    "name": "normalized_gen_harmonic",
+    "args": [
+      3,
+      7,
+      10,
+      -0.25
+    ]
+  },
+  {
+    "name": "normalized_gen_harmonic",
+    "args": [
+      98,
+      99,
+      100,
+      -1000
+    ]
+  },
+  {
+    "name": "complex.gamma",
+    "args": [
+      0.1,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.gamma",
+    "args": [
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.gamma",
+    "args": [
+      -1.3,
+      1
+    ]
+  },
+  {
+    "name": "complex.gamma",
+    "args": [
+      -2.2,
+      -0.5
+    ]
+  },
+  {
+    "name": "complex.gamma",
+    "args": [
+      3,
+      -2
+    ]
+  },
+  {
+    "name": "complex.gamma",
+    "args": [
+      0.001,
+      -0.002
+    ]
+  },
+  {
+    "name": "complex.erf",
+    "args": [
+      0.1,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.erf",
+    "args": [
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.erf",
+    "args": [
+      -1.3,
+      1
+    ]
+  },
+  {
+    "name": "complex.erf",
+    "args": [
+      -2.2,
+      -0.5
+    ]
+  },
+  {
+    "name": "complex.erf",
+    "args": [
+      3,
+      -2
+    ]
+  },
+  {
+    "name": "complex.erf",
+    "args": [
+      0.001,
+      -0.002
+    ]
+  },
+  {
+    "name": "complex.erfc",
+    "args": [
+      0.1,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.erfc",
+    "args": [
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.erfc",
+    "args": [
+      -1.3,
+      1
+    ]
+  },
+  {
+    "name": "complex.erfc",
+    "args": [
+      -2.2,
+      -0.5
+    ]
+  },
+  {
+    "name": "complex.erfc",
+    "args": [
+      3,
+      -2
+    ]
+  },
+  {
+    "name": "complex.erfc",
+    "args": [
+      0.001,
+      -0.002
+    ]
+  },
+  {
+    "name": "complex.wofz",
+    "args": [
+      0.1,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.wofz",
+    "args": [
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.wofz",
+    "args": [
+      -1.3,
+      1
+    ]
+  },
+  {
+    "name": "complex.wofz",
+    "args": [
+      -2.2,
+      -0.5
+    ]
+  },
+  {
+    "name": "complex.wofz",
+    "args": [
+      3,
+      -2
+    ]
+  },
+  {
+    "name": "complex.wofz",
+    "args": [
+      0.001,
+      -0.002
+    ]
+  },
+  {
+    "name": "complex.fresnel",
+    "args": [
+      0.1,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.fresnel",
+    "args": [
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.fresnel",
+    "args": [
+      -1.3,
+      1
+    ]
+  },
+  {
+    "name": "complex.fresnel",
+    "args": [
+      -2.2,
+      -0.5
+    ]
+  },
+  {
+    "name": "complex.fresnel",
+    "args": [
+      3,
+      -2
+    ]
+  },
+  {
+    "name": "complex.fresnel",
+    "args": [
+      0.001,
+      -0.002
+    ]
+  },
+  {
+    "name": "complex.airy",
+    "args": [
+      0.1,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.airy",
+    "args": [
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.airy",
+    "args": [
+      -1.3,
+      1
+    ]
+  },
+  {
+    "name": "complex.airy",
+    "args": [
+      -2.2,
+      -0.5
+    ]
+  },
+  {
+    "name": "complex.airy",
+    "args": [
+      3,
+      -2
+    ]
+  },
+  {
+    "name": "complex.airy",
+    "args": [
+      0.001,
+      -0.002
+    ]
+  },
+  {
+    "name": "complex.airye",
+    "args": [
+      0.1,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.airye",
+    "args": [
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.airye",
+    "args": [
+      -1.3,
+      1
+    ]
+  },
+  {
+    "name": "complex.airye",
+    "args": [
+      -2.2,
+      -0.5
+    ]
+  },
+  {
+    "name": "complex.airye",
+    "args": [
+      3,
+      -2
+    ]
+  },
+  {
+    "name": "complex.airye",
+    "args": [
+      0.001,
+      -0.002
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      -2,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      -2,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      -2,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      -2,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      -0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      -0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      -0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      -0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      0,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      0,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      0,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      0,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      2.3,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      2.3,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      2.3,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.jv",
+    "args": [
+      2.3,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      -2,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      -2,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      -2,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      -2,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      -0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      -0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      -0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      -0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      0,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      0,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      0,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      0,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      2.3,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      2.3,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      2.3,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.jve",
+    "args": [
+      2.3,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      -2,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      -2,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      -2,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      -2,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      -0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      -0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      -0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      -0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      0,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      0,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      0,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      0,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      2.3,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      2.3,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      2.3,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.yv",
+    "args": [
+      2.3,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      -2,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      -2,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      -2,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      -2,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      -0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      -0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      -0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      -0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      0,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      0,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      0,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      0,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      2.3,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      2.3,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      2.3,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.yve",
+    "args": [
+      2.3,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      -2,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      -2,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      -2,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      -2,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      -0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      -0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      -0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      -0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      0,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      0,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      0,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      0,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      2.3,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      2.3,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      2.3,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.iv",
+    "args": [
+      2.3,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      -2,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      -2,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      -2,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      -2,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      -0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      -0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      -0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      -0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      0,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      0,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      0,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      0,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      2.3,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      2.3,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      2.3,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.ive",
+    "args": [
+      2.3,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      -2,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      -2,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      -2,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      -2,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      -0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      -0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      -0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      -0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      0,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      0,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      0,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      0,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      2.3,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      2.3,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      2.3,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.kv",
+    "args": [
+      2.3,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      -2,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      -2,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      -2,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      -2,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      -0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      -0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      -0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      -0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      0,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      0,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      0,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      0,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      2.3,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      2.3,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      2.3,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.kve",
+    "args": [
+      2.3,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      -2,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      -2,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      -2,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      -2,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      -0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      -0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      -0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      -0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      0,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      0,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      0,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      0,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      2.3,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      2.3,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      2.3,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1",
+    "args": [
+      2.3,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      -2,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      -2,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      -2,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      -2,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      -0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      -0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      -0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      -0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      0,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      0,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      0,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      0,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      2.3,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      2.3,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      2.3,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel1e",
+    "args": [
+      2.3,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      -2,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      -2,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      -2,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      -2,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      -0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      -0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      -0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      -0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      0,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      0,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      0,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      0,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      2.3,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      2.3,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      2.3,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2",
+    "args": [
+      2.3,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      -2,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      -2,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      -2,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      -2,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      -0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      -0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      -0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      -0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      0,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      0,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      0,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      0,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      0.5,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      0.5,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      0.5,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      0.5,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      2.3,
+      1,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      2.3,
+      -2,
+      0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      2.3,
+      -2,
+      -0.1
+    ]
+  },
+  {
+    "name": "complex.hankel2e",
+    "args": [
+      2.3,
+      0.01,
+      -0.01
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      100,
+      1e-30
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      1e-30,
+      100
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      20001,
+      1
+    ]
+  },
+  {
+    "name": "gamma_ratio",
+    "args": [
+      1,
+      20001
+    ]
+  }
+]

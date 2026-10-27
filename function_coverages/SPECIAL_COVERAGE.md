@@ -2,7 +2,11 @@
 
 Audited against [the SciPy 1.18.1 inventory](scipy_function_list/scipy.special.md).
 Run `python tests/scipy/audit_special.py` to reproduce the namespace/name audit.
-All **353 existing public numerical functions** are retained. No numerical
+All **353 existing public numerical functions** are retained. The native API
+follow-up adds **eight scalar and 19 qualified complex APIs**; see
+[SPECIAL_NATIVE_COVERAGE.md](SPECIAL_NATIVE_COVERAGE.md) for the XSF source
+audit, Rust adaptations, deliberate exclusions and remaining numerical gaps.
+No numerical
 function family was removed in the pure Rust backend migration.
 
 ## Inventory disposition
@@ -44,8 +48,8 @@ references and property checks in the existing numerical suites.
 SciPy supplies an independent reference inventory; 100% API, signature, domain,
 or special-value parity is not required. Name coverage does **not** imply all
 SciPy overloads or domains are implemented.
-The remaining gaps include NumPy broadcasting/output buffers, general complex
-input overloads, exact-integer modes, noninteger polynomial degrees, and
+The remaining gaps include NumPy broadcasting/output buffers, additional complex
+input families beyond the 19 APIs in `special::complex`, exact-integer modes, noninteger polynomial degrees, and
 Legendre/harmonic derivative-axis outputs. Sequences retain their documented
 Rust shapes and ordering. Python polynomial classes and error-state context
 managers are not reproduced.
@@ -54,8 +58,8 @@ The migration makes **104 scalar and polynomial APIs** generic over
 `sci_core::Float`, in addition to the previously generic elliptic integrals and
 stable reductions. The newly generic APIs have independent `f32` and `f64`
 fixtures. Most specialized kernels promote to binary64 internally and convert
-back; they do not implement arbitrary precision. Wave functions, most complex
-results, sequence adapters, and some elementary/combinatorial APIs still use
+back; they do not implement arbitrary precision. Real wave functions, complex
+results outside the new generic namespace, sequence adapters, and some elementary/combinatorial APIs still use
 `f64`. Elliptic integrals continue to compute in the selected float type.
 
 ## Work limits and accuracy

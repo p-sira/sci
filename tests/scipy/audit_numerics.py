@@ -43,7 +43,7 @@ for module,names in implemented.items():
     namespace="cluster.vq" if module=="cluster" else module
     available=inventory(module,namespace)
     source="\n".join(p.read_text() for p in (root / f"crates/sci-{module}/src").glob("*.rs") if module!="cluster" or p.name=="vq.rs")
-    exported=set(re.findall(r"pub fn (\w+)\(",source))
+    exported=set(re.findall(r"pub fn (\w+)(?:<[^>]*>)?\(",source))
     exported.update(re.findall(r"pub use \w+ as (\w+);",source))
     assert names==exported,(module,names-exported,exported-names)
     assert names<=available,(module,names-available)

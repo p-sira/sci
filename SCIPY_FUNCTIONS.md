@@ -113,3 +113,8 @@ Special functions retain all 353 public numerical APIs with private pure Rust
 kernels. See [special-function coverage and numerical limits](function_coverages/SPECIAL_COVERAGE.md)
 for the 25 deliberate SciPy name substitutions, generic float support, overload
 gaps, and bounded-work limitations.
+
+The [native special-function audit](function_coverages/SPECIAL_NATIVE_COVERAGE.md)
+reviews the local C++ XSF public header families independently of SciPy names.
+It records eight scalar and 19 shared-complex additions, deliberate Rust
+replacements, and useful numerical capabilities that remain deferred.

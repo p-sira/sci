@@ -13,7 +13,9 @@ Gamma, Bessel, elliptic, probability, polynomial, and combinatorial functions
 with floating-point scalars and shared Sci types. Specialized algorithms use private
 pure Rust kernels and ellip backends; elementary formulas use the standard library.
 Use `value.is_finite()` to check scalar results for NaN and infinity.
-There is no broadcasting, general complex-input overloading, exact integer
+Complex gamma/error/Bessel/Hankel/Airy/Fresnel APIs are available under
+`complex` using shared generic complex values and errors.
+There is no broadcasting, implicit complex-input overloading, exact integer
 mode, or derivative-axis output for array functions. Polynomial constructors
 return descending coefficients. Read each function's documented real domain,
 output ordering, and bounded order/size limits.

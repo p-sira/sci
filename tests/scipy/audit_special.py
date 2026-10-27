@@ -21,7 +21,8 @@ NATIVE = {"cbrt", "exp10", "exp2", "expm1", "log1p", "round", "geterr", "seterr"
 
 
 def audit():
-    source = "\n".join(path.read_text() for path in (ROOT / "crates/sci-special/src").glob("*.rs"))
+    source = "\n".join(path.read_text() for path in (ROOT / "crates/sci-special/src").glob("*.rs")
+                       if path.name != "complex.rs")
     public = set(re.findall(r"^pub fn (\w+)", source, re.MULTILINE))
     public.update(re.findall(r"^pub use ellipf as (\w+);", source, re.MULTILINE))
     with (ROOT / "tests/fixtures/special_extended.csv").open() as stream:
@@ -40,8 +41,8 @@ def audit():
             assert ALIASES[alias] in public & references, alias
         print(f"{namespace}: {len(names)} names, {len(direct)} direct, "
               f"{len(names & ALIASES.keys())} aliases, {len(names & NATIVE)} native replacements")
-    assert len(public) == 354, len(public)
-    print(f"Public numerical functions: {len(public)}; all previous names retained.")
+    assert len(public) == 362, len(public)
+    print(f"Root numerical exports (including ellipkinc alias): {len(public)}; all previous names retained.")
 
 
 if __name__ == "__main__":

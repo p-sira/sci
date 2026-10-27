@@ -377,3 +377,8 @@ required-features = ["special"]
 name = "special_domains"
 path = "tests/special_domains.rs"
 required-features = ["special", "complex"]
+
+[[test]]
+name = "special_native"
+path = "tests/special_native.rs"
+required-features = ["special", "complex"]

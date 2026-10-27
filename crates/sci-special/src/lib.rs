@@ -13,7 +13,9 @@
 //! with floating-point scalars and shared Sci types. Specialized algorithms use private
 //! pure Rust kernels and ellip backends; elementary formulas use the standard library.
 //! Use `value.is_finite()` to check scalar results for NaN and infinity.
-//! There is no broadcasting, general complex-input overloading, exact integer
+//! Complex gamma/error/Bessel/Hankel/Airy/Fresnel APIs are available under
+//! `complex` using shared generic complex values and errors.
+//! There is no broadcasting, implicit complex-input overloading, exact integer
 //! mode, or derivative-axis output for array functions. Polynomial constructors
 //! return descending coefficients. Read each function's documented real domain,
 //! output ordering, and bounded order/size limits.
@@ -52,15 +54,7 @@
 pub use sci_core::{Error, Result};
 mod backend;
 
-mod complex {
-    pub use sci_complex::*;
-    pub(crate) fn native(z: Complex) -> num_complex::Complex64 {
-        num_complex::Complex64::new(z.re, z.im)
-    }
-    pub(crate) fn owned(z: num_complex::Complex64) -> Complex {
-        Complex { re: z.re, im: z.im }
-    }
-}
+pub mod complex;
 #[path = "mod.rs"]
 mod implementation;
 pub use implementation::*;

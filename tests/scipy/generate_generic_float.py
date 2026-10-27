@@ -169,12 +169,17 @@ with (ROOT/"generic_float_inputs.csv").open() as source, (ROOT/"generic_float_ex
     expected_apis = set()
     for group in {row["group"] for row in cases}:
         for module in (repository / "crates" / f"sci-{group}" / "src").glob("*.rs"):
+            if group == "special" and module.name == "complex.rs":
+                continue  # Qualified complex APIs have their own precision audit.
             expected_apis.update((group, name) for name in re.findall(r"pub fn (\w+)<T:", module.read_text()))
     actual_apis = {(row["group"], row["function"]) for row in cases}
     # The scalar migration added a separate f32/f64 fixture suite. Count its
     # public API references without duplicating those rows in this older suite.
     scalar_cases = json.loads((Path(__file__).parent / "special_float_cases.json").read_text())
     separate_apis = {("special", row["name"]) for row in scalar_cases if "T" in row["types"]}
+    native_cases = json.loads((Path(__file__).parent / "special_native_cases.json").read_text())
+    separate_apis.update(("special", row["name"]) for row in native_cases
+                         if not row["name"].startswith("complex."))
     missing = expected_apis - actual_apis - separate_apis
     unexpected = actual_apis - expected_apis
     if missing or unexpected:
