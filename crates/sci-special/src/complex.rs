@@ -80,6 +80,123 @@ pub fn gamma<T: Float>(z: Complex<T>) -> Result<Complex<T>> {
     output(crate::backend::complex::gamma(input(z)?).map_err(Error::NumericalFailure)?)
 }
 
+/// Computes L(z), defined by exp(L(z)) = Γ(z) and real L(x) for x > 0.
+///
+/// ## Parameters and conventions
+/// `z` is dimensionless and uses shared Sci complex components. Computation is in
+/// binary64, converted back to `T`.
+///
+/// ## Domain and special values
+/// Requires finite components. The branch cut is the nonpositive real axis. Nonpositive
+/// real integers are poles and return an error. Signed imaginary zero selects the upper
+/// or lower bank at negative nonintegers. The imaginary part is unwrapped: this is not
+/// the principal logarithm of the computed Γ(z).
+///
+/// ## Returns
+/// The complex value with components in the input float type.
+///
+/// ## Errors
+/// [`Error::InvalidInput`] for NaN or infinite inputs; [`Error::NumericalFailure`]
+/// for a pole or undefined backend result; [`Error::NonFiniteEvaluation`] for
+/// result overflow or conversion overflow. Underflow is allowed.
+///
+/// ## Numerical behavior
+/// Reuses the private gamma kernel: Taylor expansions near 1 and 2, at most eight
+/// recurrence steps, reflection and an eight-term Stirling correction. Avoids forming
+/// Γ(z), so large finite logarithms can remain representable after Γ overflows.
+/// Relative component accuracy can deteriorate near zeros and branch boundaries.
+/// Correct rounding is not guaranteed.
+///
+/// ## Examples
+/// ```
+/// let value = sci_special::complex::loggamma(sci_complex::Complex { re: 1000.0_f64, im: 0.5 })?;
+/// assert!(value.re.is_finite() && value.im.is_finite());
+/// # Ok::<(), sci_core::Error>(())
+/// ```
+///
+/// ## References
+/// [NIST DLMF §5.2](https://dlmf.nist.gov/5.2).
+pub fn loggamma<T: Float>(z: Complex<T>) -> Result<Complex<T>> {
+    output(crate::backend::complex::loggamma(input(z)?).map_err(Error::NumericalFailure)?)
+}
+
+/// Computes 1/Γ(z), the entire reciprocal gamma function.
+///
+/// ## Parameters and conventions
+/// `z` is dimensionless and uses shared Sci complex components. Computation is in
+/// binary64, converted back to `T`.
+///
+/// ## Domain and special values
+/// Requires finite components. All finite complex arguments are accepted. Nonpositive
+/// real integers are zeros and return exactly complex zero. There is no branch cut.
+///
+/// ## Returns
+/// The complex value with components in the input float type.
+///
+/// ## Errors
+/// [`Error::InvalidInput`] for NaN or infinite inputs; [`Error::NumericalFailure`]
+/// for an undefined backend result; [`Error::NonFiniteEvaluation`] for
+/// result overflow or conversion overflow. Underflow is allowed.
+///
+/// ## Numerical behavior
+/// Exponentiates the negative analytic log-gamma rather than dividing by Γ(z),
+/// retaining small representable values when Γ overflows. Reuses bounded Taylor,
+/// reflection, recurrence and Stirling kernels. Very small results underflow to zero;
+/// relative accuracy can deteriorate near zeros and at large arguments. Correct
+/// rounding is not guaranteed.
+///
+/// ## Examples
+/// ```
+/// let value = sci_special::complex::rgamma(sci_complex::Complex { re: 172.0_f64, im: 0.5 })?;
+/// assert!(value.re.is_finite() && value.im.is_finite());
+/// # Ok::<(), sci_core::Error>(())
+/// ```
+///
+/// ## References
+/// [NIST DLMF §5.2](https://dlmf.nist.gov/5.2).
+pub fn rgamma<T: Float>(z: Complex<T>) -> Result<Complex<T>> {
+    output(crate::backend::complex::rgamma(input(z)?).map_err(Error::NumericalFailure)?)
+}
+
+/// Computes ψ(z) = Γ′(z)/Γ(z) = d log Γ(z)/dz.
+///
+/// ## Parameters and conventions
+/// `z` is dimensionless and uses shared Sci complex components. Computation is in
+/// binary64, converted back to `T`.
+///
+/// ## Domain and special values
+/// Requires finite components. Nonpositive real integers are poles and return an error.
+/// The function is meromorphic with no branch cut; signed imaginary zero represents its
+/// real-axis continuation.
+///
+/// ## Returns
+/// The complex value with components in the input float type.
+///
+/// ## Errors
+/// [`Error::InvalidInput`] for NaN or infinite inputs; [`Error::NumericalFailure`]
+/// for a pole or undefined backend result; [`Error::NonFiniteEvaluation`] for
+/// result overflow or conversion overflow. Underflow is allowed.
+///
+/// ## Numerical behavior
+/// Reuses the real digamma approximation on the real axis and up to 99 Taylor terms
+/// near the two zeros closest to the origin. Elsewhere uses scaled cotangent
+/// reflection, at most eight recurrence steps and the derivative of the shared
+/// eight-term Stirling correction. Accuracy can deteriorate near other zeros and poles.
+/// Correct rounding is not guaranteed.
+///
+/// ## Examples
+/// ```
+/// let value = sci_special::complex::digamma(sci_complex::Complex { re: 1.0_f64, im: 0.5 })?;
+/// assert!(value.re.is_finite() && value.im.is_finite());
+/// # Ok::<(), sci_core::Error>(())
+/// ```
+///
+/// ## References
+/// [NIST DLMF §5.5](https://dlmf.nist.gov/5.5).
+pub fn digamma<T: Float>(z: Complex<T>) -> Result<Complex<T>> {
+    output(crate::backend::complex::digamma(input(z)?).map_err(Error::NumericalFailure)?)
+}
+
 /// Computes erf(z) = (2/√π) ∫₀ᶻ exp(−t²) dt.
 ///
 /// ## Parameters and conventions

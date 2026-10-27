@@ -44,7 +44,13 @@
     {
       "headers": [
         "digamma.h",
-        "loggamma.h",
+        "loggamma.h"
+      ],
+      "disposition": "expanded",
+      "notes": "Tested generic complex digamma, analytic loggamma and entire reciprocal gamma use shared Sci Complex and Result, bounded shared expansions and stable scaled reflection. Poles return errors for digamma/loggamma and exact zeros for rgamma; signed-zero loggamma banks preserve the unwrapped phase."
+    },
+    {
+      "headers": [
         "spence.h",
         "hyp2f1.h",
         "zeta.h",
@@ -55,7 +61,7 @@
         "cpu/specfun.h"
       ],
       "disposition": "partial",
-      "notes": "Existing real APIs remain covered; additional complex digamma/loggamma/rgamma/Spence/hypergeometric/zeta/Lambert branches/Wright omega require further algorithm and reference work. Existing private helpers do not constitute tested public coverage."
+      "notes": "Existing real APIs remain covered; additional complex Spence/hypergeometric/zeta/Lambert branches/Wright omega require further algorithm and reference work. Existing private helpers do not constitute tested public coverage."
     },
     {
       "headers": [

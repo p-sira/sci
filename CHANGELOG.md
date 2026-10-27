@@ -2,6 +2,9 @@
 
 ## 0.3.0
 
+- Add generic complex log-gamma, reciprocal gamma and digamma with shared errors,
+  signed branch-cut banks, overflow-resistant evaluation and independent fixtures.
+
 - Add eight generic scalar special functions and 19 shared-complex functions,
   with bounded numerical work, independent precision fixtures and an explicit
   native XSF capability audit. See function_coverages/SPECIAL_NATIVE_COVERAGE.md.

@@ -31,6 +31,9 @@ fn evaluate<T: Float>(name: &str, args: &[&str]) -> Vec<f64> {
         im: real(1),
     };
     let values = match name {
+        "complex.loggamma" => vec![s::complex::loggamma(unary).unwrap()],
+        "complex.rgamma" => vec![s::complex::rgamma(unary).unwrap()],
+        "complex.digamma" => vec![s::complex::digamma(unary).unwrap()],
         "complex.gamma" => vec![s::complex::gamma(unary).unwrap()],
         "complex.erf" => vec![s::complex::erf(unary).unwrap()],
         "complex.erfc" => vec![s::complex::erfc(unary).unwrap()],
@@ -292,4 +295,143 @@ fn normalized_harmonics_retain_small_probabilities_at_work_limit() {
     assert!((f / expected - 1.0).abs() < 3e-6);
     let d = s::normalized_gen_harmonic(1, 1, n, -1.0_f64).unwrap();
     assert!((d / expected - 1.0).abs() < 5e-15);
+}
+
+#[test]
+fn complex_gamma_family_contracts() {
+    use s::complex::{digamma, gamma, loggamma, rgamma};
+    let close = |a: Complex, b: Complex| {
+        let error = (a.re - b.re).hypot(a.im - b.im);
+        assert!(error <= 2e-12 * b.re.hypot(b.im).max(1.0), "{a:?} != {b:?}");
+    };
+    for z in [
+        Complex { re: 0.3, im: 0.7 },
+        Complex { re: -4.7, im: 0.3 },
+        Complex {
+            re: -20.1,
+            im: -7.1,
+        },
+    ] {
+        let shifted = Complex {
+            re: z.re + 1.0,
+            im: z.im,
+        };
+        let inverse = Complex {
+            re: z.re / (z.re * z.re + z.im * z.im),
+            im: -z.im / (z.re * z.re + z.im * z.im),
+        };
+        close(
+            digamma(shifted).unwrap(),
+            sci::complex::add(digamma(z).unwrap(), inverse),
+        );
+        let log_z = Complex {
+            re: z.re.hypot(z.im).ln(),
+            im: z.im.atan2(z.re),
+        };
+        close(
+            loggamma(shifted).unwrap(),
+            sci::complex::add(loggamma(z).unwrap(), log_z),
+        );
+        close(
+            sci::complex::multiply(gamma(z).unwrap(), rgamma(z).unwrap()),
+            Complex { re: 1.0, im: 0.0 },
+        );
+        for f in [loggamma, rgamma, digamma] {
+            let a = f(z).unwrap();
+            close(
+                f(Complex {
+                    re: z.re,
+                    im: -z.im,
+                })
+                .unwrap(),
+                Complex {
+                    re: a.re,
+                    im: -a.im,
+                },
+            );
+        }
+    }
+    for x in [0.0, -0.0, -1.0, -20.0] {
+        for im in [0.0, -0.0] {
+            let z = Complex { re: x, im };
+            assert!(loggamma(z).is_err());
+            assert!(digamma(z).is_err());
+            assert_eq!(rgamma(z).unwrap(), Complex { re: 0.0, im: 0.0 });
+        }
+    }
+    for f in [loggamma, rgamma, digamma] {
+        for z in [
+            Complex {
+                re: f64::NAN,
+                im: 0.0,
+            },
+            Complex {
+                re: 1.0,
+                im: f64::INFINITY,
+            },
+        ] {
+            assert!(matches!(f(z), Err(sci::Error::InvalidInput(_))));
+        }
+    }
+    let upper = loggamma(Complex {
+        re: -2.25_f64,
+        im: 0.0,
+    })
+    .unwrap();
+    let lower = loggamma(Complex {
+        re: -2.25_f64,
+        im: -0.0,
+    })
+    .unwrap();
+    assert!((upper.im + 3.0 * std::f64::consts::PI).abs() < 1e-14);
+    close(
+        lower,
+        Complex {
+            re: upper.re,
+            im: -upper.im,
+        },
+    );
+    assert!(upper.im.abs() > std::f64::consts::PI); // Unwrapped log-gamma phase.
+
+    let z = Complex {
+        re: 172.0_f64,
+        im: 0.0,
+    };
+    assert!(gamma(z).is_err());
+    assert!(loggamma(z).unwrap().re.is_finite());
+    assert!(rgamma(z).unwrap().re > 0.0); // Subnormal reciprocal survives gamma overflow.
+    assert_eq!(
+        rgamma(Complex {
+            re: 1000.0_f64,
+            im: 0.0
+        })
+        .unwrap()
+        .re,
+        0.0
+    );
+    assert!(
+        rgamma(Complex {
+            re: -170.5_f32,
+            im: 0.5
+        })
+        .is_err()
+    );
+
+    // A scaled cotangent must retain poles approached closer than sqrt(MIN_POSITIVE).
+    for y in [1e-20_f64, 1e-200, 1e-300] {
+        let value = digamma(Complex { re: -100.0, im: y }).unwrap();
+        assert!((value.im * y - 1.0).abs() < 2e-15);
+    }
+    let huge = digamma(Complex {
+        re: -1e200_f64,
+        im: 1e200,
+    })
+    .unwrap();
+    close(
+        huge,
+        Complex {
+            re: 200.0 * 10.0_f64.ln() + 0.5 * 2.0_f64.ln(),
+            im: 0.75 * std::f64::consts::PI,
+        },
+    );
 }

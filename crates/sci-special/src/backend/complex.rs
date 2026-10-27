@@ -174,6 +174,84 @@ pub fn gamma<T: Float>(z: Complex<T>) -> Result<Complex<T>, StrErr> {
     finish(exp_kernel(loggamma_kernel(z)))
 }
 
+/// Analytic log-gamma, real on the positive axis and cut on the negative axis.
+pub(crate) fn loggamma(z: Complex64) -> Result<Complex64, StrErr> {
+    finite(z)?;
+    if pole(z) {
+        return Err("loggamma: Nonpositive integers are poles.");
+    }
+    finish(loggamma_kernel(z))
+}
+
+/// Entire reciprocal gamma; evaluate the negative logarithm before exponentiating.
+pub(crate) fn rgamma(z: Complex64) -> Result<Complex64, StrErr> {
+    finite(z)?;
+    if pole(z) {
+        return Ok(Complex64::new(0.0, 0.0));
+    }
+    finish(exp_kernel(-loggamma_kernel(z)))
+}
+
+/// Logarithmic gamma derivative, using derivatives of the shared expansions.
+pub(crate) fn digamma(mut z: Complex64) -> Result<Complex64, StrErr> {
+    finite(z)?;
+    if pole(z) {
+        return Err("digamma: Nonpositive integers are poles.");
+    }
+    if z.im == 0.0 {
+        // Reuse the real kernel's rational approximation near its real zeros.
+        return Ok(Complex64::new(super::digamma(z.re)?, z.im));
+    }
+    for (root, value, radius) in [
+        (-0.5040830082644554, 7.289763902976895e-17, 0.3),
+        (1.4616321449683623, -9.241265521729428e-17, 0.5),
+    ] {
+        if (z - root).norm() < radius {
+            return finish(digamma_series(z, root, value));
+        }
+    }
+    let mut correction = Complex64::new(0.0, 0.0);
+    if z.re < 0.5 {
+        // psi(z) = psi(1-z) - pi*cot(pi*z). Exponentially scaled
+        // cotangent avoids overflowing sinh/cosh for large imaginary parts.
+        let exponent = -2.0 * PI * z.im.abs();
+        let t = exponent.exp();
+        let one_minus_t = -exponent.exp_m1();
+        let sin = super::cephes64::sinpi(z.re);
+        let cos = super::cephes64::cospi(z.re);
+        let twice_sqrt_t = 2.0 * (0.5 * exponent).exp();
+        let b = twice_sqrt_t * sin;
+        let scale = one_minus_t.max(b.abs());
+        let a_scaled = one_minus_t / scale;
+        let b_scaled = b / scale;
+        let denominator = scale * (a_scaled * a_scaled + b_scaled * b_scaled);
+        let cot = Complex64::new(
+            twice_sqrt_t * cos * b_scaled / denominator,
+            -(a_scaled * (1.0 + t)).copysign(z.im) / denominator,
+        );
+        correction = -PI * cot;
+        z = 1.0 - z;
+    }
+    // At most eight shifts after reflection. Differentiating the shared
+    // Stirling correction gives -B_(2k)/(2k*z^(2k)).
+    for _ in 0..8 {
+        if z.re >= 8.0 {
+            break;
+        }
+        correction -= reciprocal(z);
+        z += 1.0;
+    }
+    let r = reciprocal(z);
+    let r2 = r * r;
+    let derivative = STIRLING
+        .iter()
+        .enumerate()
+        .fold(Complex64::new(0.0, 0.0), |sum, (i, &coefficient)| {
+            sum * r2 + (2 * i as i32 - 15) as f64 * coefficient
+        });
+    finish(correction + z.ln() - 0.5 * r + r2 * derivative)
+}
+
 fn log_near_one(z: Complex64) -> Complex64 {
     if (z.re - 1.0).abs() < 0.5 && z.im.abs() < 0.5 {
         Complex64::new(

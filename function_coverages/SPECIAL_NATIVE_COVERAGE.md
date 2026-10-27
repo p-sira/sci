@@ -34,10 +34,10 @@ reference, not a requirement for complete API or domain parity.
 | `iv_ratioinv(v,r)` | Nonnegative inverse ratio; bounded bisection and complementary residual near `r=1` |
 | `normalized_gen_harmonic(j,k,n,a)` | Inclusive truncated power-law probability; integer indices, finite exponent, at most one million terms, shared `Result`, maximum-scaled compensated sums |
 
-**19 generic complex APIs** live in `special::complex`, avoiding C++ overload
+**22 generic complex APIs** live in `special::complex`, avoiding C++ overload
 replication and ambiguity with real scalar calls:
 
-- `gamma`, `erf`, `erfc`, `wofz`.
+- `gamma`, `loggamma`, `rgamma`, `digamma`, `erf`, `erfc`, `wofz`.
 - `jv`, `jve`, `yv`, `yve`, `iv`, `ive`, `kv`, `kve`.
 - `hankel1`, `hankel1e`, `hankel2`, `hankel2e`.
 - `airy`, `airye`, `fresnel`.
@@ -57,6 +57,18 @@ existing private Rust AMOS backend, and gamma/error/Fresnel reuse private kernel
 Perron's fraction reuses the existing private double-double arithmetic; it is
 bounded by 1000 terms. The inverse is bounded by 128 fraction evaluations.
 No C++ dependency or new Rust dependency is introduced.
+
+Complex `loggamma`, `rgamma`, and `digamma` complete this gamma-family
+increment. Log-gamma is the analytic branch real on the positive axis, with
+signed-zero banks of the negative-real cut and an unwrapped imaginary part;
+it is not `log(gamma(z))`. Reciprocal gamma is entire, returns exact zero at
+gamma poles, and exponentiates negative log-gamma to retain representable values
+when gamma overflows. Digamma reuses real/root approximations and differentiates
+the shared Stirling expansion, with at most eight shifts and scaled cotangent
+reflection. These APIs retain the shared finite-input/result error contract.
+Independent fixtures include near-pole, root, Taylor/recurrence/asymptotic,
+conjugate, cut and overflow regimes; property tests check recurrences,
+reciprocity, tiny pole distances and large complex arguments.
 
 ## Deliberate exclusions and replacements
 
@@ -82,7 +94,7 @@ coherent design in the owning module; exposing the C++ machinery is unnecessary.
 
 The following remain useful candidates, rather than intentional exclusions:
 
-- Additional complex digamma, log-gamma, reciprocal gamma, error variants,
+- Additional complex error variants,
   exponential/sine/cosine integrals, Spence, hypergeometric, zeta and Wright
   functions; arbitrary complex Lambert W branches.
 - Complex Carlson integrals, Legendre and spherical-Bessel arguments;
@@ -104,8 +116,8 @@ audit is separate from Codecov executable-line coverage; no new 99% claim is mad
 ## Independent validation
 
 `tests/scipy/generate_special_native.py` pins **NumPy 2.5.4 / SciPy 1.18.1**.
-Separate JSON inputs generate **1010 checked-in f32/f64 reference rows** for
-all 27 additions. Ordinary Rust tests exercise only public `sci` APIs and read
+Separate JSON inputs generate **1176 checked-in f32/f64 reference rows** for
+all 30 additions. Ordinary Rust tests exercise only public `sci` APIs and read
 the committed CSV, without Python or a backend reference at runtime.
 
 - Bessel ratios/complements use 100-digit standard-library Decimal defining

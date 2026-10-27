@@ -3749,5 +3749,586 @@
       1,
       20001
     ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      1,
+      -0.0
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      2,
+      0
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      0.1,
+      0.3
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      0.5,
+      -0.5
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      3.2,
+      4.1
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      -0.5,
+      0.25
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      -4.7,
+      0.3
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      -4.7,
+      -0.3
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      -20.1,
+      7.1
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      -20.1,
+      -7.1
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      7,
+      7
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      8,
+      8
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      100,
+      20
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      1000,
+      1000
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      1e-20,
+      1e-20
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      -1,
+      1e-12
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      -1,
+      -1e-12
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      -2.25,
+      0.0
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      -2.25,
+      -0.0
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      -100.25,
+      0.0
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      -100.25,
+      -0.0
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      1.00001,
+      1e-06
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      1.99999,
+      -1e-06
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      0.001,
+      700
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      -100,
+      700
+    ]
+  },
+  {
+    "name": "complex.loggamma",
+    "args": [
+      1e+20,
+      1e+20
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      1,
+      -0.0
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      2,
+      0
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      0.1,
+      0.3
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      0.5,
+      -0.5
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      3.2,
+      4.1
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      -0.5,
+      0.25
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      -4.7,
+      0.3
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      -4.7,
+      -0.3
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      -20.1,
+      7.1
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      -20.1,
+      -7.1
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      7,
+      7
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      8,
+      8
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      1e-20,
+      1e-20
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      -1,
+      1e-12
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      -1,
+      -1e-12
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      -2.25,
+      0.0
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      -2.25,
+      -0.0
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      1.00001,
+      1e-06
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      1.99999,
+      -1e-06
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      172,
+      0.5
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      35,
+      0
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      0,
+      0
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      -1,
+      0
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      -20,
+      0
+    ]
+  },
+  {
+    "name": "complex.rgamma",
+    "args": [
+      1e-30,
+      0
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      1,
+      0
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      1,
+      -0.0
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      2,
+      0
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      0.1,
+      0.3
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      0.5,
+      -0.5
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      3.2,
+      4.1
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      -0.5,
+      0.25
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      -4.7,
+      0.3
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      -4.7,
+      -0.3
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      -20.1,
+      7.1
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      -20.1,
+      -7.1
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      7,
+      7
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      8,
+      8
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      100,
+      20
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      1000,
+      1000
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      1e-20,
+      1e-20
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      -1,
+      1e-12
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      -1,
+      -1e-12
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      -2.25,
+      0.0
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      -2.25,
+      -0.0
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      -100.25,
+      0.0
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      -100.25,
+      -0.0
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      1.00001,
+      1e-06
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      1.99999,
+      -1e-06
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      0.001,
+      700
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      -100,
+      700
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      1e+20,
+      1e+20
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      1.4616321449683622,
+      1e-14
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      -0.5040830082644554,
+      1e-14
+    ]
+  },
+  {
+    "name": "complex.digamma",
+    "args": [
+      -100,
+      1e-20
+    ]
   }
 ]

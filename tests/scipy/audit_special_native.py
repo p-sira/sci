@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SCALAR = {'digammainv','gamma_ratio','iv_ratio','iv_ratio_c','iv_ratioinv',
           'log1pmx','scaled_exp1','normalized_gen_harmonic'}
-COMPLEX = {'gamma','erf','erfc','wofz','jv','jve','yv','yve','iv','ive','kv','kve',
+COMPLEX = {'loggamma','rgamma','digamma','gamma','erf','erfc','wofz','jv','jve','yv','yve','iv','ive','kv','kve',
            'hankel1','hankel1e','hankel2','hankel2e','airy','airye','fresnel'}
 
 
