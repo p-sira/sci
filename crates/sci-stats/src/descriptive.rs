@@ -892,11 +892,7 @@ pub fn trimboth<T: Float>(values: &[T], proportion: T) -> Result<Vec<T>> {
         return Err(Error::InvalidInput("trim proportion must be in [0,0.5)"));
     }
     let mut x = values.to_vec();
-    x.sort_by(|a, b| {
-        a.partial_cmp(b)
-            .unwrap()
-            .then_with(|| b.is_sign_negative().cmp(&a.is_sign_negative()))
-    });
+    x.sort_by(total_cmp);
     let k = (T::from(x.len()).unwrap() * proportion)
         .floor()
         .to_usize()

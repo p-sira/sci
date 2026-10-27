@@ -31,18 +31,36 @@ fn spacings<T: Float>(y: &[T], x: Option<&[T]>, dx: T) -> Result<Vec<T>> {
 // Multiply the smallest and largest magnitudes first. This avoids a spurious
 // intermediate overflow/underflow when three finite factors balance each other.
 fn product3<T: Float>(a: T, b: T, c: T) -> T {
-    let mut factors = [a, b, c];
-    factors.sort_unstable_by(|a, b| {
-        a.abs()
-            .partial_cmp(&b.abs())
-            .unwrap_or_else(|| a.is_nan().cmp(&b.is_nan()))
-    });
-    (factors[0] * factors[2]) * factors[1]
+    // Orders by magnitude, with NaN last. Ties cannot change the product.
+    fn smaller<T: Float>(a: T, b: T) -> bool {
+        a.abs() < b.abs() || (b.is_nan() && !a.is_nan())
+    }
+    let (mut lo, mut mid, mut hi) = (a, b, c);
+    if smaller(mid, lo) {
+        std::mem::swap(&mut lo, &mut mid);
+    }
+    if smaller(hi, mid) {
+        std::mem::swap(&mut mid, &mut hi);
+    }
+    if smaller(mid, lo) {
+        std::mem::swap(&mut lo, &mut mid);
+    }
+    (lo * hi) * mid
 }
 
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 fn sample_scale<T: Float>(magnitude: T) -> T {
     // A power of two makes normalization exact, including for subnormal data.
+    // Types no wider than binary64 (binary32, binary64) convert exactly to
+    // binary64, so masking its exponent yields the same power of two without
+    // decoding; the size test is resolved at compile time.
+    if std::mem::size_of::<T>() <= std::mem::size_of::<f64>()
+        && let Some(power) = magnitude
+            .to_f64()
+            .and_then(|wide| T::from(f64::from_bits(wide.to_bits() & 0x7ff0_0000_0000_0000)))
+    {
+        return power.max(T::min_positive_value());
+    }
     let (mantissa, exponent, _) = magnitude.integer_decode();
     let leading = 63 - mantissa.max(1).leading_zeros();
     2.0.powi(i32::from(exponent) + leading as i32)

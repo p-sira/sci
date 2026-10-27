@@ -397,12 +397,23 @@ fn probability_check<T: Float>(x: T) -> Result<()> {
 fn sorted<T: Float>(x: &[T]) -> Result<Vec<T>> {
     sample(x, 1)?;
     let mut out = x.to_vec();
-    out.sort_by(|a, b| {
-        a.partial_cmp(b)
-            .unwrap()
-            .then_with(|| b.is_sign_negative().cmp(&a.is_sign_negative()))
-    });
+    out.sort_by(total_cmp);
     Ok(out)
+}
+/// Total order for finite observations, placing `-0` before `+0`.
+fn total_cmp<T: Float>(a: &T, b: &T) -> std::cmp::Ordering {
+    // Types no wider than binary64 (binary32, binary64) convert exactly and
+    // order-preservingly to binary64, whose `total_cmp` is a cheap integer
+    // comparison; the size test is resolved at compile time.
+    match (a.to_f64(), b.to_f64()) {
+        (Some(x), Some(y)) if std::mem::size_of::<T>() <= std::mem::size_of::<f64>() => {
+            x.total_cmp(&y)
+        }
+        _ => a
+            .partial_cmp(b)
+            .unwrap()
+            .then_with(|| b.is_sign_negative().cmp(&a.is_sign_negative())),
+    }
 }
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 fn interpolate<T: Float>(x: &[T], p: T) -> T {
