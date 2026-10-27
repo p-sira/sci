@@ -1,6 +1,6 @@
 //! Kelvin functions: ber/bei from direct series and asymptotic kernels, ker/kei
-//! through modified Bessel functions at rotated arguments.
-use crate::backend::{StrErr, bessel::backend_error, complex::finish, double_double::Dd};
+//! from a power series and a trapezoidal integral at rotated arguments.
+use crate::backend::{StrErr, complex::finish, double_double::Dd};
 use core::f64::consts::{FRAC_1_SQRT_2, FRAC_PI_4, PI, SQRT_2};
 use num_complex::{Complex, Complex64};
 #[allow(unused_imports)]
@@ -338,33 +338,63 @@ fn first_kind_asymptotic(x: f64, scaled: bool, need: Need) -> (Complex64, Comple
     )
 }
 
-/// Order-zero and order-one AMOS values at `z`, computing only what `need`
-/// requires (unused entries are NaN). Both orders come from one call.
-fn orders(z: Complex64, second: bool, need: Need) -> Result<(Complex64, Complex64), StrErr> {
-    let nan = Complex64::new(f64::NAN, f64::NAN);
-    let scaling = complex_bessel::Scaling::Exponential;
-    let single = |order: f64| {
-        if second {
-            complex_bessel::besselk_scaled(order, z)
-        } else {
-            complex_bessel::besseli_scaled(order, z)
+/// Below this argument, ker + i kei comes from the binary64 power series in
+/// [`small`], which loses less than about 4 ulps to cancellation there; above
+/// it, from [`second_kind_integral`].
+const SECOND_KIND_SERIES: f64 = 2.0;
+
+/// e^z K₀(z) and e^z K₁(z) at z = x e^{iπ/4} for x >= 2.
+///
+/// Substituting cosh t = 1 + s² in K_ν(z) = ∫₀^∞ e^{-z cosh t} cosh(νt) dt
+/// (DLMF 10.32.9) gives
+///
+/// e^z K₀(z) = ∫₀^∞ 2 e^{-z s²} / √(s² + 2) ds,
+/// e^z K₁(z) = ∫₀^∞ 2 e^{-z s²} (1 + s²) / √(s² + 2) ds.
+///
+/// The integrands are even and analytic for |Im s| < √2, so the trapezoidal
+/// rule with step h converges geometrically; on the line Im s = σ they grow by
+/// at most e^{√2 x σ²}, which bounds the error by about
+/// e^{√2 x σ² - 2πσ/h}. The step min(0.17, 0.38/√x) keeps this below 1e-17
+/// with a margin of 10% in h; the sum then stops once e^{-z s²} is below 1e-18
+/// (at most about 32 nodes). The nodes e^{-z h² k²} come from the recurrence
+/// g_{k+1} = g_k r_k, r_{k+1} = r_k e^{-2zh²}, so the loop needs only complex
+/// products and one square root per node.
+fn second_kind_integral(x: f64) -> (Complex64, Complex64) {
+    let h = (0.38 / x.sqrt()).min(0.17);
+    let zh = Complex64::new(x * FRAC_1_SQRT_2, x * FRAC_1_SQRT_2) * (h * h);
+    let mut ratio = (-zh).exp();
+    let step = ratio * ratio;
+    let mut node = Complex64::new(1.0, 0.0);
+    // Half of the s = 0 node, 2/√2 for both integrands.
+    let mut k0 = Complex64::new(FRAC_1_SQRT_2, 0.0);
+    let mut k1 = k0;
+    for k in 1..128 {
+        node *= ratio;
+        ratio *= step;
+        let s2 = (k as f64 * h) * (k as f64 * h);
+        let term = node * (2.0 / (s2 + 2.0).sqrt());
+        k0 += term;
+        k1 += term * (1.0 + s2);
+        if node.norm_sqr() < 1e-36 {
+            break;
         }
-        .map_err(backend_error)
+    }
+    (k0 * h, k1 * h)
+}
+
+/// e^{-z} at z = x e^{iπ/4}, or its unit phase e^{-i x/√2} when `scaled`.
+/// The angle and exponent x/√2 are formed in double-double: rounding them in
+/// binary64 would cost about x ulps in the oscillating result.
+fn decay(x: f64, scaled: bool) -> Complex64 {
+    let phase = Dd::from(x).mul_f64(FRAC_1_SQRT_2) + Dd::from(x * FRAC_1_SQRT_2_LO);
+    let (sin, cos) = phase.hi.sin_cos();
+    let (sin, cos) = (sin + phase.lo * cos, cos - phase.lo * sin);
+    let modulus = if scaled {
+        1.0
+    } else {
+        (-phase.hi).exp() * (1.0 - phase.lo)
     };
-    Ok(match need {
-        Need::Both => {
-            let values = if second {
-                complex_bessel::besselk_seq(0.0, z, 2, scaling)
-            } else {
-                complex_bessel::besseli_seq(0.0, z, 2, scaling)
-            }
-            .map_err(backend_error)?
-            .values;
-            (values[0], values[1])
-        }
-        Need::Value => (single(0.0)?, nan),
-        Need::Derivative => (nan, single(1.0)?),
-    })
+    Complex64::new(cos * modulus, -sin * modulus)
 }
 
 fn pair(x: f64, second: bool, scaled: bool) -> Result<(Complex64, Complex64), StrErr> {
@@ -395,13 +425,20 @@ fn pair_needed(
         if second { (ke, kep) } else { (be, bep) }
     } else {
         let rotation = Complex64::new(FRAC_1_SQRT_2, FRAC_1_SQRT_2);
-        let z = rotation * a;
         if second {
-            let scale = Complex64::new(if scaled { 0.0 } else { -z.re }, -z.im).exp();
-            let (k0, k1) = orders(z, true, need)?;
-            let value = k0 * scale;
-            let derivative = -rotation * k1 * scale;
-            (value, derivative)
+            if a < SECOND_KIND_SERIES {
+                let (_, ke, _, kep) = small(a);
+                if scaled {
+                    let scale = (a * FRAC_1_SQRT_2).exp();
+                    (ke * scale, kep * scale)
+                } else {
+                    (ke, kep)
+                }
+            } else {
+                let (k0, k1) = second_kind_integral(a);
+                let scale = decay(a, scaled);
+                (k0 * scale, -rotation * k1 * scale)
+            }
         } else {
             let (value, derivative) = if a < ASYMPTOTIC {
                 let (value, derivative) = first_kind_series(a, need);
@@ -477,7 +514,7 @@ pub enum KelvinFunction {
 }
 
 impl KelvinFunction {
-    /// Scaled value alone, for bracketing; one Bessel evaluation.
+    /// Scaled value alone, for bracketing; one kernel evaluation.
     fn value(self, x: f64) -> Result<f64, StrErr> {
         use KelvinFunction::*;
         let second = matches!(self, Ker | Kei | KerPrime | KeiPrime);
@@ -569,10 +606,8 @@ fn bracketed_halley(
 /// Fill a caller-owned slice with successive positive Kelvin zeros.
 ///
 /// The origin is excluded. Uses a bracketed Halley iteration on scaled
-/// kernels, starting from the spacing of the previous zeros. ber/bei
-/// evaluations do not allocate; each ker/kei iteration takes both Bessel
-/// orders from one sequence call, which allocates a two-element buffer.
-/// On failure, earlier entries remain populated.
+/// kernels, starting from the spacing of the previous zeros. Evaluations do
+/// not allocate. On failure, earlier entries remain populated.
 /// An empty slice succeeds without evaluating any functions.
 pub fn kelvin_zeros<T: Float>(function: KelvinFunction, zeros: &mut [T]) -> Result<(), StrErr> {
     let mut left = 0.5;

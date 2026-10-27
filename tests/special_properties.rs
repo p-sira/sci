@@ -346,9 +346,9 @@ fn kelvin_first_kind_matches_references_across_kernel_switches() {
         (
             0.5_f64,
             [
-                0.99902346399083826,
+                0.999_023_463_990_838_3,
                 0.062493218382199459,
-                -0.0078120761475077336,
+                -0.007_812_076_147_507_734,
                 0.24991862111621022,
             ],
         ),
@@ -364,10 +364,10 @@ fn kelvin_first_kind_matches_references_across_kernel_switches() {
         (
             4.0_f64,
             [
-                -2.5634165572585798,
+                -2.563_416_557_258_58,
                 2.2926903226992998,
                 -3.1346539628386434,
-                -0.49113744063072261,
+                -0.491_137_440_630_722_6,
             ],
         ),
         (
@@ -393,7 +393,7 @@ fn kelvin_first_kind_matches_references_across_kernel_switches() {
             [
                 47489.37026506176,
                 114775.19736006622,
-                -48803.197847170976,
+                -48_803.197_847_170_97,
                 111855.02522349712,
             ],
         ),
@@ -443,6 +443,118 @@ fn kelvin_first_kind_matches_references_across_kernel_switches() {
 }
 
 #[test]
+fn kelvin_second_kind_matches_references_across_kernel_switches() {
+    // References from mpmath 1.4 at 50 digits at the binary64 value of x:
+    // K0(z) and -exp(iπ/4) K1(z) at z = x exp(iπ/4). The points straddle the
+    // power series and the continued fraction used for ker, kei, ker′ and
+    // kei′, and include large arguments where the phase of exp(-z) matters.
+    let references: [(f64, [f64; 4]); 9] = [
+        (
+            0.5_f64,
+            [
+                0.855_905_872_118_634_2,
+                -0.6715816950943676,
+                -1.8197997533173526,
+                0.33320379160332984,
+            ],
+        ),
+        (
+            1.99_f64,
+            [
+                -0.040_585_656_714_261_09,
+                -0.20460572926266777,
+                -0.10917676934115904,
+                0.2213247824648346,
+            ],
+        ),
+        (
+            2.0_f64,
+            [
+                -0.041664513991509532,
+                -0.202_400_067_764_704_3,
+                -0.10660096588105265,
+                0.21980790991960552,
+            ],
+        ),
+        (
+            2.4_f64,
+            [
+                -0.06737349336152855,
+                -0.1262414877404732,
+                -0.029712257069996982,
+                0.16210691534821758,
+            ],
+        ),
+        (
+            8.0_f64,
+            [
+                0.0014858340685189625,
+                3.695_839_561_259_596e-4,
+                -8.797_240_991_414_724e-4,
+                -0.00133631291485889,
+            ],
+        ),
+        (
+            19.99_f64,
+            [
+                -7.639_262_950_051_707e-8,
+                -1.8780471626416795e-7,
+                -7.692507386882865e-8,
+                1.9148756853049503e-7,
+            ],
+        ),
+        (
+            20.0_f64,
+            [
+                -7.715_233_109_860_961e-8,
+                -1.8589415111194372e-7,
+                -7.501_859_210_700_241e-8,
+                1.9062427567453116e-7,
+            ],
+        ),
+        (
+            45.0_f64,
+            [
+                1.9809218748338303e-15,
+                -2.0178948281079617e-15,
+                -2.8495996265400866e-15,
+                4.839_305_146_504_315e-17,
+            ],
+        ),
+        (
+            300.0_f64,
+            [
+                2.4263778900964785e-94,
+                4.813_129_265_455_171e-94,
+                1.6836512069978793e-94,
+                -5.127_124_129_126_373e-94,
+            ],
+        ),
+    ];
+    for (x, [ker, kei, kerp, keip]) in references {
+        let value_scale = ker.hypot(kei);
+        let derivative_scale = kerp.hypot(keip);
+        let got = [
+            (s::ker(x), ker, value_scale),
+            (s::kei(x), kei, value_scale),
+            (s::kerp(x), kerp, derivative_scale),
+            (s::keip(x), keip, derivative_scale),
+        ];
+        for (index, (value, expected, scale)) in got.into_iter().enumerate() {
+            assert!(
+                (value - expected).abs() <= 2e-15 * scale,
+                "component {index} at x = {x}: {value}, expected {expected}"
+            );
+        }
+        let [_, ke, _, kep] = s::kelvin(x);
+        assert!((ke.re - ker).abs() <= 2e-15 * value_scale);
+        assert!((ke.im - kei).abs() <= 2e-15 * value_scale);
+        assert!((kep.re - kerp).abs() <= 2e-15 * derivative_scale);
+        assert!((kep.im - keip).abs() <= 2e-15 * derivative_scale);
+    }
+}
+
+#[test]
 fn real_modified_bessel_i_large_arguments_beyond_cf1() {
     // References from mpmath 1.3 at 50 digits: besseli(v, x) * exp(-x).
     // CF1 needs O(x) terms here, so these exercise the large-x expansion.
@@ -466,5 +578,14 @@ fn real_modified_bessel_i_large_arguments_beyond_cf1() {
             let upper = s::ive(v + 1.0, x);
             assert!((lower - upper - 2.0 * v / x * i).abs() <= 1e-11 * lower.abs());
         }
+    }
+}
+
+#[test]
+fn odd_modified_mathieu_functions_of_order_zero_are_undefined() {
+    // Odd Mathieu functions start at order one; order zero used to panic.
+    for f in [s::mathieu_modsem1, s::mathieu_modsem2] {
+        let (value, derivative) = f(0, 1.0, 0.5);
+        assert!(value.is_nan() && derivative.is_nan());
     }
 }

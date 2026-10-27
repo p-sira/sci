@@ -11,12 +11,34 @@
     clippy::all
 )]
 use super::cephes64::{gamma as Gamma, psi, rgamma};
-use super::legacy::{cva2, fcoef, gamma_ratio, lgam_sgn};
+use super::legacy::{fcoef, gamma_ratio, lgam_sgn};
 const HYP2F1_EPS: f64 = 1e-13;
 const HYP2F1_ETHRESH: f64 = 1e-12;
 const HYP2F1_MAXITER: i32 = 10000;
 const M_PI: f64 = core::f64::consts::PI;
 const MACHEP: f64 = f64::EPSILON * 0.5;
+
+/// `(-1)^k` for an integer `k`, without a `pow` call.
+#[inline]
+fn neg_one_pow(k: i32) -> f64 {
+    if k % 2 == 0 { 1.0 } else { -1.0 }
+}
+
+/// Length of the zeroed work arrays of the spheroidal kernels below. They
+/// previously used fixed 512-entry arrays. Every index they touch is below
+/// `2 nm + 2 m + 8`, where `nm <= 40 + (n - m)/2 + c` is the largest
+/// truncation order (`aswfa`). Some kernels read entries past the prefix they
+/// write and expect zeros, so the arrays stay zero-initialized; the length is
+/// capped at the previous fixed size.
+fn spheroidal_work_len(m: i32, n: i32, c: f64) -> usize {
+    let nm = 40.0 + f64::from((n - m).max(0) / 2) + c.max(0.0);
+    let len = 2.0 * nm + 2.0 * f64::from(m.max(0)) + 16.0;
+    if len < 512.0 {
+        len.ceil() as usize
+    } else {
+        512
+    }
+}
 pub(super) fn hyp2f1(mut a: f64, mut b: f64, mut c: f64, mut x: f64) -> f64 {
     let mut d: f64 = 0.0;
     let mut d1: f64 = 0.0;
@@ -671,8 +693,8 @@ pub(super) fn aswfa(
     let mut su2: f64 = 0.0;
     let mut x0: f64 = 0.0;
     let mut x1: f64 = 0.0;
-    let mut ck = [0.0; (512) as usize];
-    let mut df = [0.0; (512) as usize];
+    let mut ck = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut df = vec![0.0; spheroidal_work_len(m, n, c)];
     let mut eps: f64 = 1e-14f64;
     x0 = x;
     x = (x).abs();
@@ -824,9 +846,9 @@ pub(super) fn sdmn(
             return 0;
         }
     }
-    let mut a = [0.0; (512) as usize];
-    let mut d = [0.0; (512) as usize];
-    let mut g = [0.0; (512) as usize];
+    let mut a = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut d = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut g = vec![0.0; spheroidal_work_len(m, n, c)];
     cs = ((c * c) * ((kd) as f64));
     ip = ((n - m) % 2);
     let mut i: i32 = 1;
@@ -1156,7 +1178,7 @@ pub(super) fn rswfp(
     r2f: &mut [f64],
     r2d: &mut [f64],
 ) -> i32 {
-    let mut df = [0.0; (512) as usize];
+    let mut df = vec![0.0; spheroidal_work_len(m, n, c)];
     let mut id: i32 = 0;
     let mut kd: i32 = 1;
     if (sdmn(m, n, c, cv, kd, &mut df[..]) == 1) {
@@ -1239,9 +1261,9 @@ pub(super) fn rmn1(
     let mut nm1: i32 = 0;
     let mut nm2: i32 = 0;
     let mut np: i32 = 0;
-    let mut ck = [0.0; (512) as usize];
-    let mut dj = [0.0; (512) as usize];
-    let mut sj = [0.0; (512) as usize];
+    let mut ck = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut dj = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut sj = vec![0.0; spheroidal_work_len(m, n, c)];
     let mut eps: f64 = 1.0e-14f64;
     nm1 = ((n - m) / 2);
     ip = if ((n - m) == (2 * nm1)) { 0 } else { 1 };
@@ -1676,8 +1698,8 @@ pub(super) fn rmn2l(
     let mut eps1: f64 = 0.0;
     let mut eps2: f64 = 0.0;
     let mut eps: f64 = 1.0e-14f64;
-    let mut sy = [0.0; (512) as usize];
-    let mut dy = [0.0; (512) as usize];
+    let mut sy = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut dy = vec![0.0; spheroidal_work_len(m, n, c)];
     ip = 1;
     nm1 = ((n - m) / 2);
     if ((n - m) == (2 * nm1)) {
@@ -1931,11 +1953,11 @@ pub(super) fn rmn2sp(
     let mut ck2: f64 = 0.0;
     let mut sum: f64 = 0.0;
     let mut sdm: f64 = 0.0;
-    let mut pm = [0.0; (512) as usize];
-    let mut pd = [0.0; (512) as usize];
-    let mut qm = [0.0; (512) as usize];
-    let mut qd = [0.0; (512) as usize];
-    let mut dn = [0.0; (512) as usize];
+    let mut pm = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut pd = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut qm = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut qd = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut dn = vec![0.0; spheroidal_work_len(m, n, c)];
     let mut eps: f64 = 1.0e-14f64;
     nm1 = (((n - m) / 2) as f64);
     nm = ((25.0f64 + nm1) + c);
@@ -2083,7 +2105,7 @@ pub(super) fn rmn2sp(
                 }
             }
             spl = (((r1 * ga) * gb) * sf);
-            su1 += ((((-1) as f64).powf(((j + m) as f64)) * dn[(k - 1) as usize]) * spl);
+            su1 += ((neg_one_pow(j + m) * dn[(k - 1) as usize]) * spl);
             spd1 = ((((m) as f64) / ((x * x) - 1.0f64)) * spl);
             gc = (((0.5f64 * ((j) as f64)) * (((j) as f64) + 1.0f64)) / (((m) as f64) + 1.0f64));
             sd = 1.0f64;
@@ -2103,7 +2125,7 @@ pub(super) fn rmn2sp(
                 };
             }
             spd2 = ((((r1 * ga) * gb) * gc) * sd);
-            sd1 += ((((-1) as f64).powf(((j + m) as f64)) * dn[(k - 1) as usize]) * (spd1 + spd2));
+            sd1 += ((neg_one_pow(j + m) * dn[(k - 1) as usize]) * (spd1 + spd2));
         }
         {
             k += 1;
@@ -2195,11 +2217,11 @@ pub(super) fn kmn(
     let mut sb0: f64 = 0.0;
     nm = (25 + (((0.5f64 * ((n - m) as f64)) + c) as i32));
     nn = (nm + m);
-    let mut u = [0.0; (512) as usize];
-    let mut v = [0.0; (512) as usize];
-    let mut w = [0.0; (512) as usize];
-    let mut tp = [0.0; (512) as usize];
-    let mut rk = [0.0; (512) as usize];
+    let mut u = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut v = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut w = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut tp = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut rk = vec![0.0; spheroidal_work_len(m, n, c)];
     let mut eps: f64 = 1.0e-14f64;
     cs = ((c * c) * ((kd) as f64));
     ck1[0] = 0.0f64;
@@ -2281,7 +2303,7 @@ pub(super) fn kmn(
     } else {
         dn[(m - 1) as usize]
     };
-    dn[(m) as usize] = (((((-1) as f64).powf(((ip) as f64)) * dnp) * cs)
+    dn[(m) as usize] = (((neg_one_pow(ip) * dnp) * cs)
         / ((((2.0f64 * ((m) as f64)) - 1.0f64)
             * (((2.0f64 * ((m) as f64)) + 1.0f64) - (4.0f64 * ((ip) as f64))))
             * tp[(m) as usize]));
@@ -2395,7 +2417,7 @@ pub(super) fn kmn(
     sb0 = ((((((ip) as f64) + 1.0f64) * (c).powf(((ip + 1) as f64)))
         / (((2.0f64 * ((ip) as f64)) * (((m) as f64) - 2.0f64)) + 1.0f64))
         / ((2.0f64 * ((m) as f64)) - 1.0f64));
-    ck2[0] = ((((((((-1) as f64).powf(((ip) as f64)) * sb0) * r4) * r5) * g0) / r1) * su0);
+    ck2[0] = ((((((neg_one_pow(ip) * sb0) * r4) * r5) * g0) / r1) * su0);
     return 0;
 }
 
@@ -2777,7 +2799,7 @@ pub(super) fn lqmns(mut m: i32, mut n: i32, mut x: f64, qm: &mut [f64], qd: &mut
             k = 0;
             while (k <= n) {
                 {
-                    qm[(k) as usize] = (((-1) as f64).powf(((m) as f64)) * qm[(k) as usize]);
+                    qm[(k) as usize] = (neg_one_pow(m) * qm[(k) as usize]);
                 }
                 {
                     k += 1;
@@ -2815,7 +2837,7 @@ pub(super) fn rswfo(
     r2f: &mut [f64],
     r2d: &mut [f64],
 ) -> i32 {
-    let mut df = [0.0; (512) as usize];
+    let mut df = vec![0.0; spheroidal_work_len(m, n, c)];
     let mut id: i32 = 0;
     let mut kd: i32 = (-1);
     if (sdmn(m, n, c, cv, kd, &mut df[..]) == 1) {
@@ -2903,9 +2925,9 @@ pub(super) fn rmn2so(
             return 0;
         }
     }
-    let mut bk = [0.0; (512) as usize];
-    let mut ck = [0.0; (512) as usize];
-    let mut dn = [0.0; (512) as usize];
+    let mut bk = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut ck = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut dn = vec![0.0; spheroidal_work_len(m, n, c)];
     nm = (25 + (((((n - m) / 2) as f64) + c) as i32));
     ip = ((n - m) % 2);
     sckb(m, n, c, df, &mut ck[..]);
@@ -3029,7 +3051,7 @@ pub(super) fn qstar(
     let mut s: f64 = 0.0;
     let mut sk: f64 = 0.0;
     let mut qs0: f64 = 0.0;
-    let mut ap = [0.0; (512) as usize];
+    let mut ap = vec![0.0; spheroidal_work_len(m, n, c)];
     ip = if ((n - m) == (2 * ((n - m) / 2))) {
         0
     } else {
@@ -3093,7 +3115,7 @@ pub(super) fn qstar(
             l
         };
     }
-    qs[0] = (((((-1) as f64).powf(((ip) as f64)) * ck1) * (ck1 * qs0)) / c);
+    qs[0] = (((neg_one_pow(ip) * ck1) * (ck1 * qs0)) / c);
     qt[0] = (((-2.0f64) / ck1) * qs[0]);
     return 0;
 }
@@ -3121,9 +3143,9 @@ pub(super) fn cbk(
     let mut t: f64 = 0.0;
     ip = if (((n - m) % 2) == 0) { 0 } else { 1 };
     nm = (25 + (((0.5f64 * ((n - m) as f64)) + c) as i32));
-    let mut u = [0.0; (512) as usize];
-    let mut v = [0.0; (512) as usize];
-    let mut w = [0.0; (512) as usize];
+    let mut u = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut v = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut w = vec![0.0; spheroidal_work_len(m, n, c)];
     u[(0) as usize] = 0.0f64;
     n2 = (nm - 2);
     j = 1;
@@ -3419,14 +3441,14 @@ pub(super) fn segv(
             return 0;
         }
     }
-    let mut a = [0.0; (512) as usize];
-    let mut b = [0.0; (512) as usize];
-    let mut cv0 = [0.0; (512) as usize];
-    let mut d = [0.0; (512) as usize];
-    let mut e = [0.0; (512) as usize];
-    let mut f = [0.0; (512) as usize];
-    let mut g = [0.0; (512) as usize];
-    let mut h = [0.0; (512) as usize];
+    let mut a = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut b = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut cv0 = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut d = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut e = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut f = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut g = vec![0.0; spheroidal_work_len(m, n, c)];
+    let mut h = vec![0.0; spheroidal_work_len(m, n, c)];
     icm = (((n - m) + 2) / 2);
     nm = (10 + (((0.5f64 * ((n - m) as f64)) + c) as i32));
     cs = ((c * c) * ((kd) as f64));
@@ -3678,7 +3700,8 @@ pub(super) fn mtu12(
             kd = 4;
         }
     }
-    a = cva2(kd, m, q);
+    // `fcoef` computes the characteristic value together with the
+    // coefficients; a separate `cva2` call would repeat the eigenvalue search.
     if (q <= 1.0f64) {
         {
             qm = (((7.5f64 + (56.1f64 * (q).sqrt())) - (134.7f64 * q))
@@ -3700,15 +3723,15 @@ pub(super) fn mtu12(
             return 2;
         }
     }
-    let mut fg = [0.0; (512) as usize];
-    let mut bj1 = [0.0; (512) as usize];
-    let mut dj1 = [0.0; (512) as usize];
-    let mut bj2 = [0.0; (512) as usize];
-    let mut dj2 = [0.0; (512) as usize];
-    let mut by1 = [0.0; (512) as usize];
-    let mut dy1 = [0.0; (512) as usize];
-    let mut by2 = [0.0; (512) as usize];
-    let mut dy2 = [0.0; (512) as usize];
+    let mut fg = vec![0.0; (km.max(0) + 8) as usize];
+    let mut bj1 = vec![0.0; (km.max(0) + 8) as usize];
+    let mut dj1 = vec![0.0; (km.max(0) + 8) as usize];
+    let mut bj2 = vec![0.0; (km.max(0) + 8) as usize];
+    let mut dj2 = vec![0.0; (km.max(0) + 8) as usize];
+    let mut by1 = vec![0.0; (km.max(0) + 8) as usize];
+    let mut dy1 = vec![0.0; (km.max(0) + 8) as usize];
+    let mut by2 = vec![0.0; (km.max(0) + 8) as usize];
+    let mut dy2 = vec![0.0; (km.max(0) + 8) as usize];
     fcoef(kd, m, q, a, &mut fg[..]);
     ic = ((m / 2) + 1);
     if (kd == 4) {
@@ -3753,23 +3776,20 @@ pub(super) fn mtu12(
                 {
                     if (kd == 1) {
                         {
-                            f1r[0] += (((((-1) as f64).powf(((ic + k) as f64))
-                                * fg[(k - 1) as usize])
+                            f1r[0] += (((neg_one_pow(ic + k) * fg[(k - 1) as usize])
                                 * bj1[(k - 1) as usize])
                                 * bj2[(k - 1) as usize]);
                         }
                     } else {
                         if ((kd == 2) || (kd == 3)) {
                             {
-                                f1r[0] += ((((-1) as f64).powf(((ic + k) as f64))
-                                    * fg[(k - 1) as usize])
+                                f1r[0] += ((neg_one_pow(ic + k) * fg[(k - 1) as usize])
                                     * ((bj1[(k - 1) as usize] * bj2[(k) as usize])
                                         + ((sign_kd * bj1[(k) as usize]) * bj2[(k - 1) as usize])));
                             }
                         } else {
                             {
-                                f1r[0] += ((((-1) as f64).powf(((ic + k) as f64))
-                                    * fg[(k - 1) as usize])
+                                f1r[0] += ((neg_one_pow(ic + k) * fg[(k - 1) as usize])
                                     * ((bj1[(k - 1) as usize] * bj2[(k + 1) as usize])
                                         - (bj1[(k + 1) as usize] * bj2[(k - 1) as usize])));
                             }
@@ -3794,16 +3814,14 @@ pub(super) fn mtu12(
                 {
                     if (kd == 1) {
                         {
-                            d1r[0] += ((((-1) as f64).powf(((ic + k) as f64))
-                                * fg[(k - 1) as usize])
+                            d1r[0] += ((neg_one_pow(ic + k) * fg[(k - 1) as usize])
                                 * (((c2 * bj1[(k - 1) as usize]) * dj2[(k - 1) as usize])
                                     - ((c1 * dj1[(k - 1) as usize]) * bj2[(k - 1) as usize])));
                         }
                     } else {
                         if ((kd == 2) || (kd == 3)) {
                             {
-                                d1r[0] += ((((-1) as f64).powf(((ic + k) as f64))
-                                    * fg[(k - 1) as usize])
+                                d1r[0] += ((neg_one_pow(ic + k) * fg[(k - 1) as usize])
                                     * ((c2
                                         * ((bj1[(k - 1) as usize] * dj2[(k) as usize])
                                             + ((sign_kd * bj1[(k) as usize])
@@ -3815,8 +3833,7 @@ pub(super) fn mtu12(
                             }
                         } else {
                             {
-                                d1r[0] += ((((-1) as f64).powf(((ic + k) as f64))
-                                    * fg[(k - 1) as usize])
+                                d1r[0] += ((neg_one_pow(ic + k) * fg[(k - 1) as usize])
                                     * ((c2
                                         * ((bj1[(k - 1) as usize] * dj2[(k + 1) as usize])
                                             - (bj1[(k + 1) as usize] * dj2[(k - 1) as usize])))
@@ -3853,20 +3870,20 @@ pub(super) fn mtu12(
         {
             if (kd == 1) {
                 {
-                    f2r[0] += (((((-1) as f64).powf(((ic + k) as f64)) * fg[(k - 1) as usize])
+                    f2r[0] += (((neg_one_pow(ic + k) * fg[(k - 1) as usize])
                         * bj1[(k - 1) as usize])
                         * by2[(k - 1) as usize]);
                 }
             } else {
                 if ((kd == 2) || (kd == 3)) {
                     {
-                        f2r[0] += ((((-1) as f64).powf(((ic + k) as f64)) * fg[(k - 1) as usize])
+                        f2r[0] += ((neg_one_pow(ic + k) * fg[(k - 1) as usize])
                             * ((bj1[(k - 1) as usize] * by2[(k) as usize])
                                 + ((sign_kd * bj1[(k) as usize]) * by2[(k - 1) as usize])));
                     }
                 } else {
                     {
-                        f2r[0] += ((((-1) as f64).powf(((ic + k) as f64)) * fg[(k - 1) as usize])
+                        f2r[0] += ((neg_one_pow(ic + k) * fg[(k - 1) as usize])
                             * ((bj1[(k - 1) as usize] * by2[(k + 1) as usize])
                                 - (bj1[(k + 1) as usize] * by2[(k - 1) as usize])));
                     }
@@ -3891,14 +3908,14 @@ pub(super) fn mtu12(
         {
             if (kd == 1) {
                 {
-                    d2r[0] += ((((-1) as f64).powf(((ic + k) as f64)) * fg[(k - 1) as usize])
+                    d2r[0] += ((neg_one_pow(ic + k) * fg[(k - 1) as usize])
                         * (((c2 * bj1[(k - 1) as usize]) * dy2[(k - 1) as usize])
                             - ((c1 * dj1[(k - 1) as usize]) * by2[(k - 1) as usize])));
                 }
             } else {
                 if ((kd == 2) || (kd == 3)) {
                     {
-                        d2r[0] += ((((-1) as f64).powf(((ic + k) as f64)) * fg[(k - 1) as usize])
+                        d2r[0] += ((neg_one_pow(ic + k) * fg[(k - 1) as usize])
                             * ((c2
                                 * ((bj1[(k - 1) as usize] * dy2[(k) as usize])
                                     + ((sign_kd * bj1[(k) as usize]) * dy2[(k - 1) as usize])))
@@ -3909,7 +3926,7 @@ pub(super) fn mtu12(
                     }
                 } else {
                     {
-                        d2r[0] += ((((-1) as f64).powf(((ic + k) as f64)) * fg[(k - 1) as usize])
+                        d2r[0] += ((neg_one_pow(ic + k) * fg[(k - 1) as usize])
                             * ((c2
                                 * ((bj1[(k - 1) as usize] * dy2[(k + 1) as usize])
                                     - (bj1[(k + 1) as usize] * dy2[(k - 1) as usize])))
@@ -4107,12 +4124,12 @@ pub(super) fn jynbh(
                     if ((k == (2 * (k / 2))) && (k != 0)) {
                         {
                             bs += (2.0f64 * f);
-                            su += ((((-1) as f64).powf(((k / 2) as f64)) * f) / ((k) as f64));
+                            su += ((neg_one_pow(k / 2) * f) / ((k) as f64));
                         }
                     } else {
                         if (k > 1) {
                             {
-                                sv += (((((-1) as f64).powf(((k / 2) as f64)) * ((k) as f64))
+                                sv += (((neg_one_pow(k / 2) * ((k) as f64))
                                     / (((k * k) as f64) - 1.0f64))
                                     * f);
                             }
@@ -4818,7 +4835,7 @@ pub(super) fn chgubi(mut x: f64, mut a: f64, mut b: f64, id: &mut [i32]) -> f64 
             a1 = (a - ((n) as f64));
             a2 = a1;
             ga1 = gamma2(a1);
-            ua = (((-1) as f64).powf(((n - 1) as f64)) / (rn * ga1));
+            ua = (neg_one_pow(n - 1) / (rn * ga1));
             ub = ((rn1 / ga) * (x).powf(((-n) as f64)));
         }
     } else {
@@ -4827,7 +4844,7 @@ pub(super) fn chgubi(mut x: f64, mut a: f64, mut b: f64, id: &mut [i32]) -> f64 
             a1 = a0;
             a2 = a;
             ga1 = gamma2(a1);
-            ua = ((((-1) as f64).powf(((n - 1) as f64)) / (rn * ga)) * (x).powf(((n) as f64)));
+            ua = ((neg_one_pow(n - 1) / (rn * ga)) * (x).powf(((n) as f64)));
             ub = (rn1 / ga1);
         }
     }
@@ -5401,7 +5418,7 @@ pub(super) fn lpmv(mut x: f64, mut m: i32, mut v: f64) -> f64 {
         {
             g1 = gamma2(((vx - ((mx) as f64)) + ((1) as f64)));
             g2 = gamma2(((vx + ((mx) as f64)) + ((1) as f64)));
-            pmv = (((pmv * g1) / g2) * ((-1) as f64).powf(((mx) as f64)));
+            pmv = (((pmv * g1) / g2) * neg_one_pow(mx));
         }
     }
     return pmv;
@@ -5491,7 +5508,7 @@ pub(super) fn lpmv0(mut v: f64, mut m: i32, mut x: f64) -> f64 {
                     k
                 };
             }
-            return ((((-1) as f64).powf(((nv) as f64)) * c0) * pmv);
+            return ((neg_one_pow(nv) * c0) * pmv);
         }
     } else {
         {
@@ -5519,7 +5536,7 @@ pub(super) fn lpmv0(mut v: f64, mut m: i32, mut x: f64) -> f64 {
                             k
                         };
                     }
-                    return ((((-1) as f64).powf(((m) as f64)) * c0) * pmv);
+                    return ((neg_one_pow(m) * c0) * pmv);
                 }
             } else {
                 {

@@ -252,7 +252,8 @@ pub(crate) fn mathieu_sem(m: u32, q: f64, x: f64) -> (f64, f64) {
     angular(m, q, x, true)
 }
 fn modified(m: u32, q: f64, x: f64, odd: bool, kind: i32) -> (f64, f64) {
-    if q <= 0.0 || !q.is_finite() || !x.is_finite() {
+    // The odd functions start at order one, as for `mathieu_b`.
+    if q <= 0.0 || !q.is_finite() || !x.is_finite() || (odd && m == 0) {
         return (f64::NAN, f64::NAN);
     }
     let (mut f, mut d, mut g, mut e) = ([f64::NAN], [f64::NAN], [f64::NAN], [f64::NAN]);
@@ -952,13 +953,15 @@ pub(crate) fn besselpoly(a: f64, lambda: f64, mut v: f64) -> f64 {
 pub(crate) fn jahnke_emden_lambda(v: f64, x: f64) -> (Vec<f64>, Vec<f64>) {
     let size = v.floor() as usize;
     let base = v.fract();
+    // Λ_ν(x) = 0F1(; ν + 1; -x²/4) and Λ_ν′(x) = -x Λ_{ν+1}(x) / (2(ν + 1)),
+    // so each derivative reuses the value at the next order.
+    let values: Vec<f64> = (0..=size + 1)
+        .map(|i| super::hyp0f1(base + i as f64 + 1.0, -x * x * 0.25).unwrap_or(f64::NAN))
+        .collect();
     (0..=size)
         .map(|i| {
             let degree = base + i as f64;
-            let value = super::hyp0f1(degree + 1.0, -x * x * 0.25).unwrap_or(f64::NAN);
-            let slope = -x / (2.0 * (degree + 1.0))
-                * super::hyp0f1(degree + 2.0, -x * x * 0.25).unwrap_or(f64::NAN);
-            (value, slope)
+            (values[i], -x / (2.0 * (degree + 1.0)) * values[i + 1])
         })
         .unzip()
 }
