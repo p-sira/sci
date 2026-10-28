@@ -425,3 +425,43 @@ fn parameter_inverses_round_trip_after_bracketed_brent_search() {
     // No root inside the noncentrality interval still returns NaN.
     assert!(s::chndtrinc(2.5, 3.0, 0.9).is_nan());
 }
+
+#[test]
+fn mathieu_characteristic_values_match_references_across_starting_guesses() {
+    // References: 50-digit Sturm bisection of the DLMF 28.4 Fourier
+    // recurrences truncated at 260 rows. The points cover the small-q series,
+    // the transition region, the large-q expansion and negative q. Rounding in
+    // the recurrence limits the accuracy to about ε·max(1, |λ|, |q|).
+    let cases: [(bool, u32, f64, f64); 17] = [
+        (true, 0, 0.05, -0.001_249_658_399_651_797),
+        (true, 0, 1.4, -0.831_453_509_824_812_9),
+        (true, 0, 3.0, -2.834_391_889_904_311),
+        (true, 2, 2.9, 5.960_224_521_628_512),
+        (true, 2, 3.8, 6.683_684_468_559_501),
+        (true, 1, 8.5, -0.902_815_478_634_179_1),
+        (false, 1, 1.9, -1.256_758_409_851_461),
+        (false, 3, 5.7, 9.175_446_972_389_918),
+        (false, 2, 4.8, 2.237_510_884_460_266),
+        (true, 5, 9.5, 27.385_505_499_708_08),
+        (false, 4, 9.5, 17.347_792_774_431_58),
+        (true, 8, 100.0, 98.150_393_534_207_4),
+        (false, 5, 100.0, -30.950_103_947_238_09),
+        (true, 0, -75.0, -132.933_267_467_320_8),
+        (true, 3, -6.0, 9.137_905_846_143_045),
+        (false, 3, -6.0, 12.465_600_683_337_7),
+        (true, 30, 50.0, 901.391_789_822_172_9),
+    ];
+    for (even, m, q, expected) in cases {
+        let value = if even {
+            s::mathieu_a(m, q)
+        } else {
+            s::mathieu_b(m, q)
+        };
+        let scale = expected.abs().max(q.abs()).max(1.0);
+        assert!(
+            (value - expected).abs() <= 4.0 * f64::EPSILON * scale,
+            "{}({m}, {q}) = {value:e}, expected {expected:e}",
+            if even { "mathieu_a" } else { "mathieu_b" }
+        );
+    }
+}

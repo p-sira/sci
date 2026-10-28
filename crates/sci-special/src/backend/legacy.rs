@@ -23,7 +23,6 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
     // Coefficient vectors use `vector_margin` extra rows instead; their
     // inverse iteration reuses the short-truncation eigenvalue.
     let extent = m as usize / 2 + (4.0 * q.abs().sqrt()) as usize;
-    let size = (extent + 10).min(251);
     let rank = match kd {
         1 | 2 => m / 2,
         3 => (m - 1) / 2,
@@ -49,6 +48,30 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
             let frequency = first + 2.0 * j as f64;
             frequency * frequency
         }
+    };
+    // By Weyl's inequality the eigenvalue is at most `upper_bound`. Where
+    // d_j − λ > 2|q|, the minimal solution of the three-term recurrence
+    // shrinks by at least ρ_j = |q|/(d_j − λ − |q|) per row, so truncating
+    // once q·(Π ρ_j)² < 1e-20 moves the eigenvalue by less than 1e-20; three
+    // further rows are kept as a margin. Small |q| needs far fewer rows than
+    // the fixed truncation, which remains an upper limit.
+    let radius = 2.0 * SQRT_2 * q.abs();
+    let size = {
+        let fixed = (extent + 10).min(251);
+        let upper_bound = diagonal_zero.max(diagonal_at(rank)) + radius;
+        let mut decay = 1.0;
+        let mut size = fixed;
+        for j in rank + 1..fixed {
+            let excess = diagonal_at(j) - upper_bound;
+            if excess > 2.0 * q.abs() {
+                decay *= q.abs() / (excess - q.abs());
+                if decay * decay * q.abs() < 1e-20 {
+                    size = (j + 4).min(fixed);
+                    break;
+                }
+            }
+        }
+        size
     };
     let vector = |eigenvalue: f64| match vector_margin {
         Some(margin) => mathieu_vector(
@@ -111,6 +134,28 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
         }
         (count, gradient, hessian, exact)
     };
+    // The eigenvalue count alone, for confirming a converged Laguerre step;
+    // it repeats the pivot recurrence of `sturm` without the derivatives.
+    let count_below = |shift: f64| {
+        let mut pivot = diagonal_zero - shift;
+        if pivot.abs() < 1e-300 {
+            pivot = -1e-300;
+        }
+        let mut count = usize::from(pivot < 0.0);
+        let mut frequency = first;
+        let mut off_squared = b2_first;
+        for _ in 1..size {
+            frequency += 2.0;
+            // Same rounding as `sturm`: multiply by the pivot reciprocal.
+            pivot = frequency * frequency - shift - off_squared * (1.0 / pivot);
+            off_squared = b2;
+            if pivot.abs() < 1e-300 {
+                pivot = -1e-300;
+            }
+            count += usize::from(pivot < 0.0);
+        }
+        count
+    };
     // Rows j >= 1 are already in increasing order, so the k-th smallest
     // diagonal entry follows from the position of the first entry.
     let below_first = (1..size)
@@ -135,9 +180,9 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
     // Bisection safeguards the Laguerre steps inside a bracket whose lower
     // end has at most `rank` eigenvalues below it and whose upper end has
     // more; any step that leaves the bracket is replaced by its midpoint.
-    let search = |mut lower: f64, mut upper: f64| {
+    let search = |mut lower: f64, mut upper: f64, start: Option<f64>| {
         let (mut lower_count, mut upper_count) = (0, size);
-        let mut guess = None;
+        let mut guess = start;
         for _ in 0..128 {
             let midpoint = match guess.take() {
                 Some(x) if x > lower && x < upper => x,
@@ -157,7 +202,14 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
             let upward = count == rank;
             if (upward || count == rank + 1) && !exact && g.is_finite() && h.is_finite() {
                 let next = laguerre(midpoint, g, h, upward);
-                if (next - midpoint).abs() <= 2.0 * f64::EPSILON * midpoint.abs().max(1.0)
+                // Laguerre converges cubically, and eigenvalues of the same
+                // recurrence are at least about four apart, so a step δ leaves
+                // an error of order δ³/16. Once δ³ is below a quarter ulp of
+                // the eigenvalue, `next` needs no further Laguerre pass.
+                let step = (next - midpoint).abs();
+                let scale = next.abs().max(1.0);
+                if (step <= 2.0 * f64::EPSILON * midpoint.abs().max(1.0)
+                    || step * step * step <= 0.25 * f64::EPSILON * scale)
                     && next >= lower
                     && next <= upper
                 {
@@ -165,10 +217,12 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
                     // eigenvalue of a leading minor; confirm with Sturm
                     // counts. A side already bracketed by this or an earlier
                     // pass needs no extra count, because counts are monotone.
-                    let delta = 4.0 * f64::EPSILON * next.abs().max(1.0);
+                    // Rounding perturbs the pivots by about ε·max(|λ|, |q|),
+                    // so the counts cannot confirm a narrower interval.
+                    let delta = 4.0 * f64::EPSILON * next.abs().max(q.abs()).max(1.0);
                     let (below, above) = (next - delta, next + delta);
-                    if ((below <= lower && lower_count <= rank) || sturm(below).0 <= rank)
-                        && ((above >= upper && upper_count > rank) || sturm(above).0 > rank)
+                    if ((below <= lower && lower_count <= rank) || count_below(below) <= rank)
+                        && ((above >= upper && upper_count > rank) || count_below(above) > rank)
                     {
                         return Ok(next);
                     }
@@ -182,13 +236,113 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
     };
     // The off-diagonal part has 2-norm at most `radius`, so by Weyl's
     // inequality the requested eigenvalue lies within `radius` of the
-    // diagonal entry of the same rank; the first pass evaluates that entry.
-    // Fall back to the Gershgorin interval if rounding defeats that bracket.
-    let radius = 2.0 * SQRT_2 * q.abs();
-    let eigenvalue = search(sorted(rank) - radius, sorted(rank) + radius)
-        .or_else(|_| search(sorted(0) - radius, sorted(size - 1) + radius))
+    // diagonal entry of the same rank. Fall back to the Gershgorin interval
+    // if rounding defeats that bracket. The first pass starts from the DLMF
+    // small- or large-q expansion instead of the bracket midpoint; a guess
+    // outside the bracket is ignored.
+    let start = mathieu_guess(kd, m, q);
+    let eigenvalue = search(sorted(rank) - radius, sorted(rank) + radius, start)
+        .or_else(|_| search(sorted(0) - radius, sorted(size - 1) + radius, None))
         .unwrap_or_else(|midpoint| midpoint);
     vector(eigenvalue)
+}
+// Starting estimate of the characteristic value for the recurrence `kd`
+// (1: a_{2k}, 2: a_{2k+1}, 3: b_{2k+1}, 4: b_{2k+2}). Small |q| uses the power
+// series of DLMF 28.6.1-28.6.14 and large |q| the asymptotic expansion of
+// DLMF 28.8.1; a_{2k}(-q) = a_{2k}(q), b_{2k}(-q) = b_{2k}(q) and
+// a_{2k+1}(-q) = b_{2k+1}(q) reduce negative q. The estimate only seeds the
+// safeguarded search, so it need not be accurate in the transition region.
+fn mathieu_guess(kd: i32, m: i32, q: f64) -> Option<f64> {
+    let (kd, q) = if q < 0.0 {
+        (
+            match kd {
+                2 => 3,
+                3 => 2,
+                kd => kd,
+            },
+            -q,
+        )
+    } else {
+        (kd, q)
+    };
+    if !q.is_finite() || m < 0 {
+        return None;
+    }
+    let mf = m as f64;
+    let q2 = q * q;
+    // Approximate |q| where the large-q expansion becomes the closer
+    // estimate, located on a grid of exact eigenvalues; about 0.9·m² for
+    // larger orders.
+    let small_q_limit = match (kd, m) {
+        (1, 0) => 1.6,
+        (2, 1) => 4.6,
+        (3, 1) => 3.0,
+        (1, 2) => 2.0,
+        (4, 2) => 6.2,
+        (2, 3) => 8.5,
+        (3, 3) => 5.2,
+        (_, 4) => 9.1,
+        (2, 5) => 25.0,
+        (3, 5) => 16.0,
+        _ => 0.9 * mf * mf,
+    };
+    if q <= small_q_limit {
+        let q4 = q2 * q2;
+        let guess = match (kd, m) {
+            (1, 0) => {
+                q2 * (-0.5 + q2 * (7.0 / 128.0 + q2 * (-29.0 / 2304.0 + q2 * 68687.0 / 18874368.0)))
+            }
+            (2 | 3, 1) => {
+                let sign = if kd == 2 { 1.0 } else { -1.0 };
+                let p = sign * q;
+                1.0 + p - q2 / 8.0 - p * q2 / 64.0 - q4 / 1536.0
+                    + 11.0 * p * q4 / 36864.0
+                    + 49.0 * q4 * q2 / 589824.0
+                    - 55.0 * p * q4 * q2 / 9437184.0
+            }
+            (1, 2) => {
+                4.0 + q2 * (5.0 / 12.0 + q2 * (-763.0 / 13824.0 + q2 * 1002401.0 / 79626240.0))
+            }
+            (4, 2) => 4.0 + q2 * (-1.0 / 12.0 + q2 * (5.0 / 13824.0 - q2 * 289.0 / 79626240.0)),
+            (2 | 3, 3) => {
+                let sign = if kd == 2 { 1.0 } else { -1.0 };
+                let p = sign * q;
+                9.0 + q2 / 16.0 + p * q2 / 64.0 + 13.0 * q4 / 20480.0 - 5.0 * p * q4 / 16384.0
+            }
+            (1, 4) => 16.0 + q2 / 30.0 + 433.0 * q4 / 864000.0,
+            (4, 4) => 16.0 + q2 / 30.0 - 317.0 * q4 / 864000.0,
+            _ => {
+                let m2 = mf * mf;
+                let d1 = m2 - 1.0;
+                let d4 = m2 - 4.0;
+                let mut guess =
+                    m2 + q2 / (2.0 * d1) + (5.0 * m2 + 7.0) * q4 / (32.0 * d1 * d1 * d1 * d4);
+                if m >= 7 {
+                    guess += (9.0 * m2 * m2 + 58.0 * m2 + 29.0) * q4 * q2
+                        / (64.0 * d1.powi(5) * d4 * (m2 - 9.0));
+                }
+                guess
+            }
+        };
+        return Some(guess);
+    }
+    let s = if kd <= 2 {
+        2.0 * mf + 1.0
+    } else {
+        2.0 * mf - 1.0
+    };
+    let h = q.sqrt();
+    let s2 = s * s;
+    Some(
+        -2.0 * q + 2.0 * s * h
+            - (s2 + 1.0) / 8.0
+            - s * (s2 + 3.0) / (128.0 * h)
+            - (5.0 * s2 * s2 + 34.0 * s2 + 9.0) / (4096.0 * q)
+            - s * (33.0 * s2 * s2 + 410.0 * s2 + 405.0) / (131072.0 * q * h)
+            - (63.0 * s2 * s2 * s2 + 1260.0 * s2 * s2 + 2943.0 * s2 + 486.0) / (8388608.0 * q2)
+            - s * (527.0 * s2 * s2 * s2 + 15617.0 * s2 * s2 + 69001.0 * s2 + 41607.0)
+                / (536870912.0 * q2 * h),
+    )
 }
 // Inverse iteration computes the eigenvector of the Fourier recurrence with
 // O(size) storage/work per solve, avoiding a dense decomposition of all unused
