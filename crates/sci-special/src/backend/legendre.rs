@@ -22,9 +22,58 @@ fn associated(n: u32, m: i32, x: f64, sine: f64, spherical: bool) -> f64 {
             value
         };
     }
+    if let Some(value) = associated_direct(n, m, x, sine, spherical) {
+        return value;
+    }
     let mut value = f64::NAN;
     associated_degrees(n, m, x, sine, spherical, n, |_, v| value = v);
     value
+}
+
+/// Unnormalized degree recurrence for moderate degree and order:
+/// P_m^m = (-1)^m (2m-1)!! sin^m, then
+/// (l-m) P_l^m = (2l-1) x P_(l-1)^m - (l+m-1) P_(l-2)^m (DLMF 14.10.3),
+/// with the factorial ratios formed as products. Within these bounds the
+/// values cannot overflow, so the logarithmic scaling of
+/// `associated_degrees` and its logarithms and exponential are unnecessary.
+/// Returns `None` when the result is zero or not a normal number, leaving
+/// those cases to the scaled recurrence.
+fn associated_direct(n: u32, m: i32, x: f64, sine: f64, spherical: bool) -> Option<f64> {
+    let order = m.unsigned_abs();
+    if order > 40 || n > 200 || order > n || sine < 1e-6 {
+        return None;
+    }
+    let mut diagonal = sine.powi(order as i32);
+    for k in 1..=order {
+        diagonal *= (2 * k - 1) as f64;
+    }
+    if order % 2 == 1 {
+        diagonal = -diagonal;
+    }
+    let (mut previous, mut current) = (0.0, diagonal);
+    for degree in order + 1..=n {
+        let next = ((2 * degree - 1) as f64 * x * current - (degree + order - 1) as f64 * previous)
+            / (degree - order) as f64;
+        previous = current;
+        current = next;
+    }
+    // (n-|m|)!/(n+|m|)! as a product of reciprocals of n-|m|+1..=n+|m|.
+    let ratio = || {
+        let mut product = 1.0;
+        for k in n - order + 1..=n + order {
+            product /= k as f64;
+        }
+        product
+    };
+    let parity = if m < 0 && order % 2 == 1 { -1.0 } else { 1.0 };
+    let value = if spherical {
+        parity * current * ((2.0 * n as f64 + 1.0) / (4.0 * PI) * ratio()).sqrt()
+    } else if m < 0 {
+        parity * current * ratio()
+    } else {
+        current
+    };
+    value.is_normal().then_some(value)
 }
 
 /// Evaluates P_k^m for every degree k in `first..=n` in a single pass of the
