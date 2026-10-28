@@ -589,3 +589,41 @@ fn odd_modified_mathieu_functions_of_order_zero_are_undefined() {
         assert!(value.is_nan() && derivative.is_nan());
     }
 }
+
+#[test]
+fn modified_mathieu_pairs_preserve_wronskians_and_first_kind_parity() {
+    // DLMF 28.22: W(Mc^(1), Mc^(2)) = W(Ms^(1), Ms^(2)) = 2/pi.
+    // The first-kind solutions inherit even/odd parity in the real coordinate.
+    for (first, second, odd) in [
+        (
+            s::mathieu_modcem1 as fn(u32, f64, f64) -> (f64, f64),
+            s::mathieu_modcem2 as fn(u32, f64, f64) -> (f64, f64),
+            false,
+        ),
+        (
+            s::mathieu_modsem1 as fn(u32, f64, f64) -> (f64, f64),
+            s::mathieu_modsem2 as fn(u32, f64, f64) -> (f64, f64),
+            true,
+        ),
+    ] {
+        for m in 0..=6 {
+            if odd && m == 0 {
+                continue;
+            }
+            for q in [0.5, 1.0, 10.0, 100.0] {
+                for x in [0.0, 0.3, 2.0, 7.0] {
+                    let (f, d) = first(m, q, x);
+                    let (g, e) = second(m, q, x);
+                    // At m=6, q<=1, cancellation in the Bessel-product sum
+                    // divided by the small first Fourier coefficient limits
+                    // the Wronskian residual to about 7e-11 (SciPy: 4e-10).
+                    finite_close(f * e - d * g, std::f64::consts::FRAC_2_PI, 2e-10, 2e-11);
+                    let (negative_f, negative_d) = first(m, q, -x);
+                    let sign = if odd { -1.0 } else { 1.0 };
+                    finite_close(negative_f, sign * f, 2e-12, 2e-11);
+                    finite_close(negative_d, -sign * d, 2e-12, 2e-11);
+                }
+            }
+        }
+    }
+}

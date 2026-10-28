@@ -3727,11 +3727,11 @@ pub(super) fn mtu12(
     let mut bj1 = vec![0.0; (km.max(0) + 8) as usize];
     let mut dj1 = vec![0.0; (km.max(0) + 8) as usize];
     let mut bj2 = vec![0.0; (km.max(0) + 8) as usize];
-    let mut dj2 = vec![0.0; (km.max(0) + 8) as usize];
-    let mut by1 = vec![0.0; (km.max(0) + 8) as usize];
-    let mut dy1 = vec![0.0; (km.max(0) + 8) as usize];
-    let mut by2 = vec![0.0; (km.max(0) + 8) as usize];
-    let mut dy2 = vec![0.0; (km.max(0) + 8) as usize];
+    let mut dj2 = vec![0.0; if kc == 2 { 0 } else { (km.max(0) + 8) as usize }];
+    // J is needed at both arguments; only kind two needs Y at u2.
+    let y_len = if kc == 1 { 0 } else { (km.max(0) + 8) as usize };
+    let mut by2 = vec![0.0; y_len];
+    let mut dy2 = vec![0.0; y_len];
     fcoef(kd, m, q, a, &mut fg[..]);
     ic = ((m / 2) + 1);
     if (kd == 4) {
@@ -3749,8 +3749,8 @@ pub(super) fn mtu12(
         std::slice::from_mut(&mut nm),
         &mut bj1[..],
         &mut dj1[..],
-        &mut by1[..],
-        &mut dy1[..],
+        &mut [],
+        &mut [],
     );
     jynb(
         (km + 1),
@@ -3952,6 +3952,7 @@ pub(super) fn mtu12(
     return 0;
 }
 
+// Empty dj omits J derivatives; empty by/dy omit Y and its derivatives.
 pub(super) fn jynb(
     mut n: i32,
     mut x: f64,
@@ -3968,29 +3969,40 @@ pub(super) fn jynb(
             k = 0;
             while (k <= n) {
                 {
-                    dj[(k) as usize] = 0.0f64;
-                    dy[(k) as usize] = 1.0e+300f64;
+                    if !dj.is_empty() {
+                        dj[(k) as usize] = 0.0f64;
+                    }
+                    if !by.is_empty() {
+                        dy[(k) as usize] = 1.0e+300f64;
+                    }
                 }
                 {
                     k += 1;
                     k
                 };
             }
-            dj[(1) as usize] = 0.5f64;
+            if !dj.is_empty() {
+                dj[(1) as usize] = 0.5f64;
+            }
         }
     } else {
         {
-            dj[(0) as usize] = (-bj[(1) as usize]);
-            k = 1;
-            while (k <= nm[0]) {
-                {
-                    dj[(k) as usize] =
-                        (bj[(k - 1) as usize] - ((((k) as f64) / x) * bj[(k) as usize]));
+            if !dj.is_empty() {
+                dj[(0) as usize] = (-bj[(1) as usize]);
+                k = 1;
+                while (k <= nm[0]) {
+                    {
+                        dj[(k) as usize] =
+                            (bj[(k - 1) as usize] - ((((k) as f64) / x) * bj[(k) as usize]));
+                    }
+                    {
+                        k += 1;
+                        k
+                    };
                 }
-                {
-                    k += 1;
-                    k
-                };
+            }
+            if by.is_empty() {
+                return;
             }
             dy[(0) as usize] = (-by[(1) as usize]);
             k = 1;
@@ -4074,7 +4086,9 @@ pub(super) fn jynbh(
             while (k <= n) {
                 {
                     bj[(k - nmin) as usize] = 0.0f64;
-                    by[(k - nmin) as usize] = (-1.0e+300f64);
+                    if !by.is_empty() {
+                        by[(k - nmin) as usize] = (-1.0e+300f64);
+                    }
                 }
                 {
                     k += 1;
@@ -4096,7 +4110,17 @@ pub(super) fn jynbh(
                     nm[0] = 1;
                 }
             }
-            m = msta1(x, 200);
+            // msta1 locates the order where J becomes smaller than 1e-200.
+            // Beyond order 1.1*x its envelope increases monotonically.
+            // Keep an extra order for the integer rounding in msta1. Below
+            // that boundary, msta2 supplies the same recurrence start directly.
+            let order = nm[0] as f64 + 1.0;
+            let envelope = 0.5 * (6.28 * order).log10() - order * (1.36 * x / order).log10();
+            m = if order <= 1.1 * x || envelope < 200.0 {
+                nm[0]
+            } else {
+                msta1(x, 200)
+            };
             if (m < nm[0]) {
                 {
                     nm[0] = m;
@@ -4124,10 +4148,12 @@ pub(super) fn jynbh(
                     if ((k == (2 * (k / 2))) && (k != 0)) {
                         {
                             bs += (2.0f64 * f);
-                            su += ((neg_one_pow(k / 2) * f) / ((k) as f64));
+                            if !by.is_empty() {
+                                su += ((neg_one_pow(k / 2) * f) / ((k) as f64));
+                            }
                         }
                     } else {
-                        if (k > 1) {
+                        if (k > 1 && !by.is_empty()) {
                             {
                                 sv += (((neg_one_pow(k / 2) * ((k) as f64))
                                     / (((k * k) as f64) - 1.0f64))
@@ -4154,6 +4180,9 @@ pub(super) fn jynbh(
                     k
                 };
             }
+            if by.is_empty() {
+                return;
+            }
             bj0 = (f1 / s0);
             bj1 = (f2 / s0);
             ec = ((x / 2.0f64).ln() + 0.5772156649015329f64);
@@ -4161,12 +4190,16 @@ pub(super) fn jynbh(
             by1 = (r2p * ((((ec - 1.0f64) * bj1) - (bj0 / x)) - ((4.0f64 * sv) / s0)));
             if (0 >= nmin) {
                 {
-                    by[(0 - nmin) as usize] = by0;
+                    if !by.is_empty() {
+                        by[(0 - nmin) as usize] = by0;
+                    }
                 }
             }
             if (1 >= nmin) {
                 {
-                    by[(1 - nmin) as usize] = by1;
+                    if !by.is_empty() {
+                        by[(1 - nmin) as usize] = by1;
+                    }
                 }
             }
             ky = 2;
@@ -4193,7 +4226,9 @@ pub(super) fn jynbh(
             if (0 >= nmin) {
                 {
                     bj[(0 - nmin) as usize] = bj0;
-                    by[(0 - nmin) as usize] = by0;
+                    if !by.is_empty() {
+                        by[(0 - nmin) as usize] = by0;
+                    }
                 }
             }
             t2 = (x - (0.75f64 * pi));
@@ -4215,7 +4250,9 @@ pub(super) fn jynbh(
             if (1 >= nmin) {
                 {
                     bj[(1 - nmin) as usize] = bj1;
-                    by[(1 - nmin) as usize] = by1;
+                    if !by.is_empty() {
+                        by[(1 - nmin) as usize] = by1;
+                    }
                 }
             }
             k = 2;
@@ -4237,6 +4274,9 @@ pub(super) fn jynbh(
             }
             ky = 2;
         }
+    }
+    if by.is_empty() {
+        return;
     }
     k = ky;
     while (k <= nm[0]) {

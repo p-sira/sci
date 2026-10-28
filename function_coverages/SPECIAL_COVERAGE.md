@@ -286,3 +286,28 @@ The binary64 tolerance is 5e-12 relative plus two subnormal ULPs; binary32
 uses 3e-6 relative plus two subnormal ULPs. Recurrence, parity, symmetry,
 scaling, and large-argument limits are checked separately. No new inventory
 names or aliases are introduced; Python/Cython `iv`/`ive` share these real APIs.
+
+## Modified Mathieu performance validation
+
+All four modified Mathieu APIs share the Bessel-product kernel. It now computes
+only J and J′ at the first argument, J and J′ at the second argument for kind
+one, and J, Y, Y′ at the second argument for kind two. Unused outputs require
+no buffers or recurrences. The Miller recurrence skips its preliminary
+underflow-order search only when the existing envelope at one extra order
+lies below the `1e-200` boundary; other inputs retain that search. Recurrence
+normalization, coefficient truncation, and summation tolerances are unchanged.
+
+The pinned `generate_special.py` generator adds 190 independent SciPy cases
+for `mathieu_modcem1`, `mathieu_modcem2`, `mathieu_modsem1`, and
+`mathieu_modsem2`, including both order parities, the origin, `q = 100`, and
+large positive/negative coordinates that exercise the Bessel asymptotic
+branch. Values and coordinate derivatives retain the existing `2e-11`
+absolute/relative fixture tolerances. Public API property tests additionally
+check the `2/pi` Wronskian (DLMF 28.22) and first-kind parity, including the
+sign of the derivative. The Wronskian allows `2e-10` absolute error because
+at order six and small `q`, cancellation before division by the first Fourier
+coefficient produces residuals near `7e-11`; SciPy has the same limitation
+(residuals near `4e-10` for the even pair). Existing tests cover invalid
+domains and work limits.
+The Python/Cython inventory names continue to share these four Rust APIs;
+this optimization introduces no new names or domain restrictions.

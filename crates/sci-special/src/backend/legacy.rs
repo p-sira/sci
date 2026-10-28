@@ -1688,7 +1688,12 @@ mod tests {
     #[test]
     fn it2i0k0_tabulated_nodes_match_gauss_rule() {
         let mut nodes = [(0.0, 0.0); 32];
-        for (pair, &(z, weight)) in nodes.chunks_exact_mut(2).zip(&gauss_rule::<16>()) {
+        for (pair, &(z, weight)) in nodes
+            .as_chunks_mut::<2>()
+            .0
+            .iter_mut()
+            .zip(&gauss_rule::<16>())
+        {
             for (node, u) in pair.iter_mut().zip([24.0 * (1.0 - z), 24.0 * (1.0 + z)]) {
                 *node = (u, 24.0 * weight * (-u).exp());
             }
