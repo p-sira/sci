@@ -271,6 +271,43 @@ fn beta_quantiles_preserve_extreme_tails_and_small_coordinates() {
 }
 
 #[test]
+fn beta_quantile_refinement_recovers_far_tail_starts() {
+    // 50-digit mpmath roots of I_x(a,b) = p, solved in ln I_x (and in ln x
+    // for the tiny root). Cephes' bisection used to stop several percent away
+    // from the first two roots; a plain Newton refinement then gave up.
+    for (a, b, p, expected) in [
+        (
+            983.5652915682335_f64,
+            47.03183646334794,
+            4.61430198961587e-16,
+            0.883_257_415_835_251_2_f64,
+        ),
+        (
+            341.5256299185689,
+            14.317923337006405,
+            3.187427213453102e-14,
+            0.834_118_379_021_656_1,
+        ),
+        (
+            0.1873091783298539,
+            0.024828399185913886,
+            1.3035480446711573e-29,
+            5.609_963_436_013_65e-150,
+        ),
+    ] {
+        let x = s::betaincinv(a, b, p);
+        assert!(
+            (x / expected - 1.0).abs() < 1e-13,
+            "a={a}, b={b}, p={p:e}: {x:e} vs {expected:e}"
+        );
+    }
+    // The p > 1/2 branch refines against the exact upper tail 1-y = 1e-15
+    // instead of the rounded lower tail.
+    let p = s::nbdtri(500, 20, 0.999999999999999_f64);
+    assert!((p / 0.142_285_681_213_949_08 - 1.0).abs() < 1e-13, "{p:e}");
+}
+
+#[test]
 fn hyperu_zero_second_parameter_continues_negative_noninteger_orders() {
     for a in [-5.5_f64, -2.5, -1.5, -0.99, -0.25] {
         for x in [0.01_f64, 0.1, 2.0, 30.0] {

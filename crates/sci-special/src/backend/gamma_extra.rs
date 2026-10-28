@@ -97,7 +97,8 @@ pub(crate) fn inverse_beta(a: f64, b: f64, p: f64) -> f64 {
     } else {
         None
     };
-    let mut x = cephes64::incbi(a, b, p);
+    let (mut x, converged) = cephes64::incbi_status(a, b, p);
+    let mut converged = converged;
     if let Some(reflected) = reflected {
         // Here the direct coordinate is small. Cephes can instead return a
         // spurious near-one estimate when its CDF saturates, so reject that
@@ -105,28 +106,83 @@ pub(crate) fn inverse_beta(a: f64, b: f64, p: f64) -> f64 {
         if !(0.0..0.125).contains(&x) || x == 0.0 {
             x = reflected;
         }
+        // The direct-coordinate residual of a p > 1/2 solve loses the small
+        // upper tail, so always refine this case.
+        converged = false;
     }
-    if p == 0.0 || p == 1.0 || x == 0.0 || x == 1.0 {
+    // A converged Cephes step in unreflected coordinates is already accurate
+    // relative to x; refinement would only re-evaluate the same residual.
+    if converged || p == 0.0 || p == 1.0 || x == 0.0 || x == 1.0 {
         return x;
     }
     let log_beta = cephes64::lbeta(a, b);
-    for _ in 0..4 {
-        let residual = if p > 0.5 && x >= 0.125 {
-            (1.0 - p) - cephes64::incbet(b, a, 1.0 - x)
+    // Safeguarded Halley iteration on the smaller tail. Far from the root the
+    // step uses ln(F/target), which stays well scaled in the convex far tails
+    // where a plain Newton step on F overshoots or crawls. The iterate with
+    // the smallest log residual is returned, so refinement never makes the
+    // Cephes estimate worse.
+    let (mut best_x, mut best_g) = (x, f64::INFINITY);
+    for _ in 0..12 {
+        let density = ((a - 1.0) * x.ln() + (b - 1.0) * (-x).ln_1p() - log_beta).exp();
+        // For p > 1/2, the upper tail Q = 1 - p is known exactly, but forming
+        // 1 - x costs up to eps/2 in x. The direct residual instead costs about
+        // eps*p/density in x, so take the upper tail unless that is smaller.
+        let upper = p > 0.5 && (x >= 0.125 || 0.5 * density < 2.0 * p - 1.0);
+        let (tail, target) = if upper {
+            (cephes64::incbet(b, a, 1.0 - x), 1.0 - p)
         } else {
-            cephes64::incbet(a, b, x) - p
+            (cephes64::incbet(a, b, x), p)
         };
-        let derivative = ((a - 1.0) * x.ln() + (b - 1.0) * (-x).ln_1p() - log_beta).exp();
-        let next = x - residual / derivative;
-        if !next.is_finite() || next <= 0.0 || next >= 1.0 || next == x {
+        if tail.is_nan() || tail <= 0.0 {
             break;
         }
-        if (next - x).abs() > 0.1 * x.min(1.0 - x) {
+        let ratio = tail / target;
+        let g = ratio.ln().abs();
+        if g < best_g {
+            (best_x, best_g) = (x, g);
+        }
+        if tail == target {
             break;
         }
+        // `sign` orients the tail as an increasing function of x.
+        let sign = if upper { -1.0 } else { 1.0 };
+        // c = f''/f' = (a-1)/x - (b-1)/(1-x) for the beta density.
+        let c = (a - 1.0) / x - (b - 1.0) / (1.0 - x);
+        let near = (ratio - 1.0).abs() < 0.1;
+        let (mut step, curvature) = if near {
+            (sign * (tail - target) / density, c)
+        } else {
+            // Newton on ln(tail): g'/g'' terms of the log-transformed tail.
+            (
+                sign * ratio.ln() * tail / density,
+                c - sign * density / tail,
+            )
+        };
+        let h = 0.5 * step * curvature;
+        if h.abs() < 0.5 {
+            step /= 1.0 - h;
+        }
+        if !step.is_finite() {
+            break;
+        }
+        // Keep the iterate inside (0,1) without taking more than 7/8 of the
+        // distance to either endpoint in one step.
+        let next = (x - step).clamp(0.125 * x, 1.0 - 0.125 * (1.0 - x));
+        if next == x || next <= 0.0 || next >= 1.0 {
+            break;
+        }
+        let clamped = next != x - step;
         x = next;
+        // Stop once the predicted error of this step is far below rounding.
+        if near
+            && !clamped
+            && h.abs() < 1e-2
+            && cephes64::halley_converged(a, b, x, step, x.min(1.0 - x))
+        {
+            return x;
+        }
     }
-    x
+    best_x
 }
 
 real_kernel! {

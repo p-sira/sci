@@ -11,13 +11,51 @@ use crate::backend::cephes64::gamma::lgam;
 use crate::backend::cephes64::incbet::incbet;
 use crate::backend::cephes64::ndtri::ndtri;
 
-pub fn incbi(aa: f64, bb: f64, yy0: f64) -> f64 {
-    //let i: isize = 0;
-    if yy0 <= 0.0 {
-        return 0.0;
-    } else if yy0 >= 1.0 {
-        return 1.0;
+/// Whether a Halley step `step` on `I_x(a,b)` that ended at `x` leaves a
+/// predicted error below a quarter of an ulp of `scale`.
+///
+/// The leading error term of a Halley step is
+/// `((f'''/f')/6 - (f''/f')^2/4) step^3`, where for the beta density
+/// `c = f''/f' = (a-1)/x - (b-1)/(1-x)` and `f'''/f' = c' + c^2` with
+/// `c' = -(a-1)/x^2 - (b-1)/(1-x)^2`. Everything is scaled by `scale` so that
+/// tiny quantiles do not underflow the cubic term. The bound only holds in the
+/// asymptotic regime, so the step must also be small relative to `x` and
+/// `1-x`.
+pub(crate) fn halley_converged(a: f64, b: f64, x: f64, step: f64, scale: f64) -> bool {
+    let r = step / scale;
+    if !(r.abs() < 1e-3 && step.abs() < 1e-3 * x.min(1.0 - x)) {
+        return false;
     }
+    let (u, v) = (scale / x, scale / (1.0 - x));
+    let cs = (a - 1.0) * u - (b - 1.0) * v;
+    let dcs = (a - 1.0).abs() * u * u + (b - 1.0).abs() * v * v;
+    let k = (dcs + cs * cs) / 6.0 + 0.25 * cs * cs;
+    k * (r * r * r).abs() < 0.25 * MACHEP
+}
+
+pub fn incbi(aa: f64, bb: f64, yy0: f64) -> f64 {
+    incbi_impl(aa, bb, yy0, false).0
+}
+
+/// Accelerated inverse incomplete beta for callers that refine the result,
+/// also reporting whether it came from a converged Halley step in
+/// unreflected coordinates. Such a result is accurate relative to `x` and
+/// needs no further refinement.
+///
+/// Compared with the Cephes iteration kept by [`incbi`], small shape
+/// parameters start Newton from a power-law seed instead of interval halving,
+/// and the Newton steps carry a Halley correction.
+pub(crate) fn incbi_status(aa: f64, bb: f64, yy0: f64) -> (f64, bool) {
+    incbi_impl(aa, bb, yy0, true)
+}
+
+fn incbi_impl(aa: f64, bb: f64, yy0: f64, accelerate: bool) -> (f64, bool) {
+    if yy0 <= 0.0 {
+        return (0.0, false);
+    } else if yy0 >= 1.0 {
+        return (1.0, false);
+    }
+    let mut converged = false;
     let mut x0: f64 = 0.0;
     let mut yl: f64 = 0.0;
     let mut x1: f64 = 1.0;
@@ -48,8 +86,27 @@ pub fn incbi(aa: f64, bb: f64, yy0: f64) -> f64 {
         b = bb;
         y0 = yy0;
         x = a / (a + b);
+        // Seed from the leading power-law behavior of both tails,
+        // I_x ~ x^a / (a B) near 0 and 1 - I_x ~ (1-x)^b / (b B) near 1, with
+        // B approximated by t + u (Numerical Recipes, section 6.14), and go
+        // straight to the bracketed Newton/Halley phase. Its bracket
+        // safeguards replace the interval halving that Cephes ran first; if
+        // they do not converge, the halving below still takes over.
+        if accelerate {
+            let t = (a * (a / (a + b)).ln()).exp() / a;
+            let u = (b * (b / (a + b)).ln()).exp() / b;
+            let w = t + u;
+            let seed = if y0 < t / w {
+                (a * w * y0).powf(1.0 / a)
+            } else {
+                1.0 - (b * w * (1.0 - y0)).powf(1.0 / b)
+            };
+            if seed > 0.0 && seed < 1.0 {
+                x = seed;
+            }
+            goto_newt = true;
+        }
         y = incbet(a, b, x);
-        //goto ihalve;
     } else {
         dithresh = 1.0e-4;
         /* approximation to inverse function */
@@ -84,12 +141,12 @@ pub fn incbi(aa: f64, bb: f64, yy0: f64) -> f64 {
             x = 0.0;
             if rflg != 0 {
                 if x <= MACHEP {
-                    return 1.0 - MACHEP;
+                    return (1.0 - MACHEP, false);
                 } else {
-                    return 1.0 - x;
+                    return (1.0 - x, false);
                 }
             } else {
-                return x;
+                return (x, false);
             }
         }
         x = a / (a + b * d.exp());
@@ -252,6 +309,14 @@ pub fn incbi(aa: f64, bb: f64, yy0: f64) -> f64 {
             d = d.exp();
             /* Compute the step to the next approximation of x. */
             d = (y - y0) / d;
+            // Halley correction from the exact log-derivative of the beta
+            // density, c = f''/f' = (a-1)/x - (b-1)/(1-x). It costs no extra
+            // incbet call and makes the iteration converge cubically.
+            let c = (a - 1.0) / x - (b - 1.0) / (1.0 - x);
+            let h = 0.5 * d * c;
+            if accelerate && h.abs() < 0.5 {
+                d /= 1.0 - h;
+            }
             xt = x - d;
             if xt <= x0 {
                 y = (x - x0) / (x1 - x0);
@@ -269,7 +334,16 @@ pub fn incbi(aa: f64, bb: f64, yy0: f64) -> f64 {
                     break;
                 }
             }
+            let unclamped = xt == x - d;
             x = xt;
+            // Accept the result without further refinement only when the
+            // predicted error of this Halley step is far below rounding. The
+            // Cephes test below is relative to x alone, which is too loose
+            // when 1-x is small, so it does not mark convergence by itself.
+            if accelerate && unclamped && h.abs() < 1e-2 && halley_converged(a, b, x, d, x) {
+                converged = true;
+                break 'ihalve;
+            }
             if (d / x).abs() < 128.0 * MACHEP {
                 break 'ihalve; //goto done;
             }
@@ -282,8 +356,8 @@ pub fn incbi(aa: f64, bb: f64, yy0: f64) -> f64 {
     //done:
 
     if rflg != 0 {
-        if x <= MACHEP { 1.0 - MACHEP } else { 1.0 - x }
+        (if x <= MACHEP { 1.0 - MACHEP } else { 1.0 - x }, false)
     } else {
-        x
+        (x, converged)
     }
 }

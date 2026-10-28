@@ -34,6 +34,7 @@ mod incbet;
 pub use crate::backend::cephes64::incbet::incbet;
 mod incbi;
 pub use crate::backend::cephes64::incbi::incbi;
+pub(crate) use crate::backend::cephes64::incbi::{halley_converged, incbi_status};
 mod fdtr;
 pub use crate::backend::cephes64::fdtr::{fdtr, fdtrc, fdtri};
 mod expn;
