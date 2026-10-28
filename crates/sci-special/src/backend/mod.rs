@@ -7,7 +7,7 @@ pub type StrErr = &'static str;
 #[allow(unused_imports)]
 mod cephes64;
 mod real;
-mod utils;
+pub(crate) mod utils;
 pub use real::*;
 
 mod elementary;

@@ -472,6 +472,10 @@ pub(crate) fn gdtrib(a: f64, p: f64, x: f64) -> f64 {
     if p == 1.0 {
         return 0.0;
     }
+    let y = a * x;
+    if let Some(root) = gdtrib_from_guess(y, p) {
+        return root;
+    }
     let (mut lo, mut hi) = (0.0, 1.0);
     // P(b, y) → 1 as b → 0+, so the residual at the origin is 1 − p.
     let (mut f_lo, mut f_hi) = (1.0 - p, f64::NAN);
@@ -500,6 +504,67 @@ pub(crate) fn gdtrib(a: f64, p: f64, x: f64) -> f64 {
         }
     }
     lo + (hi - lo) * 0.5
+}
+/// Solves P(b, y) = p for b by bracketing around an approximate start and
+/// refining with Brent's method.
+///
+/// Gamma(b) has mean and variance b, so b + z√b = y with z = Φ⁻¹(p) gives a
+/// first estimate, refined with the Wilson–Hilferty approximation. The
+/// bracket grows geometrically from there. P(b, y) decreases
+/// in b, so the root is unique. Returns `None` if no finite bracket is found
+/// within the stepping budget, leaving the caller's search from the origin.
+fn gdtrib_from_guess(y: f64, p: f64) -> Option<f64> {
+    let z = c::ndtri(p);
+    let root_b = 0.5 * (-z + (z * z + 4.0 * y).sqrt());
+    let mut start = root_b * root_b;
+    if !start.is_finite() || start <= 1e-3 {
+        return None;
+    }
+    // Refine with the Wilson–Hilferty approximation
+    // 3√b ((y/b)^{1/3} − 1 + 1/(9b)) = z, which is more accurate in the tails.
+    let wilson_hilferty = |b: f64| 3.0 * b.sqrt() * ((y / b).cbrt() - 1.0 + 1.0 / (9.0 * b)) - z;
+    for _ in 0..4 {
+        let h = 1e-6 * start;
+        let derivative = (wilson_hilferty(start + h) - wilson_hilferty(start - h)) / (2.0 * h);
+        let next = start - wilson_hilferty(start) / derivative;
+        if !next.is_finite() || next <= 0.5 * start || next >= 2.0 * start {
+            break;
+        }
+        start = next;
+    }
+    let residual = |b: f64| c::igam(b, y) - p;
+    let mut a = start;
+    let mut ra = residual(a);
+    if ra == 0.0 {
+        return Some(a);
+    }
+    if !ra.is_finite() {
+        return None;
+    }
+    // Residual above zero: the root lies at larger b.
+    let up = ra > 0.0;
+    let mut factor = 1.0 + 0.05 / (start + 1.0).sqrt();
+    for _ in 0..64 {
+        let b = if up { a * factor } else { a / factor };
+        if !(1e-3..=1e300).contains(&b) {
+            return None;
+        }
+        let rb = residual(b);
+        if !rb.is_finite() {
+            return None;
+        }
+        if rb == 0.0 {
+            return Some(b);
+        }
+        if (rb > 0.0) != (ra > 0.0) {
+            let (lo, hi, rl, rh) = if up { (a, b, ra, rb) } else { (b, a, rb, ra) };
+            return super::utils::brent_root(lo, hi, rl, rh, residual);
+        }
+        a = b;
+        ra = rb;
+        factor *= factor;
+    }
+    None
 }
 pub(crate) fn hyp1f1(a: f64, b: f64, x: f64) -> f64 {
     if !a.is_finite() || !b.is_finite() || !x.is_finite() || a.abs() > 100_000.0 {

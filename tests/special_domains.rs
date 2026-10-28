@@ -383,3 +383,45 @@ fn gamma_quantiles_match_references_after_early_halley_stop() {
         }
     }
 }
+
+#[test]
+fn parameter_inverses_round_trip_after_bracketed_brent_search() {
+    // Each inverse must reproduce its target through the forward CDF. The
+    // grid covers roots below and above the bracketing start points.
+    let close = |name: &str, value: f64, target: f64| {
+        assert!(
+            (value - target).abs() < 1e-12,
+            "{name}: forward value {value:e} != {target:e}"
+        );
+    };
+    for p in [1e-6, 0.05, 0.5, 0.95, 0.999_999] {
+        for shape in [0.05, 1.0, 7.0, 300.0] {
+            let a = s::btdtria(p, shape, 0.4);
+            close("btdtria", s::betainc(a, shape, 0.4), p);
+            let b = s::btdtrib(shape, p, 0.4);
+            close("btdtrib", s::betainc(shape, b, 0.4), p);
+            let n = s::nbdtrin(3.0, p, 0.3);
+            close("nbdtrin", s::betainc(n, 4.0, 0.3), p);
+            let k = s::pdtrik(p, shape);
+            close("pdtrik", s::gammaincc(k + 1.0, shape), p);
+            let v = s::chdtriv(p, shape);
+            close("chdtriv", s::gammainc(v / 2.0, shape / 2.0), p);
+        }
+        let k = s::bdtrik(p, 50.0, 0.3);
+        close("bdtrik", s::betainc(50.0 - k, k + 1.0, 0.7), p);
+        let x = s::chndtrix(p, 3.0, 40.0);
+        close("chndtrix", s::chndtr(x, 3.0, 40.0), p);
+        let t = s::nctdtrit(5.0, -3.0, p);
+        close("nctdtrit", s::nctdtr(5.0, -3.0, t), p);
+    }
+    // Large noncentralities: the root lies far from the start at zero.
+    let nc = s::chndtrinc(400.0, 3.0, 0.5);
+    close("chndtrinc", s::chndtr(400.0, 3.0, nc), 0.5);
+    assert!(nc > 300.0, "chndtrinc root {nc}");
+    let nc = s::ncfdtrinc(3.0, 20.0, 0.5, 60.0);
+    close("ncfdtrinc", s::ncfdtr(3.0, 20.0, nc, 60.0), 0.5);
+    let nc = s::nctdtrinc(10.0, 0.5, 40.0);
+    close("nctdtrinc", s::nctdtr(10.0, nc, 40.0), 0.5);
+    // No root inside the noncentrality interval still returns NaN.
+    assert!(s::chndtrinc(2.5, 3.0, 0.9).is_nan());
+}
