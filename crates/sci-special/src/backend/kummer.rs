@@ -23,6 +23,9 @@ pub(super) fn negative_argument(a: f64, b: f64, x: f64) -> f64 {
         let scale = (0.5 * x).exp();
         return ((current.hi + current.lo) * scale) * scale;
     }
+    if let Some(value) = transformed_series(a, b, x) {
+        return value;
+    }
     // Binary scaling keeps the starting coordinate exact while limiting
     // cancellation in the origin series, including large positive a.
     let mut start = -0.25_f64;
@@ -117,4 +120,50 @@ pub(super) fn negative_argument(a: f64, b: f64, x: f64) -> f64 {
     } else {
         f64::NAN
     }
+}
+
+/// Kummer's transformation M(a,b,x) = exp(x) M(b-a,b,-x) (DLMF 13.2.39),
+/// summed in double-double. For x < 0 the transformed series has positive
+/// argument, but b - a < 0 makes its leading terms alternate. The series is
+/// accepted only when the largest term exceeds the sum by at most 10^13, so
+/// double-double rounding of about 10^-30 per term stays below binary64
+/// resolution. Larger cancellation, typical for large |x|, returns `None`
+/// and the caller continues the solution outwards instead. Moderate |x| then
+/// needs one short series rather than many Taylor steps.
+fn transformed_series(a: Dd, b: Dd, x: f64) -> Option<f64> {
+    if x < -30.0 {
+        return None;
+    }
+    let alpha = b - a;
+    let argument = -x;
+    let (mut term, mut sum) = (Dd::from(1.0), Dd::from(1.0));
+    let mut peak: f64 = 1.0;
+    for n in 0..512 {
+        let n = n as f64;
+        // term_(n+1) = term_n (alpha+n) |x| / ((b+n)(n+1)); b + n is exact
+        // in double-double and the integer factor needs no promotion.
+        term = (term * alpha.add_f64(n))
+            .mul_f64(argument)
+            .div_dd(Dd::sum(b.hi, n).mul_f64(n + 1.0));
+        sum = sum + term;
+        peak = peak.max(term.hi.abs());
+        let magnitude = sum.hi.abs();
+        if !magnitude.is_finite() {
+            return None;
+        }
+        // Once n exceeds |x| and -alpha, every later factor is positive and
+        // below |x|/(n+1) < 1 (as b > alpha), so the tail is bounded by a
+        // geometric series and terms below 1e-20 cannot change the result.
+        if n + 1.0 > argument && alpha.hi + n + 1.0 > 0.0 && term.hi.abs() <= 1e-20 * magnitude
+            || term.hi == 0.0
+        {
+            if peak > 1e13 * magnitude {
+                return None;
+            }
+            // exp(x) cannot underflow for x >= -30; rounding the product
+            // once keeps the error at that of the exponential.
+            return Some(sum.mul_f64(x.exp()).hi);
+        }
+    }
+    None
 }

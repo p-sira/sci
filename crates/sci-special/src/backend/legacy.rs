@@ -2,7 +2,6 @@
 use super::{cephes64 as c, specfun as s};
 use num_complex::Complex64;
 use std::f64::consts::{FRAC_PI_2, PI, SQRT_2};
-use std::sync::LazyLock;
 
 pub(super) fn gamma_ratio(a: f64, b: f64, extra: f64) -> f64 {
     (c::lgam(a) - c::lgam(b) + extra).exp()
@@ -849,17 +848,27 @@ pub(crate) fn airy_integrals(x: f64) -> [f64; 4] {
             tg = (tg * cube)
                 .mul_f64(3.0 * k - 1.0)
                 .div_f64((3.0 * k + 2.0) * (3.0 * k) * (3.0 * k + 1.0));
+            // For fixed parity every term shares the sign of x^(3n), so
+            // the cheaper same-sign addition is exact to double-double precision.
             if n % 2 == 0 {
-                f_even = f_even + tf;
-                g_even = g_even + tg;
+                f_even = f_even.add_same_sign(tf);
+                g_even = g_even.add_same_sign(tg);
             } else {
-                f_odd = f_odd + tf;
-                g_odd = g_odd + tg;
+                f_odd = f_odd.add_same_sign(tf);
+                g_odd = g_odd.add_same_sign(tg);
             }
             let scale = |f: f64, g: f64| f.abs().max(g.abs());
             let positive = scale(f_even.hi + f_odd.hi, g_even.hi + g_odd.hi);
             let negative = scale(f_odd.hi - f_even.hi, g_even.hi - g_odd.hi);
-            if tf.hi.abs().max(tg.hi.abs()) <= 1e-31 * positive.min(negative) {
+            // Once the next term ratios, at most |x|³/((3k+3)(3k+2)), are
+            // below one half, each tail is at most twice its current term,
+            // and terms below 1e-20 of the sums are beyond binary64 resolution.
+            let tolerance = if 2.0 * (cube.hi.abs()) < (3.0 * k + 3.0) * (3.0 * k + 2.0) {
+                1e-20
+            } else {
+                1e-31
+            };
+            if tf.hi.abs().max(tg.hi.abs()) <= tolerance * positive.min(negative) {
                 break;
             }
         }
@@ -1004,20 +1013,43 @@ pub(crate) fn it2i0k0(x: f64) -> (f64, f64) {
         // Shift the defining K tail: exp(-x) ∫ exp(-u) K0e(x+u)/(x+u) du.
         // The old eight-term asymptotic loses ~2e-6 relatively at x=19.9;
         // the small-x series also cancels before its x=12 transition.
-        // A single cached 32-point Gaussian rule resolves the smooth shifted
+        // A single 32-point Gaussian rule resolves the smooth shifted
         // integrand on [0,48]; the omitted tail is below 1e-20 relatively.
-        // The nodes and their exp(-u) weights do not depend on x.
-        static NODES: LazyLock<[(f64, f64); 32]> = LazyLock::new(|| {
-            let mut nodes = [(0.0, 0.0); 32];
-            for (pair, &(z, weight)) in nodes.chunks_exact_mut(2).zip(&*GAUSS_32) {
-                for (node, u) in pair.iter_mut().zip([24.0 * (1.0 - z), 24.0 * (1.0 + z)]) {
-                    *node = (u, 24.0 * weight * (-u).exp());
-                }
-            }
-            nodes
-        });
+        // The nodes and their exp(-u) weights do not depend on x, so they
+        // are tabulated as (u, 24 w exp(-u)), sorted by u. The six nodes beyond
+        // u = 44 have weights below 1e-19 and K0e(x+u)/(x+u) only decreases,
+        // so together they change the sum by under 1e-19 relatively and are
+        // dropped; a unit test re-derives the table.
+        const NODES: [(f64, f64); 26] = [
+            (0.06566731561244232, 0.15774056799892153),
+            (0.34532372291355884, 0.2765310482031931),
+            (0.8457058658998466, 0.2615916500409001),
+            (1.562254177494248, 0.17246299683299984),
+            (2.48829226161475, 0.08538223504570523),
+            (3.6151772704183207, 0.03293922306990191),
+            (4.932388896769383, 0.010153654031119359),
+            (6.427629150233047, 0.002553288646578059),
+            (8.086937593674834, 0.0005339642208046494),
+            (9.894821826221705, 9.464933659751057e-5),
+            (11.834402185626494, 1.449782460042314e-5),
+            (13.887569372864753, 1.9573964074942813e-6),
+            (16.035153545228937, 2.3774039031616317e-7),
+            (18.25710330594871, 2.6525304499069184e-8),
+            (20.532672922012885, 2.777272208722698e-9),
+            (22.840616023494277, 2.7884665049272796e-10),
+            (25.159383976505723, 2.7437043088658582e-11),
+            (27.467327077987115, 2.7035625036831377e-12),
+            (29.74289669405129, 2.7254843297461865e-13),
+            (31.964846454771067, 2.870286460342419e-14),
+            (34.11243062713525, 3.2220564647021825e-15),
+            (36.1655978143735, 3.930056930103593e-16),
+            (38.1051781737783, 5.30292494105746e-17),
+            (39.91306240632517, 8.046402826858624e-18),
+            (41.572370849766955, 1.3929403727552428e-18),
+            (43.06761110323062, 2.784234374611805e-19),
+        ];
         second = 0.0;
-        for &(u, weight) in &*NODES {
+        for &(u, weight) in &NODES {
             second += weight * c::k0e(x + u) / (x + u);
         }
         second *= (-x).exp();
@@ -1045,19 +1077,35 @@ pub(crate) fn itstruve0(x: f64) -> f64 {
         // repeatedly evaluating H_0 at quadrature nodes.
         use super::double_double::Dd;
         let square = Dd::from(x) * Dd::from(x);
-        let (mut term, mut sum) = (Dd::from(1.0), Dd::from(1.0));
-        for k in 1..128 {
-            let k = k as f64;
+        // Terms alternate in sign; summing even and odd k separately keeps
+        // each partial sum single-signed, so the cheaper same-sign addition
+        // is exact to double-double precision. One full addition combines them.
+        let mut term = Dd::from(1.0);
+        let (mut even, mut odd) = (term, Dd::from(0.0));
+        for n in 1..128u32 {
+            let k = f64::from(n);
             // Integer denominators below 2^53 are exact in binary64.
             term = (term * square)
                 .mul_f64(-k)
                 .div_f64((k + 1.0) * (2.0 * k + 1.0) * (2.0 * k + 1.0));
-            sum = sum + term;
-            if term.hi.abs() <= 1e-31 * sum.hi.abs() {
+            if n % 2 == 0 {
+                even = even.add_same_sign(term);
+            } else {
+                odd = odd.add_same_sign(term);
+            }
+            // Once the next ratio x²(k+1)/((k+2)(2k+3)²) is below one half,
+            // the tail is at most twice the current term, and terms below
+            // 1e-20 of the sum are beyond binary64 resolution.
+            let tolerance = if x * x < (k + 2.0) * (2.0 * k + 3.0) {
+                1e-20
+            } else {
+                1e-31
+            };
+            if term.hi.abs() <= tolerance * (even.hi + odd.hi).abs() {
                 break;
             }
         }
-        (square * sum / Dd::from(PI)).hi
+        (square * (even + odd) / Dd::from(PI)).hi
     } else if x.abs() <= 128.0 {
         quadrature(0.0, x.abs(), |t| {
             super::struve_h(0.0, t).unwrap_or(f64::NAN)
@@ -1114,9 +1162,41 @@ pub(crate) fn jahnke_emden_lambda(v: f64, x: f64) -> (Vec<f64>, Vec<f64>) {
     let base = v.fract();
     // Λ_ν(x) = 0F1(; ν + 1; -x²/4) and Λ_ν′(x) = -x Λ_{ν+1}(x) / (2(ν + 1)),
     // so each derivative reuses the value at the next order.
-    let values: Vec<f64> = (0..=size + 1)
-        .map(|i| super::hyp0f1(base + i as f64 + 1.0, -x * x * 0.25).unwrap_or(f64::NAN))
-        .collect();
+    let z = -x * x * 0.25;
+    let lambda = |i: usize| super::hyp0f1(base + i as f64 + 1.0, z).unwrap_or(f64::NAN);
+    let mut values = vec![0.0; size + 2];
+    values[size + 1] = lambda(size + 1);
+    values[size] = lambda(size);
+    // Lower orders follow from J's three-term recurrence (DLMF 10.6.1),
+    // Λ_(ν-1) = Λ_ν + z Λ_(ν+1) / (ν(ν+1)), run downwards. J is the minimal
+    // solution for orders beyond the turning point ν ≈ x, where the backward
+    // direction is strongly stable. Closer to or below x the recurrence is
+    // only neutrally stable and loses relative accuracy near zeros, so those
+    // orders are evaluated directly. Above x = 50 the anchors come from the
+    // Bessel path and the recurrence gains little, so it is not used there.
+    // Double-double steps keep the rounding of up to 256 steps from
+    // accumulating, so recurred orders are as accurate as the two anchors.
+    use super::double_double::Dd;
+    let recur_from = if x <= 50.0 {
+        x + 2.0 * x.cbrt()
+    } else {
+        f64::INFINITY
+    };
+    let (mut upper, mut current) = (Dd::from(values[size + 1]), Dd::from(values[size]));
+    for i in (0..size).rev() {
+        let order = base + (i + 1) as f64;
+        if order - 1.0 >= recur_from {
+            let next =
+                current + (upper * Dd::from(z)).div_dd(Dd::from(order) * Dd::from(order + 1.0));
+            upper = current;
+            current = next;
+            values[i] = next.hi;
+        } else {
+            values[i] = lambda(i);
+            upper = current;
+            current = Dd::from(values[i]);
+        }
+    }
     (0..=size)
         .map(|i| {
             let degree = base + i as f64;
@@ -1252,7 +1332,17 @@ pub(crate) fn owens_t(h: f64, a: f64) -> f64 {
     // The Gaussian's width is about 1/h; the 32-point rule matches the
     // 64-point rule to rounding level for h <= 12 (checked against
     // independent Owen's T values), halving the exponential evaluations.
-    let rule: &[(f64, f64)] = if h <= 12.0 { &*GAUSS_32 } else { &*GAUSS_64 };
+    // With t = a(1+z)/2 the Gaussian factor is exp(-(ha)²(1+z)²/8); for
+    // ha <= 4 it and the poles at ±i (Bernstein ellipse radius above 4.6
+    // for a <= 1) are resolved by the 16-point rule beyond binary64
+    // precision, again halving the exponentials.
+    let rule: &[(f64, f64)] = if h * a <= 4.0 {
+        &GAUSS_16
+    } else if h <= 12.0 {
+        &GAUSS_32
+    } else {
+        &GAUSS_64
+    };
     let half = 0.5 * a;
     let scale = -0.5 * h * h;
     if scale == f64::NEG_INFINITY {
@@ -1315,11 +1405,74 @@ pub(crate) fn kerp_zeros(nt: usize) -> Result<Vec<f64>, &'static str> {
     Ok(out)
 }
 
-// Nodes and weights depend only on the rule, so compute them once rather than
-// repeating the Legendre root solves for every integral and subinterval.
-static GAUSS_32: LazyLock<[(f64, f64); 16]> = LazyLock::new(gauss_rule::<16>);
-static GAUSS_64: LazyLock<[(f64, f64); 32]> = LazyLock::new(gauss_rule::<32>);
+// Positive Gauss–Legendre nodes and weights for the 16-, 32- and 64-point rules,
+// as (node, weight) pairs. They are tabulated rather than solved lazily so
+// no evaluation pays for the Legendre root solves; `gauss_rule` reproduces
+// them bit for bit and a unit test checks the tables against it.
+const GAUSS_16: [(f64, f64); 8] = [
+    (0.9894009349916499, 0.027152459411754058),
+    (0.9445750230732326, 0.062253523938647776),
+    (0.8656312023878318, 0.0951585116824929),
+    (0.755404408355003, 0.12462897125553395),
+    (0.6178762444026438, 0.14959598881657682),
+    (0.45801677765722737, 0.16915651939500256),
+    (0.2816035507792589, 0.1826034150449236),
+    (0.09501250983763744, 0.18945061045506847),
+];
+const GAUSS_32: [(f64, f64); 16] = [
+    (0.9972638618494816, 0.007018610009469521),
+    (0.9856115115452684, 0.01627439473090571),
+    (0.9647622555875064, 0.02539206530926214),
+    (0.9349060759377397, 0.03427386291302141),
+    (0.8963211557660521, 0.042835898022226704),
+    (0.84936761373257, 0.050998059262376154),
+    (0.7944837959679424, 0.05868409347853558),
+    (0.7321821187402897, 0.06582222277636181),
+    (0.6630442669302152, 0.07234579410884862),
+    (0.5877157572407623, 0.07819389578707044),
+    (0.5068999089322294, 0.08331192422694672),
+    (0.42135127613063533, 0.08765209300440374),
+    (0.33186860228212767, 0.0911738786957639),
+    (0.23928736225213706, 0.09384439908080441),
+    (0.1444719615827965, 0.09563872007927485),
+    (0.04830766568773831, 0.09654008851472785),
+];
+const GAUSS_64: [(f64, f64); 32] = [
+    (0.9993050417357722, 0.0017832807216962678),
+    (0.9963401167719552, 0.004147033260562521),
+    (0.9910133714767443, 0.006504457968978368),
+    (0.983336253884626, 0.008846759826363935),
+    (0.973326827789911, 0.011168139460131076),
+    (0.9610087996520538, 0.013463047896718736),
+    (0.9464113748584028, 0.015726030476024788),
+    (0.9295691721319396, 0.017951715775697225),
+    (0.9105221370785028, 0.02013482315353018),
+    (0.8893154459951141, 0.022270173808383212),
+    (0.8659993981540929, 0.024352702568710933),
+    (0.8406292962525804, 0.026377469715054645),
+    (0.8132653151227975, 0.02833967261425946),
+    (0.7839723589433414, 0.030234657072402426),
+    (0.7528199072605319, 0.032057928354851606),
+    (0.7198818501716109, 0.03380516183714161),
+    (0.6852363130542333, 0.03547221325688236),
+    (0.6489654712546573, 0.03705512854024007),
+    (0.6111553551723933, 0.0385501531786156),
+    (0.571895646202634, 0.03995374113272036),
+    (0.5312794640198946, 0.04126256324262355),
+    (0.48940314570705296, 0.042473515123653625),
+    (0.4463660172534641, 0.04358372452932347),
+    (0.4022701579639916, 0.04459055816375658),
+    (0.3572201583376681, 0.04549162792741812),
+    (0.31132287199021097, 0.046284796581314396),
+    (0.2646871622087674, 0.04696818281620999),
+    (0.21742364374000708, 0.047540165714830315),
+    (0.1696444204239928, 0.04799938859645833),
+    (0.12146281929612056, 0.0483447622348029),
+    (0.07299312178779904, 0.048575467441503394),
+    (0.02435029266342443, 0.04869095700913973),
+];
 
+#[cfg(test)]
 fn gauss_rule<const HALF: usize>() -> [(f64, f64); HALF] {
     let order = 2 * HALF;
     std::array::from_fn(|i| {
@@ -1351,7 +1504,7 @@ fn quadrature(left: f64, right: f64, evaluate: impl Fn(f64) -> f64) -> f64 {
     let mut total = 0.0;
     for piece in 0..pieces {
         let midpoint = left + (piece as f64 + 0.5) * width;
-        for &(z, weight) in &*GAUSS_32 {
+        for &(z, weight) in &GAUSS_32 {
             total += weight
                 * width
                 * 0.5
@@ -1365,4 +1518,40 @@ pub(crate) fn keip_zeros(nt: usize) -> Result<Vec<f64>, &'static str> {
     let mut out = vec![0.0; nt];
     super::kelvin_zeros(super::KelvinFunction::KeiPrime, &mut out)?;
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn gauss_tables_match_legendre_root_solves() {
+        assert_eq!(GAUSS_16, gauss_rule::<8>());
+        assert_eq!(GAUSS_32, gauss_rule::<16>());
+        assert_eq!(GAUSS_64, gauss_rule::<32>());
+    }
+
+    #[test]
+    fn it2i0k0_tabulated_nodes_match_gauss_rule() {
+        let mut nodes = [(0.0, 0.0); 32];
+        for (pair, &(z, weight)) in nodes.chunks_exact_mut(2).zip(&gauss_rule::<16>()) {
+            for (node, u) in pair.iter_mut().zip([24.0 * (1.0 - z), 24.0 * (1.0 + z)]) {
+                *node = (u, 24.0 * weight * (-u).exp());
+            }
+        }
+        nodes.sort_by(|a, b| a.0.total_cmp(&b.0));
+        let kept: Vec<_> = nodes.iter().copied().filter(|&(_, w)| w >= 1e-19).collect();
+        assert_eq!(kept.len(), 26);
+        for x in [4.0, 6.0, 12.5, 40.0] {
+            let sum = |nodes: &[(f64, f64)]| -> f64 {
+                nodes
+                    .iter()
+                    .map(|&(u, weight)| weight * c::k0e(x + u) / (x + u))
+                    .sum()
+            };
+            assert_eq!(it2i0k0(x).1, sum(&kept) * (-x).exp());
+            let full = sum(&nodes) * (-x).exp();
+            assert!((it2i0k0(x).1 - full).abs() <= 1e-18 * full);
+        }
+    }
 }

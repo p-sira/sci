@@ -21,7 +21,10 @@ fn series_real(v: f64, z: f64) -> Option<f64> {
         return None;
     }
     let mut real = Dd::from(1.0);
-    let mut sr = real;
+    // Positive and negative terms are accumulated separately, so every
+    // accumulation is the cheaper same-sign double-double addition; one full
+    // addition combines them at the end.
+    let (mut positive, mut negative) = (real, Dd::from(0.0));
     let mut peak: f64 = 1.0;
     for k in 1..=4096 {
         // term_k = term_(k-1) z / ((v + k - 1) k); v + k - 1 is exact in
@@ -29,18 +32,27 @@ fn series_real(v: f64, z: f64) -> Option<f64> {
         let kf = k as f64;
         let denominator = Dd::sum(v, kf - 1.0).mul_f64(kf);
         real = real.mul_f64(z).div_dd(denominator);
-        sr = sr + real;
+        if real.hi >= 0.0 {
+            positive = positive.add_same_sign(real);
+        } else {
+            negative = negative.add_same_sign(real);
+        }
         let term = real.hi.abs();
-        let magnitude = sr.hi.abs();
+        let magnitude = (positive.hi + negative.hi).abs();
         peak = peak.max(term);
         if !magnitude.is_finite() {
             return None;
         }
-        if term <= 1e-32 * magnitude || term == 0.0 {
-            if peak * 1e-30 > 1e-13 * magnitude {
+        // Once the next ratio |z| / ((v + k) (k + 1)) is below one half, the
+        // remaining tail is at most twice the current term, so terms below
+        // 1e-20 of the sum are beyond binary64 resolution.
+        let tail_bounded = (v + kf) * (kf + 1.0) > 2.0 * norm;
+        if (tail_bounded && term <= 1e-20 * magnitude) || term <= 1e-32 * magnitude || term == 0.0 {
+            let sum = positive + negative;
+            if peak * 1e-30 > 1e-13 * sum.hi.abs() {
                 return None;
             }
-            return Some(sr.hi);
+            return Some(sum.hi);
         }
     }
     None
