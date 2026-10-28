@@ -344,3 +344,42 @@ fn bessel_recurrence_and_integral_tails_retain_small_results() {
         }
     }
 }
+
+#[test]
+#[allow(clippy::excessive_precision)]
+fn gamma_quantiles_match_references_after_early_halley_stop() {
+    // (a, p, x with P(a, x) = p, x with Q(a, x) = p); 50-digit mpmath roots.
+    let cases: [(f64, f64, f64, f64); 9] = [
+        (
+            0.05,
+            1e-3,
+            5.844_632_057_286_547e-61,
+            2.736_458_598_728_676_3,
+        ),
+        (0.3, 0.5, 0.073_131_135_866_951_9, 0.073_131_135_866_951_9),
+        (0.7, 0.95, 2.382_620_018_648_371_5, 0.012_163_199_432_408_4),
+        (1.0, 1e-200, 1e-200, 460.517_018_598_809_14),
+        (2.5, 0.3, 1.499_954_066_379_953_1, 3.032_214_992_077_452_5),
+        (
+            7.0,
+            1e-30,
+            1.750_708_605_010_960_3e-4,
+            89.534_576_860_555_72,
+        ),
+        (30.0, 0.999, 49.803_616_534_924_69, 15.869_170_797_140_358),
+        (800.0, 0.5, 799.666_691_369_293_8, 799.666_691_369_293_8),
+        (1e4, 1e-6, 9_531.835_117_189_807, 10_482.561_164_638_856),
+    ];
+    for (a, p, lower, upper) in cases {
+        for (value, expected) in [
+            (s::gammaincinv(a, p), lower),
+            (s::gammainccinv(a, p), upper),
+        ] {
+            let rel = ((value - expected) / expected).abs();
+            assert!(
+                rel < 4e-15 * a.recip().max(1.0),
+                "a={a}, p={p}: {value} vs {expected} ({rel:e})"
+            );
+        }
+    }
+}

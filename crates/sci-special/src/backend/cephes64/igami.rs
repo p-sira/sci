@@ -12,8 +12,9 @@
 use sci_core::Float;
 
 use crate::backend::cephes64::consts::EULER;
+use crate::backend::cephes64::consts::MACHEP;
 use crate::backend::cephes64::gamma::{gamma, lgam};
-use crate::backend::cephes64::igam::{igam, igam_fac, igamc};
+use crate::backend::cephes64::igam::{igam_with_fac, igamc_with_fac};
 use crate::backend::cephes64::polevl::polevl;
 use crate::backend::cephes64::unity::log1p;
 
@@ -253,25 +254,11 @@ pub fn igami(a: f64, p: f64) -> f64 {
         return igamci(a, 1.0 - p);
     }
 
-    let mut x = find_inverse_gamma(a, p, 1.0 - p);
-    /* Halley's method */
-    for _ in 0..3 {
-        let fac = igam_fac(a, x);
-        if fac == 0.0 {
-            break;
-        }
-        let f_fp = (igam(a, x) - p) * x / fac;
-        /* The ratio of the first and second derivatives simplifies */
-        let fpp_fp = -1.0 + (a - 1.0) / x;
-        if fpp_fp.is_infinite() {
-            /* Resort to Newton's method in the case of overflow */
-            x -= f_fp;
-        } else {
-            x -= f_fp / (1.0 - 0.5 * f_fp * fpp_fp);
-        }
-    }
-
-    x
+    let x = find_inverse_gamma(a, p, 1.0 - p);
+    halley_refine(a, x, |x| {
+        let (value, fac) = igam_with_fac(a, x);
+        (value - p, fac)
+    })
 }
 
 pub fn igamci(a: f64, q: f64) -> f64 {
@@ -290,20 +277,58 @@ pub fn igamci(a: f64, q: f64) -> f64 {
         return igami(a, 1.0 - q);
     }
 
-    let mut x = find_inverse_gamma(a, 1.0 - q, q);
+    let x = find_inverse_gamma(a, 1.0 - q, q);
+    halley_refine(a, x, |x| {
+        let (value, fac) = igamc_with_fac(a, x);
+        (q - value, fac)
+    })
+}
+
+/// Up to three Halley steps on `P(a, x) - p` from the initial estimate `x`.
+///
+/// `residual(x)` returns `(P(a, x) - p, x^a e^-x / Γ(a))`, so the derivative
+/// is `fac / x` and `f''/f' = (a - 1)/x - 1`. This is the Cephes iteration,
+/// but it stops early once the predicted error of the last step is far below
+/// rounding (see [`halley_converged`]) instead of always taking three steps.
+fn halley_refine(a: f64, mut x: f64, residual: impl Fn(f64) -> (f64, f64)) -> f64 {
     for _ in 0..3 {
-        let fac = igam_fac(a, x);
+        let (f, fac) = residual(x);
         if fac == 0.0 {
             break;
         }
-        let f_fp = -(igamc(a, x) - q) * x / fac;
+        let f_fp = f * x / fac;
+        /* The ratio of the first and second derivatives simplifies */
         let fpp_fp = -1.0 + (a - 1.0) / x;
         if fpp_fp.is_infinite() {
+            /* Resort to Newton's method in the case of overflow */
             x -= f_fp;
         } else {
-            x -= f_fp / (1.0 - 0.5 * f_fp * fpp_fp);
+            let step = f_fp / (1.0 - 0.5 * f_fp * fpp_fp);
+            x -= step;
+            if halley_converged(a, x, step) {
+                break;
+            }
         }
     }
 
     x
+}
+
+/// Whether a Halley step `step` on `P(a, x)` that ended at `x` leaves a
+/// predicted error below a quarter of an ulp of `x`.
+///
+/// The leading error term of a Halley step is
+/// `(c^2/4 - (c' + c^2)/6) step^3` with `c = f''/f' = (a-1)/x - 1` and
+/// `c' = -(a-1)/x^2`. Bounding it in units of `x` gives
+/// `k = (|a-1| + (cx)^2)/6 + (cx)^2/4` with `cx = a - 1 - x`. The bound only
+/// holds in the asymptotic regime, so the step must also be small relative
+/// to `x`.
+fn halley_converged(a: f64, x: f64, step: f64) -> bool {
+    let r = step / x;
+    if r.is_nan() || r.abs() >= 1e-3 {
+        return false;
+    }
+    let cx = a - 1.0 - x;
+    let k = ((a - 1.0).abs() + cx * cx) / 6.0 + 0.25 * cx * cx;
+    k * (r * r * r).abs() < 0.25 * MACHEP
 }

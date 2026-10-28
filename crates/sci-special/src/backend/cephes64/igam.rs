@@ -839,6 +839,49 @@ pub fn igamc(a: f64, x: f64) -> f64 {
     }
 }
 
+/// `igam(a, x)` together with `igam_fac(a, x)`, for Newton/Halley inversions
+/// that need both. The value is bit-identical to [`igam`], and the prefactor
+/// to [`igam_fac`]; the series and continued-fraction branches reuse the
+/// prefactor they already compute instead of evaluating it twice.
+pub(crate) fn igam_with_fac(a: f64, x: f64) -> (f64, f64) {
+    if !(a > 0.0 && x > 0.0 && a.is_finite() && x.is_finite()) || in_asymptotic_regime(a, x) {
+        return (igam(a, x), igam_fac(a, x));
+    }
+    if x > 1.0 && x > a {
+        let (q, fac) = igamc_with_fac(a, x);
+        (1.0 - q, fac)
+    } else {
+        igam_series_fac(a, x)
+    }
+}
+
+/// `igamc(a, x)` together with `igam_fac(a, x)`; see [`igam_with_fac`].
+pub(crate) fn igamc_with_fac(a: f64, x: f64) -> (f64, f64) {
+    if !(a > 0.0 && x > 0.0 && a.is_finite() && x.is_finite()) || in_asymptotic_regime(a, x) {
+        return (igamc(a, x), igam_fac(a, x));
+    }
+    let complement = |(p, fac): (f64, f64)| (1.0 - p, fac);
+    if x > 1.1 {
+        if x < a {
+            complement(igam_series_fac(a, x))
+        } else {
+            igamc_continued_fraction_fac(a, x)
+        }
+    } else if (x <= 0.5 && -0.4 / x.ln() < a) || (x > 0.5 && x * 1.1 < a) {
+        complement(igam_series_fac(a, x))
+    } else {
+        (igamc_series(a, x), igam_fac(a, x))
+    }
+}
+
+/// The `a ~ x` regime in which [`igam`] and [`igamc`] use the uniform
+/// asymptotic expansion.
+fn in_asymptotic_regime(a: f64, x: f64) -> bool {
+    let absxma_a = (x - a).abs() / a;
+    (a > SMALL && a < LARGE && absxma_a < SMALLRATIO)
+        || (a > LARGE && absxma_a < LARGERATIO / a.sqrt())
+}
+
 /* Compute
 *
 * x^a * exp(-x) / gamma(a)
@@ -870,9 +913,14 @@ pub fn igam_fac(a: f64, x: f64) -> f64 {
 
 /* Compute igamc using DLMF 8.9.2. */
 fn igamc_continued_fraction(a: f64, x: f64) -> f64 {
+    igamc_continued_fraction_fac(a, x).0
+}
+
+/// [`igamc_continued_fraction`] together with the `igam_fac(a, x)` it used.
+fn igamc_continued_fraction_fac(a: f64, x: f64) -> (f64, f64) {
     let ax = igam_fac(a, x);
     if ax == 0.0 {
-        return 0.0;
+        return (0.0, ax);
     }
 
     /* continued fraction */
@@ -916,14 +964,19 @@ fn igamc_continued_fraction(a: f64, x: f64) -> f64 {
         }
     }
 
-    ans * ax
+    (ans * ax, ax)
 }
 
 /* Compute igam using DLMF 8.11.4. */
 fn igam_series(a: f64, x: f64) -> f64 {
+    igam_series_fac(a, x).0
+}
+
+/// [`igam_series`] together with the `igam_fac(a, x)` it used.
+fn igam_series_fac(a: f64, x: f64) -> (f64, f64) {
     let ax = igam_fac(a, x);
     if ax == 0.0 {
-        return 0.0;
+        return (0.0, ax);
     }
 
     /* power series */
@@ -940,7 +993,7 @@ fn igam_series(a: f64, x: f64) -> f64 {
         }
     }
 
-    ans * ax / a
+    (ans * ax / a, ax)
 }
 
 /* Compute igamc using DLMF 8.7.3. This is related to the series in
