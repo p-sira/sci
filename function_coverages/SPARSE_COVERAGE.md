@@ -175,8 +175,8 @@ Frobenius uses hypot accumulation to avoid unnecessary overflow/underflow.
 
 ## Reproduction and verification
 
-Input-only cases live in `tests/scipy/sparse_cases.json` and
-`sparse_parity_cases.json`. Additional NPZ encoding and rejection cases live in
+Input-only cases live in `tests/scipy/sparse_cases.jsonl` and
+`sparse_parity_cases.jsonl`. Additional NPZ encoding and rejection cases live in
 `sparse_npz_validation_cases.json`; regenerate their deterministic archives and
 SciPy references with `generate_sparse_npz_validation.py`.
 Regenerate the separate checked-in input/expected

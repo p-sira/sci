@@ -100,7 +100,7 @@ are rejected to bound weight cancellation. Arithmetic overflow is an error.
 
 ## Verification
 
-`tests/scipy/filter_cases.json` stores inputs only. The generator
+`tests/scipy/filter_cases.jsonl` stores inputs only. The generator
 `tests/scipy/generate_filter.py` pins NumPy 2.5.4 and SciPy 1.18.1, and generates
 101 checked-in cases into separate input and expected CSVs. SciPy has no direct
 Bayesian-filter equivalent, so references implement documented identities using

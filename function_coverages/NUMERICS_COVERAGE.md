@@ -147,7 +147,7 @@ See [CLUSTER_COVERAGE.md](CLUSTER_COVERAGE.md) for limits and the three remainin
 
 ## Verification
 
-`tests/scipy/constants_cases.json` and `numerics_cases.json` contain inputs only.
+`tests/scipy/constants_cases.jsonl` and `numerics_cases.jsonl` contain inputs only.
 Pinned generators use SciPy 1.18.1 and NumPy 2.5.4; the Rust tests ingest separate
 checked-in input and expected CSVs. There are 715 numerical cases, 19 constant
 cases, and comparisons for all 445 CODATA table entries. The constants generator

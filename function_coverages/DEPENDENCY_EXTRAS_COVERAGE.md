@@ -21,7 +21,7 @@ SciPy aliases and Cython duplicates remain covered by existing module audits.
 
 Every addition is exported and exercised through `sci` in
 `tests/dependency_extras.rs`. Cases are kept separately in
-`tests/scipy/dependency_extras_cases.json`; the version-pinned generator writes
+`tests/scipy/dependency_extras_cases.jsonl`; the version-pinned generator writes
 `tests/fixtures/dependency_extras.csv`. Tests include invalid domains, aggregate
 work limits, empty sums/products, large integer indices, overflow, tiny and
 huge complex components, signed zero, NaN/infinity, recurrence, symmetry,

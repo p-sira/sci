@@ -277,7 +277,7 @@ the backend. Multivariate matrices use one Vec per row, interoperable with algeb
 
 ## Verification
 
-`tests/scipy/statistics_cases.json` contains inputs separately from expected
+`tests/scipy/statistics_cases.jsonl` contains inputs separately from expected
 results. `generate_statistics.py` pins SciPy 1.18.1 and NumPy 2.5.4 and emits
 5089 cases into `stats_inputs.csv` and `stats_expected.csv`. Ordinary Rust tests
 read the CSV files; they require no Python. The fixture generator explicitly

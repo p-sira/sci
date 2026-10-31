@@ -14,8 +14,8 @@ Subtracting log-gamma values around 8e4 loses absolute precision in the gamma
 ratio; a few ulps there propagate through the coefficients and transform.
 """
 import csv
-import json
 from pathlib import Path
+from case_catalog import read_cases
 import numpy as np
 import scipy
 from scipy import fft
@@ -25,7 +25,7 @@ def encode(a):return ';'.join(str(v) for v in np.asarray(a).ravel())
 with (ROOT/'fixtures/fft_inputs.csv').open('w',newline='') as fi,(ROOT/'fixtures/fft_expected.csv').open('w',newline='') as fe:
     iw=csv.writer(fi,lineterminator='\n');ew=csv.writer(fe,lineterminator='\n')
     iw.writerow(['id','api','re','im','shape','axes','n','d','target','type','dln','mu','offset','bias','tolerance']);ew.writerow(['id','shape','re','im'])
-    for c in json.loads(Path(__file__).with_name('fft_cases.json').read_text()):
+    for c in read_cases(Path(__file__).with_name('fft_cases.jsonl')):
         api=c['api'];re=np.array(c.get('re',[]),dtype=float);im=np.array(c.get('im',np.zeros_like(re)),dtype=float)
         iw.writerow([c['id'],api,encode(re),encode(im),encode(c.get('shape',[])),encode(c.get('axes',[])),c.get('n') if c.get('n') is not None else '',c.get('d',''),c.get('target',''),c.get('type',''),c.get('dln',''),c.get('mu',''),c.get('offset',''),c.get('bias',''),c.get('tolerance',3e-12)])
         if api in ('fht','ifht'):v=getattr(fft,api)(re,c['dln'],c['mu'],offset=c['offset'],bias=c['bias'])

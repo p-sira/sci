@@ -6,11 +6,11 @@ No declaration is treated as supported unless input cases exercise it.
 """
 from api_disposition import ALIASES, EXCLUDED
 from pathlib import Path
-import json
+from case_catalog import read_cases
 import re
 
 ROOT=Path(__file__).resolve().parents[2]
-CASES=json.loads((ROOT/"tests/scipy/signal_cases.json").read_text())
+CASES=read_cases(ROOT/"tests/scipy/signal_cases.jsonl")
 TESTED={ALIASES["signal"].get(c["function"], c["function"]) for c in CASES}
 SOURCES=ROOT/"crates/sci-signal/src"
 

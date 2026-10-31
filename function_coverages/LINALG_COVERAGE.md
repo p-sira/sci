@@ -231,7 +231,7 @@ BSD-3-Clause notice in [LICENSES/scipy-linalg.txt](LICENSES/scipy-linalg.txt).
 
 ## Verification
 
-Input-only cases live in `tests/scipy/linalg_cases.json`. The generator pins
+Input-only cases live in `tests/scipy/linalg_cases.jsonl`. The generator pins
 **SciPy 1.18.1 / NumPy 2.5.4**, uses their public APIs, and writes separate
 checked-in input/expected CSVs. Normal Rust tests require no Python.
 

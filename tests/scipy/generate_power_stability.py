@@ -12,9 +12,9 @@ Relative tolerances cover binary64 logarithm/exponential rounding (including
 restoring large exponents); one minimum subnormal covers final rounding.
 """
 import csv
-import json
 from decimal import Decimal, localcontext
 from pathlib import Path
+from case_catalog import read_cases
 
 import numpy as np
 import scipy
@@ -23,7 +23,7 @@ from scipy import special
 if (np.__version__, scipy.__version__) != ("2.5.4", "1.18.1"):
     raise RuntimeError("Use NumPy 2.5.4 and SciPy 1.18.1")
 root = Path(__file__).resolve().parents[1]
-cases = json.loads(Path(__file__).with_name("power_stability_cases.json").read_text())
+cases = read_cases(Path(__file__).with_name("power_stability_cases.jsonl"))
 
 def reference(case):
     x, p = case["x"], case["p"]

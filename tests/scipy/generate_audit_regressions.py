@@ -43,10 +43,10 @@ tolerance remains 5e-13.
 """
 
 import csv
-import json
 import math
 from fractions import Fraction
 from pathlib import Path
+from case_catalog import read_cases
 
 import numpy as np
 import scipy
@@ -311,7 +311,7 @@ def reference(case):
     raise ValueError(api)
 
 
-cases = json.loads(Path(__file__).with_name("audit_regressions_cases.json").read_text())
+cases = read_cases(Path(__file__).with_name("audit_regressions_cases.jsonl"))
 with (
     (ROOT / "fixtures/audit_regressions_inputs.csv").open("w", newline="") as inputs,
     (ROOT / "fixtures/audit_regressions_expected.csv").open(

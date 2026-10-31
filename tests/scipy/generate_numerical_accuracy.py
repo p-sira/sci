@@ -5,7 +5,7 @@
 """Regressions from the non-sparse sci-testing accuracy audit.
 
 Run: uv run tests/scipy/generate_numerical_accuracy.py
-Inputs are stored separately in numerical_accuracy_cases.json. SciPy supplies
+Inputs are stored separately in numerical_accuracy_cases.jsonl. SciPy supplies
 Newton-Cotes rules. Other references use independent mathematical definitions
 at 100 decimal digits: exact binary64 Rosenbrock polynomials, Student-t density
 integration/inversion with beta tails, linear systems, and the exact n=3
@@ -16,8 +16,8 @@ relatively, so a zero cannot replace a small nonzero objective or quantile.
 """
 
 import csv
-import json
 from pathlib import Path
+from case_catalog import read_cases
 
 import mpmath as mp
 import numpy as np
@@ -111,7 +111,7 @@ with (
     iw, ew = csv.writer(fi, lineterminator="\n"), csv.writer(fe, lineterminator="\n")
     iw.writerow(["id", "api", "x", "p", "a"])
     ew.writerow(["id", "values"])
-    cases = json.loads(Path(__file__).with_name("numerical_accuracy_cases.json").read_text())
+    cases = read_cases(Path(__file__).with_name("numerical_accuracy_cases.jsonl"))
     for case in cases:
         iw.writerow([
             case["id"], case["api"], encode(case.get("x", [])),

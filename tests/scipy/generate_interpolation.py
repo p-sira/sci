@@ -4,7 +4,7 @@
 # ///
 """Generate references for all twenty added interpolation names.
 
-Inputs live in interpolation_cases.json. Encodings: semicolon vectors, colon
+Inputs live in interpolation_cases.jsonl. Encodings: semicolon vectors, colon
 matrix rows, pipe-separated spline fields. Fit results are tested by evaluation,
 knots and degree; calculus representations are also compared coefficient-wise.
 Knot-refinement snapshots for positive targets may differ from SciPy; exact
@@ -12,8 +12,8 @@ reference cases cover interpolation and a target satisfied by the first fit.
 Run: uv run tests/scipy/generate_interpolation.py.
 """
 import csv
-import json
 from pathlib import Path
+from case_catalog import read_cases
 import numpy as np
 import scipy
 from scipy import interpolate as p
@@ -37,7 +37,7 @@ def fit_result(s,q):return s(q),s.t,s.k
 def spline_result(s,q):
     if not isinstance(s,p.BSpline):s=p.BSpline(*s)
     return s(q),s.t,s.c[:len(s.t)-s.k-1]
-cases=json.loads((root/'tests/scipy/interpolation_cases.json').read_text())
+cases=read_cases(root/'tests/scipy/interpolation_cases.jsonl')
 with (root/'tests/fixtures/interpolation_inputs.csv').open('w',newline='') as fi,(root/'tests/fixtures/interpolation_expected.csv').open('w',newline='') as fe:
     iw=csv.writer(fi,lineterminator='\n');ew=csv.writer(fe,lineterminator='\n')
     iw.writerow(['id','api',*list('abcdefgh')]);ew.writerow(['id','first','second','third'])

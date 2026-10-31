@@ -5,7 +5,7 @@
 """Independent references for modern sparse API additions.
 
 Run: uv run tests/scipy/generate_sparse_parity.py
-Input-only sparse_parity_cases.json is maintained separately. Eigenvectors,
+Input-only sparse_parity_cases.jsonl is maintained separately. Eigenvectors,
 matching ties and RCM permutations are validated by invariant tests rather than
 backend-dependent signs/ties. Iterative solution references use SciPy's named
 methods; tightly converged solutions use 3e-9 tolerances. Spectral/matrix function
@@ -14,8 +14,8 @@ references use 3e-11; exact shapes, graph distances and structural outputs use
 shape and statistical properties are compared, never seed-specific values.
 """
 import csv
-import json
 from pathlib import Path
+from case_catalog import read_cases
 import numpy as np
 import scipy
 from scipy import sparse as s
@@ -34,7 +34,7 @@ with (F/'sparse_parity_inputs.csv').open('w',newline='') as fi,(F/'sparse_parity
  def emit(c,key,x):
   if s.issparse(x):x=x.toarray()
   x=np.atleast_2d(np.asarray(x,dtype=float));ew.writerow([c['id'],key,*x.shape,enc(x)])
- for c in json.loads(Path(__file__).with_name('sparse_parity_cases.json').read_text()):
+ for c in read_cases(Path(__file__).with_name('sparse_parity_cases.jsonl')):
   api=c['api'];a=s.csr_array(np.array(c['a'],dtype=float));p=c['p'];x=c['x'];n=a.shape[0]
   if c.get('zero_edge'):a=s.csr_array((np.append(a.data,0.),(np.append(a.tocoo().row,0),np.append(a.tocoo().col,1))),shape=a.shape)
   iw.writerow([c['id'],api,*a.shape,triples(a),enc(p),':'.join(enc(v) for v in x) if api=='spdiags' else enc(x),int(c.get('zero_edge',False))])
@@ -160,4 +160,4 @@ with (F/'sparse_npz_expected.csv').open('w',newline='') as out:
  s.save_npz(F/'sparse_bsr_duplicate_blocks.npz',a)
  writer.writerow(['sparse_bsr_duplicate_blocks',4,4,enc(a.toarray())])
 
-print('Generated',len(json.loads(Path(__file__).with_name('sparse_parity_cases.json').read_text())),'sparse parity cases.')
+print('Generated',len(read_cases(Path(__file__).with_name('sparse_parity_cases.jsonl'))),'sparse parity cases.')
