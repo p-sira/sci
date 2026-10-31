@@ -311,3 +311,36 @@ coefficient produces residuals near `7e-11`; SciPy has the same limitation
 domains and work limits.
 The Python/Cython inventory names continue to share these four Rust APIs;
 this optimization introduces no new names or domain restrictions.
+
+## Remaining-regression recurrence and precision work
+
+The integer parabolic-cylinder sequence now reuses the scalar kernel's full
+sequence in one call. Moderate associated Legendre tables use the established
+unnormalized degree recurrence and factorial-product normalization; the
+logarithmically scaled path remains for high orders and near the poles.
+Kolmogorov survival probabilities evaluate their tail directly, retaining the
+logarithmic machinery for inverses. Splitting the exponential in subnormal
+tails avoids premature underflow and cancellation from adding `log(2)` to a
+large exponent. Tail fixtures allow two smallest-subnormal ULPs, with relative
+tolerance `2e-13` elsewhere.
+
+Bounded double-double series share Kelvin's exact small-integer product and
+quotient helpers and its pre-split fixed multiplier. Airy and Struve integrals
+retain double-double cancellation control and their existing work limits.
+Positive-parameter, positive-argument 0F1 series use compensated binary64 sums
+only when a recurrence-roundoff and geometric-tail bound is below 16 binary64
+epsilons; other cases retain the double-double or Bessel paths. Lambda
+sequences keep suitable series anchors in double-double, preserving phase
+through the backward recurrence before rounding the output vectors.
+
+The pinned reference generator adds 220 cases: 30 integer-cylinder sequences,
+48 Legendre tables, 16 Kolmogorov probabilities, 70 Lambda sequences, and 56
+positive 0F1 cases. It checks output shapes and ordering as well as values.
+Independent Hermite identities and elementary half-order Lambda identities
+exercise the public APIs. SciPy's Lambda sequence can lose about `4e-9` at
+`v=256,x=16`, and its 0F1 gamma/Bessel normalization loses about `3e-14` at
+`v=100,z=0.5` or overflows above `v=172`. The generator therefore uses a bounded
+100-digit Decimal defining series for Lambda and for those large-parameter
+0F1 references. Those checks retain tight tolerances instead of accepting the
+SciPy normalization errors. No numerical inventory names, domains, or aliases
+are added or deferred by these optimizations.

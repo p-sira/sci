@@ -212,10 +212,33 @@ fn inverse(mut p: f64, mut lower: bool) -> Result<f64, StrErr> {
     Err("Zero finder did not converge.")
 }
 
+// The forward survival probability needs neither logarithmic complements nor
+// the density used by the inverse. Split the exponential in the subnormal
+// tail, so exp(-a) cannot underflow before multiplication by two.
+fn survival(x: f64) -> f64 {
+    if x.is_nan() {
+        return f64::NAN;
+    }
+    if x < 0.01 {
+        return 1.0;
+    }
+    let Some((a, sum, _)) = sums(x) else {
+        return 0.0;
+    };
+    if x <= 0.82 {
+        1.0 - (2.0 * PI).sqrt() / x * (-a).exp() * sum
+    } else if a < 700.0 {
+        2.0 * (-a).exp() * sum
+    } else {
+        let half_exponent = (-0.5 * a).exp();
+        (2.0 * half_exponent) * half_exponent * sum
+    }
+}
+
 real_kernel! {
 /// Survival function of the limiting two-sided Kolmogorov distribution.
 /// Returns one for x <= 0 and zero at positive infinity.
-    kolmogorov(x) { let (cdf,sf,_) = logarithms(x); if x<=0.82 {-cdf.exp_m1()} else {sf.exp()} }
+    kolmogorov(x) { survival(x) }
 }
 real_kernel! {
 /// Inverse Kolmogorov survival probability, for 0 <= p <= 1.

@@ -860,6 +860,26 @@ fn cylinder(v: f64, x: f64, second: bool) -> (f64, f64) {
     }
     (f[0], d[0])
 }
+/// Integer-order D sequence; the shared kernel already computes every order.
+pub(crate) fn pbdn_sequence(n: usize, x: f64) -> (Vec<f64>, Vec<f64>) {
+    let n = n.max(1);
+    let mut values = vec![f64::NAN; n + 2];
+    let mut slopes = vec![f64::NAN; n + 2];
+    if x.is_finite() {
+        s::pbdv(
+            x,
+            n as f64,
+            &mut values,
+            &mut slopes,
+            &mut [0.0],
+            &mut [0.0],
+        );
+    }
+    values.truncate(n + 1);
+    slopes.truncate(n + 1);
+    (values, slopes)
+}
+
 pub(crate) fn pbwa(a: f64, x: f64) -> (f64, f64) {
     if a.abs() > 5.0 || x.abs() > 5.0 || !a.is_finite() || !x.is_finite() {
         return (f64::NAN, f64::NAN);
@@ -972,7 +992,7 @@ pub(crate) fn airy_integrals(x: f64) -> [f64; 4] {
         // Integrate y''=x*y's two power-series solutions. Double-double
         // summation retains oscillatory cancellation without quadrature.
         // Constants are Ai(0), -Ai'(0), and sqrt(3) (DLMF 9.2.3–6).
-        use super::double_double::Dd;
+        use super::double_double::{Dd, DdFactor};
         let c0 = Dd {
             hi: 0.3550280538878172,
             lo: 2.05233632436212e-17,
@@ -990,18 +1010,21 @@ pub(crate) fn airy_integrals(x: f64) -> [f64; 4] {
         // arguments from one pass over the terms.
         let x = Dd::from(x);
         let cube = x * x * x;
+        let factor = DdFactor::new(cube);
         let (mut tf, mut tg) = (x, (x * x).mul_f64(0.5));
         let (mut f_even, mut f_odd) = (tf, Dd::from(0.0));
         let (mut g_even, mut g_odd) = (tg, Dd::from(0.0));
         for n in 1..128u32 {
             let k = f64::from(n);
             // Integer factors below 2^53 are exact in binary64.
-            tf = (tf * cube)
-                .mul_f64(3.0 * k - 2.0)
-                .div_f64((3.0 * k + 1.0) * (3.0 * k) * (3.0 * k - 1.0));
-            tg = (tg * cube)
-                .mul_f64(3.0 * k - 1.0)
-                .div_f64((3.0 * k + 2.0) * (3.0 * k) * (3.0 * k + 1.0));
+            tf = factor
+                .mul(tf)
+                .mul_small(3.0 * k - 2.0)
+                .div_small((3.0 * k + 1.0) * (3.0 * k) * (3.0 * k - 1.0));
+            tg = factor
+                .mul(tg)
+                .mul_small(3.0 * k - 1.0)
+                .div_small((3.0 * k + 2.0) * (3.0 * k) * (3.0 * k + 1.0));
             // For fixed parity every term shares the sign of x^(3n), so
             // the cheaper same-sign addition is exact to double-double precision.
             if n % 2 == 0 {
@@ -1229,8 +1252,9 @@ pub(crate) fn itstruve0(x: f64) -> f64 {
         // Integrate H_0's defining power series term by term. Double-double
         // arithmetic preserves the cancellation near the transition without
         // repeatedly evaluating H_0 at quadrature nodes.
-        use super::double_double::Dd;
+        use super::double_double::{Dd, DdFactor};
         let square = Dd::from(x) * Dd::from(x);
+        let factor = DdFactor::new(square);
         // Terms alternate in sign; summing even and odd k separately keeps
         // each partial sum single-signed, so the cheaper same-sign addition
         // is exact to double-double precision. One full addition combines them.
@@ -1239,9 +1263,10 @@ pub(crate) fn itstruve0(x: f64) -> f64 {
         for n in 1..128u32 {
             let k = f64::from(n);
             // Integer denominators below 2^53 are exact in binary64.
-            term = (term * square)
-                .mul_f64(-k)
-                .div_f64((k + 1.0) * (2.0 * k + 1.0) * (2.0 * k + 1.0));
+            term = factor
+                .mul(term)
+                .mul_small(-k)
+                .div_small((k + 1.0) * (2.0 * k + 1.0) * (2.0 * k + 1.0));
             if n % 2 == 0 {
                 even = even.add_same_sign(term);
             } else {
@@ -1318,6 +1343,40 @@ pub(crate) fn jahnke_emden_lambda(v: f64, x: f64) -> (Vec<f64>, Vec<f64>) {
     // so each derivative reuses the value at the next order.
     let z = -x * x * 0.25;
     let lambda = |i: usize| super::hyp0f1(base + i as f64 + 1.0, z).unwrap_or(f64::NAN);
+    // Full-precision anchors preserve the phase when the stable backward
+    // Bessel recurrence crosses the turning point. Rounding anchors to f64
+    // before that recurrence forced separate 0F1 evaluations at lower orders.
+    use super::double_double::Dd;
+    let anchor = Dd::sum(base, (size + 1) as f64);
+    let next_anchor = anchor.add_f64(1.0);
+    let anchors = if x <= 50.0 && anchor.lo == 0.0 && next_anchor.lo == 0.0 {
+        super::hypergeometric::series_real::<true>(anchor.hi, z).zip(
+            super::hypergeometric::series_real::<true>(next_anchor.hi, z),
+        )
+    } else {
+        None
+    };
+    if let Some((mut current, mut upper)) = anchors {
+        let mut values = vec![0.0; size + 2];
+        values[size] = current.hi;
+        values[size + 1] = upper.hi;
+        for i in (0..size).rev() {
+            let order = Dd::sum(base, (i + 1) as f64);
+            let next = current + upper.mul_f64(z).div_dd(order * order.add_f64(1.0));
+            upper = current;
+            current = next;
+            values[i] = next.hi;
+        }
+        return (0..=size)
+            .map(|i| {
+                (
+                    values[i],
+                    -x / (2.0 * (base + i as f64 + 1.0)) * values[i + 1],
+                )
+            })
+            .unzip();
+    }
+
     let mut values = vec![0.0; size + 2];
     values[size + 1] = lambda(size + 1);
     values[size] = lambda(size);
@@ -1330,7 +1389,6 @@ pub(crate) fn jahnke_emden_lambda(v: f64, x: f64) -> (Vec<f64>, Vec<f64>) {
     // Bessel path and the recurrence gains little, so it is not used there.
     // Double-double steps keep the rounding of up to 256 steps from
     // accumulating, so recurred orders are as accurate as the two anchors.
-    use super::double_double::Dd;
     let recur_from = if x <= 50.0 {
         x + 2.0 * x.cbrt()
     } else {

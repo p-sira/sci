@@ -931,29 +931,56 @@ pub fn pbvv_seq(v: f64, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
         .unzip())
 }
 
-/// Integer-order parabolic cylinder values and derivatives D₀ through D_max(n,1), for real arguments.
+/// Integer-order parabolic cylinder values and coordinate derivatives.
 ///
-/// ## Parameters and domain
+/// ## Definition
 ///
-/// n≤256 and real x; SciPy's complex-input overload is not provided.
-/// Invalid sizes or parameters return [`Error::InvalidInput`]. Numerical overflow returns [`Error::NonFiniteEvaluation`] where validated.
+/// `D_k(x) = exp(-x²/4) He_k(x)`, where `He_k` is the probabilists' Hermite
+/// polynomial. The derivative satisfies `D_k′(x) = x D_k(x)/2 - D_(k+1)(x)`.
+///
+/// ## Parameters and conventions
+///
+/// `n <= 256` is the largest requested integer order; `x` is a dimensionless
+/// real coordinate. SciPy's complex-input overload is not provided.
+///
+/// ## Domain and special values
+///
+/// All finite real coordinates are supported. Nonfinite coordinates produce
+/// NaN entries. Intermediate overflow and underflow follow IEEE arithmetic.
+///
+/// ## Returns
+///
+/// `(values, derivatives)`, each in ascending order `0..=max(n, 1)`, with
+/// `max(n, 1) + 1` entries, retaining the two-entry convention at `n = 0`.
+///
+/// ## Errors
+///
+/// Returns [`Error::InvalidInput`] when `n > 256`.
+///
+/// ## Numerical behavior
+///
+/// Uses one bounded forward recurrence shared with the scalar cylinder kernel.
+/// The initial `exp(-x²/4)` can underflow for large coordinates; subsequent
+/// recurrence steps do not recover values lost to that initial underflow.
 ///
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pbdn_seq(3,0.3)?;
-/// let _ = value;
+/// let (values, derivatives) = sci_special::pbdn_seq(3, 0.3)?;
+/// assert_eq!(values.len(), 4);
+/// assert_eq!(derivatives.len(), 4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
 /// ## References
 ///
+/// - [NIST DLMF §12.7](https://dlmf.nist.gov/12.7).
 /// - [SciPy pbdn_seq](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pbdn_seq.html).
 pub fn pbdn_seq(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
     if n > 256 {
         return Err(Error::InvalidInput("parabolic cylinder degree exceeds 256"));
     }
-    Ok((0..=n.max(1)).map(|i| super::pbdv(i as f64, x)).unzip())
+    Ok(crate::backend::legacy::pbdn_sequence(n, x))
 }
 
 /// Riccati–Bessel values x*j_i(x) and derivatives through order n.
@@ -1032,6 +1059,20 @@ pub fn riccati_yn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// Finite nonnegative real order v≤256 and positive finite real x.
 /// Invalid sizes or parameters return [`Error::InvalidInput`]. Numerical overflow returns [`Error::NonFiniteEvaluation`] where validated.
+///
+/// ## Returns
+///
+/// `(values, derivatives)` for orders `frac(v)..=frac(v)+floor(v)`, in
+/// ascending order. Both vectors contain `floor(v) + 1` entries. Derivatives
+/// are with respect to the dimensionless coordinate `x`.
+///
+/// ## Numerical behavior
+///
+/// Where well-conditioned high-precision series anchors are available for
+/// `x <= 50`, a double-double backward recurrence computes the sequence before
+/// rounding each result to binary64. Other inputs use individually evaluated
+/// hypergeometric values and the existing stable portion of that recurrence.
+/// Work is bounded by the order limit and the private series' 4,096-term cap.
 ///
 /// ## Examples
 ///

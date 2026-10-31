@@ -31,6 +31,44 @@ fn two_prod(a: f64, b: f64) -> Dd {
         lo: a.mul_add(b, -hi),
     }
 }
+/// Dekker split for bounded double-double series. Callers keep |a| below
+/// 1e280, so multiplying by 2^27+1 cannot overflow.
+#[inline(always)]
+pub(crate) fn split(a: f64) -> (f64, f64) {
+    let c = 134_217_729.0 * a;
+    let hi = c - (c - a);
+    (hi, a - hi)
+}
+
+/// A fixed multiplier for bounded double-double series. Splitting its leading
+/// part once avoids repeated FMA dispatch. Operands and intermediate products
+/// must stay within the normal binary64 range and below 1e280 in magnitude.
+#[derive(Clone, Copy)]
+pub(crate) struct DdFactor {
+    value: Dd,
+    hi: f64,
+    lo: f64,
+}
+impl DdFactor {
+    #[inline]
+    pub(crate) fn new(value: Dd) -> Self {
+        let (hi, lo) = split(value.hi);
+        Self { value, hi, lo }
+    }
+    #[inline(always)]
+    pub(crate) fn mul(self, a: Dd) -> Dd {
+        let p = a.hi * self.value.hi;
+        let (hi, lo) = split(a.hi);
+        let error = ((hi * self.hi - p) + hi * self.lo + lo * self.hi) + lo * self.lo;
+        let lo = error + (a.hi * self.value.lo + a.lo * self.value.hi);
+        let sum = p + lo;
+        Dd {
+            hi: sum,
+            lo: lo - (sum - p),
+        }
+    }
+}
+
 impl Dd {
     /// Exact sum of two binary64 values.
     #[inline(always)]
@@ -78,13 +116,33 @@ impl Dd {
             lo: lo - (sum - hi),
         }
     }
-    /// Quotient by a binary64 divisor; cheaper than promoting it to `Dd`.
+    /// Product by an exact integer of magnitude < 2^26. The split products
+    /// are exact, avoiding runtime FMA dispatch. Requires |self.hi| < 1e280.
     #[inline(always)]
-    pub(crate) fn div_f64(self, rhs: f64) -> Self {
-        let q = self.hi / rhs;
-        let product = two_prod(q, rhs);
-        let residual = ((self.hi - product.hi) - product.lo) + self.lo;
-        two_sum(q, residual / rhs)
+    pub(crate) fn mul_small(self, n: f64) -> Self {
+        let p = self.hi * n;
+        let (hi, lo) = split(self.hi);
+        let lo = ((hi * n - p) + lo * n) + self.lo * n;
+        let sum = p + lo;
+        Self {
+            hi: sum,
+            lo: lo - (sum - p),
+        }
+    }
+    /// Quotient by an exact nonzero integer of magnitude < 2^26.
+    /// Requires |self.hi / n| < 1e280.
+    #[inline(always)]
+    pub(crate) fn div_small(self, n: f64) -> Self {
+        let q = self.hi / n;
+        let p = q * n;
+        let (hi, lo) = split(q);
+        let error = (hi * n - p) + lo * n;
+        let correction = (((self.hi - p) - error) + self.lo) / n;
+        let sum = q + correction;
+        Self {
+            hi: sum,
+            lo: correction - (sum - q),
+        }
     }
 }
 impl Add for Dd {

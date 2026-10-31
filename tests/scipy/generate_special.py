@@ -33,6 +33,19 @@ from scipy import special, integrate, optimize
 from elliptic_reference import extended_reference
 
 
+def hyp0f1_decimal(parameter, z):
+    """Independent 100-digit defining series, with a bounded term count."""
+    with localcontext() as context:
+        context.prec = 100
+        term = total = Decimal(1)
+        for k in range(1, 10000):
+            term *= z / ((parameter + k - 1) * k)
+            total += term
+            if abs(term) <= abs(total) * Decimal('1e-90'):
+                return total
+        raise RuntimeError(("0F1 reference series did not converge", parameter, z))
+
+
 def stable_keip_zeros(count):
     """Independent bracketed roots of Im[-a K1(a*x)] via SciPy AMOS.
 
@@ -232,6 +245,31 @@ def reference(name, args):
         f = np.sqrt(np.pi/2)*(1 + sign*1j) - positive
         k = np.exp(-sign*1j*(x*x + np.pi/4))*f/np.sqrt(np.pi)
         return f, k
+    if name == "hyp0f1" and args[0] >= 50 and abs(args[1]) <= 100:
+        # SciPy's gamma/Bessel normalization loses ~3e-14 already at
+        # v=100,z=0.5 and overflows above v=172. The defining series is
+        # independently well conditioned for these large positive parameters.
+        return float(hyp0f1_decimal(Decimal.from_float(float(args[0])),
+                                   Decimal.from_float(float(args[1]))))
+    if name == "lmbda":
+        # DLMF 10.2.2: Lambda_nu(x) = 0F1(; nu+1; -x^2/4).
+        # SciPy's lmbda recurrence loses ~4e-9 at v=256,x=16; its
+        # hyp0f1 normalization can overflow above v=172. Evaluate the
+        # independent defining series with 100-digit standard-library
+        # Decimal arithmetic instead of weakening the sequence tolerance.
+        v, x = args
+        with localcontext() as context:
+            context.prec = 100
+            base = Decimal.from_float(float(v)) - int(v)
+            coordinate = Decimal.from_float(float(x))
+            z = -coordinate * coordinate / 4
+            values = []
+            for i in range(int(v) + 2):
+                parameter = base + i + 1
+                values.append(hyp0f1_decimal(parameter, z))
+            return ([float(value) for value in values[:-1]],
+                    [float(-coordinate * values[i+1] / (2*(base+i+1)))
+                     for i in range(int(v)+1)])
     if name == "itstruve0":
         # SciPy 1.18.1's large-x formula disagrees with its defining integral.
         return integrate.quad(lambda t: special.struve(0, t), 0, abs(args[0]),

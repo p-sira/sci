@@ -1,6 +1,10 @@
 //! Kelvin functions: ber/bei from direct series and asymptotic kernels, ker/kei
 //! from a power series and a trapezoidal integral at rotated arguments.
-use crate::backend::{StrErr, complex::finish, double_double::Dd};
+use crate::backend::{
+    StrErr,
+    complex::finish,
+    double_double::{Dd, DdFactor, split},
+};
 use core::f64::consts::{FRAC_1_SQRT_2, FRAC_PI_4, PI, SQRT_2};
 use num_complex::{Complex, Complex64};
 #[allow(unused_imports)]
@@ -136,43 +140,6 @@ fn first_kind_series(x: f64, need: Need) -> (Complex64, Complex64) {
     )
 }
 
-/// Split `a` into two halves of at most 26 significant bits (Dekker).
-#[inline(always)]
-fn split(a: f64) -> (f64, f64) {
-    let c = 134_217_729.0 * a;
-    let hi = c - (c - a);
-    (hi, a - hi)
-}
-
-/// `a * n` for a double-double `a` and an integer `n < 2^26`, whose exact
-/// product with a 26-bit half avoids a fused multiply-add.
-#[inline(always)]
-fn mul_small(a: Dd, n: f64) -> Dd {
-    let p = a.hi * n;
-    let (hi, lo) = split(a.hi);
-    let lo = ((hi * n - p) + lo * n) + a.lo * n;
-    let sum = p + lo;
-    Dd {
-        hi: sum,
-        lo: lo - (sum - p),
-    }
-}
-
-/// `a / n` for a double-double `a` and an integer `n < 2^26`.
-#[inline(always)]
-fn div_small(a: Dd, n: f64) -> Dd {
-    let q = a.hi / n;
-    let p = q * n;
-    let (hi, lo) = split(q);
-    let error = (hi * n - p) + lo * n;
-    let correction = (((a.hi - p) - error) + a.lo) / n;
-    let sum = q + correction;
-    Dd {
-        hi: sum,
-        lo: correction - (sum - q),
-    }
-}
-
 /// Double-double sums of Σ i^k t^k / (k!)² and Σ i^k k t^k / (k!)², with
 /// t = (x/2)², for 4 <= x < 20. Four terms are taken per iteration, one into
 /// each of the +re, +im, -re and -im partial sums, so that every partial sum
@@ -185,32 +152,20 @@ fn series_dd<const VALUE: bool, const DERIVATIVE: bool>(half: f64) -> (Complex64
         hi: t_hi,
         lo: (half_hi * half_hi - t_hi) + 2.0 * half_hi * half_lo + half_lo * half_lo,
     };
-    let (t_hi_hi, t_hi_lo) = split(t.hi);
-    // term × t, with t split once.
-    let times_t = |a: Dd| {
-        let p = a.hi * t.hi;
-        let (hi, lo) = split(a.hi);
-        let error = ((hi * t_hi_hi - p) + hi * t_hi_lo + lo * t_hi_hi) + lo * t_hi_lo;
-        let lo = error + (a.hi * t.lo + a.lo * t.hi);
-        let sum = p + lo;
-        Dd {
-            hi: sum,
-            lo: lo - (sum - p),
-        }
-    };
+    let factor = DdFactor::new(t);
     let zero = Dd::from(0.0);
     let (mut re_plus, mut im_plus, mut re_minus, mut im_minus) = (Dd::from(1.0), zero, zero, zero);
     let (mut d_re_plus, mut d_im_plus, mut d_re_minus, mut d_im_minus) = (zero, zero, zero, zero);
     let mut term = Dd::from(1.0);
     let mut k = 0.0_f64;
     let mut step = |sum: &mut Dd, derivative_sum: &mut Dd, k: f64| -> (f64, f64) {
-        term = div_small(times_t(term), k * k);
+        term = factor.mul(term).div_small(k * k);
         if VALUE {
             *sum = sum.add_same_sign(term);
         }
         let mut weighted = 0.0;
         if DERIVATIVE {
-            let product = mul_small(term, k);
+            let product = term.mul_small(k);
             *derivative_sum = derivative_sum.add_same_sign(product);
             weighted = product.hi;
         }

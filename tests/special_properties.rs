@@ -627,3 +627,37 @@ fn modified_mathieu_pairs_preserve_wronskians_and_first_kind_parity() {
         }
     }
 }
+
+#[test]
+fn cylinder_sequences_match_hermite_polynomials_and_derivatives() {
+    for x in [-5.0, -1.5, 0.0, 0.3, 1.5, 5.0] {
+        let (values, slopes) = s::pbdn_seq(32, x).unwrap();
+        assert_eq!(values.len(), 33);
+        assert_eq!(slopes.len(), 33);
+        for n in 0..=32 {
+            // D_n(x) = exp(-x^2/4) He_n(x), D_n' = n D_(n-1) - x D_n/2.
+            let expected = (-0.25 * x * x).exp() * s::eval_hermitenorm(n as i32, x);
+            finite_close(values[n], expected, 2e-12, 2e-12);
+            let derivative = if n == 0 {
+                0.0
+            } else {
+                n as f64 * values[n - 1]
+            } - 0.5 * x * values[n];
+            finite_close(slopes[n], derivative, 2e-12, 2e-12);
+        }
+    }
+}
+
+#[test]
+fn lambda_sequences_preserve_half_order_identities() {
+    for v in [16.5, 32.5, 128.5] {
+        for x in [0.1_f64, 0.7, 1.2, 3.0, 7.5, 16.0, 32.0, 50.0] {
+            let (values, slopes) = s::lmbda(v, x).unwrap();
+            assert_eq!(values.len(), v.floor() as usize + 1);
+            assert_eq!(slopes.len(), values.len());
+            // Lambda_(1/2) = sin(x)/x from J_(1/2)'s elementary form.
+            finite_close(values[0], x.sin() / x, 5e-15, 1e-13);
+            finite_close(slopes[0], (x * x.cos() - x.sin()) / (x * x), 5e-15, 1e-13);
+        }
+    }
+}

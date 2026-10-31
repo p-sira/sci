@@ -76,6 +76,71 @@ fn associated_direct(n: u32, m: i32, x: f64, sine: f64, spherical: bool) -> Opti
     value.is_normal().then_some(value)
 }
 
+// Reuse the moderate-order recurrence for both scalars and tables. The
+// unnormalized values and factorial ratios remain normal within these bounds.
+fn associated_direct_degrees(
+    n: u32,
+    m: i32,
+    x: f64,
+    sine: f64,
+    spherical: bool,
+    first: u32,
+    mut emit: impl FnMut(u32, f64),
+) -> bool {
+    let order = m.unsigned_abs();
+    if order > 40 || n > 200 || order > n || sine < 1e-6 {
+        return false;
+    }
+    let diagonal = direct_diagonal(order, sine);
+    let mut finish = |degree: u32, current: f64| {
+        emit(degree, direct_value(degree, m, current, spherical));
+    };
+    let (mut previous, mut current) = (0.0, diagonal);
+    if order >= first {
+        finish(order, current);
+    }
+    for degree in order + 1..=n {
+        let next = ((2 * degree - 1) as f64 * x * current - (degree + order - 1) as f64 * previous)
+            / (degree - order) as f64;
+        previous = current;
+        current = next;
+        if degree >= first {
+            finish(degree, current);
+        }
+    }
+    true
+}
+
+#[inline]
+fn direct_diagonal(order: u32, sine: f64) -> f64 {
+    let mut diagonal = sine.powi(order as i32);
+    for k in 1..=order {
+        diagonal *= (2 * k - 1) as f64;
+    }
+    if order % 2 == 1 { -diagonal } else { diagonal }
+}
+
+#[inline]
+fn direct_value(degree: u32, m: i32, current: f64, spherical: bool) -> f64 {
+    let order = m.unsigned_abs();
+    // (degree-|m|)!/(degree+|m|)!, without overflowing factorials.
+    let ratio = || {
+        let mut product = 1.0;
+        for k in degree - order + 1..=degree + order {
+            product /= k as f64;
+        }
+        product
+    };
+    let parity = if m < 0 && order % 2 == 1 { -1.0 } else { 1.0 };
+    if spherical {
+        parity * current * ((2.0 * degree as f64 + 1.0) / (4.0 * PI) * ratio()).sqrt()
+    } else if m < 0 {
+        parity * current * ratio()
+    } else {
+        current
+    }
+}
+
 /// Evaluates P_k^m for every degree k in `first..=n` in a single pass of the
 /// degree recurrence, passing `(k, value)` to `emit`. Each value is
 /// bit-identical to a separate evaluation at degree k.
@@ -98,6 +163,9 @@ fn associated_degrees(
         return;
     }
     let first = first.max(order);
+    if order != 0 && associated_direct_degrees(n, m, x, sine, spherical, first, &mut emit) {
+        return;
+    }
     if order == 0 {
         let values = crate::backend::orthogonal::legendre_all(n as usize, x);
         for degree in first..=n {

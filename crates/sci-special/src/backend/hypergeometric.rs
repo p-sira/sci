@@ -15,7 +15,9 @@ fn validate(v: f64) -> Result<(), StrErr> {
 
 /// Double-double power series for real `z`. Returns `None` when the series
 /// is outside its range or loses too much precision to cancellation.
-fn series_real(v: f64, z: f64) -> Option<f64> {
+/// Full-precision anchors retain terms to 1e-32 and require a 1e-26 relative
+/// roundoff estimate; ordinary scalar evaluation keeps its existing thresholds.
+pub(super) fn series_real<const FULL_PRECISION: bool>(v: f64, z: f64) -> Option<Dd> {
     let norm = z.abs();
     if norm > 100.0 && !(v > 0.0 && norm / v < 16.0) {
         return None;
@@ -47,12 +49,46 @@ fn series_real(v: f64, z: f64) -> Option<f64> {
         // remaining tail is at most twice the current term, so terms below
         // 1e-20 of the sum are beyond binary64 resolution.
         let tail_bounded = (v + kf) * (kf + 1.0) > 2.0 * norm;
-        if (tail_bounded && term <= 1e-20 * magnitude) || term <= 1e-32 * magnitude || term == 0.0 {
+        let tolerance = if FULL_PRECISION { 1e-32 } else { 1e-20 };
+        if (tail_bounded && term <= tolerance * magnitude)
+            || term <= 1e-32 * magnitude
+            || term == 0.0
+        {
             let sum = positive + negative;
-            if peak * 1e-30 > 1e-13 * sum.hi.abs() {
+            let accuracy = if FULL_PRECISION { 1e-26 } else { 1e-13 };
+            if peak * 1e-30 > accuracy * sum.hi.abs() {
                 return None;
             }
-            return Some(sum.hi);
+            return Some(sum);
+        }
+    }
+    None
+}
+
+// Positive terms need no cancellation guard. Use compensated binary64 sums
+// when the standard gamma_n bound on the recurrence and the geometric tail
+// together stay below 16 eps of the result; otherwise retain double-double.
+fn positive_series(v: f64, z: f64) -> Option<f64> {
+    if v <= 0.0 || !(0.0..=100.0).contains(&z) {
+        return None;
+    }
+    let (mut term, mut sum, mut correction, mut weighted) = (1.0, 1.0, 0.0, 2.0);
+    for k in 1..=256 {
+        let kf = k as f64;
+        term *= z / ((v + (kf - 1.0)) * kf);
+        let adjusted = term - correction;
+        let next = sum + adjusted;
+        correction = (next - sum) - adjusted;
+        sum = next;
+        // Four rounded operations per term, and two eps for compensated sum.
+        weighted += (4.0 * kf + 2.0) * term;
+        if !sum.is_finite() {
+            return None;
+        }
+        if (v + kf) * (kf + 1.0) > 2.0 * z && term <= 0.125 * f64::EPSILON * sum {
+            // gamma_(4k) <= (4k)*eps/(1-1024*eps), since k <= 256.
+            let error = f64::EPSILON * weighted / (1.0 - 1024.0 * f64::EPSILON) + 2.0 * term;
+            return (error <= 16.0 * f64::EPSILON * sum).then_some(sum);
         }
     }
     None
@@ -66,8 +102,13 @@ fn real_kernel(v: f64, z: f64) -> Result<f64, StrErr> {
     if z == 0.0 {
         return Ok(1.0);
     }
-    if let Some(value) = series_real(v, z) {
+    if z > 0.0
+        && let Some(value) = positive_series(v, z)
+    {
         return Ok(value);
+    }
+    if let Some(value) = series_real::<false>(v, z) {
+        return Ok(value.hi);
     }
     let root = z.abs().sqrt();
     let bessel = if z > 0.0 {

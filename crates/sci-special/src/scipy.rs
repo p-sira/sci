@@ -1562,7 +1562,11 @@ pub fn itmodstruve0(x: f64) -> f64 {
 /// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
 /// binary64 and convert the result to `T`; this does not provide extra precision.
 /// Domain or numerical backend errors return NaN. Iterations are bounded by
-/// the private algorithm; correct rounding is not guaranteed.
+/// the private algorithm; correct rounding is not guaranteed. For positive
+/// parameters and `0 < x <= 100`, a compensated binary64 series is accepted
+/// only when its recurrence and tail error bound is at most `16*EPSILON` of
+/// the result. Other series use double-double arithmetic (at most 4,096 terms),
+/// with scaled Bessel evaluation outside the series region.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn hyp0f1<T: sci_core::Float>(b: T, x: T) -> T {
     crate::backend::hyp0f1(b, x).unwrap_or(T::nan())
