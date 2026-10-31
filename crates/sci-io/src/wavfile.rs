@@ -70,7 +70,7 @@ fn container(bytes: &[u8]) -> Result<Wave<'_>> {
                 let rate = u32_at(start + 4) as u32;
                 if channels == 0
                     || rate == 0
-                    || (!matches!(bits, 8 | 16 | 24 | 32) && !(bits == 64 && format == 3))
+                    || !(matches!(bits, 8 | 16 | 24 | 32) || (bits == 64 && format == 3))
                     || u32::from(align) != u32::from(channels) * u32::from(bits / 8)
                     || rate.checked_mul(u32::from(align)) != Some(u32_at(start + 8) as u32)
                 {

@@ -116,7 +116,7 @@ the old spelling while Rust tests call the canonical API.
 | `stats::kstest(x, y, alternative)` | `stats::ks_2samp(x, y, alternative)`; use `ks_1samp` for a continuous null |
 | `special::psi(x)` | `special::digamma(x)` |
 | `special::assoc_laguerre(x, n, k)` | `special::eval_genlaguerre(n, k, x)` (arguments reordered) |
-| `special::ellipf(phi, m)` | `special::ellipkinc(phi, m)` |
+| `special::ellipkinc(phi, m)` | Prefer `special::ellipf(phi, m)` (Ellip notation); `ellipkinc` remains an alias. |
 | `signal::closest_STFT_dual_window` | `signal::closest_stft_dual_window` |
 | --- | --- |
 | `c_roots` | `roots_chebyc` |
@@ -154,3 +154,18 @@ the old spelling while Rust tests call the canonical API.
 `issymmetric` in the supported scalar domain. The similarly named `spl*`,
 `bispl*`, factorization, and transform functions that perform distinct
 mathematical operations remain available.
+
+## Special-function reference policy
+
+SciPy is an independent numerical reference, not a requirement for complete API,
+signature, domain, or special-value parity. Sci uses coherent Rust APIs and the
+supported mathematical domains of its selected algorithms. Inventory audits
+record dispositions; a matching name does not certify every overload or domain.
+
+Elliptic integrals follow Ellip: `F(phi, m)` (`ellipf`), `E(phi, m)`, and
+`Π(phi, n, m)`, with radians, parameter `m = k²`, and characteristic `n`.
+Carlson `R_C` with negative `y` and `R_J` with negative `p`, and supported
+Legendre/Bulirsch third-kind cases, return Cauchy principal values. Incomplete
+integrals admit Ellip's real `m >= 1` cases through backend validation. Sci still
+requires finite inputs and finite results; singular values and backend failures
+return shared errors. These restrictions are separate from Ellip's own domains.

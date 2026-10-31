@@ -6,6 +6,9 @@
 
 ## Documentation
 
+- SciPy is an independent numerical reference and inventory, not a requirement for 100% API, signature, domain, or special-value parity. Prefer coherent Rust APIs and the mathematical domains of the chosen algorithms. Document intentional differences and validate shared domains independently.
+- Elliptic integrals follow Ellip's notation, argument ordering, and supported real/principal-value algorithms. Use `ellipf(phi, m)` for `F(phi, m)`, the parameter `m = k²`, and `Π(phi, n, m)` for the incomplete third kind. Record any Sci wrapper restrictions separately from backend capabilities.
+
 - Give every public numerical function a mathematical definition, including its equation where applicable.
 - Use explicit sections for parameters and conventions, domain and special values, return values, errors, numerical behavior, runnable examples, and authoritative references. Omit sections only when genuinely inapplicable.
 - Specify units, normalization, parameter versus modulus conventions, argument and output ordering, shapes, branches, singularities, NaN/infinity behavior, accuracy limitations, and work limits where relevant. Document adaptations from SciPy and actual supported behavior.

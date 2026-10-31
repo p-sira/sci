@@ -1077,6 +1077,22 @@ pub fn tanh<T: Float>(z: Complex<T>) -> Complex<T> {
     }
 }
 
+// `std`'s `acosh` evaluates `ln(x + sqrt(x² − 1))`, which loses the small
+// result next to 1 and overflows near the largest finite values. Form `x − 1`
+// exactly and use `log1p` near 1, and `ln(2x)` once `x² − 1` rounds to `x²`.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn real_acosh<T: Float>(x: T) -> T {
+    if x < 2.0 {
+        let t = x - 1.0;
+        (t + (t * (t + 2.0)).sqrt()).ln_1p()
+    } else if x < 1e8 {
+        (x + (x * x - 1.0).sqrt()).ln()
+    } else {
+        // sqrt(x² − 1) rounds to x; avoid overflowing x + x.
+        x.ln() + T::from(std::f64::consts::LN_2).unwrap()
+    }
+}
+
 // First-quadrant inverse geometry. Rationalize hypot differences before
 // evaluating A-1 and A-x; direct subtraction loses the small branch component.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
@@ -1092,7 +1108,7 @@ fn inverse_geometry<T: Float>(x: T, y: T) -> (T, T) {
         return if x <= 1.0 {
             (((1.0 - x) * (1.0 + x)).sqrt(), 0.0)
         } else {
-            (0.0, x.acosh())
+            (0.0, real_acosh(x))
         };
     }
     // Away from the branch point, first-order limits preserve subnormals.
@@ -1101,7 +1117,7 @@ fn inverse_geometry<T: Float>(x: T, y: T) -> (T, T) {
         return if x < 1.0 {
             (root, y / root)
         } else {
-            ((y / root) * x, x.acosh())
+            ((y / root) * x, real_acosh(x))
         };
     }
     let r = (x + 1.0).hypot(y);
@@ -1169,7 +1185,7 @@ pub fn asin<T: Float>(z: Complex<T>) -> Complex<T> {
         }
         return Complex {
             re: T::from(std::f64::consts::FRAC_PI_2).unwrap().copysign(z.re),
-            im: z.re.abs().acosh().copysign(z.im),
+            im: real_acosh(z.re.abs()).copysign(z.im),
         };
     }
     if !z.re.is_finite() || !z.im.is_finite() {
@@ -1357,7 +1373,7 @@ pub fn acosh<T: Float>(z: Complex<T>) -> Complex<T> {
     if z.im == 0.0 {
         if z.re >= 1.0 {
             return Complex {
-                re: z.re.acosh(),
+                re: real_acosh(z.re),
                 im: z.im,
             };
         }
@@ -1368,7 +1384,7 @@ pub fn acosh<T: Float>(z: Complex<T>) -> Complex<T> {
             };
         }
         return Complex {
-            re: (-z.re).acosh(),
+            re: real_acosh(-z.re),
             im: T::from(std::f64::consts::PI).unwrap().copysign(z.im),
         };
     }

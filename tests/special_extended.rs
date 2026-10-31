@@ -553,7 +553,7 @@ fn special_families_match_scipy() {
                 let (a, b) = parsed_call!(special::ellipke; args[0]).unwrap();
                 vec![a, b]
             }
-            "ellipf" => vec![parsed_call!(special::ellipkinc; args[0], args[1]).unwrap()],
+            "ellipf" => vec![parsed_call!(special::ellipf; args[0], args[1]).unwrap()],
             "ellippi" => vec![parsed_call!(special::ellippi; args[0], args[1]).unwrap()],
             "ellippiinc" => {
                 vec![parsed_call!(special::ellippiinc; args[0], args[1], args[2]).unwrap()]
@@ -579,9 +579,14 @@ fn special_families_match_scipy() {
         assert_eq!(actual.len(), expected.len(), "{} shape", fields[0]);
         for (i, (&actual, &expected)) in actual.iter().zip(&expected).enumerate() {
             if expected.is_nan() {
-                assert!(actual.is_nan(), "{}[{i}]", fields[0]);
+                assert!(
+                    actual.is_nan(),
+                    "{}({})[{i}]: {actual} != NaN",
+                    fields[0],
+                    fields[1]
+                );
             } else if expected.is_infinite() {
-                assert_eq!(actual, expected, "{}[{i}]", fields[0]);
+                assert_eq!(actual, expected, "{}({})[{i}]", fields[0], fields[1]);
             } else {
                 let rtol: f64 = fields[3].parse().unwrap();
                 let atol: f64 = fields[4].parse().unwrap();
@@ -591,8 +596,9 @@ fn special_families_match_scipy() {
                         expected,
                         epsilon = atol.max(rtol * expected.abs())
                     ),
-                    "{}[{i}]: {actual} != {expected}",
-                    fields[0]
+                    "{}({})[{i}]: {actual} != {expected}",
+                    fields[0],
+                    fields[1]
                 );
             }
         }

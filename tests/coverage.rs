@@ -478,7 +478,7 @@ fn elliptic_functions_reject_nonfinite_and_singular_parameters() {
     assert!(e::elliprd(0.0, 0.0, 1.0).is_err());
     assert!(e::elliprj(1.0, 1.0, 1.0, 0.0).is_err());
     assert!(e::cel(0.0, 1.0, 1.0, 1.0).is_err());
-    assert!(e::el3(0.3, 1.0, -1.0).is_err());
+    assert!(e::el3(1.0, 1.0, -1.0).is_err());
     assert!(e::heuman_lambda(0.3, -0.1).is_err());
 }
 
@@ -552,10 +552,10 @@ fn special_polynomials_and_sequences_bound_native_work() {
             special::eval_hermite,
             special::eval_hermitenorm,
         ] {
-            assert!(f(n, 0.3).is_nan());
+            assert!(f(n, 0.3_f64).is_nan());
         }
-        assert!(special::eval_jacobi(n, 0.0, 0.0, 0.3).is_nan());
-        assert!(special::eval_genlaguerre(n, 0.0, 0.3).is_nan());
-        assert!(special::eval_gegenbauer(n, 1.0, 0.3).is_nan());
+        assert!(special::eval_jacobi(n, 0.0_f64, 0.0, 0.3).is_nan());
+        assert!(special::eval_genlaguerre(n, 0.0_f64, 0.3).is_nan());
+        assert!(special::eval_gegenbauer(n, 1.0_f64, 0.3).is_nan());
     }
 }

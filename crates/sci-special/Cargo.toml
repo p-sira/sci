@@ -3,7 +3,7 @@ name = "sci-special"
 version = "0.3.0"
 edition.workspace = true
 authors.workspace = true
-license.workspace = true
+license = "BSD-3-Clause AND MIT AND BSL-1.0"
 rust-version.workspace = true
 description = "Special functions for scientific computing"
 documentation = "https://docs.rs/sci-special"
@@ -12,7 +12,7 @@ repository = "https://github.com/p-sira/sci"
 categories = ["mathematics", "science"]
 keywords = ["special-functions", "mathematics", "numerics", "scientific-computing", "approximation"]
 readme = false
-include = ["/src/**", "/LICENSE"]
+include = ["/src/**", "/LICENSE", "/LICENSES/**"]
 
 [dependencies]
 numeric_literals.workspace = true
@@ -21,5 +21,5 @@ sci-complex.workspace = true
 ellip.workspace = true
 nalgebra.workspace = true
 num-complex.workspace = true
-special = { workspace = true, features = ["lambert_w"] }
-xsf.workspace = true
+complex-bessel.workspace = true
+lambert_w = { version = "2.1.2", default-features = false, features = ["std"] }

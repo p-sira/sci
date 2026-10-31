@@ -33,6 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: cargo fmt --all -- --check
+      - run: python tests/scipy/case_catalog.py
 
   audits:
     if: false # Keep the SciPy coverage audits available for re-enabling.
@@ -63,6 +64,9 @@ jobs:
   test:
     needs: scope
     if: needs.scope.outputs.active == 'true'
+    # A lost ARM runner previously remained in the test step for 47 minutes.
+    # Bound an unresponsive job instead of consuming nearly an hour of CI.
+    timeout-minutes: 20
     env:
       CI_SCOPE: ${{ needs.scope.outputs.scope }}
     strategy:
@@ -88,6 +92,11 @@ jobs:
       - uses: ./.github/actions/setup-native
       - name: Run clippy
         run: python .github/scripts/ci_scope.py clippy
+      - name: Limit ARM test resource contention
+        if: matrix.os == 'ubuntu-24.04-arm'
+        run: |
+          echo "CARGO_BUILD_JOBS=2" >> "$GITHUB_ENV"
+          echo "RUST_TEST_THREADS=2" >> "$GITHUB_ENV"
       - name: Run tests
         run: python .github/scripts/ci_scope.py test
       - name: Check core-only facade

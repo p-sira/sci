@@ -7,7 +7,10 @@ The main inventory contains **3,971 function entries in 42 namespaces**, includi
 Source of truth: the installed runtime and matching `.pyi` files under `.venv/lib/python3.13/site-packages/`; Cython-only functions come from SciPy `.pxd` declarations. Public module classification and available documentation links come from the [SciPy API reference](https://docs.scipy.org/doc/scipy/reference/index.html) and its [Sphinx inventory](https://docs.scipy.org/doc/scipy/objects.inv), version 1.18.0. Names have been checked against the local 1.18.1 installation; documentation links are provided where indexed.
 
 SciPy names are a numerical reference inventory, not a requirement to reproduce
-Python runtime APIs or redundant aliases. See [the migration guide](MIGRATING.md)
+Python runtime APIs or redundant aliases. Full API, domain, signature, and
+special-value parity are not requirements. Backend-supported mathematical domains
+may extend beyond SciPy; elliptic integrals follow Ellip's notation and argument
+ordering, with intentional wrapper restrictions documented separately. See [the migration guide](MIGRATING.md)
 and module coverage reports for deliberate omissions and Rust replacements.
 The [second Rust API audit](function_coverages/RUST_API_AUDIT.md) records
 additional cleanup decisions and remaining design candidates.
@@ -105,3 +108,13 @@ classes remain deferred. See [I/O coverage and limitations](function_coverages/I
 The [non-sparse numerical accuracy audit](function_coverages/NUMERICAL_ACCURACY_AUDIT.md)
 records corrections, independent regression references, and remaining accuracy
 limits identified from the sibling `sci-testing` measurements.
+
+Special functions retain all 353 public numerical APIs with private pure Rust
+kernels. See [special-function coverage and numerical limits](function_coverages/SPECIAL_COVERAGE.md)
+for the 25 deliberate SciPy name substitutions, generic float support, overload
+gaps, and bounded-work limitations.
+
+The [native special-function audit](function_coverages/SPECIAL_NATIVE_COVERAGE.md)
+reviews the local C++ XSF public header families independently of SciPy names.
+It records eight scalar and 25 shared-complex additions, deliberate Rust
+replacements, and useful numerical capabilities that remain deferred.

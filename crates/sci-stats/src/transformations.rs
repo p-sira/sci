@@ -326,6 +326,20 @@ pub fn yeojohnson(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
     if !lambda.is_finite() {
         return Err(crate::Error::NonFiniteEvaluation);
     }
+    if lambda == 0.5 {
+        // For this common half-power, eliminate log1p/expm1 per observation.
+        // Rationalize the differences of square roots (and of the 3/2 power)
+        // so both branches still preserve tiny values near zero.
+        return transform(values, |x| {
+            if x >= 0.0 {
+                2.0 * (x / ((1.0 + x).sqrt() + 1.0))
+            } else {
+                let u = -x;
+                let root = (1.0 + u).sqrt();
+                (2.0 / 3.0) * x * ((u + root + 2.0) / (root + 1.0))
+            }
+        });
+    }
     transform(values, |x| {
         if x >= 0. {
             sci_special::boxcox1p(x, lambda)

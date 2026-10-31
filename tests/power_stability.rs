@@ -71,6 +71,38 @@ fn power_means_preserve_limits_bounds_and_scale() -> Result<()> {
 }
 
 #[test]
+fn yeojohnson_half_power_preserves_small_and_large_values() -> Result<()> {
+    // Closed-form values of ((1+x)^1/2-1)/(1/2) for x>=0 and
+    // -((1-x)^3/2-1)/(3/2) for x<0, including their small-x limits.
+    let xs = [
+        -1e200, -8.0, -3.0, -1e-300, -0.0, 0.0, 1e-300, 3.0, 8.0, 1e308,
+    ];
+    let expected = [
+        -(2.0 / 3.0) * 1e300,
+        -52.0 / 3.0,
+        -14.0 / 3.0,
+        -1e-300,
+        -0.0,
+        0.0,
+        1e-300,
+        2.0,
+        4.0,
+        2e154,
+    ];
+    for (actual, reference) in stats::yeojohnson(&xs, 0.5)?.into_iter().zip(expected) {
+        assert!(
+            (actual - reference).abs() <= 3e-15 * reference.abs(),
+            "half-power transformed value {actual} differs from {reference}"
+        );
+        if reference == 0.0 {
+            assert_eq!(actual.to_bits(), reference.to_bits());
+        }
+    }
+    assert!(stats::yeojohnson(&[-1e250], 0.5).is_err());
+    Ok(())
+}
+
+#[test]
 fn power_transform_domains_remain_explicit() {
     for p in [-1., 0., 1e-20, 1.] {
         let expected = if p > 0. { -1. / p } else { f64::NEG_INFINITY };

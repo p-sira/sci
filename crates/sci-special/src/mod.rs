@@ -4,17 +4,25 @@
 ///
 /// Real x away from nonpositive integer poles. Poles and overflow follow the backend's IEEE behavior; NaN inputs return NaN.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// assert!((sci_special::gamma(5.0) - (24.0)).abs() < 1e-12);
+/// assert!((sci_special::gamma(5.0_f64) - (24.0)).abs() < 1e-12);
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [NIST DLMF](https://dlmf.nist.gov/5.2).
-pub fn gamma(x: f64) -> f64 {
-    ::special::Gamma::gamma(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gamma<T: sci_core::Float>(x: T) -> T {
+    crate::backend::gamma(x).unwrap_or(T::nan())
 }
 
 /// Computes ln |Γ(x)|.
@@ -23,17 +31,25 @@ pub fn gamma(x: f64) -> f64 {
 ///
 /// Real x away from poles. The sign of Γ is discarded. Poles return infinity and NaN propagates.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// assert!((sci_special::gammaln(1.0) - (0.0)).abs() < 1e-12);
+/// assert!((sci_special::gammaln(1.0_f64) - (0.0)).abs() < 1e-12);
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [NIST DLMF](https://dlmf.nist.gov/5.2).
-pub fn gammaln(x: f64) -> f64 {
-    ::special::Gamma::ln_gamma(x).0
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gammaln<T: sci_core::Float>(x: T) -> T {
+    crate::backend::gammaln(x).unwrap_or(T::nan())
 }
 
 /// Computes ψ(x) = d ln Γ(x) / dx.
@@ -44,21 +60,25 @@ pub fn gammaln(x: f64) -> f64 {
 /// NaN, positive infinity returns infinity, and NaN propagates. Positive finite
 /// arguments use `special`; other arguments use a nonrecursive reflection backend.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// assert!((sci_special::digamma(1.0) - (-0.5772156649015329)).abs() < 1e-12);
+/// assert!((sci_special::digamma(1.0_f64) - (-0.5772156649015329)).abs() < 1e-12);
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [NIST DLMF](https://dlmf.nist.gov/5.15).
-pub fn digamma(x: f64) -> f64 {
-    if x.is_finite() && x > 0.0 {
-        ::special::Gamma::digamma(x)
-    } else {
-        xsf::digamma(x)
-    }
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn digamma<T: sci_core::Float>(x: T) -> T {
+    crate::backend::digamma(x).unwrap_or(T::nan())
 }
 
 /// Computes ψ₁(x) = d ψ(x) / dx.
@@ -68,21 +88,42 @@ pub fn digamma(x: f64) -> f64 {
 /// Real x away from nonpositive integer poles. Poles diverge to infinity;
 /// positive infinity returns zero and NaN propagates.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!((sci_special::trigamma(1.0) - (1.6449340668482264)).abs() < 1e-12);
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [NIST DLMF](https://dlmf.nist.gov/5.15).
 pub fn trigamma(x: f64) -> f64 {
     if x.is_finite() && x > 0.0 {
-        ::special::Gamma::trigamma(&x)
+        trigamma_positive(x)
     } else {
-        xsf::polygamma(1, x)
+        crate::backend::legacy::polygamma(1, x)
     }
+}
+
+/// ψ′(x) for finite x > 0: upward recurrence ψ′(x) = ψ′(x + 1) + 1/x² until
+/// x ≥ 10, then the asymptotic expansion (DLMF 5.15.8) through B₁₆.
+fn trigamma_positive(mut x: f64) -> f64 {
+    let mut shift = 0.0;
+    while x < 10.0 {
+        shift += 1.0 / (x * x);
+        x += 1.0;
+    }
+    let z = 1.0 / x;
+    let z2 = z * z;
+    // Σ B_2k / x^(2k+1) for k = 1..8.
+    let tail = z2
+        * (1.0 / 6.0
+            - z2 * (1.0 / 30.0
+                - z2 * (1.0 / 42.0
+                    - z2 * (1.0 / 30.0
+                        - z2 * (5.0 / 66.0
+                            - z2 * (691.0 / 2730.0 - z2 * (7.0 / 6.0 - z2 * (3617.0 / 510.0))))))));
+    shift + z * (1.0 + z * 0.5 + tail)
 }
 
 /// Computes erf(x) = (2/√π) ∫₀ˣ exp(−t²) dt.
@@ -91,17 +132,25 @@ pub fn trigamma(x: f64) -> f64 {
 ///
 /// All real values. Infinite inputs return ±1 and NaN propagates.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// assert!((sci_special::erf(0.0) - (0.0)).abs() < 1e-12);
+/// assert!((sci_special::erf(0.0_f64) - (0.0)).abs() < 1e-12);
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [NIST DLMF](https://dlmf.nist.gov/7.2).
-pub fn erf(x: f64) -> f64 {
-    ::special::Error::error(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn erf<T: sci_core::Float>(x: T) -> T {
+    crate::backend::erf(x).unwrap_or(T::nan())
 }
 
 /// Computes erfc(x) = 1 − erf(x).
@@ -110,17 +159,25 @@ pub fn erf(x: f64) -> f64 {
 ///
 /// All real values. At −∞ and +∞ the results are 2 and 0, respectively; NaN propagates.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// assert!((sci_special::erfc(0.0) - (1.0)).abs() < 1e-12);
+/// assert!((sci_special::erfc(0.0_f64) - (1.0)).abs() < 1e-12);
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [NIST DLMF](https://dlmf.nist.gov/7.2).
-pub fn erfc(x: f64) -> f64 {
-    ::special::Error::compl_error(x)
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn erfc<T: sci_core::Float>(x: T) -> T {
+    crate::backend::erfc(x).unwrap_or(T::nan())
 }
 
 /// Computes the inverse of erf.
@@ -129,25 +186,25 @@ pub fn erfc(x: f64) -> f64 {
 ///
 /// x in `[-1, 1]`. Endpoints return signed infinity; values outside the interval return NaN.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// assert!((sci_special::erfinv(0.0) - (0.0)).abs() < 1e-12);
+/// assert!((sci_special::erfinv(0.0_f64) - (0.0)).abs() < 1e-12);
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [NIST DLMF](https://dlmf.nist.gov/7.17).
-pub fn erfinv(x: f64) -> f64 {
-    if x == 1.0 {
-        f64::INFINITY
-    } else if x == -1.0 {
-        f64::NEG_INFINITY
-    } else if x.abs() < 1.0 {
-        ::special::Error::inv_error(x)
-    } else {
-        f64::NAN
-    }
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn erfinv<T: sci_core::Float>(x: T) -> T {
+    crate::backend::erfinv(x).unwrap_or(T::nan())
 }
 
 /// Computes B(a,b) = Γ(a)Γ(b)/Γ(a+b).
@@ -156,13 +213,13 @@ pub fn erfinv(x: f64) -> f64 {
 ///
 /// Finite positive a and b. Invalid inputs return NaN; overflow and underflow follow IEEE arithmetic.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!((sci_special::beta(1.0, 1.0) - (1.0)).abs() < 1e-12);
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [NIST DLMF](https://dlmf.nist.gov/5.12).
 pub fn beta(a: f64, b: f64) -> f64 {
@@ -175,18 +232,19 @@ pub fn beta(a: f64, b: f64) -> f64 {
 ///
 /// Finite positive a and b. Invalid inputs return NaN.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// assert!((sci_special::betaln(1.0, 1.0) - (0.0)).abs() < 1e-12);
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [NIST DLMF](https://dlmf.nist.gov/5.12).
+#[inline]
 pub fn betaln(a: f64, b: f64) -> f64 {
     if a.is_finite() && b.is_finite() && a > 0.0 && b > 0.0 {
-        ::special::Beta::ln_beta(a, b)
+        crate::backend::betaln(a, b).unwrap_or(f64::NAN)
     } else {
         f64::NAN
     }
@@ -198,20 +256,28 @@ pub fn betaln(a: f64, b: f64) -> f64 {
 ///
 /// Finite positive a and b; x in `[0,1]`. Invalid inputs return NaN.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// assert!((sci_special::betainc(1.0, 1.0, 0.5) - (0.5)).abs() < 1e-12);
+/// assert!((sci_special::betainc(1.0_f64, 1.0, 0.5) - (0.5)).abs() < 1e-12);
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [NIST DLMF](https://dlmf.nist.gov/8.17).
-pub fn betainc(a: f64, b: f64, x: f64) -> f64 {
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn betainc<T: sci_core::Float>(a: T, b: T, x: T) -> T {
     if a.is_finite() && b.is_finite() && a > 0.0 && b > 0.0 && (0.0..=1.0).contains(&x) {
-        xsf::betainc(a, b, x)
+        crate::backend::betainc(a, b, x).unwrap_or(T::nan())
     } else {
-        f64::NAN
+        T::nan()
     }
 }
 
@@ -224,20 +290,35 @@ pub fn betainc(a: f64, b: f64, x: f64) -> f64 {
 /// Shape parameters `a` and `b` must be finite and positive; probability
 /// must be in `[0,1]`. Invalid inputs return NaN. Endpoints return zero and one.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// assert!((sci_special::betaincinv(1.0, 1.0, 0.5) - 0.5).abs() < 1e-12);
+/// assert!((sci_special::betaincinv(1.0_f64, 1.0, 0.5) - 0.5).abs() < 1e-12);
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [NIST DLMF, incomplete beta functions](https://dlmf.nist.gov/8.17).
-pub fn betaincinv(a: f64, b: f64, probability: f64) -> f64 {
+///
+/// ## Numerical behavior
+///
+/// Quantile refinement selects the smaller probability tail while retaining
+/// small output coordinates. Very small shape parameters amplify errors in
+/// the forward beta kernel: when `I_x(a,b)` behaves like a constant times
+/// `x^a`, relative CDF errors are amplified by roughly `1/a` in the quantile.
+/// For example, tested cases with `a=0.001, b=1000` have relative quantile
+/// errors around `3e-10`; uniform machine precision is not guaranteed.
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn betaincinv<T: sci_core::Float>(a: T, b: T, probability: T) -> T {
     if a.is_finite() && b.is_finite() && a > 0.0 && b > 0.0 && (0.0..=1.0).contains(&probability) {
-        xsf::betaincinv(a, b, probability)
+        crate::backend::betaincinv(a, b, probability).unwrap_or(T::nan())
     } else {
-        f64::NAN
+        T::nan()
     }
 }
 
@@ -250,22 +331,30 @@ pub fn betaincinv(a: f64, b: f64, probability: f64) -> f64 {
 /// `a` must be finite and positive; `x` must be nonnegative. At zero the
 /// result is zero and at positive infinity it is one. Invalid inputs return NaN.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// assert!((sci_special::gammainc(1.0, 1.0) - (1.0 - (-1.0_f64).exp())).abs() < 1e-12);
+/// assert!((sci_special::gammainc(1.0_f64, 1.0) - (1.0 - (-1.0_f64).exp())).abs() < 1e-12);
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [NIST DLMF, incomplete gamma functions](https://dlmf.nist.gov/8.2).
-pub fn gammainc(a: f64, x: f64) -> f64 {
+///
+/// ## Numerical behavior
+///
+/// Accepts the shared `sci_core::Float` type. Specialized kernels evaluate in
+/// binary64 and convert the result to `T`; this does not provide extra precision.
+/// Domain or numerical backend errors return NaN. Iterations are bounded by
+/// the private algorithm; correct rounding is not guaranteed.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gammainc<T: sci_core::Float>(a: T, x: T) -> T {
     if !a.is_finite() || a <= 0.0 || x.is_nan() || x < 0.0 {
-        f64::NAN
-    } else if x == f64::INFINITY {
+        T::nan()
+    } else if x == T::infinity() {
         1.0
     } else {
-        xsf::gammainc(a, x)
+        crate::backend::gammainc(a, x).unwrap_or(T::nan())
     }
 }
 
@@ -287,55 +376,76 @@ pub fn gammainc(a: f64, x: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// For |x| ≤ 10⁻³, a degree-seven Taylor expansion of
-/// W₀(x) = ∑ₙ₌₁∞ (−n)ⁿ⁻¹ xⁿ/n! avoids cancellation in the backend near zero.
-/// The omitted terms contribute less than 6 × 10⁻²⁰ relative error in this
-/// interval before floating-point rounding. Other inputs use the private
-/// `special` backend's piecewise rational approximation.
+/// Uses `lambert_w` 2.1.2's piecewise rational approximations and near-zero
+/// Taylor expansion. Evaluation uses binary64 and converts back to `T`. The
+/// dependency corrects the rounded `−1/e` offset near the branch point; Sci
+/// maps that rounded endpoint to exactly `−1` to preserve the real-domain
+/// endpoint convention. No Sci-specific near-zero Taylor correction is needed.
+/// The backend targets approximately 50 bits of accuracy; conditioning worsens
+/// near `−1/e`, where small input changes cause large changes in the result.
+/// There is no configurable tolerance or iteration budget.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// assert!((sci_special::lambertw(0.0) - (0.0)).abs() < 1e-12);
+/// assert!((sci_special::lambertw(0.0_f64) - (0.0)).abs() < 1e-12);
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [NIST DLMF](https://dlmf.nist.gov/4.13).
-pub fn lambertw(x: f64) -> f64 {
-    if x.abs() <= 1e-3 {
-        x * (1.0
-            + x * (-1.0
-                + x * (1.5
-                    + x * (-8.0 / 3.0
-                        + x * (125.0 / 24.0 + x * (-54.0 / 5.0 + x * (16807.0 / 720.0)))))))
-    } else {
-        ::special::LambertW::lambert_w0(x)
-    }
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn lambertw<T: sci_core::Float>(x: T) -> T {
+    crate::backend::lambertw0(x).unwrap_or(T::nan())
 }
 
-/// Computes the lower real Lambert W branch W₋₁(x).
+/// Computes W₋₁(x), the real solution of `w exp(w) = x` with `w <= −1`.
 ///
-/// ## Domain
+/// ## Parameters and conventions
 ///
-/// x in `[-1/e,0]`. Inputs outside the interval return NaN; at zero the result is −∞.
+/// `x` is a dimensionless real argument. This selects the lower real branch.
 ///
-/// # Examples
+/// ## Domain and special values
+///
+/// `−1/e <= x <= 0`. Both signed zeros return negative infinity; the rounded
+/// branch point returns `−1`. NaN, infinity, and other out-of-domain inputs
+/// return NaN. There is no complex continuation.
+///
+/// ## Returns
+///
+/// The lower real inverse of `w exp(w)` in the requested floating-point type.
+///
+/// ## Numerical behavior
+///
+/// Uses `lambert_w` 2.1.2 in binary64 and converts back to `T`. The backend
+/// targets approximately 50 bits of accuracy and corrects the rounded `−1/e`
+/// offset near the branch point. Sci maps that rounded endpoint to exactly
+/// `−1` to preserve the real-domain endpoint convention. The inverse is
+/// ill-conditioned near `−1/e`; relative accuracy is also limited by the
+/// representation of tiny negative inputs. There is no configurable tolerance
+/// or iteration control.
+///
+/// ## Examples
 ///
 /// ```
-/// assert!((sci_special::lambertwm1(-0.36787944117144233) - (-1.0)).abs() < 1e-12);
+/// let w = sci_special::lambertwm1(-0.1_f64);
+/// assert!(w < -1.0);
+/// assert!((w * w.exp() + 0.1).abs() < 1e-14);
 /// ```
 ///
-/// # References
+/// ## References
 ///
-/// - [NIST DLMF](https://dlmf.nist.gov/4.13).
-pub fn lambertwm1(x: f64) -> f64 {
-    ::special::LambertW::lambert_wm1(x)
+/// - [NIST DLMF, Lambert W](https://dlmf.nist.gov/4.13).
+/// - [lambert_w 2.1.2](https://docs.rs/lambert_w/2.1.2/lambert_w/).
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn lambertwm1<T: sci_core::Float>(x: T) -> T {
+    crate::backend::lambertwm1(x).unwrap_or(T::nan())
 }
 
 /// Elliptic integral functions with explicit domain errors.
 ///
-/// Legendre integrals use the parameter `m = k²`, not the modulus `k`.
+/// Legendre integrals follow Ellip: `F(phi, m)`, `E(phi, m)`, and `Π(phi, n, m)`.
+/// The elliptic parameter is `m = k²`; [`elliptic::ellipf`] evaluates `F`.
 /// Angles are radians. Each function forwards numerical evaluation to ellip
 /// and maps its errors into [`crate::Error`].
 pub mod elliptic;
@@ -361,3 +471,5 @@ pub use ellipsoidal::*;
 
 mod combinatorics;
 pub use combinatorics::*;
+mod native;
+pub use native::*;

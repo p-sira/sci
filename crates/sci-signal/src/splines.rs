@@ -64,7 +64,7 @@ fn smooth_parameters(lambda: f64) -> Result<(f64, f64)> {
     let omega = (144. * lambda - 1.).sqrt().atan2(xi.sqrt());
     let rho = (24. * lambda - 1. - xi.sqrt()) / (24. * lambda)
         * ((48. * lambda + 24. * lambda * (3. + 144. * lambda).sqrt()) / xi).sqrt();
-    if !rho.is_finite() || rho >= 1. || rho < 0. {
+    if !rho.is_finite() || !(0. ..1.).contains(&rho) {
         return Err(Error::NumericalFailure(
             "ill-conditioned smoothing parameter",
         ));

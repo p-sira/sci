@@ -126,9 +126,9 @@ fn fft_round_trips_odd_and_even_lengths() {
 
 #[test]
 fn special_function_domains_and_boundaries_are_predictable() {
-    assert!(special::digamma(-1.0).is_nan());
+    assert!(special::digamma(-1.0_f64).is_nan());
     assert!(special::digamma(f64::NEG_INFINITY).is_nan());
-    assert!(special::betainc(-1.0, 2.0, 0.5).is_nan());
+    assert!(special::betainc(-1.0_f64, 2.0, 0.5).is_nan());
     assert_eq!(special::erfinv(1.0), f64::INFINITY);
     assert_eq!(special::erfinv(-1.0), f64::NEG_INFINITY);
     assert!(special::elliptic::ellipk(1.0).is_err());

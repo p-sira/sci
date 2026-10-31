@@ -6,19 +6,44 @@
 
 Run with ``uv run tests/scipy/generate_special.py``. Each CSV record stores
 the function, semicolon-separated arguments, and flattened real results.
-The JSON contains input cases only; expected results always come from SciPy.
+The JSON contains input cases only; references come from SciPy, independent
+defining quadrature/identities, or 90-digit Decimal inversion near Lambert W's
+branch point. No expected values come from Sci or its implementation backend.
 Real Lambert W comparisons use 8e-15 relative and zero absolute tolerance so
 tiny arguments are checked proportionally; inverse identities separately
 check the defining equation and real branch domains.
+Explicit case tolerances retain relative checks in probability tails. The
+a=0.001/0.01 beta quantiles allow 3e-12/a relative error: the x^a limiting CDF
+amplifies normalization error by 1/a (the observed forward-CDF discrepancy
+at a=.001,b=1000,p=.6 is 1.3e-13). U cases at x=10 allow 2e-9 because the
+legacy integral dispatch supplies about nine digits, even after cancellation
+is removed. Other newly added inverse/U cases use 3e-11 with a 1e-300 floor.
 """
 
 import csv
-import json
+import math
+from decimal import Decimal, localcontext
 from pathlib import Path
 
 import numpy as np
 import scipy
 from scipy import special, integrate, optimize
+
+from elliptic_reference import extended_reference
+from case_catalog import read_cases
+
+
+def hyp0f1_decimal(parameter, z):
+    """Independent 100-digit defining series, with a bounded term count."""
+    with localcontext() as context:
+        context.prec = 100
+        term = total = Decimal(1)
+        for k in range(1, 10000):
+            term *= z / ((parameter + k - 1) * k)
+            total += term
+            if abs(term) <= abs(total) * Decimal('1e-90'):
+                return total
+        raise RuntimeError(("0F1 reference series did not converge", parameter, z))
 
 
 def stable_keip_zeros(count):
@@ -39,8 +64,226 @@ def stable_keip_zeros(count):
     ])
 
 
+def lambert_near_branch(x, lower):
+    """Independent inverse of w*exp(w), using 90-digit standard-library Decimal.
+
+    SciPy's Lambert W loses accuracy next to -1/e. Bracketed bisection of the
+    defining real equation avoids its branch-point approximation. Inputs are
+    the exact binary64 values; no Sci or backend coefficients are used.
+    """
+    from decimal import Decimal, localcontext
+    with localcontext() as context:
+        context.prec = 90
+        target = Decimal.from_float(float(x))
+        left, right = ((Decimal(-1000), Decimal(-1)) if lower
+                       else (Decimal(-1), Decimal(0)))
+        for _ in range(400):
+            middle = (left + right) / 2
+            residual = middle * middle.exp() - target
+            if (residual > 0) == lower:
+                left = middle
+            else:
+                right = middle
+        return float((left + right) / 2)
+
+
 def reference(name, args):
-    """SciPy evaluations or independent quadrature for ellip-only functions."""
+    """SciPy values, using independent integrals/inversions for oracle gaps."""
+    if name == "jv":
+        n, x = args
+        if n == int(n) and 170 <= n <= 4096 and 0 < x*x <= 40*n:
+            # DLMF 10.2.2 with an exact integer factorial. AMOS can flush
+            # representable subnormal J_n values; Decimal keeps the defining
+            # series and its prefactor independent of binary64 underflow.
+            with localcontext() as context:
+                context.prec = 100
+                n, x = int(n), Decimal.from_float(float(x))
+                term = total = Decimal(1)
+                for k in range(1, 1000):
+                    term *= -x*x/(4*k*(n+k))
+                    total += term
+                    if abs(term) <= abs(total)*Decimal('1e-95'):
+                        return float(total*(x/2)**n/Decimal(math.factorial(n)))
+                raise RuntimeError(("Bessel reference series did not converge", args))
+    if name == "betaincinv":
+        value = special.betaincinv(*args)
+        if np.isnan(value):
+            # SciPy's inverse can fail in the extreme lower tail, e.g.
+            # I_x(2,5)=1e-300. Invert its independent forward CDF in log x;
+            # near x=0 the defining integral gives I_x~x^a/(a*B(a,b)).
+            a, b, probability = args
+            log_target = np.log(probability)
+            def residual(t):
+                x = np.exp(t)
+                cdf = special.betainc(a, b, x)
+                log_cdf = np.log(cdf) if cdf > 0 else a*t-np.log(a)-special.betaln(a,b)
+                return log_cdf-log_target
+            root = optimize.brentq(residual, -745, 0, xtol=5e-13, rtol=1e-15)
+            value = np.exp(root)
+            if not np.isclose(special.betainc(a,b,value), probability, rtol=2e-10, atol=0):
+                raise RuntimeError(("beta reference inversion failed", args, value))
+            return value
+        return value
+    if name in {"ive", "kve"} and args[1] >= 1e9:
+        # SciPy's AMOS range check returns NaN here despite finite results.
+        # Defining integrals, DLMF 10.32.4 and 10.32.9, with t=u/sqrt(x).
+        # For these modest orders the omitted u>40 tail is below 1e-300;
+        # the second I integral is bounded by exp(-2*x) times a modest factor.
+        v, x = args
+        root = np.sqrt(x)
+        if name == "ive":
+            integrand = lambda u: np.exp(-2*x*np.sin(u/(2*root))**2)*np.cos(v*u/root)
+            divisor = np.pi*root
+        else:
+            integrand = lambda u: np.exp(-2*x*np.sinh(u/(2*root))**2)*np.cosh(v*u/root)
+            divisor = root
+        return integrate.quad(integrand, 0, 40, epsabs=2e-13, epsrel=2e-13)[0]/divisor
+    if name in {"lambertw", "lambertwm1"} and -1/np.e < args[0] < -1/np.e + 1e-6:
+        return lambert_near_branch(args[0], name == "lambertwm1")
+    handled, value = extended_reference(name, args)
+    if handled:
+        return value
+    if name in {"ber", "bei", "ker", "kei", "berp", "beip", "kerp", "keip", "kelvin"} and args[0] >= 0.5:
+        # DLMF 10.61: AMOS Bessel identities avoid cancellation in SciPy's
+        # Kelvin power-series transition (notably bei' near x=12).
+        x, = args
+        rotation = np.exp(1j*np.pi/4)
+        z = rotation*x
+        values = (special.iv(0,z), special.kv(0,z),
+                  rotation*special.iv(1,z), -rotation*special.kv(1,z))
+        if name == "kelvin":
+            return values
+        index = {"ber":0,"bei":0,"ker":1,"kei":1,
+                 "berp":2,"beip":2,"kerp":3,"keip":3}[name]
+        return values[index].imag if name in {"bei","kei","beip","keip"} else values[index].real
+    if name == "modstruve" and -args[0]-0.5 >= 0 and (-args[0]-0.5).is_integer():
+        # DLMF 11.4.3: L_{-n-1/2}(x)=I_{n+1/2}(x). SciPy's direct
+        # Struve dispatch loses accuracy around x=12 for this exact case.
+        return special.iv(-args[0], args[1])
+    if name == "modstruve" and args[0] > -0.5 and args[1] > 0:
+        # DLMF 11.5.6: independent integral for L_v. The direct SciPy
+        # Struve transition also loses accuracy at positive half orders.
+        v, x = args
+        factor = np.exp((v+1)*np.log(x/2)-special.gammaln(v+0.5))*4/np.sqrt(np.pi)
+        value = integrate.quad(
+            lambda t: np.sinh(x*t)/x*(1+t)**(v-0.5), 0, 1,
+            weight="alg", wvar=(0, v-0.5), epsabs=2e-13, epsrel=2e-13,
+        )[0]
+        return factor*value
+    if name in {"h1vp", "h2vp"}:
+        # DLMF 10.4.3: H^(1,2)=J±iY. Evaluating the real derivatives
+        # independently avoids AMOS's cross-component cancellation when
+        # |Y| is many orders of magnitude larger than |J|.
+        sign = 1 if name == "h1vp" else -1
+        return special.jvp(*args) + sign*1j*special.yvp(*args)
+    if name == "yve" and args[1] > 0:
+        # The real-axis exponential factor is one. SciPy's scaled AMOS
+        # overflow branch can return +inf where Y_v(x) tends to -inf.
+        return special.yv(*args)
+    if name == "it2i0k0" and args[0] > 0:
+        x, = args
+        # Independent defining integrals avoid SciPy 1.18's legacy large-x
+        # transcription errors (e.g. K's tail at x=16 and I's at x=64).
+        first = integrate.quad(lambda t: (special.i0(t)-1)/t, 0, x,
+                               epsabs=2e-13, epsrel=2e-13)[0]
+        second = integrate.quad(lambda t: special.k0(t)/t, x, np.inf,
+                                epsabs=1e-300, epsrel=2e-13)[0]
+        return first, second
+    if name == "obl_rad2" and args[3] < 1.5:
+        m, n, c, x = args
+        # Continue the accurately evaluated large-argument solution using
+        # the defining radial ODE (DLMF 30.2.1, z=i*x). This avoids the
+        # incorrectly indexed qstar convolution in SciPy's small-x path.
+        cv = special.obl_cv(m, n, c)
+        initial = special.obl_rad2(m, n, c, 2.0)
+        def ode(t, state):
+            value, derivative = state
+            denominator = 1+t*t
+            return derivative, (-2*t*derivative
+                                -(c*c*t*t-cv+m*m/denominator)*value)/denominator
+        solution = integrate.solve_ivp(ode, (2.0, x), initial, method="DOP853",
+                                       rtol=2e-13, atol=2e-14)
+        if not solution.success:
+            raise RuntimeError(solution.message)
+        return tuple(solution.y[:, -1])
+    if name == "hyperu":
+        a, b, x = args
+        if b == 0 and a != 0 and x > 0:
+            # SciPy can also return finite but incorrect answers in this gap,
+            # e.g. U(-.99,0,.01)~12881 instead of ~.0205.
+            return x*reference(name, [a+1, 2, x])
+        value = special.hyperu(*args)
+        if b == 2 and 1 < a < 2 and 0 < x <= 10:
+            # The integer-b series near a=1 can be catastrophically wrong
+            # even when SciPy reports a finite answer. Use DLMF 13.4.4.
+            return integrate.quad(
+                lambda s: np.exp(-s+(a-1)*np.log(s)
+                                 +(b-a-1)*np.log1p(s/x)
+                                 -special.gammaln(a)-a*np.log(x)),
+                0, np.inf, epsabs=2e-13, epsrel=2e-13,
+            )[0]
+        if not np.isfinite(value) and a <= 0 and 1+a-b > 0 and x > 0:
+            # Kummer's U transformation moves the defining Laplace integral
+            # into its convergent positive-a domain (DLMF 13.2.40, 13.4.4).
+            return x**(1-b)*reference(name, [1+a-b, 2-b, x])
+        if not np.isfinite(value) and a > 0 and x > 0:
+            # SciPy's legacy dispatch can fail for valid inputs (e.g. 12,10,.01).
+            # DLMF 13.4.4 with s=x*t supplies an independent convergent integral.
+            return integrate.quad(
+                lambda s: np.exp(-s + (a-1)*np.log(s)
+                                 + (b-a-1)*np.log1p(s/x)
+                                 - special.gammaln(a) - a*np.log(x)),
+                0, np.inf, epsabs=2e-13, epsrel=2e-13,
+            )[0]
+        return value
+    if name in {"modfresnelp", "modfresnelm"} and args[0] < 0:
+        # SciPy's negative-x branch overwrites Re(F) before computing Im(F).
+        # Reflect the positive-x reference using the defining Fresnel integral.
+        x, = args
+        sign = 1 if name == "modfresnelp" else -1
+        positive, _ = getattr(special, name)(-x)
+        f = np.sqrt(np.pi/2)*(1 + sign*1j) - positive
+        k = np.exp(-sign*1j*(x*x + np.pi/4))*f/np.sqrt(np.pi)
+        return f, k
+    if name == "hyp0f1" and args[0] >= 50 and abs(args[1]) <= 100:
+        # SciPy's gamma/Bessel normalization loses ~3e-14 already at
+        # v=100,z=0.5 and overflows above v=172. The defining series is
+        # independently well conditioned for these large positive parameters.
+        return float(hyp0f1_decimal(Decimal.from_float(float(args[0])),
+                                   Decimal.from_float(float(args[1]))))
+    if name == "lmbda":
+        # DLMF 10.2.2: Lambda_nu(x) = 0F1(; nu+1; -x^2/4).
+        # SciPy's lmbda recurrence loses ~4e-9 at v=256,x=16; its
+        # hyp0f1 normalization can overflow above v=172. Evaluate the
+        # independent defining series with 100-digit standard-library
+        # Decimal arithmetic instead of weakening the sequence tolerance.
+        v, x = args
+        with localcontext() as context:
+            context.prec = 100
+            base = Decimal.from_float(float(v)) - int(v)
+            coordinate = Decimal.from_float(float(x))
+            z = -coordinate * coordinate / 4
+            values = []
+            for i in range(int(v) + 2):
+                parameter = base + i + 1
+                values.append(hyp0f1_decimal(parameter, z))
+            return ([float(value) for value in values[:-1]],
+                    [float(-coordinate * values[i+1] / (2*(base+i+1)))
+                     for i in range(int(v)+1)])
+    if name == "itstruve0":
+        # SciPy 1.18.1's large-x formula disagrees with its defining integral.
+        return integrate.quad(lambda t: special.struve(0, t), 0, abs(args[0]),
+                              epsabs=2e-12, epsrel=2e-12)[0]
+    if name == "itairy":
+        # SciPy's legacy series stops at 1e-5 and loses ~4e-10 already at x=0.5.
+        # Independent quadrature verifies the improved 1e-15 series termination.
+        x, = args
+        # Large negative Airy arguments oscillate rapidly. Permit enough
+        # subintervals to resolve their phase instead of accepting QUADPACK's
+        # default subdivision-limit result.
+        return tuple(integrate.quad(lambda t: special.airy(sign*t)[index], 0, x,
+                                    limit=1000, epsabs=2e-13, epsrel=2e-13)[0]
+                     for sign in (1, -1) for index in (0, 2))
     if name == "keip_zeros":
         return stable_keip_zeros(*args)
     if name == "kelvin_zeros":
@@ -102,7 +345,7 @@ def flatten(value):
 
 def generate():
     directory = Path(__file__).resolve().parent
-    cases = json.loads((directory / "special_cases.json").read_text())
+    cases = read_cases(directory / "special_cases.jsonl")
     if (np.__version__, scipy.__version__) != ("2.5.4", "1.18.1"):
         raise RuntimeError("Use NumPy 2.5.4 and SciPy 1.18.1")
     path = directory.parent / "fixtures" / "special_extended.csv"
@@ -131,11 +374,11 @@ def generate():
                     for arg in case["args"]
                 ),
                 ";".join(map(str, result)),
-                1e-4 if case["name"] in {"ncfdtridfd", "ncfdtridfn", "ncfdtrinc"}
+                case.get("rtol", 1e-4 if case["name"] in {"ncfdtridfd", "ncfdtridfn", "ncfdtrinc"}
                 else 5e-6 if case["name"].startswith("nctdtr")
-                else 8e-15 if case["name"] in {"lambertw", "lambertwm1"} else 2e-11,
-                1e-7 if case["name"].startswith("nctdtr")
-                else 0.0 if case["name"] in {"lambertw", "lambertwm1"} else 2e-11,
+                else 8e-15 if case["name"] in {"lambertw", "lambertwm1"} else 2e-11),
+                case.get("atol", 1e-7 if case["name"].startswith("nctdtr")
+                else 0.0 if case["name"] in {"lambertw", "lambertwm1"} else 2e-11),
             ])
 
 

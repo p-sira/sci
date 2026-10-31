@@ -58,9 +58,8 @@ crates retain their full default APIs; use their `hankel`, `matrix-market`,
 `wav`, `matlab`, and `npz` features for the same selection. Cargo combines
 features requested by all dependencies in a build.
 
-Rust 1.89 or later is required. Builds enabling `special`, `cluster`,
-`integrate`, `io-matrix-market`, `linalg`, `signal`, `sparse`, or `stats` require a C++17 compiler and libclang
-for the private `xsf` backend, including through transitive dependencies.
+Rust 1.89 or later is required. Special-function kernels are implemented in pure Rust; no C++ compiler or
+libclang is needed.
 
 ## Modules
 
