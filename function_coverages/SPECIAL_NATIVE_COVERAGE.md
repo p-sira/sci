@@ -179,8 +179,21 @@ the committed CSV, without Python or a backend reference at runtime.
 The eight later complex APIs have separately checked public tests in
 `tests/special_complex_{lambert,expint,polylog,zeta}.rs`; their independent
 fixtures and reference generators live under `tests/scipy/` and
-`tests/fixtures/`. The Lambert W suite uses over four thousand reference rows
-across seven integer branches, both complex precisions and cuts. Exponential
+`tests/fixtures/`. The checked-in Lambert W suite uses 1,736 independent
+reference rows, covering all seven integer branches, both complex precisions,
+near-cut banks, extreme arguments, and the -1/e branch point. The deterministic
+generator also supports the original full 4,116-row Cartesian sweep without
+checking in its redundant interior cases:
+
+```bash
+uv run --offline tests/scipy/generate_complex_lambert.py --full \
+  --output /tmp/complex_lambert_full.csv
+SCI_LAMBERTW_FIXTURE=/tmp/complex_lambert_full.csv \
+  cargo test -p sci --no-default-features --features complex,special \
+  --test special_complex_lambert
+```
+
+Exponential
 integral fixtures use SciPy as the main reference and 100-digit mpmath only
 where its near-axis evaluation loses the constant branch jump. Zeta tests
 use SciPy's complex Riemann values, selected high-precision Hurwitz values,
