@@ -150,6 +150,7 @@ pub fn spence<T: Float>(z: Complex<T>) -> Result<Complex<T>> {
 ///
 /// ## References
 /// [NIST DLMF §4.2](https://dlmf.nist.gov/4.2).
+#[inline]
 pub fn xlogy<T: Float>(x: Complex<T>, y: Complex<T>) -> Result<Complex<T>> {
     output(
         crate::backend::complex_polylog::xlogy(input(x)?, input(y)?)
@@ -185,6 +186,7 @@ pub fn xlogy<T: Float>(x: Complex<T>, y: Complex<T>) -> Result<Complex<T>> {
 ///
 /// ## References
 /// [NIST DLMF §4.2](https://dlmf.nist.gov/4.2).
+#[inline]
 pub fn xlog1py<T: Float>(x: Complex<T>, y: Complex<T>) -> Result<Complex<T>> {
     output(
         crate::backend::complex_polylog::xlog1py(input(x)?, input(y)?)

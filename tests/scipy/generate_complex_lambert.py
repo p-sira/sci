@@ -5,20 +5,19 @@
 """Generate independent complex Lambert W test inputs and SciPy references.
 
 Run `uv run --offline tests/scipy/generate_complex_lambert.py`.
-The checked-in JSONL cases contain *inputs only*; expected values come from
-SciPy's implementation, never from Sci or its Rust backend.
+The deterministic input grid is defined below rather than duplicated in a
+checked-in JSONL file. Expected values come from SciPy, never from the Rust
+implementation. Only the generated CSV reference fixture is checked in, so
+Rust tests do not need Python or SciPy at test time.
 """
 
 import csv
-import json
 from pathlib import Path
 
 import numpy as np
 from scipy.special import lambertw
 
-ROOT = Path(__file__).resolve().parent
-INPUTS = ROOT / "complex_lambert_cases.jsonl"
-OUTPUT = ROOT.parent / "fixtures" / "complex_lambert.csv"
+OUTPUT = Path(__file__).resolve().parents[1] / "fixtures" / "complex_lambert.csv"
 
 
 def create_inputs():
@@ -35,28 +34,27 @@ def create_inputs():
         for r in [-1 / np.e, -1 / np.e + 1e-8, -1 / np.e - 1e-8]:
             for i in [0.0, -1e-8, 1e-8]:
                 cases.add((k, float(r), i))
-    INPUTS.write_text("".join(json.dumps({"k": k, "re": r, "im": i}) + "\n"
-                              for k, r, i in sorted(cases)))
+    return sorted(cases)
 
 
 def main():
-    if not INPUTS.exists():
-        create_inputs()
-    cases = [json.loads(line) for line in INPUTS.read_text().splitlines()]
+    cases = create_inputs()
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    rows = 0
     with OUTPUT.open("w", newline="") as file:
         writer = csv.writer(file)
         writer.writerow(["type", "k", "re", "im", "expected_re", "expected_im"])
         for precision in [np.float64, np.float32]:
-            for case in cases:
-                z = complex(float(precision(case["re"])), float(precision(case["im"])))
-                w = complex(lambertw(z, case["k"]))
+            for k, re, im in cases:
+                z = complex(float(precision(re)), float(precision(im)))
+                w = complex(lambertw(z, k))
                 if not (np.isfinite(w.real) and np.isfinite(w.imag)):
                     continue
                 # Float32 arguments are rounded before independent evaluation.
-                writer.writerow(["f32" if precision == np.float32 else "f64", case["k"],
+                writer.writerow(["f32" if precision == np.float32 else "f64", k,
                                  repr(z.real), repr(z.imag), repr(w.real), repr(w.imag)])
-    print(f"Generated {len(cases)} inputs and reference rows in {OUTPUT}")
+                rows += 1
+    print(f"Generated {len(cases)} inputs and {rows} reference rows in {OUTPUT}")
 
 
 if __name__ == "__main__":

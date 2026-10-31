@@ -150,50 +150,39 @@ pub(crate) fn spence(z: Complex64) -> Result<Complex64, StrErr> {
     finite(value)
 }
 
-enum LogProduct {
-    Direct,
-    OnePlus,
-}
-
-/// Common finite-input, zero-prefactor, pole and multiplication semantics.
-/// Only the logarithm's argument reduction differs between the two APIs.
-fn logarithmic_product(x: Complex64, y: Complex64, kind: LogProduct) -> Result<Complex64, StrErr> {
+/// Computes x log(y) on the principal logarithm branch, with 0 log(y)=0.
+#[inline]
+pub(crate) fn xlogy(x: Complex64, y: Complex64) -> Result<Complex64, StrErr> {
     finite(x)?;
     finite(y)?;
     if x == Complex64::new(0.0, 0.0) {
         return Ok(Complex64::new(0.0, 0.0));
     }
-    let logarithm = match kind {
-        LogProduct::Direct => {
-            if y == Complex64::new(0.0, 0.0) {
-                return Err("xlogy: Logarithm has a pole at zero.");
-            }
-            if (y.re - 1.0).abs() <= 0.5 && y.im.abs() <= 0.5 {
-                // Sterbenz-exact subtraction near one retains the tiny real
-                // part of log(1+i Im(y)) without rounding the increment away.
-                log_one_minus(one_minus(y))
-            } else {
-                complex_log(y)
-            }
-        }
-        LogProduct::OnePlus => {
-            if y == Complex64::new(-1.0, 0.0) {
-                return Err("xlog1py: Logarithm has a pole at minus one.");
-            }
-            log_one_minus(-y)
-        }
+    if y == Complex64::new(0.0, 0.0) {
+        return Err("xlogy: Logarithm has a pole at zero.");
+    }
+    let logarithm = if (y.re - 1.0).abs() <= 0.5 && y.im.abs() <= 0.5 {
+        // Sterbenz-exact subtraction near one retains the tiny real
+        // part of log(1+i Im(y)) without rounding the increment away.
+        log_one_minus(one_minus(y))
+    } else {
+        complex_log(y)
     };
     finite(x * logarithm)
 }
 
-/// Computes x log(y) on the principal logarithm branch, with 0 log(y)=0.
-pub(crate) fn xlogy(x: Complex64, y: Complex64) -> Result<Complex64, StrErr> {
-    logarithmic_product(x, y, LogProduct::Direct)
-}
-
 /// Computes x log(1+y), using log1p to retain sub-ulp complex increments.
+#[inline]
 pub(crate) fn xlog1py(x: Complex64, y: Complex64) -> Result<Complex64, StrErr> {
-    logarithmic_product(x, y, LogProduct::OnePlus)
+    finite(x)?;
+    finite(y)?;
+    if x == Complex64::new(0.0, 0.0) {
+        return Ok(Complex64::new(0.0, 0.0));
+    }
+    if y == Complex64::new(-1.0, 0.0) {
+        return Err("xlog1py: Logarithm has a pole at minus one.");
+    }
+    finite(x * log_one_minus(-y))
 }
 
 #[cfg(test)]
