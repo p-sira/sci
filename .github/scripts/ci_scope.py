@@ -236,6 +236,8 @@ def run(scope, mode):
             # Preserve the complete streamed Cargo output and annotate exact
             # failing names on each target OS without changing test selection.
             failures = set()
+            panic_details = []
+            expect_panic_detail = False
             with subprocess.Popen(
                 invocation,
                 cwd=ROOT,
@@ -249,6 +251,13 @@ def run(scope, mode):
                 for line in process.stdout:
                     print(line, end="", flush=True)
                     uncolored = re.sub(r"\x1b\[[0-9;]*m", "", line)
+                    if expect_panic_detail and uncolored.strip():
+                        detail = uncolored.strip()
+                        if not detail.startswith(("note:", "stack backtrace:")):
+                            panic_details.append(detail)
+                        expect_panic_detail = False
+                    if "panicked at " in uncolored:
+                        expect_panic_detail = True
                     match = re.match(r"^test (\S+) \.\.\. FAILED\s*$", uncolored)
                     if match:
                         failures.add(match.group(1))
@@ -256,6 +265,9 @@ def run(scope, mode):
             if exit_code:
                 for name in sorted(failures):
                     print(f"::error title=Rust test failed::{name}", flush=True)
+                for detail in panic_details[:10]:
+                    escaped = detail.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+                    print(f"::error title=Rust panic detail::{escaped[:900]}", flush=True)
                 if not failures:
                     print(
                         f"::error title=Cargo test failed::Exit code {exit_code} "
