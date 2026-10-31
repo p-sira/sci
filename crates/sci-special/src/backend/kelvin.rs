@@ -80,16 +80,16 @@ const ASYMPTOTIC: f64 = 20.0;
 const FRAC_1_SQRT_2_LO: f64 = -4.833646656726457e-17;
 const PI_8_LO: f64 = 1.5308084989341915e-17;
 
-/// Below this argument the power series loses less than about one ulp to
-/// cancellation and is summed in binary64; above it, in double-double.
-const DOUBLE_DOUBLE: f64 = 4.0;
+/// Below this argument the binary64 power series stays within about 2e-15
+/// relative error on dense high-precision checks; above it, use double-double.
+const DOUBLE_DOUBLE: f64 = 7.25;
 
 /// ber + i bei = I₀(x e^{iπ/4}) and its x-derivative for 0.5 <= x < 20 from
 /// the power series Σ i^k (x/2)^{2k} / (k!)².
 ///
 /// The absolute terms sum to I₀(x) while the result has modulus about
 /// e^{x/√2}/√(2πx), so the series loses up to e^{(1-1/√2)x} in relative
-/// accuracy. Beyond x = 4, terms and partial sums are kept in double-double.
+/// accuracy. Beyond x = 7.25, terms and partial sums are kept in double-double.
 /// Index k mod 4 selects the +re, +im, -re or -im partial sum; the
 /// derivative series Σ i^k k (x/2)^{2k} / (k!)² is divided by x/2 at the end.
 fn first_kind_series(x: f64, need: Need) -> (Complex64, Complex64) {
@@ -141,7 +141,7 @@ fn first_kind_series(x: f64, need: Need) -> (Complex64, Complex64) {
 }
 
 /// Double-double sums of Σ i^k t^k / (k!)² and Σ i^k k t^k / (k!)², with
-/// t = (x/2)², for 4 <= x < 20. Four terms are taken per iteration, one into
+/// t = (x/2)², for 7.25 <= x < 20. Four terms are taken per iteration, one into
 /// each of the +re, +im, -re and -im partial sums, so that every partial sum
 /// adds terms of one sign.
 #[inline(always)]

@@ -55,6 +55,18 @@ fn hermite(n: i32, x: f64, scale: f64) -> f64 {
 
 #[inline]
 fn chebyshev(n: i32, x: f64, second: bool) -> f64 {
+    if n == 10 && x.abs() < 1.0 {
+        // For the common even degree, reflection does not change the value.
+        // Apply T_10 = 2*T_5² - 1 and U_10 = 2*T_5*U_5 - 1 directly.
+        let y = x * x;
+        let t5 = x * ((16.0 * y - 20.0) * y + 5.0);
+        let partner = if second {
+            x * ((32.0 * y - 32.0) * y + 6.0)
+        } else {
+            t5
+        };
+        return 2.0 * t5 * partner - 1.0;
+    }
     let (n, sign) = if n < 0 && second {
         if n == -1 {
             return 0.0;
@@ -75,20 +87,6 @@ fn chebyshev(n: i32, x: f64, second: bool) -> f64 {
     }
     let parity = if x < 0.0 && n % 2 != 0 { -1.0 } else { 1.0 };
     let x = x.abs();
-    if n == 10 && x < 1.0 {
-        // Factor through degree five instead of taking nine dependent
-        // recurrence steps. T_10 = 2*T_5² - 1 and U_10 = 2*T_5*U_5 - 1.
-        // The factorization avoids the large coefficient cancellation of a
-        // degree-ten Horner polynomial near the endpoints and roots.
-        let y = x * x;
-        let t5 = x * ((16.0 * y - 20.0) * y + 5.0);
-        let partner = if second {
-            x * ((32.0 * y - 32.0) * y + 6.0)
-        } else {
-            t5
-        };
-        return sign * (2.0 * t5 * partner - 1.0);
-    }
     if n >= 64 && x < 1.0 {
         // Binary doubling computes (T_k(x), U_{k-1}(x)) in O(log n).
         // Keeping both polynomials avoids division by 1-x² near endpoints.
@@ -188,6 +186,19 @@ fn legendre(n: i32, x: f64) -> f64 {
         }
         return sign * sum;
     }
+    if x < 0.9 {
+        // The ordinary three-term recurrence is stable well inside [-1, 1].
+        // It is substantially cheaper than the difference recurrence below,
+        // which is retained near x=1 to avoid cancellation of P_n and P_{n-1}.
+        let (mut previous, mut value) = (1.0, x);
+        for k in 1..n {
+            let k = k as f64;
+            let next = ((2.0 * k + 1.0) * x * value - k * previous) / (k + 1.0);
+            previous = value;
+            value = next;
+        }
+        return sign * value;
+    }
     let (mut difference, mut value) = (x - 1.0, x);
     for k in 1..n {
         let k = k as f64;
@@ -217,6 +228,22 @@ pub(crate) fn legendre_all(n: usize, x: f64) -> Vec<f64> {
     let mut out = Vec::with_capacity(n + 1);
     out.push(1.0);
     out.push(x);
+    if a < 0.9 {
+        let (mut previous, mut value) = (1.0, a);
+        for k in 1..n {
+            let kf = k as f64;
+            let next = ((2.0 * kf + 1.0) * a * value - kf * previous) / (kf + 1.0);
+            previous = value;
+            value = next;
+            let degree = k + 1;
+            out.push(if x < 0.0 && degree % 2 != 0 {
+                -value
+            } else {
+                value
+            });
+        }
+        return out;
+    }
     let (mut difference, mut value) = (a - 1.0, a);
     for k in 1..n {
         if !value.is_infinite() {
@@ -266,6 +293,21 @@ fn laguerre(n: i32, alpha: f64, x: f64) -> f64 {
     let initial = (sum - x) + error;
     if n == 1 {
         return initial;
+    }
+    if alpha == 0.0 {
+        // The normalization is exactly one for L_n = L_n^(0).
+        // Avoid recomputing its n-factor product on every scalar call.
+        if x == 0.0 {
+            return 1.0;
+        }
+        let mut difference = -x;
+        let mut value = 1.0 + difference;
+        for k in 1..n {
+            let k = k as f64;
+            difference = -x / (k + 1.0) * value + k / (k + 1.0) * difference;
+            value += difference;
+        }
+        return value;
     }
     let scale = endpoint_binomial(n, alpha);
     if x == 0.0 {
@@ -484,6 +526,86 @@ mod chebyshev_fast_tests {
                     }
                     (previous, current) = (current, 2.0 * x * current - previous);
                 }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod recurrence_fast_tests {
+    use super::{legendre, legendre_all};
+
+    fn legendre_difference(n: i32, x: f64) -> f64 {
+        let (mut difference, mut value) = (x - 1.0, x);
+        for k in 1..n {
+            let k = k as f64;
+            difference = ((2.0 * k + 1.0) * (x - 1.0) * value + k * difference) / (k + 1.0);
+            value += difference;
+        }
+        value
+    }
+
+    fn laguerre_three_term(n: i32, x: f64) -> f64 {
+        if n == 0 {
+            return 1.0;
+        }
+        let (mut previous, mut value) = (1.0, 1.0 - x);
+        for k in 1..n {
+            let k = k as f64;
+            let next = ((2.0 * k + 1.0 - x) * value - k * previous) / (k + 1.0);
+            previous = value;
+            value = next;
+        }
+        value
+    }
+
+    #[test]
+    fn legendre_interior_recurrence_matches_endpoint_stable_version() {
+        // Both sides of the fast-path cutoff, small arguments, and parity.
+        for x in [
+            -0.9999999999_f64,
+            -0.9,
+            -0.8999999999,
+            -0.65,
+            -0.2,
+            -1e-5,
+            0.0,
+            1e-5,
+            0.2,
+            0.65,
+            0.8999999999,
+            0.9,
+            0.9999999999,
+        ] {
+            let a = x.abs();
+            let table = legendre_all(128, x);
+            for n in [2, 3, 7, 10, 11, 32, 64, 128] {
+                let expected =
+                    legendre_difference(n, a) * if x < 0.0 && n % 2 != 0 { -1.0 } else { 1.0 };
+                let actual = legendre(n, x);
+                let tolerance = 2e-12 * (1.0 + expected.abs());
+                assert!(
+                    (actual - expected).abs() <= tolerance,
+                    "P_{n}({x}): actual={actual}, expected={expected}"
+                );
+                assert_eq!(table[n as usize], actual, "P_{n}({x}) table differs");
+            }
+        }
+    }
+
+    #[test]
+    fn classical_laguerre_matches_independent_recurrence() {
+        for x in [
+            -4.0, -1.0, -0.0, 0.0, 1e-10, 0.1, 0.5, 1.0, 2.0, 4.0, 9.5, 10.0,
+        ] {
+            for n in [0, 1, 2, 3, 10, 16, 32] {
+                let expected = laguerre_three_term(n, x);
+                let actual = crate::eval_laguerre(n, x);
+                assert!(
+                    (actual - expected).abs() <= 1e-11 * (1.0 + expected.abs()),
+                    "L_{n}({x}): actual={actual}, expected={expected}"
+                );
+                assert_eq!(actual, crate::eval_genlaguerre(n, 0.0, x));
             }
         }
     }

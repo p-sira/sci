@@ -266,9 +266,51 @@ pub(crate) fn associated_table(
     sine: f64,
     spherical: bool,
 ) -> Vec<Vec<f64>> {
-    let orders: Vec<i32> = (0..=m as i32).chain(-(m as i32)..0).collect();
-    let mut table = vec![vec![0.0; orders.len()]; n + 1];
-    for (column, &order) in orders.iter().enumerate() {
+    let mut table = vec![vec![0.0; 2 * m + 1]; n + 1];
+    // Positive and negative orders use the same degree recurrence. For
+    // moderate degrees, fill both columns together and update the factorial
+    // ratio (l-m)!/(l+m)! as the degree increases, instead of recomputing
+    // that product and the recurrence for every negative-order column.
+    if n <= 200 && m <= 40 && sine >= 1e-6 {
+        associated_degrees(n as u32, 0, x, sine, spherical, 0, |degree, value| {
+            table[degree as usize][0] = value;
+        });
+        for order in 1..=m.min(n) {
+            let mut ratio = 1.0;
+            for k in 1..=2 * order {
+                ratio /= k as f64;
+            }
+            let mut previous = 0.0;
+            let mut current = direct_diagonal(order as u32, sine);
+            let parity = if order % 2 == 0 { 1.0 } else { -1.0 };
+            let negative_column = 2 * m + 1 - order;
+            for (degree, row) in table.iter_mut().enumerate().skip(order) {
+                let positive = if spherical {
+                    current * ((2 * degree + 1) as f64 / (4.0 * PI) * ratio).sqrt()
+                } else {
+                    current
+                };
+                row[order] = positive;
+                row[negative_column] = if spherical {
+                    parity * positive
+                } else {
+                    parity * current * ratio
+                };
+                if degree < n {
+                    let next_degree = degree + 1;
+                    let next = ((2 * next_degree - 1) as f64 * x * current
+                        - (next_degree + order - 1) as f64 * previous)
+                        / (next_degree - order) as f64;
+                    previous = current;
+                    current = next;
+                    ratio *= (next_degree - order) as f64 / (next_degree + order) as f64;
+                }
+            }
+        }
+        return table;
+    }
+    let orders = (0..=m as i32).chain(-(m as i32)..0);
+    for (column, order) in orders.enumerate() {
         associated_degrees(n as u32, order, x, sine, spherical, 0, |degree, value| {
             table[degree as usize][column] = value;
         });
@@ -393,4 +435,44 @@ pub(crate) fn sph_harm_table(
                 .collect()
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn paired_order_table_matches_single_order_recurrences() {
+        for &(n, m) in &[(0, 0), (3, 8), (16, 8), (64, 32), (200, 40)] {
+            for &(x, spherical) in &[
+                (-0.9, false),
+                (0.0, false),
+                (0.3, false),
+                (0.99, false),
+                (0.3, true),
+                (0.99, true),
+            ] {
+                let sine = ((1.0_f64 - x) * (1.0 + x)).sqrt();
+                let table = associated_table(n, m, x, sine, spherical);
+                for (column, order) in (0..=m as i32).chain(-(m as i32)..0).enumerate() {
+                    associated_degrees(
+                        n as u32,
+                        order,
+                        x,
+                        sine,
+                        spherical,
+                        0,
+                        |degree, expected| {
+                            let actual = table[degree as usize][column];
+                            let tolerance = 5e-12 * expected.abs().max(actual.abs()).max(1e-300);
+                            assert!(
+                                (actual - expected).abs() <= tolerance,
+                                "n={n}, m={m}, x={x}, spherical={spherical}, order={order}, degree={degree}: {actual} vs {expected}"
+                            );
+                        },
+                    );
+                }
+            }
+        }
+    }
 }

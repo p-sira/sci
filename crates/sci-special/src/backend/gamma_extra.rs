@@ -10,12 +10,20 @@ pub(crate) fn sign_gamma(x: f64) -> f64 {
         1.0
     } else if x == 0.0 {
         1.0_f64.copysign(x)
-    } else if !x.is_finite() || x == x.floor() {
+    } else if !x.is_finite() {
         f64::NAN
-    } else if x.floor() % 2.0 != 0.0 {
-        -1.0
     } else {
-        1.0
+        let lower_integer = x.floor();
+        if x == lower_integer {
+            return f64::NAN;
+        }
+        // Every negative noninteger f64 has |floor(x)| < 2^53, so its
+        // integer part can be inspected exactly without a floating remainder.
+        if (lower_integer as i64) & 1 != 0 {
+            -1.0
+        } else {
+            1.0
+        }
     }
 }
 real_kernel! {
@@ -188,4 +196,29 @@ pub(crate) fn inverse_beta(a: f64, b: f64, p: f64) -> f64 {
 real_kernel! {
     /// Real logarithm of Gamma, for x >= 0. Use gammaln for log(|Gamma(x)|).
     loggamma(x) { if x < 0.0 { f64::NAN } else { cephes64::lgam(x) } }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::sign_gamma;
+
+    #[test]
+    fn sign_gamma_handles_negative_intervals_and_large_exact_parity() {
+        for (x, expected) in [
+            (-0.5, -1.0),
+            (-1.5, 1.0),
+            (-2.5, -1.0),
+            (-3.5, 1.0),
+            (-(2.0_f64.powi(52) - 0.5), 1.0),
+            (-(2.0_f64.powi(52) - 1.5), -1.0),
+            (0.5, 1.0),
+        ] {
+            assert_eq!(sign_gamma(x), expected, "x = {x}");
+        }
+        for x in [-2.0, -1.0, f64::NEG_INFINITY, f64::NAN] {
+            assert!(sign_gamma(x).is_nan(), "x = {x}");
+        }
+        assert_eq!(sign_gamma(0.0).to_bits(), 1.0_f64.to_bits());
+        assert_eq!(sign_gamma(-0.0).to_bits(), (-1.0_f64).to_bits());
+    }
 }

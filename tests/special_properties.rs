@@ -357,12 +357,76 @@ fn real_modified_bessel_i_special_values() {
 }
 
 #[test]
+fn modified_fresnel_matches_high_precision_around_real_kernel_switch() {
+    // mpmath 1.4, 70 digits: erfc((1-i)x/sqrt(2)) times
+    // sqrt(pi)*(1+i)/(2sqrt(2)), with K = exp(-i(x²+pi/4))*F/sqrt(pi).
+    let references = [
+        (
+            2.5,
+            [
+                0.021_349_229_542_882_17,
+                0.196139324890222,
+                0.08440398319766853,
+                0.07257157385142538,
+            ],
+        ),
+        (
+            3.0,
+            [
+                -0.0762064890725186,
+                -0.1469054582360189,
+                0.06947487853046293,
+                0.06238042139537748,
+            ],
+        ),
+        (
+            3.0000001,
+            [
+                -0.07620639795948005,
+                -0.146_905_499_447_840_1,
+                0.06947487606448781,
+                0.06238041960467845,
+            ],
+        ),
+        (
+            -3.0,
+            [
+                1.3295206263880189,
+                1.400_219_595_551_519,
+                -0.9806051404151399,
+                -0.47449890663713405,
+            ],
+        ),
+        (
+            -2.5,
+            [
+                1.231964907772618,
+                1.0571748124252783,
+                0.9150454350268309,
+                -0.03939235730386856,
+            ],
+        ),
+    ];
+    for (x, expected) in references {
+        let (f, k) = s::modfresnelp(x);
+        let (f_minus, k_minus) = s::modfresnelm(x);
+        for (got, reference) in [f.re, f.im, k.re, k.im].into_iter().zip(expected) {
+            finite_close(got, reference, 1e-14, 1e-14);
+        }
+        finite_close(f_minus.re, f.re, 1e-14, 1e-14);
+        finite_close(f_minus.im, -f.im, 1e-14, 1e-14);
+        finite_close(k_minus.re, k.re, 1e-14, 1e-14);
+        finite_close(k_minus.im, -k.im, 1e-14, 1e-14);
+    }
+}
+
+#[test]
 fn kelvin_first_kind_matches_references_across_kernel_switches() {
     // References from mpmath 1.4 at 50 digits at the binary64 value of x:
     // I0(z) and exp(iπ/4) I1(z) at z = x exp(iπ/4). The points straddle the
     // binary64 series, double-double series and large-argument expansion
     // used for ber, bei, ber′ and bei′.
-    let references: [(f64, [f64; 4]); 8] = [
+    let references: [(f64, [f64; 4]); 10] = [
         (
             0.5_f64,
             [
@@ -388,6 +452,24 @@ fn kelvin_first_kind_matches_references_across_kernel_switches() {
                 2.2926903226992998,
                 -3.1346539628386434,
                 -0.491_137_440_630_722_6,
+            ],
+        ),
+        (
+            6.0,
+            [
+                -8.858315966045036,
+                -7.334746540847962,
+                -0.29307996650807906,
+                -10.846223328651287,
+            ],
+        ),
+        (
+            7.249,
+            [
+                0.18206539846508056,
+                -25.239898988663878,
+                18.016716311828627,
+                -15.93668055700112,
             ],
         ),
         (

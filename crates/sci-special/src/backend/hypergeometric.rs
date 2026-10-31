@@ -65,11 +65,12 @@ pub(super) fn series_real<const FULL_PRECISION: bool>(v: f64, z: f64) -> Option<
     None
 }
 
-// Positive terms need no cancellation guard. Use compensated binary64 sums
-// when the standard gamma_n bound on the recurrence and the geometric tail
-// together stay below 16 eps of the result; otherwise retain double-double.
-fn positive_series(v: f64, z: f64) -> Option<f64> {
-    if v <= 0.0 || !(0.0..=100.0).contains(&z) {
+// Certify compensated binary64 summation using an absolute-term forward-error
+// bound. The same bound works for alternating terms, provided the final result
+// is not too small relative to the term magnitudes; cancellation-sensitive
+// cases fall through to the existing double-double/Bessel kernels.
+fn compensated_series(v: f64, z: f64) -> Option<f64> {
+    if v <= 0.0 || !(-10.0..=100.0).contains(&z) {
         return None;
     }
     let (mut term, mut sum, mut correction, mut weighted) = (1.0, 1.0, 0.0, 2.0);
@@ -81,14 +82,14 @@ fn positive_series(v: f64, z: f64) -> Option<f64> {
         correction = (next - sum) - adjusted;
         sum = next;
         // Four rounded operations per term, and two eps for compensated sum.
-        weighted += (4.0 * kf + 2.0) * term;
+        weighted += (4.0 * kf + 2.0) * term.abs();
         if !sum.is_finite() {
             return None;
         }
-        if (v + kf) * (kf + 1.0) > 2.0 * z && term <= 0.125 * f64::EPSILON * sum {
+        if (v + kf) * (kf + 1.0) > 2.0 * z.abs() && term.abs() <= 0.125 * f64::EPSILON * sum.abs() {
             // gamma_(4k) <= (4k)*eps/(1-1024*eps), since k <= 256.
-            let error = f64::EPSILON * weighted / (1.0 - 1024.0 * f64::EPSILON) + 2.0 * term;
-            return (error <= 16.0 * f64::EPSILON * sum).then_some(sum);
+            let error = f64::EPSILON * weighted / (1.0 - 1024.0 * f64::EPSILON) + 2.0 * term.abs();
+            return (error <= 16.0 * f64::EPSILON * sum.abs()).then_some(sum);
         }
     }
     None
@@ -102,9 +103,7 @@ fn real_kernel(v: f64, z: f64) -> Result<f64, StrErr> {
     if z == 0.0 {
         return Ok(1.0);
     }
-    if z > 0.0
-        && let Some(value) = positive_series(v, z)
-    {
+    if let Some(value) = compensated_series(v, z) {
         return Ok(value);
     }
     if let Some(value) = series_real::<false>(v, z) {

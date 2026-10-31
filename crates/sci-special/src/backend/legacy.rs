@@ -52,8 +52,8 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
     // By Weyl's inequality the eigenvalue is at most `upper_bound`. Where
     // d_j − λ > 2|q|, the minimal solution of the three-term recurrence
     // shrinks by at least ρ_j = |q|/(d_j − λ − |q|) per row, so truncating
-    // once q·(Π ρ_j)² < 1e-20 moves the eigenvalue by less than 1e-20; three
-    // further rows are kept as a margin. Small |q| needs far fewer rows than
+    // once q·(Π ρ_j)² < 1e-20 moves the eigenvalue by less than 1e-20; one
+    // further row is kept as a margin. Small |q| needs far fewer rows than
     // the fixed truncation, which remains an upper limit.
     let radius = 2.0 * SQRT_2 * q.abs();
     let size = {
@@ -66,7 +66,7 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
             if excess > 2.0 * q.abs() {
                 decay *= q.abs() / (excess - q.abs());
                 if decay * decay * q.abs() < 1e-20 {
-                    size = (j + 4).min(fixed);
+                    size = (j + 2).min(fixed);
                     break;
                 }
             }
@@ -1358,8 +1358,30 @@ pub(crate) fn it1i0k0(x: f64) -> (f64, f64) {
     bessel_integrals(x, s::itika, true)
 }
 pub(crate) fn it2i0k0(x: f64) -> (f64, f64) {
-    let (first, mut second) = bessel_integrals(x, s::ittika, false);
-    if x >= 4.0 && x.is_finite() {
+    if !(x >= 4.0 && x.is_finite()) {
+        return bessel_integrals(x, s::ittika, false);
+    }
+    // The K integral below is evaluated independently, so do not also
+    // evaluate the discarded K asymptotic/series in the legacy paired kernel.
+    // Its I integral is a positive power series with a bounded recurrence.
+    let first = if x >= 700.0 {
+        // The positive series is no longer appropriate near overflow.
+        bessel_integrals(x, s::ittika, false).0
+    } else {
+        let square = x * x;
+        let mut term = 1.0;
+        let mut sum = 1.0;
+        for k in 2..=1000 {
+            let k = k as f64;
+            term *= 0.25 * square * (k - 1.0) / (k * k * k);
+            sum += term;
+            if term <= f64::EPSILON * sum {
+                break;
+            }
+        }
+        0.125 * square * sum
+    };
+    let second = {
         // Shift the defining K tail: exp(-x) ∫ exp(-u) K0e(x+u)/(x+u) du.
         // The old eight-term asymptotic loses ~2e-6 relatively at x=19.9;
         // the small-x series also cancels before its x=12 transition.
@@ -1400,7 +1422,8 @@ pub(crate) fn it2i0k0(x: f64) -> (f64, f64) {
             (43.06761110323062, 2.784234374611805e-19),
         ];
         // For x >= 6 the 16-point rule differs from the defining integral
-        // by < 3e-13 relatively; for x >= 20 eight points suffice to 5e-14.
+        // by < 3e-13 relatively; 12 nodes suffice to 1e-12 for x >= 8,
+        // and eight nodes are within 1.4e-12 for x >= 15.
         const LAGUERRE_16: [(f64, f64); 16] = [
             (0.087649410478927756, 0.2061517149578049),
             (0.46269632891508039, 0.33105785495087831),
@@ -1419,6 +1442,20 @@ pub(crate) fn it2i0k0(x: f64) -> (f64, f64) {
             (41.940452647688332, 5.0504737000356082e-18),
             (51.701160339543321, 4.161462370372851e-22),
         ];
+        const LAGUERRE_12: [(f64, f64); 12] = [
+            (0.11572211735802068, 0.2647313710554442),
+            (0.61175748451513068, 0.37775927587313751),
+            (1.5126102697764188, 0.24408201131987708),
+            (2.8337513377435073, 0.090449222211680808),
+            (4.5992276394183484, 0.020102381154634023),
+            (6.8445254531151773, 0.0026639735418653122),
+            (9.6213168424568671, 0.00020323159266299928),
+            (13.006054993306346, 8.3650558568198412e-6),
+            (17.116855187462253, 1.6684938765409072e-7),
+            (22.151090379397004, 1.3423910305149902e-9),
+            (28.487967250983999, 3.0616016350350716e-12),
+            (37.099121044466919, 8.1480774674260206e-16),
+        ];
         const LAGUERRE_8: [(f64, f64); 8] = [
             (0.17027963230510093, 0.36918858934163495),
             (0.90370177679938002, 0.41878678081434467),
@@ -1429,19 +1466,21 @@ pub(crate) fn it2i0k0(x: f64) -> (f64, f64) {
             (15.740678641278004, 8.4857467162725705e-07),
             (22.863131736889265, 1.0480011748715153e-09),
         ];
-        let nodes: &[(f64, f64)] = if x >= 20.0 {
+        let nodes: &[(f64, f64)] = if x >= 15.0 {
             &LAGUERRE_8
+        } else if x >= 8.0 {
+            &LAGUERRE_12
         } else if x >= 6.0 {
             &LAGUERRE_16
         } else {
             &NODES
         };
-        second = 0.0;
+        let mut second = 0.0;
         for &(u, weight) in nodes {
             second += weight * c::k0e(x + u) / (x + u);
         }
-        second *= (-x).exp();
-    }
+        second * (-x).exp()
+    };
     (first, second)
 }
 fn bessel_integrals(x: f64, kernel: fn(f64, &mut [f64], &mut [f64]), odd: bool) -> (f64, f64) {
@@ -1736,9 +1775,19 @@ pub(crate) fn kelvin(x: f64) -> [Complex64; 4] {
     [a, b, c, d]
 }
 fn modified_fresnel(x: f64, minus: bool) -> (Complex64, Complex64) {
-    let z = Complex64::new(1.0, -1.0) * (x * std::f64::consts::FRAC_1_SQRT_2);
-    let erfc = super::complex::erfc(z).unwrap_or(Complex64::new(f64::NAN, f64::NAN));
-    let f = Complex64::new(1.0, 1.0) * (PI.sqrt() / (2.0 * SQRT_2)) * erfc;
+    // F_+(x) = sqrt(pi/2) * (1/2 - C(u) + i(1/2 - S(u))),
+    // u = sqrt(2/pi) * x, with the standard real Fresnel integrals.
+    // Subtracting their limits loses relative accuracy when |x| is large;
+    // retain the complex erfc evaluation outside this well-conditioned range.
+    let f = if x.abs() <= 3.0 {
+        let (s, c) = super::cephes64::fresnl(x * 0.7978845608028654);
+        let scale = 1.2533141373155003;
+        Complex64::new(scale * (0.5 - c), scale * (0.5 - s))
+    } else {
+        let z = Complex64::new(1.0, -1.0) * (x * std::f64::consts::FRAC_1_SQRT_2);
+        let erfc = super::complex::erfc(z).unwrap_or(Complex64::new(f64::NAN, f64::NAN));
+        Complex64::new(1.0, 1.0) * (PI.sqrt() / (2.0 * SQRT_2)) * erfc
+    };
     let k = Complex64::from_polar(1.0 / PI.sqrt(), -(x * x + PI / 4.0)) * f;
     if minus { (f.conj(), k.conj()) } else { (f, k) }
 }
