@@ -34,13 +34,14 @@ reference, not a requirement for complete API or domain parity.
 | `iv_ratioinv(v,r)` | Nonnegative inverse ratio; bounded bisection and complementary residual near `r=1` |
 | `normalized_gen_harmonic(j,k,n,a)` | Inclusive truncated power-law probability; integer indices, finite exponent, at most one million terms, shared `Result`, maximum-scaled compensated sums |
 
-**25 generic complex APIs** live in `special::complex`, avoiding C++ overload
+**33 generic complex APIs** live in `special::complex`, avoiding C++ overload
 replication and ambiguity with real scalar calls:
 
 - `gamma`, `loggamma`, `rgamma`, `digamma`, `erf`, `erfc`, `erfcx`, `erfi`, `dawsn`, `wofz`.
 - `jv`, `jve`, `yv`, `yve`, `iv`, `ive`, `kv`, `kve`.
 - `hankel1`, `hankel1e`, `hankel2`, `hankel2e`.
 - `airy`, `airye`, `fresnel`.
+- `lambertw`, `exp1`, `expi`, `spence`, `xlogy`, `xlog1py`, `zeta`, `hurwitz_zeta`.
 
 Arguments/results use `sci::complex::Complex<T>`; errors use `sci::Result`.
 Airy returns `[Ai,Ai′,Bi,Bi′]`; Fresnel returns `(S,C)`. Existing real APIs
@@ -59,6 +60,24 @@ existing private Rust AMOS backend, and gamma/error/Fresnel reuse private kernel
 Perron's fraction reuses the existing private double-double arithmetic; it is
 bounded by 1000 terms. The inverse is bounded by 128 fraction evaluations.
 No C++ dependency or new Rust dependency is introduced.
+
+The new complex additions extend the original 25-function native migration:
+
+| API | Algorithm, mathematical domain and Rust treatment |
+| --- | --- |
+| `lambertw(z,k)` | Integer branch of `w exp(w)=z`, bounded Halley iteration with rational and Puiseux starts, residual verification and signed branch-cut banks; nonprincipal zero is singular |
+| `exp1(z)`, `expi(z)` | Complex exponential integrals using bounded series, continued fraction, asymptotic evaluation and near-axis correction; preserve signed cut banks; finite magnitude limited to 1e6 |
+| `spence(z)` | `Li₂(1-z)` on the principal branch, evaluated with reflection/Landen/inversion and bounded power/Bernoulli series; retains the two banks of the negative-real cut |
+| `xlogy(x,y)`, `xlog1py(x,y)` | Stable complex logarithmic products, with exact zero prefactor and branch handling; `log1p`-style evaluation preserves sub-ulp increments |
+| `zeta(s)`, `hurwitz_zeta(s,q)` | Riemann and shifted Hurwitz zeta with bounded compensated Euler–Maclaurin summation, twelve Bernoulli corrections and cancellation-based rejection; `0≤Re(s)≤30`, `|Im(s)|≤32`, and for Hurwitz `0<Re(q)≤64`, `|Im(q)|≤32` |
+
+These APIs use `Complex<T>`/`Result` and binary64 numerical kernels. Domain
+limits protect numerical accuracy and bounded work; they do not claim complete
+complex analytic continuation. In particular, near-pole SciPy complex zeta and
+near-cut SciPy E₁ values were independently checked because the reference can
+lose precision there. The Jacobi `ellipj(u,1)` hyperbolic limit also avoids
+overflow for large finite `u`; near-unit modulus cases fall back to AGM when
+the perturbation becomes nonuniform.
 
 Complex `loggamma`, `rgamma`, and `digamma` complete this gamma-family
 increment. Log-gamma is the analytic branch real on the positive axis, with
@@ -115,9 +134,11 @@ coherent design in the owning module; exposing the C++ machinery is unnecessary.
 
 The following remain useful candidates, rather than intentional exclusions:
 
-- Complex normal probabilities and their logarithms, exponential/sine/cosine integrals,
-  Spence, hypergeometric, zeta and Wright
-  functions; arbitrary complex Lambert W branches.
+- Complex normal probabilities and their logarithms, sine/cosine integrals,
+  hypergeometric and Wright functions; complex exponential integrals outside
+  the new bounded numerical domains.
+- Hurwitz/Riemann zeta continuation outside the documented Euler–Maclaurin
+  domain, including severe cancellation near zeros and poles.
 - Complex Carlson integrals, Legendre and spherical-Bessel arguments;
   Legendre/harmonic derivatives and higher derivative tensors.
 - Noninteger polynomial-degree continuations, with domains and branch contracts
@@ -139,7 +160,7 @@ audit is separate from Codecov executable-line coverage; no new 99% claim is mad
 
 `tests/scipy/generate_special_native.py` pins **NumPy 2.5.4 / SciPy 1.18.1**.
 Separate JSON inputs generate **1976 checked-in f32/f64 reference rows** for
-all 33 additions. Ordinary Rust tests exercise only public `sci` APIs and read
+the original 33 additions. Ordinary Rust tests exercise only public `sci` APIs and read
 the committed CSV, without Python or a backend reference at runtime.
 
 - Bessel ratios/complements use 100-digit standard-library Decimal defining
@@ -154,6 +175,18 @@ the committed CSV, without Python or a backend reference at runtime.
 - Logarithmic remainders and normalized harmonic probabilities use independent
   100-digit Decimal logarithms and defining powers.
 - Complex functions use SciPy's complex overloads, with ordered component checks.
+
+The eight later complex APIs have separately checked public tests in
+`tests/special_complex_{lambert,expint,polylog,zeta}.rs`; their independent
+fixtures and reference generators live under `tests/scipy/` and
+`tests/fixtures/`. The Lambert W suite uses over four thousand reference rows
+across seven integer branches, both complex precisions and cuts. Exponential
+integral fixtures use SciPy as the main reference and 100-digit mpmath only
+where its near-axis evaluation loses the constant branch jump. Zeta tests
+use SciPy's complex Riemann values, selected high-precision Hurwitz values,
+and recurrence, conjugation and half-argument identities. Complex Spence and
+stable logarithmic products are checked against SciPy on cut banks,
+cancellation-sensitive scales and large finite arguments.
 
 Additional tests cover invalid inputs, work limits, infinity/NaN/signed-zero
 contracts, gamma recurrence, conjugacy, Bessel inverse round trips, complements,

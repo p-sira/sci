@@ -12,6 +12,97 @@ use divan::{Bencher, black_box};
 use sci::complex::Complex;
 use sci::special;
 
+// Independently check the new complex numerical kernels as well as the
+// pre-existing 190 scalar and sequence benchmarks. Keep inputs fixed and
+// outside singular/ill-conditioned regions to compare hot kernel costs.
+mod complex_native_benches {
+    use super::*;
+
+    #[divan::bench]
+    fn lambertw(bencher: Bencher) {
+        let z = Complex {
+            re: -0.2_f64,
+            im: 0.3,
+        };
+        bencher.bench(|| special::complex::lambertw(black_box(z), 1).unwrap());
+    }
+
+    #[divan::bench]
+    fn spence(bencher: Bencher) {
+        let z = Complex {
+            re: 0.7_f64,
+            im: 0.3,
+        };
+        bencher.bench(|| special::complex::spence(black_box(z)).unwrap());
+    }
+
+    #[divan::bench]
+    fn xlogy(bencher: Bencher) {
+        let x = Complex {
+            re: 1.0_f64,
+            im: 0.2,
+        };
+        let y = Complex {
+            re: 0.9_f64,
+            im: 1e-8,
+        };
+        bencher.bench(|| special::complex::xlogy(black_box(x), black_box(y)).unwrap());
+    }
+
+    #[divan::bench]
+    fn xlog1py(bencher: Bencher) {
+        let x = Complex {
+            re: 1.0_f64,
+            im: 0.2,
+        };
+        let y = Complex {
+            re: 1e-8_f64,
+            im: 1e-8,
+        };
+        bencher.bench(|| special::complex::xlog1py(black_box(x), black_box(y)).unwrap());
+    }
+
+    #[divan::bench]
+    fn exp1(bencher: Bencher) {
+        let z = Complex {
+            re: 4.0_f64,
+            im: 1.0,
+        };
+        bencher.bench(|| special::complex::exp1(black_box(z)).unwrap());
+    }
+
+    #[divan::bench]
+    fn expi(bencher: Bencher) {
+        let z = Complex {
+            re: 4.0_f64,
+            im: 1.0,
+        };
+        bencher.bench(|| special::complex::expi(black_box(z)).unwrap());
+    }
+
+    #[divan::bench]
+    fn zeta(bencher: Bencher) {
+        let z = Complex {
+            re: 2.5_f64,
+            im: 0.5,
+        };
+        bencher.bench(|| special::complex::zeta(black_box(z)).unwrap());
+    }
+
+    #[divan::bench]
+    fn hurwitz_zeta(bencher: Bencher) {
+        let z = Complex {
+            re: 2.5_f64,
+            im: 0.5,
+        };
+        let q = Complex {
+            re: 1.25_f64,
+            im: 0.5,
+        };
+        bencher.bench(|| special::complex::hurwitz_zeta(black_box(z), black_box(q)).unwrap());
+    }
+}
+
 fn main() {
     divan::main();
 }

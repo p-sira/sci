@@ -245,6 +245,26 @@ path = "tests/special_ellpj_coverage.rs"
 required-features = ["special"]
 
 [[test]]
+name = "special_complex_lambert"
+path = "tests/special_complex_lambert.rs"
+required-features = ["complex", "special"]
+
+[[test]]
+name = "special_complex_polylog"
+path = "tests/special_complex_polylog.rs"
+required-features = ["complex", "special"]
+
+[[test]]
+name = "special_complex_zeta"
+path = "tests/special_complex_zeta.rs"
+required-features = ["complex", "special"]
+
+[[test]]
+name = "special_complex_expint"
+path = "tests/special_complex_expint.rs"
+required-features = ["complex", "special"]
+
+[[test]]
 name = "statistics"
 path = "tests/statistics.rs"
 required-features = ["complex", "fft", "stats"]

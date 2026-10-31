@@ -27,8 +27,19 @@ pub fn ellpj(u: f64, m: f64) -> (f64, f64, f64, f64) // sn, cn, dn, ph
         let b = u.cos();
         let ai = 0.25 * m * (u - t * b);
         (t - ai * b, b + ai * t, 1.0 - 0.5 * m * t * t, u - ai)
-    } else if m >= 0.9999999999 {
-        // TODO: values become NaN as phi becomes large (> 100)
+    } else if m == 1.0 {
+        // Exact hyperbolic limit. The former perturbation branch formed
+        // cosh(u)*sinh(u) even though its coefficient was zero, producing
+        // NaNs for finite |u| >= ~356. Scale sech without cosh overflow.
+        let t = u.tanh();
+        let e = (-u.abs()).exp();
+        let sech = 2.0 * e / (1.0 + e * e);
+        (t, sech, sech, t.atan2(sech))
+    } else if m >= 0.9999999999 && u.abs() <= 12.0 && (1.0 - m) * (2.0 * u.abs()).exp() < 1.0e-6 {
+        // First-order hyperbolic expansion is valid only while its scaled
+        // perturbation stays small. For larger u, use the AGM below, which
+        // handles the periodic solution instead of overflowing or returning
+        // a misleading nonperiodic approximation.
         let mut ai = 0.25 * (1.0 - m);
         let b = u.cosh();
         let t = u.tanh();

@@ -22,6 +22,12 @@
 
 ## 0.3.0
 
+- Add complex Lambert W, E₁/Ei, Spence's integral, complex logarithmic products,
+  and bounded complex Riemann/Hurwitz zeta with signed-cut conventions, strict
+  convergence/error handling and independent numerical references.
+- Avoid `ellipj(u,1)` overflow for large finite arguments by evaluating the
+  exact hyperbolic identities; use AGM outside the near-unit perturbation range.
+
 - Expand independent reference coverage and domain/work-limit regressions. Correct terminating hypergeometric series, small-argument U, oblate radial indexing/derivatives, Legendre singular endpoints, and modified-Struve series selection.
 - Replace the dense Mathieu eigenproblem with bounded tridiagonal iteration. Cache quadrature rules and use double-double Airy/Struve integral series on common domains. Remove private copied algorithms unused by the public API.
 

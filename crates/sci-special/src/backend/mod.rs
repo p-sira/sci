@@ -48,6 +48,9 @@ pub use wright::wrightomega;
 mod kelvin;
 pub use kelvin::*;
 mod complex_integrals;
+pub(crate) mod complex_lambert;
+pub(crate) mod complex_polylog;
+pub(crate) mod complex_zeta;
 
 mod legendre;
 pub use legendre::*;

@@ -3,7 +3,7 @@
 Audited against [the SciPy 1.18.1 inventory](scipy_function_list/scipy.special.md).
 Run `python tests/scipy/audit_special.py` to reproduce the namespace/name audit.
 All **353 existing public numerical functions** are retained. The native API
-follow-up adds **eight scalar and 25 qualified complex APIs**; see
+follow-up adds **eight scalar and 33 qualified complex APIs**; see
 [SPECIAL_NATIVE_COVERAGE.md](SPECIAL_NATIVE_COVERAGE.md) for the XSF source
 audit, Rust adaptations, deliberate exclusions and remaining numerical gaps.
 No numerical

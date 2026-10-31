@@ -61,7 +61,7 @@
         "cpu/specfun.h"
       ],
       "disposition": "partial",
-      "notes": "Existing real APIs remain covered; additional complex Spence/hypergeometric/zeta/Lambert branches/Wright omega require further algorithm and reference work. Existing private helpers do not constitute tested public coverage."
+      "notes": "Real APIs remain covered; complex Spence, bounded Riemann/Hurwitz zeta and integer Lambert W branches now have public Rust APIs with independent tests. Complex hypergeometric and Wright omega, plus zeta outside documented bounded domains, remain candidate additions. Private helpers are not counted as public coverage."
     },
     {
       "headers": [
