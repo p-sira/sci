@@ -860,10 +860,16 @@ pub fn euler(n: usize) -> Result<Vec<f64>> {
     let mut values = vec![0.0; n + 1];
     values[0] = 1.0;
     for m in (2..=n).step_by(2) {
-        values[m] = -(0..m)
-            .step_by(2)
-            .map(|j| crate::backend::binom(m as f64, j as f64).unwrap_or(f64::NAN) * values[j])
-            .sum::<f64>();
+        // All binomial arguments are small nonnegative integers here. Avoid
+        // evaluating a general gamma-based binomial coefficient for each term:
+        // C(m, j+2) = C(m, j) * (m-j)(m-j-1) / ((j+1)(j+2)).
+        let mut coefficient = 1.0;
+        let mut sum = 0.0;
+        for j in (0..m).step_by(2) {
+            sum += coefficient * values[j];
+            coefficient *= ((m - j) * (m - j - 1)) as f64 / ((j + 1) * (j + 2)) as f64;
+        }
+        values[m] = -sum;
     }
     if values.iter().any(|x| !x.is_finite()) {
         return Err(Error::NonFiniteEvaluation);

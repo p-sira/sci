@@ -2,6 +2,46 @@
 use sci::special as s;
 
 #[test]
+fn euler_numbers_use_integer_binomial_recurrence_without_losing_values() {
+    // Integer Euler reference values, including the larger orders where
+    // intermediate floating-point binomial recurrences accumulate rounding.
+    let even = [
+        1.0,
+        -1.0,
+        5.0,
+        -61.0,
+        1385.0,
+        -50521.0,
+        2702765.0,
+        -199360981.0,
+        19391512145.0,
+        -2404879675441.0,
+        370371188237525.0,
+    ];
+    assert_eq!(s::euler(0).unwrap(), [1.0]);
+    assert_eq!(s::euler(1).unwrap(), [1.0, 0.0]);
+    let values = s::euler(20).unwrap();
+    for (k, &expected) in even.iter().enumerate() {
+        assert!(
+            (values[2 * k] - expected).abs() <= 3e-15 * expected.abs(),
+            "Euler order {}: got {}, expected {}",
+            2 * k,
+            values[2 * k],
+            expected
+        );
+    }
+    for k in (1..=20).step_by(2) {
+        assert_eq!(values[k], 0.0);
+    }
+    let higher = s::euler(64).unwrap();
+    assert!(higher.iter().all(|v| v.is_finite()));
+    // E_64 from the exact integer recurrence, rounded to binary64.
+    let expected_64 = 4.535_810_333_001_789e76;
+    assert!((higher[64] - expected_64).abs() <= 3e-14 * expected_64);
+    assert!(s::euler(256).is_err());
+}
+
+#[test]
 fn polynomial_constructors_and_quadrature_reject_unsupported_sizes() {
     type Polynomial = fn(usize, bool) -> sci::Result<Vec<f64>>;
     type Quadrature = fn(usize) -> sci::Result<(Vec<f64>, Vec<f64>)>;

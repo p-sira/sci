@@ -12,7 +12,6 @@ fn validate(v: f64) -> Result<(), StrErr> {
         Ok(())
     }
 }
-
 /// Double-double power series for real `z`. Returns `None` when the series
 /// is outside its range or loses too much precision to cancellation.
 /// Full-precision anchors retain terms to 1e-32 and require a 1e-26 relative
@@ -103,7 +102,11 @@ fn real_kernel(v: f64, z: f64) -> Result<f64, StrErr> {
     if z == 0.0 {
         return Ok(1.0);
     }
-    if let Some(value) = compensated_series(v, z) {
+    // Large negative arguments with |z| > v have strongly alternating
+    // terms. The strict binary64 error bound usually rejects this region;
+    // go directly to the higher-precision series to avoid a redundant pass.
+    let cancellation_prone = v > 0.0 && z < -3.0 && v < -z;
+    if !cancellation_prone && let Some(value) = compensated_series(v, z) {
         return Ok(value);
     }
     if let Some(value) = series_real::<false>(v, z) {
@@ -137,4 +140,112 @@ pub fn hyp0f1<T: Float>(v: T, z: T) -> Result<T, StrErr> {
     let v = v.to_f64().ok_or(ERROR)?;
     let z = z.to_f64().ok_or(ERROR)?;
     crate::backend::utils::finish(real_kernel(v, z)?, ERROR)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{compensated_series, real_kernel};
+
+    #[test]
+    fn negative_argument_shortcut_matches_independent_high_precision() {
+        // mpmath 1.3.0, mp.dps = 80, hyper([], [v], z), rounded to f64.
+        // The cases include both sides of the shortcut threshold, small v,
+        // values close to zeros, and large alternating-series cancellation.
+        const REFERENCES: &[(f64, f64, f64)] = &[
+            (0.125, -3.01, -2.8993537576671815),
+            (0.125, -5.0, 2.2799868130002063),
+            (0.125, -10.0, 5.143622558744288),
+            (0.125, -30.0, 4.3540733947902295),
+            (0.5, -3.00001, -0.9484413659322454),
+            (0.5, -5.551652475612764, -9.468420460028252e-17),
+            (0.5, -5.55165, -1.0506828067508704e-6),
+            (0.5, -9.0, 0.960170286650366),
+            (0.5, -25.0, -0.8390715290764524),
+            (1.0, -3.0, -0.37492595624331004),
+            (1.0, -7.617815585, -1.1286788840317782e-10),
+            (1.0, -7.6178, -1.9214742434014665e-6),
+            (1.0, -12.0, 0.29896586116360446),
+            (1.0, -50.0, 0.15055578737182204),
+            (2.5, -3.01, 0.2127112447528678),
+            (2.5, -5.0, 0.0031146110444027386),
+            (2.5, -10.0, -0.074445380648445),
+            (2.5, -15.0, 0.0010271017807084596),
+            (2.5, -50.0, 0.0011351770111090956),
+            (5.0, -3.01, 0.5292643399033946),
+            (5.0, -5.001, 0.33129163930217),
+            (5.0, -8.0, 0.14602211172333576),
+            (5.0, -25.0, -0.008432743146317128),
+            (5.0, -50.0, 0.0004564044063749215),
+            (10.0, -3.01, 0.7369299995911754),
+            (10.0, -11.0, 0.3125290020302696),
+            (10.0, -40.0, 0.002932256211165023),
+            (0.1, -100.0, -2.968942964377085),
+            (0.5, -100.0, 0.40808206181339196),
+            (2.5, -100.0, -0.0027182609945775797),
+            (10.0, -100.0, 4.5405815286664117e-5),
+            (3.25, 0.5, 1.1631890479552405),
+            (3.25, 10.0, 11.228357500393701),
+            (3.25, 100.0, 548442.9914829632),
+            (-0.3, -3.01, -0.835042183928332),
+            (-2.3, -5.0, 7.25048701318888),
+            (-0.3, 4.0, -94.14213052614711),
+            (-2.3, 1.0, 0.47197024339118),
+        ];
+        for &(v, z, expected) in REFERENCES {
+            let actual = real_kernel(v, z).unwrap();
+            let public = crate::hyp0f1(v, z);
+            assert!(
+                (actual - expected).abs() <= 3e-12 * expected.abs().max(1.0),
+                "0F1(;{v};{z}): got {actual}, reference {expected}"
+            );
+            assert_eq!(actual.to_bits(), public.to_bits());
+        }
+    }
+
+    #[test]
+    fn negative_argument_shortcut_respects_recurrence_and_poles() {
+        // Contiguous relation from the defining Pochhammer series:
+        // F(;b-1;z) = F(;b;z) + z F(;b+1;z)/(b(b-1)).
+        for &v in &[0.5, 1.125, 2.5, 5.0, 10.0, 25.0] {
+            for &z in &[-100.0, -25.0, -10.0, -3.0001, -3.0, -2.9999, 2.0, 20.0] {
+                let lhs = real_kernel(v - 1.0, z).unwrap();
+                let rhs = real_kernel(v, z).unwrap()
+                    + z / (v * (v - 1.0)) * real_kernel(v + 1.0, z).unwrap();
+                assert!(
+                    (lhs - rhs).abs() <= 2e-10 * lhs.abs().max(rhs.abs()).max(1.0),
+                    "0F1 recurrence v={v}, z={z}: {lhs} vs {rhs}"
+                );
+            }
+        }
+        for &v in &[0.0, -1.0, -2.0, -3.0] {
+            assert!(real_kernel(v, -10.0).is_err());
+            assert!(crate::hyp0f1(v, -10.0).is_nan());
+        }
+        assert!(real_kernel(1.0, f64::NAN).is_err());
+    }
+
+    #[test]
+    fn negative_shortcut_preserves_any_certified_binary64_result() {
+        // The expensive fallback must agree whenever the previous, stricter
+        // binary64 bound could certify the result, even outside benchmark inputs.
+        let parameters = [0.01, 0.05, 0.125, 0.5, 1.0, 1.5, 2.5, 3.0, 5.0, 10.0, 25.0];
+        let arguments = [
+            -3.0000001, -3.001, -3.01, -3.1, -3.25, -3.5, -4.0, -5.0, -7.5, -10.0, -20.0, -50.0,
+            -100.0,
+        ];
+        for v in parameters {
+            for z in arguments {
+                if v < -z {
+                    let candidate = real_kernel(v, z).unwrap();
+                    if let Some(certified) = compensated_series(v, z) {
+                        assert!(
+                            (candidate - certified).abs()
+                                <= 4e-13 * candidate.abs().max(certified.abs()).max(1.0),
+                            "0F1(;{v};{z})={candidate}, certified={certified}"
+                        );
+                    }
+                }
+            }
+        }
+    }
 }

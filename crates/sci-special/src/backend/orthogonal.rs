@@ -166,6 +166,20 @@ polynomial! {
     eval_chebyu(n, x) { chebyshev(n, x, true) }
 }
 
+// Precompute the first recurrence ratios once. The first 64 degrees are
+// especially common, and using multiplication avoids division in each step.
+// Higher degrees continue with the ordinary recurrence.
+const LEGENDRE_RECURRENCE_RATIOS: [(f64, f64); 64] = {
+    let mut ratios = [(0.0, 0.0); 64];
+    let mut i = 0;
+    while i < ratios.len() {
+        let k = (i + 1) as f64;
+        ratios[i] = ((2.0 * k + 1.0) / (k + 1.0), k / (k + 1.0));
+        i += 1;
+    }
+    ratios
+};
+
 fn legendre(n: i32, x: f64) -> f64 {
     let n = if n < 0 { -(n + 1) } else { n };
     if n == 0 {
@@ -207,7 +221,13 @@ fn legendre(n: i32, x: f64) -> f64 {
         // It is substantially cheaper than the difference recurrence below,
         // which is retained near x=1 to avoid cancellation of P_n and P_{n-1}.
         let (mut previous, mut value) = (1.0, x);
-        for k in 1..n {
+        let table_steps = ((n - 1) as usize).min(LEGENDRE_RECURRENCE_RATIOS.len());
+        for &(a, b) in &LEGENDRE_RECURRENCE_RATIOS[..table_steps] {
+            let next = a * x * value - b * previous;
+            previous = value;
+            value = next;
+        }
+        for k in (table_steps as i32 + 1)..n {
             let k = k as f64;
             let next = ((2.0 * k + 1.0) * x * value - k * previous) / (k + 1.0);
             previous = value;
@@ -248,7 +268,12 @@ pub(crate) fn legendre_all(n: usize, x: f64) -> Vec<f64> {
         let (mut previous, mut value) = (1.0, a);
         for k in 1..n {
             let kf = k as f64;
-            let next = ((2.0 * kf + 1.0) * a * value - kf * previous) / (kf + 1.0);
+            let next = if k <= LEGENDRE_RECURRENCE_RATIOS.len() {
+                let (coefficient, prior_coefficient) = LEGENDRE_RECURRENCE_RATIOS[k - 1];
+                coefficient * a * value - prior_coefficient * previous
+            } else {
+                ((2.0 * kf + 1.0) * a * value - kf * previous) / (kf + 1.0)
+            };
             previous = value;
             value = next;
             let degree = k + 1;
@@ -670,8 +695,10 @@ mod recurrence_fast_tests {
             0.9999999999,
         ] {
             let a = x.abs();
-            let table = legendre_all(128, x);
-            for n in [2, 3, 7, 10, 11, 32, 64, 128] {
+            let table = legendre_all(4096, x);
+            for n in [
+                2, 3, 7, 10, 11, 32, 63, 64, 65, 66, 127, 128, 256, 512, 4096,
+            ] {
                 let expected =
                     legendre_difference(n, a) * if x < 0.0 && n % 2 != 0 { -1.0 } else { 1.0 };
                 let actual = legendre(n, x);
@@ -683,6 +710,63 @@ mod recurrence_fast_tests {
                 assert_eq!(table[n as usize], actual, "P_{n}({x}) table differs");
             }
         }
+    }
+
+    #[test]
+    fn legendre_polynomial_roots_and_public_float_types() {
+        // Positive zeros of P_10, as independently tabulated for
+        // Gauss-Legendre quadrature. Include both signs and nearby points.
+        for root in [
+            0.14887433898163122_f64,
+            0.4333953941292472,
+            0.6794095682990244,
+            0.8650633666889845,
+            0.9739065285171717,
+        ] {
+            for x in [root - 1e-12, root, root + 1e-12] {
+                for x in [x, -x] {
+                    let value = crate::eval_legendre(10, x);
+                    assert!(value.abs() < 5e-11, "P_10({x})={value}");
+                    let shifted = crate::eval_sh_legendre(10, (x + 1.0) * 0.5);
+                    assert!(shifted.abs() < 5e-11, "shifted P_10({x})={shifted}");
+                    let x32 = x as f32;
+                    let typed = crate::eval_legendre(10, x32);
+                    let reference = crate::eval_legendre(10, f64::from(x32)) as f32;
+                    assert!(
+                        (typed - reference).abs() <= 4.0 * f32::EPSILON * (1.0 + reference.abs()),
+                        "f32 P_10({x32})={typed}, f64 reference={reference}"
+                    );
+                }
+            }
+        }
+        for n in [0, 1, 2, 10, 32, 63, 64, 65, 66, 4096] {
+            for x in [
+                -1.0,
+                -1.0 + f64::EPSILON,
+                -0.9,
+                -0.5,
+                0.0,
+                0.5,
+                0.9,
+                1.0 - f64::EPSILON,
+                1.0,
+            ] {
+                let actual = crate::eval_legendre(n, x);
+                let x32 = x as f32;
+                let typed = crate::eval_legendre(n, x32);
+                let reference = crate::eval_legendre(n, f64::from(x32)) as f32;
+                assert_eq!(
+                    typed.to_bits(),
+                    reference.to_bits(),
+                    "f32 degree {n}, x={x}"
+                );
+                if x.abs() == 1.0 {
+                    assert_eq!(actual, if x < 0.0 && n % 2 == 1 { -1.0 } else { 1.0 });
+                }
+            }
+        }
+        assert!(crate::eval_legendre(10, f64::NAN).is_nan());
+        assert!(crate::eval_legendre(-1, 0.5_f32).is_nan());
     }
 
     #[test]

@@ -3590,6 +3590,12 @@ pub(super) fn segv(
                                     if (s < 0.0f64) {
                                         {
                                             j += 1;
+                                            // The bracket update only distinguishes Sturm
+                                            // counts below icm. Once this many negative pivots
+                                            // have occurred, later pivots cannot affect it.
+                                            if j >= icm {
+                                                break;
+                                            }
                                         }
                                     }
                                 }
