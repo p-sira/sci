@@ -266,14 +266,23 @@ pub(crate) fn legendre_all(n: usize, x: f64) -> Vec<f64> {
     out.push(x);
     if a < 0.9 {
         let (mut previous, mut value) = (1.0, a);
-        for k in 1..n {
-            let kf = k as f64;
-            let next = if k <= LEGENDRE_RECURRENCE_RATIOS.len() {
-                let (coefficient, prior_coefficient) = LEGENDRE_RECURRENCE_RATIOS[k - 1];
-                coefficient * a * value - prior_coefficient * previous
+        let table_steps = (n - 1).min(LEGENDRE_RECURRENCE_RATIOS.len());
+        for (index, &(coefficient, prior_coefficient)) in
+            LEGENDRE_RECURRENCE_RATIOS[..table_steps].iter().enumerate()
+        {
+            let next = coefficient * a * value - prior_coefficient * previous;
+            previous = value;
+            value = next;
+            let degree = index + 2;
+            out.push(if x < 0.0 && degree % 2 != 0 {
+                -value
             } else {
-                ((2.0 * kf + 1.0) * a * value - kf * previous) / (kf + 1.0)
-            };
+                value
+            });
+        }
+        for k in (table_steps + 1)..n {
+            let kf = k as f64;
+            let next = ((2.0 * kf + 1.0) * a * value - kf * previous) / (kf + 1.0);
             previous = value;
             value = next;
             let degree = k + 1;
@@ -767,6 +776,63 @@ mod recurrence_fast_tests {
         }
         assert!(crate::eval_legendre(10, f64::NAN).is_nan());
         assert!(crate::eval_legendre(-1, 0.5_f32).is_nan());
+    }
+
+    #[test]
+    fn legendre_table_matches_every_scalar_entry_across_recurrence_boundaries() {
+        // The public table stops at 128. The private recurrence also supports
+        // larger degrees, so cover the coefficient-table handoff and a long tail.
+        for x in [
+            f64::NEG_INFINITY,
+            -10.0,
+            -2.0,
+            -1.0,
+            -1.0 + f64::EPSILON,
+            -0.90000000000001,
+            -0.9,
+            -0.89999999999999,
+            -0.5,
+            -1e-5,
+            -0.0,
+            0.0,
+            1e-5,
+            0.3,
+            0.5,
+            0.89999999999999,
+            0.9,
+            0.90000000000001,
+            1.0 - f64::EPSILON,
+            1.0,
+            2.0,
+            10.0,
+            f64::INFINITY,
+            f64::NAN,
+        ] {
+            let values = legendre_all(128, x);
+            assert_eq!(values.len(), 129);
+            for (degree, &value) in values.iter().enumerate() {
+                let scalar = if x.is_nan() {
+                    f64::NAN
+                } else {
+                    legendre(degree as i32, x)
+                };
+                if scalar.is_nan() {
+                    assert!(value.is_nan(), "P_{degree}({x}) expected NaN");
+                } else {
+                    assert_eq!(value.to_bits(), scalar.to_bits(), "P_{degree}({x})");
+                }
+            }
+        }
+        for x in [-0.899, -0.3, 0.3, 0.899] {
+            let values = legendre_all(4096, x);
+            for &degree in &[0, 1, 2, 10, 63, 64, 65, 66, 127, 128, 256, 1024, 4096] {
+                assert_eq!(
+                    values[degree].to_bits(),
+                    legendre(degree as i32, x).to_bits(),
+                    "P_{degree}({x})"
+                );
+            }
+        }
     }
 
     #[test]

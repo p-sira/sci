@@ -15,7 +15,12 @@ pub(super) fn lgam_sgn(x: f64, sign: &mut [i32]) -> f64 {
 
 // Fourier recurrence matrices from DLMF 28.4. The even-even first coefficient
 // has weight two, so the symmetric basis uses sqrt(2)*A_0.
-fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f64, Vec<f64>) {
+fn mathieu_spectrum<const VECTOR: bool>(
+    kd: i32,
+    m: i32,
+    q: f64,
+    vector_margin: usize,
+) -> (f64, Vec<f64>) {
     // Characteristic values use a short truncation. Beyond row
     // j = m/2 + 4*sqrt(|q|), (2j)^2 exceeds the eigenvalue by more than 60|q|,
     // so successive Fourier coefficients shrink by more than a factor of 60
@@ -82,8 +87,9 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
         }
         size
     };
-    let vector = |eigenvalue: f64| match vector_margin {
-        Some(margin) => {
+    let vector = |eigenvalue: f64| {
+        if VECTOR {
+            let margin = vector_margin;
             // The Fourier tail is recessive beyond the diagonal's upper
             // eigenvalue bound. Stop once its product bound is below 1e-28;
             // four more rows make the artificial end negligible. A fixed
@@ -103,8 +109,9 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
                 }
             }
             mathieu_vector(kd, q, rank, eigenvalue, vector_size, diagonal_at)
+        } else {
+            (eigenvalue, Vec::new())
         }
-        None => (eigenvalue, Vec::new()),
     };
     if q == 0.0 {
         return vector(diagonal_at(rank));
@@ -353,7 +360,7 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
     // the eigenvalue of the requested rank; every other case retains the
     // safeguarded search below. Vector-producing callers use that search
     // to keep their eigenvalues and Fourier coefficients consistent.
-    if vector_margin.is_none() && m <= 5 && q.abs() <= 10.0 {
+    if !VECTOR && m <= 5 && q.abs() <= 10.0 {
         let lower = center - radius;
         let upper = center + radius;
         let mut estimate = mathieu_guess(kd, m, q)
@@ -511,8 +518,10 @@ fn mathieu_vector(
         return (eigenvalue, coefficients);
     }
     let shift = eigenvalue + 8.0 * f64::EPSILON * eigenvalue.abs().max(1.0);
-    let mut pivots = vec![0.0; size];
-    let mut factors = vec![0.0; size];
+    // The two factorization buffers share one exact-sized allocation.
+    // Unlike fixed-size stack buffers, only the needed rows are initialized.
+    let mut workspace = vec![0.0; 2 * size];
+    let (pivots, factors) = workspace.split_at_mut(size);
     pivots[0] = diagonal_at(0) - shift;
     if pivots[0].abs() < 1e-300 {
         pivots[0] = 1e-300;
@@ -559,10 +568,10 @@ fn mathieu_vector(
 /// Extra rows of the established coefficient-vector truncation.
 const COEFFICIENT_MARGIN: usize = 48;
 pub(super) fn cva2(kd: i32, m: i32, q: f64) -> f64 {
-    mathieu_spectrum(kd, m, q, None).0
+    mathieu_spectrum::<false>(kd, m, q, 0).0
 }
 pub(super) fn fcoef(kd: i32, m: i32, q: f64, _a: f64, out: &mut [f64]) {
-    let (_, coefficients) = mathieu_spectrum(kd, m, q, Some(COEFFICIENT_MARGIN));
+    let (_, coefficients) = mathieu_spectrum::<true>(kd, m, q, COEFFICIENT_MARGIN);
     out.fill(0.0);
     for (a, b) in out.iter_mut().zip(coefficients) {
         *a = b;
@@ -591,7 +600,7 @@ fn angular(m: u32, q: f64, x: f64, odd: bool) -> (f64, f64) {
     };
     // Coefficients more than 16 rows beyond the significant ones are below
     // 1e-28 (see `mathieu_spectrum`) and cannot affect either sum.
-    let (_, coefficients) = mathieu_spectrum(kd, m as i32, q, Some(16));
+    let (_, coefficients) = mathieu_spectrum::<true>(kd, m as i32, q, 16);
     let x = x.to_radians();
     // cos(kx) and sin(kx) for k = first + 2j follow from one rotation by 2x
     // per term instead of a trigonometric evaluation per term. The
@@ -661,11 +670,11 @@ fn coefficient_count(m: u32, q: f64) -> usize {
     (qm + 0.5 * m as f64) as usize
 }
 pub(crate) fn mathieu_even_coef(m: u32, q: f64) -> Result<Vec<f64>, &'static str> {
-    let (_, mut out) = mathieu_spectrum(
+    let (_, mut out) = mathieu_spectrum::<true>(
         if m.is_multiple_of(2) { 1 } else { 2 },
         m as i32,
         q,
-        Some(COEFFICIENT_MARGIN),
+        COEFFICIENT_MARGIN,
     );
     out.resize(coefficient_count(m, q), 0.0);
     Ok(out)
@@ -674,11 +683,11 @@ pub(crate) fn mathieu_odd_coef(m: u32, q: f64) -> Result<Vec<f64>, &'static str>
     if m == 0 {
         return Err("odd Mathieu order must be positive");
     }
-    let (_, mut out) = mathieu_spectrum(
+    let (_, mut out) = mathieu_spectrum::<true>(
         if m.is_multiple_of(2) { 4 } else { 3 },
         m as i32,
         q,
-        Some(COEFFICIENT_MARGIN),
+        COEFFICIENT_MARGIN,
     );
     out.resize(coefficient_count(m, q), 0.0);
     Ok(out)
@@ -1462,18 +1471,22 @@ pub(crate) fn airy_integrals(x: f64) -> [f64; 4] {
             ],
         ];
         let t = (x.abs() - 7.0) / 3.0;
+        // Do not use `mul_add` here: on a generic x86-64 target it calls
+        // a runtime-dispatched software FMA fallback on CPUs lacking FMA,
+        // making every Clenshaw step disproportionately expensive.
         let mut b0 = [0.0; 4];
         let mut b1 = [0.0; 4];
+        let two_t = 2.0 * t;
         for coefficients in COEFFS[1..].iter().rev() {
             for j in 0..4 {
-                let next = (2.0 * t).mul_add(b0[j], coefficients[j] - b1[j]);
+                let next = two_t * b0[j] + (coefficients[j] - b1[j]);
                 b1[j] = b0[j];
                 b0[j] = next;
             }
         }
         let mut result = [0.0; 4];
         for j in 0..4 {
-            result[j] = t.mul_add(b0[j], COEFFS[0][j] - b1[j]);
+            result[j] = t * b0[j] + (COEFFS[0][j] - b1[j]);
         }
         let exponent = (2.0 / 3.0) * x.abs() * x.abs().sqrt();
         result[1] *= exponent.exp();
@@ -1887,13 +1900,15 @@ pub(crate) fn itstruve0(x: f64) -> f64 {
             -1.09271641296022452e-16,
         ];
         let y = (x.abs() - 17.0) / 7.0;
+        // Avoid software FMA dispatch in simulation and on CPUs without FMA.
         let (mut b0, mut b1) = (0.0, 0.0);
+        let two_y = 2.0 * y;
         for &coefficient in COEFFS[1..].iter().rev() {
-            let next = (2.0 * y).mul_add(b0, coefficient - b1);
+            let next = two_y * b0 + (coefficient - b1);
             b1 = b0;
             b0 = next;
         }
-        y.mul_add(b0, COEFFS[0] - b1)
+        y * b0 + (COEFFS[0] - b1)
     } else if x.abs() <= 128.0 {
         quadrature(0.0, x.abs(), |t| {
             super::struve_h(0.0, t).unwrap_or(f64::NAN)
