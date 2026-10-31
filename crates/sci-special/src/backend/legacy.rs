@@ -485,26 +485,22 @@ fn modified(m: u32, q: f64, x: f64, odd: bool, kind: i32) -> (f64, f64) {
     if q <= 0.0 || !q.is_finite() || !x.is_finite() || (odd && m == 0) {
         return (f64::NAN, f64::NAN);
     }
-    let (mut f, mut d, mut g, mut e) = ([f64::NAN], [f64::NAN], [f64::NAN], [f64::NAN]);
+    let (mut f, mut d, mut g, mut e) = (f64::NAN, f64::NAN, f64::NAN, f64::NAN);
     let status = s::mtu12(
         if odd { 2 } else { 1 },
         kind,
         m as i32,
         q,
         x,
-        &mut f,
-        &mut d,
-        &mut g,
-        &mut e,
+        std::slice::from_mut(&mut f),
+        std::slice::from_mut(&mut d),
+        std::slice::from_mut(&mut g),
+        std::slice::from_mut(&mut e),
     );
     if status != 0 {
         return (f64::NAN, f64::NAN);
     }
-    if kind == 1 {
-        (f[0], d[0])
-    } else {
-        (g[0], e[0])
-    }
+    if kind == 1 { (f, d) } else { (g, e) }
 }
 fn coefficient_count(m: u32, q: f64) -> usize {
     let qm = if q <= 1.0 {
