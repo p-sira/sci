@@ -555,9 +555,9 @@ fn legendre_public_small_argument_and_large_degree_paths() {
     for k in 1..=64 {
         even *= -((2 * k - 1) as f64) / (2 * k) as f64;
         if matches!(k, 1 | 32 | 33 | 64) {
-            let actual = s::eval_legendre((2 * k) as i32, 0.0_f64);
+            let actual = s::eval_legendre(2 * k, 0.0_f64);
             assert!((actual - even).abs() <= 2e-13 * (1.0 + even.abs()));
-            assert_eq!(s::eval_legendre((2 * k - 1) as i32, 0.0_f64), 0.0);
+            assert_eq!(s::eval_legendre(2 * k - 1, 0.0_f64), 0.0);
         }
     }
 

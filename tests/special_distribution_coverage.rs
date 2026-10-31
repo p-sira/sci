@@ -267,9 +267,14 @@ fn binomial_cdf_survival_floor_and_inverse_special_cases() {
     assert_eq!(s::bdtrc(5.0, 5, 0.3_f64), 0.0);
     assert_eq!(s::bdtrc(-0.1, 5, 0.3_f64), 1.0);
     assert!(s::bdtr(-0.1, 5, 0.3_f64).is_nan());
-    for (k, n, p) in [(6.0, 5, 0.3), (2.0, -1, 0.3), (2.0, 5, -0.1), (2.0, 5, 1.1)] {
-        assert!(s::bdtr(k, n, p as f64).is_nan());
-        assert!(s::bdtrc(k, n, p as f64).is_nan());
+    for (k, n, p) in [
+        (6.0, 5, 0.3_f64),
+        (2.0, -1, 0.3),
+        (2.0, 5, -0.1),
+        (2.0, 5, 1.1),
+    ] {
+        assert!(s::bdtr(k, n, p).is_nan());
+        assert!(s::bdtrc(k, n, p).is_nan());
     }
 
     // The zero-success-count inverse has an exact closed form, while k>0
@@ -339,15 +344,15 @@ fn negative_binomial_and_other_distribution_complements() {
         );
     }
     for (k, n, p) in [
-        (-1, 5, 0.3),
+        (-1, 5, 0.3_f64),
         (2, 0, 0.3),
         (2, -1, 0.3),
         (2, 5, -0.1),
         (2, 5, 1.1),
     ] {
-        assert!(s::nbdtr(k, n, p as f64).is_nan());
-        assert!(s::nbdtrc(k, n, p as f64).is_nan());
-        assert!(s::nbdtri(k, n, p as f64).is_nan());
+        assert!(s::nbdtr(k, n, p).is_nan());
+        assert!(s::nbdtrc(k, n, p).is_nan());
+        assert!(s::nbdtri(k, n, p).is_nan());
     }
 
     for (k, mean) in [(0.0, 0.01), (3.0, 2.0), (20.0, 30.0)] {

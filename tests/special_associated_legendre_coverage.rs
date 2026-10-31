@@ -62,7 +62,7 @@ fn associated_tables_agree_with_scalar_orders_across_scaled_and_polar_paths() {
                     expected,
                     &format!("n={n} m={m} x={x} k={degree} order={order}"),
                 );
-                if order.unsigned_abs() as usize > degree {
+                if (order.unsigned_abs() as usize) > degree {
                     assert_eq!(row[column], 0.0);
                 }
             }
@@ -88,7 +88,7 @@ fn spherical_tables_and_harmonics_agree_with_scalar_amplitudes_and_phases() {
                     "spherical table vs scalar",
                 );
                 let wave = s::sph_harm_y(degree, order, theta, phi);
-                if order.unsigned_abs() as usize > degree {
+                if order.unsigned_abs() > degree {
                     // A scalar harmonic outside |order|<=degree is invalid,
                     // while a table represents its structurally zero cells.
                     assert!(wave.re.is_nan() && wave.im.is_nan());
