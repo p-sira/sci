@@ -20,7 +20,7 @@ pub type ValueDerivativeMatrices = (Vec<Vec<f64>>, Vec<Vec<f64>>);
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::agm(1.0_f64,2.0);
+/// let value = sci_special::elementary::agm(1.0_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -58,7 +58,7 @@ pub fn agm<T: sci_core::Float>(a: T, b: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::airy(0.5);
+/// let value = sci_special::wave::airy(0.5);
 /// assert!(value.iter().all(|v| v.is_finite()));
 /// ```
 ///
@@ -90,7 +90,7 @@ pub fn airy(x: f64) -> [f64; 4] {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::airye(0.5);
+/// let value = sci_special::wave::airye(0.5);
 /// assert!(value.iter().all(|v| v.is_finite()));
 /// ```
 ///
@@ -116,7 +116,7 @@ pub fn airye(x: f64) -> [f64; 4] {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::itairy(0.5);
+/// let value = sci_special::wave::itairy(0.5);
 /// assert!(value.iter().all(|v| v.is_finite()));
 /// ```
 ///
@@ -159,7 +159,7 @@ pub fn itairy(x: f64) -> [f64; 4] {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ellipj(0.5,0.4);
+/// let value = sci_special::elliptic::ellipj(0.5,0.4);
 /// let _ = value;
 /// ```
 ///
@@ -183,7 +183,7 @@ pub fn ellipj(u: f64, m: f64) -> (f64, f64, f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::binom(5.0_f64,2.0);
+/// let value = sci_special::combinatorics::binom(5.0_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -216,7 +216,7 @@ pub fn binom<T: sci_core::Float>(n: T, k: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::erfcx(0.5_f64);
+/// let value = sci_special::elementary::erfcx(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -248,7 +248,7 @@ pub fn erfcx<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::erfi(0.5_f64);
+/// let value = sci_special::elementary::erfi(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -280,7 +280,7 @@ pub fn erfi<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::erfcinv(0.3_f64);
+/// let value = sci_special::elementary::erfcinv(0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -312,7 +312,7 @@ pub fn erfcinv<T: sci_core::Float>(p: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::dawsn(0.5_f64);
+/// let value = sci_special::elementary::dawsn(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -344,7 +344,7 @@ pub fn dawsn<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::gammasgn(-0.5_f64);
+/// let value = sci_special::gamma::gammasgn(-0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -376,7 +376,7 @@ pub fn gammasgn<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::gammaincc(2.5_f64,3.0);
+/// let value = sci_special::gamma::gammaincc(2.5_f64,3.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -408,7 +408,7 @@ pub fn gammaincc<T: sci_core::Float>(a: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::gammaincinv(2.5_f64,0.3);
+/// let value = sci_special::gamma::gammaincinv(2.5_f64,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -440,7 +440,7 @@ pub fn gammaincinv<T: sci_core::Float>(a: T, p: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::gammainccinv(2.5_f64,0.3);
+/// let value = sci_special::gamma::gammainccinv(2.5_f64,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -472,7 +472,7 @@ pub fn gammainccinv<T: sci_core::Float>(a: T, q: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::loggamma(2.5_f64);
+/// let value = sci_special::gamma::loggamma(2.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -504,7 +504,7 @@ pub fn loggamma<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::rgamma(-2.0_f64);
+/// let value = sci_special::gamma::rgamma(-2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -536,7 +536,7 @@ pub fn rgamma<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::polygamma(2,2.5);
+/// let value = sci_special::gamma::polygamma(2,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -563,7 +563,7 @@ pub fn polygamma(n: u32, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::multigammaln(3.0,2);
+/// let value = sci_special::gamma::multigammaln(3.0,2);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -590,7 +590,7 @@ pub fn multigammaln(a: f64, d: u32) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::jv(0.5_f64,2.0);
+/// let value = sci_special::bessel::jv(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -622,7 +622,7 @@ pub fn jv<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::jve(0.5_f64,2.0);
+/// let value = sci_special::bessel::jve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -654,7 +654,7 @@ pub fn jve<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::yv(0.5_f64,2.0);
+/// let value = sci_special::bessel::yv(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -686,7 +686,7 @@ pub fn yv<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::yve(0.5_f64,2.0);
+/// let value = sci_special::bessel::yve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -729,7 +729,7 @@ pub fn yve<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::iv(0.5_f64,2.0);
+/// let value = sci_special::bessel::iv(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -780,7 +780,7 @@ pub fn iv<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ive(0.5_f64,2.0);
+/// let value = sci_special::bessel::ive(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -823,7 +823,7 @@ pub fn ive<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::kv(0.5_f64,2.0);
+/// let value = sci_special::bessel::kv(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -855,7 +855,7 @@ pub fn kv<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::kve(0.5_f64,2.0);
+/// let value = sci_special::bessel::kve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -887,7 +887,7 @@ pub fn kve<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::j0(2.0_f64);
+/// let value = sci_special::bessel::j0(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -919,7 +919,7 @@ pub fn j0<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::j1(2.0_f64);
+/// let value = sci_special::bessel::j1(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -951,7 +951,7 @@ pub fn j1<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::y0(2.0_f64);
+/// let value = sci_special::bessel::y0(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -983,7 +983,7 @@ pub fn y0<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::y1(2.0_f64);
+/// let value = sci_special::bessel::y1(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1015,7 +1015,7 @@ pub fn y1<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::i0(2.0_f64);
+/// let value = sci_special::bessel::i0(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1047,7 +1047,7 @@ pub fn i0<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::i1(2.0_f64);
+/// let value = sci_special::bessel::i1(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1079,7 +1079,7 @@ pub fn i1<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::i0e(2.0_f64);
+/// let value = sci_special::bessel::i0e(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1111,7 +1111,7 @@ pub fn i0e<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::i1e(2.0_f64);
+/// let value = sci_special::bessel::i1e(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1143,7 +1143,7 @@ pub fn i1e<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::k0(2.0_f64);
+/// let value = sci_special::bessel::k0(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1175,7 +1175,7 @@ pub fn k0<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::k1(2.0_f64);
+/// let value = sci_special::bessel::k1(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1207,7 +1207,7 @@ pub fn k1<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::k0e(2.0_f64);
+/// let value = sci_special::bessel::k0e(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1239,7 +1239,7 @@ pub fn k0e<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::k1e(2.0_f64);
+/// let value = sci_special::bessel::k1e(2.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1271,7 +1271,7 @@ pub fn k1e<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::besselpoly(1.0,0.5,2.0);
+/// let value = sci_special::bessel::besselpoly(1.0,0.5,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1296,7 +1296,7 @@ pub fn besselpoly(a: f64, lambda: f64, v: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::itj0y0(2.0);
+/// let value = sci_special::bessel::itj0y0(2.0);
 /// let _ = value;
 /// ```
 ///
@@ -1321,7 +1321,7 @@ pub fn itj0y0(x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::it2j0y0(2.0);
+/// let value = sci_special::bessel::it2j0y0(2.0);
 /// let _ = value;
 /// ```
 ///
@@ -1346,7 +1346,7 @@ pub fn it2j0y0(x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::iti0k0(2.0);
+/// let value = sci_special::bessel::iti0k0(2.0);
 /// let _ = value;
 /// ```
 ///
@@ -1371,7 +1371,7 @@ pub fn iti0k0(x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::it2i0k0(2.0);
+/// let value = sci_special::bessel::it2i0k0(2.0);
 /// let _ = value;
 /// ```
 ///
@@ -1404,7 +1404,7 @@ pub fn it2i0k0(x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::struve(0.5_f64,2.0);
+/// let value = sci_special::bessel::struve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1436,7 +1436,7 @@ pub fn struve<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::modstruve(0.5_f64,2.0);
+/// let value = sci_special::bessel::modstruve(0.5_f64,2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1478,7 +1478,7 @@ pub fn modstruve<T: sci_core::Float>(v: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::itstruve0(2.0);
+/// let value = sci_special::bessel::itstruve0(2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1503,7 +1503,7 @@ pub fn itstruve0(x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::it2struve0(2.0);
+/// let value = sci_special::bessel::it2struve0(2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1527,7 +1527,7 @@ pub fn it2struve0(x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::itmodstruve0(2.0);
+/// let value = sci_special::bessel::itmodstruve0(2.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1551,7 +1551,7 @@ pub fn itmodstruve0(x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::hyp0f1(2.5_f64,0.5);
+/// let value = sci_special::hypergeometric::hyp0f1(2.5_f64,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1600,7 +1600,7 @@ pub fn hyp0f1<T: sci_core::Float>(b: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::hyp1f1(1.5,2.5,0.5);
+/// let value = sci_special::hypergeometric::hyp1f1(1.5,2.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1644,7 +1644,7 @@ pub fn hyp1f1(a: f64, b: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::hyp2f1(0.5,1.0,2.5,0.3);
+/// let value = sci_special::hypergeometric::hyp2f1(0.5,1.0,2.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1681,7 +1681,7 @@ pub fn hyp2f1(a: f64, b: f64, c: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::hyperu(1.5,2.5,0.5);
+/// let value = sci_special::hypergeometric::hyperu(1.5,2.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1716,7 +1716,7 @@ pub fn hyperu(a: f64, b: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::exp1(0.5_f64);
+/// let value = sci_special::integrals::exp1(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1748,7 +1748,7 @@ pub fn exp1<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::expi(0.5_f64);
+/// let value = sci_special::integrals::expi(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1780,7 +1780,7 @@ pub fn expi<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::expn(3,0.5_f64);
+/// let value = sci_special::integrals::expn(3,0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1812,7 +1812,7 @@ pub fn expn<T: sci_core::Float>(n: u32, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::sici(0.5);
+/// let value = sci_special::integrals::sici(0.5);
 /// let _ = value;
 /// ```
 ///
@@ -1836,7 +1836,7 @@ pub fn sici(x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::shichi(0.5);
+/// let value = sci_special::integrals::shichi(0.5);
 /// let _ = value;
 /// ```
 ///
@@ -1860,7 +1860,7 @@ pub fn shichi(x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::fresnel(0.5);
+/// let value = sci_special::integrals::fresnel(0.5);
 /// let _ = value;
 /// ```
 ///
@@ -1884,7 +1884,7 @@ pub fn fresnel(x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::spence(0.5_f64);
+/// let value = sci_special::integrals::spence(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1916,7 +1916,7 @@ pub fn spence<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::zeta(2.5_f64,1.5);
+/// let value = sci_special::zeta::zeta(2.5_f64,1.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1948,7 +1948,7 @@ pub fn zeta<T: sci_core::Float>(s: T, q: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::zetac(2.5_f64);
+/// let value = sci_special::zeta::zetac(2.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -1980,7 +1980,7 @@ pub fn zetac<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::wrightomega(0.5_f64);
+/// let value = sci_special::elementary::wrightomega(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2012,7 +2012,7 @@ pub fn wrightomega<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::wright_bessel(0.5,1.5,0.5);
+/// let value = sci_special::hypergeometric::wright_bessel(0.5,1.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2042,7 +2042,7 @@ pub fn wright_bessel(a: f64, b: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::log_wright_bessel(0.5,1.5,0.5);
+/// let value = sci_special::hypergeometric::log_wright_bessel(0.5,1.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2072,7 +2072,7 @@ pub fn log_wright_bessel(a: f64, b: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::voigt_profile(0.5_f64,1.0,0.3);
+/// let value = sci_special::probability::voigt_profile(0.5_f64,1.0,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2104,7 +2104,7 @@ pub fn voigt_profile<T: sci_core::Float>(x: T, sigma: T, gamma: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::bdtr(2.0_f64,5,0.3);
+/// let value = sci_special::probability::bdtr(2.0_f64,5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2136,7 +2136,7 @@ pub fn bdtr<T: sci_core::Float>(k: T, n: i32, p: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::bdtrc(2.0_f64,5,0.3);
+/// let value = sci_special::probability::bdtrc(2.0_f64,5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2168,7 +2168,7 @@ pub fn bdtrc<T: sci_core::Float>(k: T, n: i32, p: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::bdtri(2.0_f64,5,0.3);
+/// let value = sci_special::probability::bdtri(2.0_f64,5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2200,7 +2200,7 @@ pub fn bdtri<T: sci_core::Float>(k: T, n: i32, y: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::chdtr(3.0_f64,2.5);
+/// let value = sci_special::probability::chdtr(3.0_f64,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2232,7 +2232,7 @@ pub fn chdtr<T: sci_core::Float>(df: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::chdtrc(3.0_f64,2.5);
+/// let value = sci_special::probability::chdtrc(3.0_f64,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2264,7 +2264,7 @@ pub fn chdtrc<T: sci_core::Float>(df: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::chdtri(3.0_f64,0.3);
+/// let value = sci_special::probability::chdtri(3.0_f64,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2296,7 +2296,7 @@ pub fn chdtri<T: sci_core::Float>(df: T, q: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::fdtr(3.0_f64,5.0,2.5);
+/// let value = sci_special::probability::fdtr(3.0_f64,5.0,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2328,7 +2328,7 @@ pub fn fdtr<T: sci_core::Float>(dfn: T, dfd: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::fdtrc(3.0_f64,5.0,2.5);
+/// let value = sci_special::probability::fdtrc(3.0_f64,5.0,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2360,7 +2360,7 @@ pub fn fdtrc<T: sci_core::Float>(dfn: T, dfd: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::fdtri(3.0_f64,5.0,0.3);
+/// let value = sci_special::probability::fdtri(3.0_f64,5.0,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2392,7 +2392,7 @@ pub fn fdtri<T: sci_core::Float>(dfn: T, dfd: T, p: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::gdtr(1.5_f64,2.5,0.5);
+/// let value = sci_special::probability::gdtr(1.5_f64,2.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2424,7 +2424,7 @@ pub fn gdtr<T: sci_core::Float>(a: T, b: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::gdtrc(1.5_f64,2.5,0.5);
+/// let value = sci_special::probability::gdtrc(1.5_f64,2.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2456,7 +2456,7 @@ pub fn gdtrc<T: sci_core::Float>(a: T, b: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::gdtrib(1.5,0.3,0.5);
+/// let value = sci_special::probability::gdtrib(1.5,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2480,7 +2480,7 @@ pub fn gdtrib(a: f64, p: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::nbdtr(2,5,0.3_f64);
+/// let value = sci_special::probability::nbdtr(2,5,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2512,7 +2512,7 @@ pub fn nbdtr<T: sci_core::Float>(k: i32, n: i32, p: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::nbdtrc(2,5,0.3_f64);
+/// let value = sci_special::probability::nbdtrc(2,5,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2544,7 +2544,7 @@ pub fn nbdtrc<T: sci_core::Float>(k: i32, n: i32, p: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::nbdtri(2,5,0.3_f64);
+/// let value = sci_special::probability::nbdtri(2,5,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2576,7 +2576,7 @@ pub fn nbdtri<T: sci_core::Float>(k: i32, n: i32, y: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ndtr(0.5_f64);
+/// let value = sci_special::probability::ndtr(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2608,7 +2608,7 @@ pub fn ndtr<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ndtri(0.3_f64);
+/// let value = sci_special::probability::ndtri(0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2640,7 +2640,7 @@ pub fn ndtri<T: sci_core::Float>(p: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::log_ndtr(-30.0_f64);
+/// let value = sci_special::probability::log_ndtr(-30.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2672,7 +2672,7 @@ pub fn log_ndtr<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ndtri_exp(-100.0_f64);
+/// let value = sci_special::probability::ndtri_exp(-100.0_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2704,7 +2704,7 @@ pub fn ndtri_exp<T: sci_core::Float>(y: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pdtr(2.0_f64,1.5);
+/// let value = sci_special::probability::pdtr(2.0_f64,1.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2736,7 +2736,7 @@ pub fn pdtr<T: sci_core::Float>(k: T, m: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pdtrc(2.0_f64,1.5);
+/// let value = sci_special::probability::pdtrc(2.0_f64,1.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2768,7 +2768,7 @@ pub fn pdtrc<T: sci_core::Float>(k: T, m: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pdtri(2,0.3_f64);
+/// let value = sci_special::probability::pdtri(2,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2813,7 +2813,7 @@ pub fn pdtri<T: sci_core::Float>(k: i32, p: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::stdtr(3.0,0.5);
+/// let value = sci_special::probability::stdtr(3.0,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2881,7 +2881,7 @@ pub fn stdtr(df: f64, t: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::stdtrit(3.0,0.3);
+/// let value = sci_special::probability::stdtrit(3.0,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2933,7 +2933,7 @@ pub fn stdtrit(df: f64, p: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::kolmogorov(0.5_f64);
+/// let value = sci_special::probability::kolmogorov(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2965,7 +2965,7 @@ pub fn kolmogorov<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::kolmogi(0.3_f64);
+/// let value = sci_special::probability::kolmogi(0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -2997,7 +2997,7 @@ pub fn kolmogi<T: sci_core::Float>(q: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::smirnov(5,0.3);
+/// let value = sci_special::probability::smirnov(5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -3021,7 +3021,7 @@ pub fn smirnov(n: i32, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::smirnovi(5,0.3);
+/// let value = sci_special::probability::smirnovi(5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -3045,7 +3045,7 @@ pub fn smirnovi(n: i32, q: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::owens_t(0.5,0.3);
+/// let value = sci_special::probability::owens_t(0.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -3069,7 +3069,7 @@ pub fn owens_t(h: f64, a: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::tklmbda(0.5_f64,0.3);
+/// let value = sci_special::probability::tklmbda(0.5_f64,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -3109,7 +3109,7 @@ pub fn tklmbda<T: sci_core::Float>(x: T, lambda: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pbdv(0.5,1.0);
+/// let value = sci_special::wave::pbdv(0.5,1.0);
 /// let _ = value;
 /// ```
 ///
@@ -3146,7 +3146,7 @@ pub fn pbdv(v: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pbvv(0.5,1.0);
+/// let value = sci_special::wave::pbvv(0.5,1.0);
 /// let _ = value;
 /// ```
 ///
@@ -3183,7 +3183,7 @@ pub fn pbvv(v: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pbwa(0.5,1.0);
+/// let value = sci_special::wave::pbwa(0.5,1.0);
 /// let _ = value;
 /// ```
 ///
@@ -3217,7 +3217,7 @@ pub fn pbwa(a: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::mathieu_a(2,0.5);
+/// let value = sci_special::wave::mathieu_a(2,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -3258,7 +3258,7 @@ pub fn mathieu_a(m: u32, q: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::mathieu_b(2,0.5);
+/// let value = sci_special::wave::mathieu_b(2,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -3300,7 +3300,7 @@ pub fn mathieu_b(m: u32, q: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::mathieu_cem(2,0.5,30.0);
+/// let value = sci_special::wave::mathieu_cem(2,0.5,30.0);
 /// let _ = value;
 /// ```
 ///
@@ -3342,7 +3342,7 @@ pub fn mathieu_cem(m: u32, q: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::mathieu_sem(2,0.5,30.0);
+/// let value = sci_special::wave::mathieu_sem(2,0.5,30.0);
 /// let _ = value;
 /// ```
 ///
@@ -3382,7 +3382,7 @@ pub fn mathieu_sem(m: u32, q: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::mathieu_modcem1(2,0.5,0.3);
+/// let value = sci_special::wave::mathieu_modcem1(2,0.5,0.3);
 /// let _ = value;
 /// ```
 ///
@@ -3422,7 +3422,7 @@ pub fn mathieu_modcem1(m: u32, q: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::mathieu_modcem2(2,0.5,0.3);
+/// let value = sci_special::wave::mathieu_modcem2(2,0.5,0.3);
 /// let _ = value;
 /// ```
 ///
@@ -3462,7 +3462,7 @@ pub fn mathieu_modcem2(m: u32, q: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::mathieu_modsem1(2,0.5,0.3);
+/// let value = sci_special::wave::mathieu_modsem1(2,0.5,0.3);
 /// let _ = value;
 /// ```
 ///
@@ -3502,7 +3502,7 @@ pub fn mathieu_modsem1(m: u32, q: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::mathieu_modsem2(2,0.5,0.3);
+/// let value = sci_special::wave::mathieu_modsem2(2,0.5,0.3);
 /// let _ = value;
 /// ```
 ///
@@ -3533,7 +3533,7 @@ pub fn mathieu_modsem2(m: u32, q: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ber(0.5_f64);
+/// let value = sci_special::bessel::ber(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -3565,7 +3565,7 @@ pub fn ber<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::bei(0.5_f64);
+/// let value = sci_special::bessel::bei(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -3597,7 +3597,7 @@ pub fn bei<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ker(0.5_f64);
+/// let value = sci_special::bessel::ker(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -3629,7 +3629,7 @@ pub fn ker<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::kei(0.5_f64);
+/// let value = sci_special::bessel::kei(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -3661,7 +3661,7 @@ pub fn kei<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::berp(0.5_f64);
+/// let value = sci_special::bessel::berp(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -3693,7 +3693,7 @@ pub fn berp<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::beip(0.5_f64);
+/// let value = sci_special::bessel::beip(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -3725,7 +3725,7 @@ pub fn beip<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::kerp(0.5_f64);
+/// let value = sci_special::bessel::kerp(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -3757,7 +3757,7 @@ pub fn kerp<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::keip(0.5_f64);
+/// let value = sci_special::bessel::keip(0.5_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -3793,7 +3793,7 @@ pub fn keip<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ber_zeros(3)?;
+/// let value = sci_special::bessel::ber_zeros(3)?;
 /// assert_eq!(value.len(), 3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -3827,7 +3827,7 @@ pub fn ber_zeros(nt: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::bei_zeros(3)?;
+/// let value = sci_special::bessel::bei_zeros(3)?;
 /// assert_eq!(value.len(), 3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -3861,7 +3861,7 @@ pub fn bei_zeros(nt: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ker_zeros(3)?;
+/// let value = sci_special::bessel::ker_zeros(3)?;
 /// assert_eq!(value.len(), 3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -3895,7 +3895,7 @@ pub fn ker_zeros(nt: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::kei_zeros(3)?;
+/// let value = sci_special::bessel::kei_zeros(3)?;
 /// assert_eq!(value.len(), 3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -3929,7 +3929,7 @@ pub fn kei_zeros(nt: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::berp_zeros(3)?;
+/// let value = sci_special::bessel::berp_zeros(3)?;
 /// assert_eq!(value.len(), 3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -3963,7 +3963,7 @@ pub fn berp_zeros(nt: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::beip_zeros(3)?;
+/// let value = sci_special::bessel::beip_zeros(3)?;
 /// assert_eq!(value.len(), 3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -3997,7 +3997,7 @@ pub fn beip_zeros(nt: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::kerp_zeros(3)?;
+/// let value = sci_special::bessel::kerp_zeros(3)?;
 /// assert_eq!(value.len(), 3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -4043,7 +4043,7 @@ pub fn kerp_zeros(nt: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::keip_zeros(3)?;
+/// let value = sci_special::bessel::keip_zeros(3)?;
 /// assert_eq!(value.len(), 3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -4089,7 +4089,7 @@ pub fn keip_zeros(nt: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::kelvin_zeros(3)?;
+/// let value = sci_special::bessel::kelvin_zeros(3)?;
 /// assert_eq!(value[0].len(), 3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -4130,7 +4130,7 @@ pub fn kelvin_zeros(nt: usize) -> Result<[Vec<f64>; 8]> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::lpmv(1,2.5,0.3);
+/// let value = sci_special::orthogonal::lpmv(1,2.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -4159,7 +4159,7 @@ pub fn lpmv(m: i32, v: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::legendre_p(3,0.3_f64);
+/// let value = sci_special::orthogonal::legendre_p(3,0.3_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -4191,7 +4191,7 @@ pub fn legendre_p<T: sci_core::Float>(n: i32, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::assoc_legendre_p(3,1,0.3);
+/// let value = sci_special::orthogonal::assoc_legendre_p(3,1,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -4215,7 +4215,7 @@ pub fn assoc_legendre_p(n: i32, m: i32, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::sph_legendre_p(3,1,0.3);
+/// let value = sci_special::orthogonal::sph_legendre_p(3,1,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -4246,7 +4246,7 @@ pub fn sph_legendre_p(n: i32, m: i32, theta: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::lqn(3,0.3)?;
+/// let value = sci_special::orthogonal::lqn(3,0.3)?;
 /// let _ = value;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -4288,7 +4288,7 @@ pub fn lqn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::lqmn(2,3,0.3)?;
+/// let value = sci_special::orthogonal::lqmn(2,3,0.3)?;
 /// assert_eq!(value.0.len(), 3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -4326,7 +4326,7 @@ pub fn lqmn(m: usize, n: usize, x: f64) -> Result<ValueDerivativeMatrices> {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::expit(0.5).is_finite());
+/// assert!(sci_special::elementary::expit(0.5).is_finite());
 /// ```
 ///
 /// ## References
@@ -4351,7 +4351,7 @@ pub fn expit(x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::logit(0.3).is_finite());
+/// assert!(sci_special::elementary::logit(0.3).is_finite());
 /// ```
 ///
 /// ## References
@@ -4371,7 +4371,7 @@ pub fn logit(p: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::softplus(0.5).is_finite());
+/// assert!(sci_special::elementary::softplus(0.5).is_finite());
 /// ```
 ///
 /// ## References
@@ -4395,7 +4395,7 @@ pub fn softplus(x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::log_expit(-100.0).is_finite());
+/// assert!(sci_special::elementary::log_expit(-100.0).is_finite());
 /// ```
 ///
 /// ## References
@@ -4415,7 +4415,7 @@ pub fn log_expit(x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::exprel(0.000001).is_finite());
+/// assert!(sci_special::elementary::exprel(0.000001).is_finite());
 /// ```
 ///
 /// ## References
@@ -4441,7 +4441,7 @@ pub fn exprel(x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::sinc(0.5).is_finite());
+/// assert!(sci_special::elementary::sinc(0.5).is_finite());
 /// ```
 ///
 /// ## References
@@ -4466,7 +4466,7 @@ pub fn sinc(x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::cosm1(0.000001).is_finite());
+/// assert!(sci_special::elementary::cosm1(0.000001).is_finite());
 /// ```
 ///
 /// ## References
@@ -4486,7 +4486,7 @@ pub fn cosm1(x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::sindg(30.0).is_finite());
+/// assert!(sci_special::elementary::sindg(30.0).is_finite());
 /// ```
 ///
 /// ## References
@@ -4515,7 +4515,7 @@ pub fn sindg(x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::cosdg(30.0).is_finite());
+/// assert!(sci_special::elementary::cosdg(30.0).is_finite());
 /// ```
 ///
 /// ## References
@@ -4535,7 +4535,7 @@ pub fn cosdg(x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::tandg(30.0).is_finite());
+/// assert!(sci_special::elementary::tandg(30.0).is_finite());
 /// ```
 ///
 /// ## References
@@ -4555,7 +4555,7 @@ pub fn tandg(x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::cotdg(30.0).is_finite());
+/// assert!(sci_special::elementary::cotdg(30.0).is_finite());
 /// ```
 ///
 /// ## References
@@ -4575,7 +4575,7 @@ pub fn cotdg(x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::radian(30.0,20.0,10.0).is_finite());
+/// assert!(sci_special::elementary::radian(30.0,20.0,10.0).is_finite());
 /// ```
 ///
 /// ## References
@@ -4595,7 +4595,7 @@ pub fn radian(d: f64, m: f64, s: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::entr(0.3).is_finite());
+/// assert!(sci_special::elementary::entr(0.3).is_finite());
 /// ```
 ///
 /// ## References
@@ -4628,7 +4628,7 @@ pub fn entr(x: f64) -> f64 {
 /// errors. True overflow/underflow and binary64 rounding remain.
 /// ## Examples
 /// ```
-/// assert!(sci_special::rel_entr(0.3,0.5).is_finite());
+/// assert!(sci_special::elementary::rel_entr(0.3,0.5).is_finite());
 /// ```
 /// ## References
 /// [SciPy rel_entr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.rel_entr.html).
@@ -4672,7 +4672,7 @@ fn log_ratio(x: f64, y: f64) -> f64 {
 /// binary64 rounding remain. Work and storage are constant.
 /// ## Examples
 /// ```
-/// assert!(sci_special::kl_div(0.3,0.5) > 0.0);
+/// assert!(sci_special::elementary::kl_div(0.3,0.5) > 0.0);
 /// ```
 /// ## References
 /// [SciPy kl_div](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kl_div.html).
@@ -4720,7 +4720,7 @@ pub fn kl_div(x: f64, y: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::huber(1.0,2.0).is_finite());
+/// assert!(sci_special::elementary::huber(1.0,2.0).is_finite());
 /// ```
 ///
 /// ## References
@@ -4753,7 +4753,7 @@ pub fn huber(delta: f64, r: f64) -> f64 {
 /// denominator. True overflow/underflow and binary64 rounding remain.
 /// ## Examples
 /// ```
-/// assert_eq!(sci_special::pseudo_huber(1e308, 1.0), 0.5);
+/// assert_eq!(sci_special::elementary::pseudo_huber(1e308, 1.0), 0.5);
 /// ```
 /// ## References
 /// [SciPy pseudo_huber](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pseudo_huber.html).
@@ -4787,7 +4787,7 @@ pub fn pseudo_huber(delta: f64, r: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::xlogy(0.0,0.0).is_finite());
+/// assert!(sci_special::elementary::xlogy(0.0,0.0).is_finite());
 /// ```
 ///
 /// ## References
@@ -4811,7 +4811,7 @@ pub fn xlogy(x: f64, y: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::xlog1py(0.3,0.000001).is_finite());
+/// assert!(sci_special::elementary::xlog1py(0.3,0.000001).is_finite());
 /// ```
 ///
 /// ## References
@@ -4835,7 +4835,7 @@ pub fn xlog1py(x: f64, y: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::powm1(1.000001,0.3).is_finite());
+/// assert!(sci_special::elementary::powm1(1.000001,0.3).is_finite());
 /// ```
 ///
 /// ## References
@@ -4876,7 +4876,7 @@ pub fn powm1(x: f64, y: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert_eq!(sci_special::boxcox(4.0_f64, 0.0), 4.0_f64.ln());
+/// assert_eq!(sci_special::probability::boxcox(4.0_f64, 0.0), 4.0_f64.ln());
 /// ```
 ///
 /// ## References
@@ -4920,7 +4920,7 @@ pub fn boxcox<T: sci_core::Float>(x: T, lambda: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// assert_eq!(sci_special::boxcox1p(3.0_f64, 0.0), 4.0_f64.ln());
+/// assert_eq!(sci_special::probability::boxcox1p(3.0_f64, 0.0), 4.0_f64.ln());
 /// ```
 ///
 /// ## References
@@ -4945,7 +4945,7 @@ pub fn boxcox1p<T: sci_core::Float>(x: T, lambda: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::inv_boxcox(0.5,0.3).is_finite());
+/// assert!(sci_special::probability::inv_boxcox(0.5,0.3).is_finite());
 /// ```
 ///
 /// ## References
@@ -4969,7 +4969,7 @@ pub fn inv_boxcox(y: f64, lambda: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::inv_boxcox1p(0.000001,0.3).is_finite());
+/// assert!(sci_special::probability::inv_boxcox1p(0.000001,0.3).is_finite());
 /// ```
 ///
 /// ## References
@@ -4993,7 +4993,7 @@ pub fn inv_boxcox1p(y: f64, lambda: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::betaincc(2.5,3.5,0.7).is_finite());
+/// assert!(sci_special::beta::betaincc(2.5,3.5,0.7).is_finite());
 /// ```
 ///
 /// ## References
@@ -5013,7 +5013,7 @@ pub fn betaincc(a: f64, b: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::betainccinv(2.5,3.5,0.3).is_finite());
+/// assert!(sci_special::beta::betainccinv(2.5,3.5,0.3).is_finite());
 /// ```
 ///
 /// ## References
@@ -5033,7 +5033,7 @@ pub fn betainccinv(a: f64, b: f64, q: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::nrdtrimn(0.3,0.5,1.5).is_finite());
+/// assert!(sci_special::probability::nrdtrimn(0.3,0.5,1.5).is_finite());
 /// ```
 ///
 /// ## References
@@ -5057,7 +5057,7 @@ pub fn nrdtrimn(p: f64, sd: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::nrdtrisd(1.5,0.3,0.5).is_finite());
+/// assert!(sci_special::probability::nrdtrisd(1.5,0.3,0.5).is_finite());
 /// ```
 ///
 /// ## References
@@ -5078,7 +5078,7 @@ pub fn nrdtrisd(mean: f64, p: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::gdtria(0.3,2.5,0.5).is_finite());
+/// assert!(sci_special::probability::gdtria(0.3,2.5,0.5).is_finite());
 /// ```
 ///
 /// ## References
@@ -5102,7 +5102,7 @@ pub fn gdtria(p: f64, b: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::gdtrix(1.5,2.5,0.3).is_finite());
+/// assert!(sci_special::probability::gdtrix(1.5,2.5,0.3).is_finite());
 /// ```
 ///
 /// ## References
@@ -5126,7 +5126,7 @@ pub fn gdtrix(a: f64, b: f64, p: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::chdtriv(0.3,2.5).is_finite());
+/// assert!(sci_special::probability::chdtriv(0.3,2.5).is_finite());
 /// ```
 ///
 /// ## References
@@ -5146,7 +5146,7 @@ pub fn chdtriv(p: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::jn(2,0.5).is_finite());
+/// assert!(sci_special::bessel::jn(2,0.5).is_finite());
 /// ```
 ///
 /// ## References
@@ -5166,7 +5166,7 @@ pub fn jn(n: i32, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::yn(2,0.5).is_finite());
+/// assert!(sci_special::bessel::yn(2,0.5).is_finite());
 /// ```
 ///
 /// ## References
@@ -5186,7 +5186,7 @@ pub fn yn(n: i32, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::kn(2,0.5).is_finite());
+/// assert!(sci_special::bessel::kn(2,0.5).is_finite());
 /// ```
 ///
 /// ## References

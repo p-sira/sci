@@ -532,28 +532,28 @@ mod chebyshev_fast_tests {
                 let reflection = if second { -value } else { value };
                 assert!((reflected - reflection).abs() <= tolerance);
                 let wrapper = if second {
-                    crate::eval_chebyu(10, x)
+                    crate::orthogonal::eval_chebyu(10, x)
                 } else {
-                    crate::eval_chebyt(10, x)
+                    crate::orthogonal::eval_chebyt(10, x)
                 };
                 assert!((wrapper - expected).abs() <= tolerance);
                 let shifted = if second {
-                    crate::eval_sh_chebyu(10, (x + 1.0) / 2.0)
+                    crate::orthogonal::eval_sh_chebyu(10, (x + 1.0) / 2.0)
                 } else {
-                    crate::eval_sh_chebyt(10, (x + 1.0) / 2.0)
+                    crate::orthogonal::eval_sh_chebyt(10, (x + 1.0) / 2.0)
                 };
                 assert!((shifted - expected).abs() <= 5e-13 * (1.0 + expected.abs()));
                 let scaled = if second {
-                    crate::eval_chebys(10, 2.0 * x)
+                    crate::orthogonal::eval_chebys(10, 2.0 * x)
                 } else {
-                    crate::eval_chebyc(10, 2.0 * x) * 0.5
+                    crate::orthogonal::eval_chebyc(10, 2.0 * x) * 0.5
                 };
                 assert!((scaled - expected).abs() <= tolerance);
             }
         }
-        assert!(crate::eval_chebyt(-10, 0.5_f64).is_nan());
-        assert!(crate::eval_chebyu(-12, 0.5_f32).is_nan());
-        let typed = crate::eval_chebyt(10, 0.3_f32);
+        assert!(crate::orthogonal::eval_chebyt(-10, 0.5_f64).is_nan());
+        assert!(crate::orthogonal::eval_chebyu(-12, 0.5_f32).is_nan());
+        let typed = crate::orthogonal::eval_chebyt(10, 0.3_f32);
         let reference = recurrence(10, f64::from(0.3_f32), false) as f32;
         assert!((typed - reference).abs() <= 8.0 * f32::EPSILON);
         assert_eq!(chebyshev(-1, 0.5, true), 0.0);
@@ -636,21 +636,27 @@ mod recurrence_fast_tests {
                 (actual - expected).abs() <= tolerance,
                 "He_10({x}): actual={actual}, expected={expected}"
             );
-            assert_eq!(actual, crate::eval_hermitenorm(10, x));
+            assert_eq!(actual, crate::orthogonal::eval_hermitenorm(10, x));
             assert_eq!(actual, hermite(10, -x, 1.0));
         }
-        assert_eq!(crate::eval_hermitenorm(10, 0.0_f64), -945.0);
-        assert_eq!(crate::eval_hermitenorm(10, -0.0_f64), -945.0);
-        assert_eq!(crate::eval_hermitenorm(10, f64::INFINITY), f64::INFINITY);
+        assert_eq!(crate::orthogonal::eval_hermitenorm(10, 0.0_f64), -945.0);
+        assert_eq!(crate::orthogonal::eval_hermitenorm(10, -0.0_f64), -945.0);
         assert_eq!(
-            crate::eval_hermitenorm(10, f64::NEG_INFINITY),
+            crate::orthogonal::eval_hermitenorm(10, f64::INFINITY),
             f64::INFINITY
         );
-        assert!(crate::eval_hermitenorm(10, f64::NAN).is_nan());
-        assert!(crate::eval_hermitenorm(-10, 0.3_f64).is_nan());
+        assert_eq!(
+            crate::orthogonal::eval_hermitenorm(10, f64::NEG_INFINITY),
+            f64::INFINITY
+        );
+        assert!(crate::orthogonal::eval_hermitenorm(10, f64::NAN).is_nan());
+        assert!(crate::orthogonal::eval_hermitenorm(-10, 0.3_f64).is_nan());
         let x = 0.3_f32;
         let expected = hermite_clenshaw(10, f64::from(x), 1.0) as f32;
-        assert!((crate::eval_hermitenorm(10, x) - expected).abs() <= f32::EPSILON * expected.abs());
+        assert!(
+            (crate::orthogonal::eval_hermitenorm(10, x) - expected).abs()
+                <= f32::EPSILON * expected.abs()
+        );
         // Physicists' H_n and other probabilists' degrees remain on Clenshaw.
         for n in [1, 2, 3, 9, 11, 20] {
             for x in [-2.5, 0.2, 2.5] {
@@ -733,13 +739,13 @@ mod recurrence_fast_tests {
         ] {
             for x in [root - 1e-12, root, root + 1e-12] {
                 for x in [x, -x] {
-                    let value = crate::eval_legendre(10, x);
+                    let value = crate::orthogonal::eval_legendre(10, x);
                     assert!(value.abs() < 5e-11, "P_10({x})={value}");
-                    let shifted = crate::eval_sh_legendre(10, (x + 1.0) * 0.5);
+                    let shifted = crate::orthogonal::eval_sh_legendre(10, (x + 1.0) * 0.5);
                     assert!(shifted.abs() < 5e-11, "shifted P_10({x})={shifted}");
                     let x32 = x as f32;
-                    let typed = crate::eval_legendre(10, x32);
-                    let reference = crate::eval_legendre(10, f64::from(x32)) as f32;
+                    let typed = crate::orthogonal::eval_legendre(10, x32);
+                    let reference = crate::orthogonal::eval_legendre(10, f64::from(x32)) as f32;
                     assert!(
                         (typed - reference).abs() <= 4.0 * f32::EPSILON * (1.0 + reference.abs()),
                         "f32 P_10({x32})={typed}, f64 reference={reference}"
@@ -759,10 +765,10 @@ mod recurrence_fast_tests {
                 1.0 - f64::EPSILON,
                 1.0,
             ] {
-                let actual = crate::eval_legendre(n, x);
+                let actual = crate::orthogonal::eval_legendre(n, x);
                 let x32 = x as f32;
-                let typed = crate::eval_legendre(n, x32);
-                let reference = crate::eval_legendre(n, f64::from(x32)) as f32;
+                let typed = crate::orthogonal::eval_legendre(n, x32);
+                let reference = crate::orthogonal::eval_legendre(n, f64::from(x32)) as f32;
                 assert_eq!(
                     typed.to_bits(),
                     reference.to_bits(),
@@ -773,8 +779,8 @@ mod recurrence_fast_tests {
                 }
             }
         }
-        assert!(crate::eval_legendre(10, f64::NAN).is_nan());
-        assert!(crate::eval_legendre(-1, 0.5_f32).is_nan());
+        assert!(crate::orthogonal::eval_legendre(10, f64::NAN).is_nan());
+        assert!(crate::orthogonal::eval_legendre(-1, 0.5_f32).is_nan());
     }
 
     #[test]
@@ -841,12 +847,12 @@ mod recurrence_fast_tests {
         ] {
             for n in [0, 1, 2, 3, 10, 16, 32] {
                 let expected = laguerre_three_term(n, x);
-                let actual = crate::eval_laguerre(n, x);
+                let actual = crate::orthogonal::eval_laguerre(n, x);
                 assert!(
                     (actual - expected).abs() <= 1e-11 * (1.0 + expected.abs()),
                     "L_{n}({x}): actual={actual}, expected={expected}"
                 );
-                assert_eq!(actual, crate::eval_genlaguerre(n, 0.0, x));
+                assert_eq!(actual, crate::orthogonal::eval_genlaguerre(n, 0.0, x));
             }
         }
     }

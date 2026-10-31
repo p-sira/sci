@@ -92,7 +92,7 @@ fn logarithm(a: Mat<C>) -> Result<Mat<C>> {
     }
     // log(I+E) = integral_0^1 (I+xE)^-1 E dx. Reuse the shared
     // Gauss-Legendre rule already used by the integration module.
-    let (nodes, weights) = crate::special::roots_legendre(16)?;
+    let (nodes, weights) = crate::special::orthogonal::roots_legendre(16)?;
     let e = t - &identity;
     let mut value = Mat::<C>::zeros(n, n);
     for (node, weight) in nodes.into_iter().zip(weights) {

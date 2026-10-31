@@ -100,9 +100,9 @@ fn evaluate<T: fft::FftFloat + e::BulirschFloat>(
             "heuman_lambda" => real([e::heuman_lambda(x[0], x[1]).unwrap()]),
             "ellippiinc_bulirsch" => real([e::ellippiinc_bulirsch(x[0], x[1], x[2]).unwrap()]),
             "ellipkm1" => real([e::ellipkm1(x[0]).unwrap()]),
-            "logsumexp" => real([s::logsumexp(x)]),
-            "softmax" => real(s::softmax(x)),
-            "log_softmax" => real(s::log_softmax(x)),
+            "logsumexp" => real([s::elementary::logsumexp(x)]),
+            "softmax" => real(s::elementary::softmax(x)),
+            "log_softmax" => real(s::elementary::log_softmax(x)),
             _ => panic!("unknown special function {name}"),
         },
         "differentiate" => match name {
@@ -426,9 +426,9 @@ fn boundary_properties<T: fft::FftFloat + e::BulirschFloat>() {
         .is_sign_negative()
     );
     assert!(c::from_polar(-one, zero).is_err());
-    assert_eq!(s::logsumexp::<T>(&[]), -inf);
-    assert!(s::logsumexp(&[nan]).is_nan());
-    assert_eq!(s::logsumexp(&[inf, one]), inf);
+    assert_eq!(s::elementary::logsumexp::<T>(&[]), -inf);
+    assert!(s::elementary::logsumexp(&[nan]).is_nan());
+    assert_eq!(s::elementary::logsumexp(&[inf, one]), inf);
     assert_eq!(constants::lambda2nu(-zero), -inf);
     assert!(constants::nu2lambda(-inf).is_sign_negative());
     assert!(

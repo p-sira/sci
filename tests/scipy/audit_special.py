@@ -6,6 +6,7 @@ explicitly rather than counted as separate algorithms.
 """
 import csv
 import re
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,11 +21,72 @@ ALIASES = {(f"{key}_roots" if len(key) <= 2 and key not in {"psi"} else key):
 NATIVE = {"cbrt", "exp10", "exp2", "expm1", "log1p", "round", "geterr", "seterr"}
 
 
+def public_families():
+    """Read the public numerical exports, including the elliptic glob.
+
+    Implementation functions are private and cannot establish public coverage;
+    only family re-exports in lib.rs do. Verify that each implementation name
+    appears in exactly one public family.
+    """
+    source = ROOT / "crates/sci-special/src"
+    facade = (source / "lib.rs").read_text()
+    assert re.search(r"^pub mod complex;\s*$", facade, re.MULTILINE)
+    assert not re.search(r"^pub fn \w+", facade, re.MULTILINE)
+    # The only root-level `pub use` is for the shared Error/Result types.
+    root_uses = re.findall(r"^pub use ([^;]+);", facade, re.MULTILINE)
+    assert root_uses == ["sci_core::{Error, Result}"], root_uses
+
+    implementation = set()
+    for path in source.glob("*.rs"):
+        if path.name in {"complex.rs", "lib.rs"}:
+            continue
+        contents = path.read_text()
+        implementation.update(re.findall(r"^pub fn (\w+)", contents, re.MULTILINE))
+        implementation.update(re.findall(r"^pub use \w+ as (\w+);", contents, re.MULTILINE))
+
+    elliptic = (source / "elliptic.rs").read_text()
+    elliptic_names = set(re.findall(r"^pub fn (\w+)", elliptic, re.MULTILINE))
+    elliptic_names.update(re.findall(r"^pub use \w+ as (\w+);", elliptic, re.MULTILINE))
+
+    families = {}
+    exports = Counter()
+    modules = re.findall(r"^pub mod (\w+) \{(.*?)^\}", facade, re.MULTILINE | re.DOTALL)
+    expected_modules = {
+        "gamma", "beta", "bessel", "orthogonal", "hypergeometric", "wave",
+        "integrals", "zeta", "probability", "elementary", "combinatorics", "elliptic",
+    }
+    assert {name for name, _ in modules} == expected_modules
+    for family, body in modules:
+        declarations = re.findall(r"pub use crate::implementation::([^;]+);", body)
+        assert declarations, family
+        for declaration in declarations:
+            declaration = declaration.strip()
+            if declaration == "elliptic::*":
+                names = elliptic_names
+            elif declaration.startswith("{") and declaration.endswith("}"):
+                names = [name.strip() for name in declaration[1:-1].split(",") if name.strip()]
+            else:
+                names = [declaration]
+            for name in names:
+                if name == "ValueDerivativeMatrices":
+                    assert family == "orthogonal"
+                    continue  # public type, not a numerical function
+                assert name in implementation, (family, name)
+                exports[name] += 1
+                families[name] = family
+
+    duplicates = {name: count for name, count in exports.items() if count != 1}
+    assert not duplicates, duplicates
+    assert set(exports) == implementation, (
+        "missing", sorted(implementation - set(exports)),
+        "extra", sorted(set(exports) - implementation),
+    )
+    return families
+
+
 def audit():
-    source = "\n".join(path.read_text() for path in (ROOT / "crates/sci-special/src").glob("*.rs")
-                       if path.name != "complex.rs")
-    public = set(re.findall(r"^pub fn (\w+)", source, re.MULTILINE))
-    public.update(re.findall(r"^pub use ellipf as (\w+);", source, re.MULTILINE))
+    families = public_families()
+    public = set(families)
     with (ROOT / "tests/fixtures/special_extended.csv").open() as stream:
         references = {row["function"] for row in csv.DictReader(stream)}
     text = (ROOT / "function_coverages/scipy_function_list/scipy.special.md").read_text()
@@ -42,7 +104,8 @@ def audit():
         print(f"{namespace}: {len(names)} names, {len(direct)} direct, "
               f"{len(names & ALIASES.keys())} aliases, {len(names & NATIVE)} native replacements")
     assert len(public) == 362, len(public)
-    print(f"Root numerical exports (including ellipkinc alias): {len(public)}; all previous names retained.")
+    print(f"Public family numerical exports (including ellipkinc alias): {len(public)} "
+          f"across {len(set(families.values()))} families; none at the root.")
 
 
 if __name__ == "__main__":

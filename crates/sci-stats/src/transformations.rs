@@ -281,7 +281,7 @@ pub fn boxcox(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
             "Box-Cox requires positive observations",
         ));
     }
-    transform(values, |x| sci_special::boxcox(x, lambda))
+    transform(values, |x| sci_special::probability::boxcox(x, lambda))
 }
 /// Yeo–Johnson transform: Box–Cox of x+1 for x≥0; minus Box–Cox of 1−x with exponent 2−λ for x<0.
 ///
@@ -342,9 +342,9 @@ pub fn yeojohnson(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
     }
     transform(values, |x| {
         if x >= 0. {
-            sci_special::boxcox1p(x, lambda)
+            sci_special::probability::boxcox1p(x, lambda)
         } else {
-            -sci_special::boxcox1p(-x, 2. - lambda)
+            -sci_special::probability::boxcox1p(-x, 2. - lambda)
         }
     })
 }

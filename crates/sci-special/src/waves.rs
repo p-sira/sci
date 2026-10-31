@@ -36,7 +36,7 @@
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_jacobi(3,0.5_f64,0.3,0.2);
+/// let value = sci_special::orthogonal::eval_jacobi(3,0.5_f64,0.3,0.2);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -87,7 +87,7 @@ pub fn eval_jacobi<T: sci_core::Float>(n: i32, alpha: T, beta: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_legendre(3,0.2_f64);
+/// let value = sci_special::orthogonal::eval_legendre(3,0.2_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -138,7 +138,7 @@ pub fn eval_legendre<T: sci_core::Float>(n: i32, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_gegenbauer(3,0.5_f64,0.2);
+/// let value = sci_special::orthogonal::eval_gegenbauer(3,0.5_f64,0.2);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -189,7 +189,7 @@ pub fn eval_gegenbauer<T: sci_core::Float>(n: i32, alpha: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_genlaguerre(3,0.5_f64,0.2);
+/// let value = sci_special::orthogonal::eval_genlaguerre(3,0.5_f64,0.2);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -240,7 +240,7 @@ pub fn eval_genlaguerre<T: sci_core::Float>(n: i32, alpha: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_laguerre(3,0.2_f64);
+/// let value = sci_special::orthogonal::eval_laguerre(3,0.2_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -292,7 +292,7 @@ pub fn eval_laguerre<T: sci_core::Float>(n: i32, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_chebyt(3,0.2_f64);
+/// let value = sci_special::orthogonal::eval_chebyt(3,0.2_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -345,7 +345,7 @@ pub fn eval_chebyt<T: sci_core::Float>(n: i32, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_chebyu(3,0.2_f64);
+/// let value = sci_special::orthogonal::eval_chebyu(3,0.2_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -397,7 +397,7 @@ pub fn eval_chebyu<T: sci_core::Float>(n: i32, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_hermite(3,0.2_f64);
+/// let value = sci_special::orthogonal::eval_hermite(3,0.2_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -448,7 +448,7 @@ pub fn eval_hermite<T: sci_core::Float>(n: i32, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_hermitenorm(3,0.2_f64);
+/// let value = sci_special::orthogonal::eval_hermitenorm(3,0.2_f64);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -494,7 +494,7 @@ pub fn eval_hermitenorm<T: sci_core::Float>(n: i32, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pro_cv(1,3,0.5);
+/// let value = sci_special::wave::pro_cv(1,3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -546,7 +546,7 @@ pub fn pro_cv(m: u64, n: u64, c: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pro_ang1(1,3,0.5,0.3);
+/// let value = sci_special::wave::pro_ang1(1,3,0.5,0.3);
 /// assert!(value.0.is_finite());
 /// ```
 ///
@@ -600,7 +600,7 @@ pub fn pro_ang1(m: u64, n: u64, c: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pro_ang1_cv(1,3,0.5,12.0,0.3);
+/// let value = sci_special::wave::pro_ang1_cv(1,3,0.5,12.0,0.3);
 /// assert!(value.0.is_finite());
 /// ```
 ///
@@ -652,7 +652,7 @@ pub fn pro_ang1_cv(m: u64, n: u64, c: f64, cv: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pro_rad1(1,3,0.5,2.0);
+/// let value = sci_special::wave::pro_rad1(1,3,0.5,2.0);
 /// assert!(value.0.is_finite());
 /// ```
 ///
@@ -706,7 +706,7 @@ pub fn pro_rad1(m: u64, n: u64, c: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pro_rad1_cv(1,3,0.5,12.0,2.0);
+/// let value = sci_special::wave::pro_rad1_cv(1,3,0.5,12.0,2.0);
 /// assert!(value.0.is_finite());
 /// ```
 ///
@@ -758,7 +758,7 @@ pub fn pro_rad1_cv(m: u64, n: u64, c: f64, cv: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pro_rad2(1,3,0.5,2.0);
+/// let value = sci_special::wave::pro_rad2(1,3,0.5,2.0);
 /// assert!(value.0.is_finite());
 /// ```
 ///
@@ -812,7 +812,7 @@ pub fn pro_rad2(m: u64, n: u64, c: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pro_rad2_cv(1,3,0.5,12.0,2.0);
+/// let value = sci_special::wave::pro_rad2_cv(1,3,0.5,12.0,2.0);
 /// assert!(value.0.is_finite());
 /// ```
 ///
@@ -857,7 +857,7 @@ pub fn pro_rad2_cv(m: u64, n: u64, c: f64, cv: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::obl_cv(1,3,0.5);
+/// let value = sci_special::wave::obl_cv(1,3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -909,7 +909,7 @@ pub fn obl_cv(m: u64, n: u64, c: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::obl_ang1(1,3,0.5,0.3);
+/// let value = sci_special::wave::obl_ang1(1,3,0.5,0.3);
 /// assert!(value.0.is_finite());
 /// ```
 ///
@@ -963,7 +963,7 @@ pub fn obl_ang1(m: u64, n: u64, c: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::obl_ang1_cv(1,3,0.5,12.0,0.3);
+/// let value = sci_special::wave::obl_ang1_cv(1,3,0.5,12.0,0.3);
 /// assert!(value.0.is_finite());
 /// ```
 ///
@@ -1015,7 +1015,7 @@ pub fn obl_ang1_cv(m: u64, n: u64, c: f64, cv: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::obl_rad1(1,3,0.5,2.0);
+/// let value = sci_special::wave::obl_rad1(1,3,0.5,2.0);
 /// assert!(value.0.is_finite());
 /// ```
 ///
@@ -1069,7 +1069,7 @@ pub fn obl_rad1(m: u64, n: u64, c: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::obl_rad1_cv(1,3,0.5,12.0,2.0);
+/// let value = sci_special::wave::obl_rad1_cv(1,3,0.5,12.0,2.0);
 /// assert!(value.0.is_finite());
 /// ```
 ///
@@ -1121,7 +1121,7 @@ pub fn obl_rad1_cv(m: u64, n: u64, c: f64, cv: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::obl_rad2(1,3,0.5,2.0);
+/// let value = sci_special::wave::obl_rad2(1,3,0.5,2.0);
 /// assert!(value.0.is_finite());
 /// ```
 ///
@@ -1175,7 +1175,7 @@ pub fn obl_rad2(m: u64, n: u64, c: f64, x: f64) -> (f64, f64) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::obl_rad2_cv(1,3,0.5,12.0,2.0);
+/// let value = sci_special::wave::obl_rad2_cv(1,3,0.5,12.0,2.0);
 /// assert!(value.0.is_finite());
 /// ```
 ///

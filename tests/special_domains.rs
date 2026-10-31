@@ -18,9 +18,9 @@ fn euler_numbers_use_integer_binomial_recurrence_without_losing_values() {
         -2404879675441.0,
         370371188237525.0,
     ];
-    assert_eq!(s::euler(0).unwrap(), [1.0]);
-    assert_eq!(s::euler(1).unwrap(), [1.0, 0.0]);
-    let values = s::euler(20).unwrap();
+    assert_eq!(s::combinatorics::euler(0).unwrap(), [1.0]);
+    assert_eq!(s::combinatorics::euler(1).unwrap(), [1.0, 0.0]);
+    let values = s::combinatorics::euler(20).unwrap();
     for (k, &expected) in even.iter().enumerate() {
         assert!(
             (values[2 * k] - expected).abs() <= 3e-15 * expected.abs(),
@@ -33,12 +33,12 @@ fn euler_numbers_use_integer_binomial_recurrence_without_losing_values() {
     for k in (1..=20).step_by(2) {
         assert_eq!(values[k], 0.0);
     }
-    let higher = s::euler(64).unwrap();
+    let higher = s::combinatorics::euler(64).unwrap();
     assert!(higher.iter().all(|v| v.is_finite()));
     // E_64 from the exact integer recurrence, rounded to binary64.
     let expected_64 = 4.535_810_333_001_789e76;
     assert!((higher[64] - expected_64).abs() <= 3e-14 * expected_64);
-    assert!(s::euler(256).is_err());
+    assert!(s::combinatorics::euler(256).is_err());
 }
 
 #[test]
@@ -46,32 +46,32 @@ fn polynomial_constructors_and_quadrature_reject_unsupported_sizes() {
     type Polynomial = fn(usize, bool) -> sci::Result<Vec<f64>>;
     type Quadrature = fn(usize) -> sci::Result<(Vec<f64>, Vec<f64>)>;
     let polynomials: [Polynomial; 12] = [
-        s::legendre,
-        s::laguerre,
-        s::hermite,
-        s::hermitenorm,
-        s::chebyt,
-        s::chebyu,
-        s::chebyc,
-        s::chebys,
-        s::sh_chebyt,
-        s::sh_chebyu,
-        s::sh_legendre,
-        |n, monic| s::gegenbauer(n, 0.5, monic),
+        s::orthogonal::legendre,
+        s::orthogonal::laguerre,
+        s::orthogonal::hermite,
+        s::orthogonal::hermitenorm,
+        s::orthogonal::chebyt,
+        s::orthogonal::chebyu,
+        s::orthogonal::chebyc,
+        s::orthogonal::chebys,
+        s::orthogonal::sh_chebyt,
+        s::orthogonal::sh_chebyu,
+        s::orthogonal::sh_legendre,
+        |n, monic| s::orthogonal::gegenbauer(n, 0.5, monic),
     ];
     let quadratures: [Quadrature; 12] = [
-        s::roots_legendre,
-        s::roots_laguerre,
-        s::roots_hermite,
-        s::roots_hermitenorm,
-        s::roots_chebyt,
-        s::roots_chebyu,
-        s::roots_chebyc,
-        s::roots_chebys,
-        s::roots_sh_chebyt,
-        s::roots_sh_chebyu,
-        s::roots_sh_legendre,
-        |n| s::roots_gegenbauer(n, 0.5),
+        s::orthogonal::roots_legendre,
+        s::orthogonal::roots_laguerre,
+        s::orthogonal::roots_hermite,
+        s::orthogonal::roots_hermitenorm,
+        s::orthogonal::roots_chebyt,
+        s::orthogonal::roots_chebyu,
+        s::orthogonal::roots_chebyc,
+        s::orthogonal::roots_chebys,
+        s::orthogonal::roots_sh_chebyt,
+        s::orthogonal::roots_sh_chebyu,
+        s::orthogonal::roots_sh_legendre,
+        |n| s::orthogonal::roots_gegenbauer(n, 0.5),
     ];
     for polynomial in polynomials {
         assert!(polynomial(257, false).is_err());
@@ -82,14 +82,14 @@ fn polynomial_constructors_and_quadrature_reject_unsupported_sizes() {
         assert!(quadrature(257).is_err());
     }
     for parameter in [f64::NAN, -1.0, f64::INFINITY] {
-        assert!(s::jacobi(2, parameter, 0.0, false).is_err());
-        assert!(s::roots_jacobi(2, 0.0, parameter).is_err());
-        assert!(s::genlaguerre(2, parameter, false).is_err());
-        assert!(s::roots_genlaguerre(2, parameter).is_err());
-        assert!(s::gegenbauer(2, parameter, false).is_err());
-        assert!(s::roots_gegenbauer(2, parameter).is_err());
-        assert!(s::sh_jacobi(2, 0.0, parameter, false).is_err());
-        assert!(s::roots_sh_jacobi(2, parameter, 1.0).is_err());
+        assert!(s::orthogonal::jacobi(2, parameter, 0.0, false).is_err());
+        assert!(s::orthogonal::roots_jacobi(2, 0.0, parameter).is_err());
+        assert!(s::orthogonal::genlaguerre(2, parameter, false).is_err());
+        assert!(s::orthogonal::roots_genlaguerre(2, parameter).is_err());
+        assert!(s::orthogonal::gegenbauer(2, parameter, false).is_err());
+        assert!(s::orthogonal::roots_gegenbauer(2, parameter).is_err());
+        assert!(s::orthogonal::sh_jacobi(2, 0.0, parameter, false).is_err());
+        assert!(s::orthogonal::roots_sh_jacobi(2, parameter, 1.0).is_err());
     }
 }
 
@@ -97,12 +97,12 @@ fn polynomial_constructors_and_quadrature_reject_unsupported_sizes() {
 fn wave_functions_validate_before_entering_recurrences() {
     type Angular = fn(u32, f64, f64) -> (f64, f64);
     for function in [
-        s::mathieu_cem,
-        s::mathieu_sem,
-        s::mathieu_modcem1,
-        s::mathieu_modcem2,
-        s::mathieu_modsem1,
-        s::mathieu_modsem2,
+        s::wave::mathieu_cem,
+        s::wave::mathieu_sem,
+        s::wave::mathieu_modcem1,
+        s::wave::mathieu_modcem2,
+        s::wave::mathieu_modsem1,
+        s::wave::mathieu_modsem2,
     ] as [Angular; 6]
     {
         for (m, q, x) in [
@@ -115,18 +115,18 @@ fn wave_functions_validate_before_entering_recurrences() {
             assert!(value.0.is_nan() && value.1.is_nan());
         }
     }
-    assert!(s::mathieu_b(129, 0.0).is_nan());
-    assert!(s::mathieu_b(0, 0.5).is_nan());
-    assert!(s::mathieu_odd_coef(0, 1.0).is_err());
-    assert!(s::mathieu_odd_coef(129, 1.0).is_err());
+    assert!(s::wave::mathieu_b(129, 0.0).is_nan());
+    assert!(s::wave::mathieu_b(0, 0.5).is_nan());
+    assert!(s::wave::mathieu_odd_coef(0, 1.0).is_err());
+    assert!(s::wave::mathieu_odd_coef(129, 1.0).is_err());
     type Wave = fn(u64, u64, f64, f64) -> (f64, f64);
     for function in [
-        s::pro_ang1,
-        s::pro_rad1,
-        s::pro_rad2,
-        s::obl_ang1,
-        s::obl_rad1,
-        s::obl_rad2,
+        s::wave::pro_ang1,
+        s::wave::pro_rad1,
+        s::wave::pro_rad2,
+        s::wave::obl_ang1,
+        s::wave::obl_rad1,
+        s::wave::obl_rad2,
     ] as [Wave; 6]
     {
         for (m, n, c, x) in [
@@ -141,12 +141,12 @@ fn wave_functions_validate_before_entering_recurrences() {
     }
     type WithCv = fn(u64, u64, f64, f64, f64) -> (f64, f64);
     for function in [
-        s::pro_ang1_cv,
-        s::pro_rad1_cv,
-        s::pro_rad2_cv,
-        s::obl_ang1_cv,
-        s::obl_rad1_cv,
-        s::obl_rad2_cv,
+        s::wave::pro_ang1_cv,
+        s::wave::pro_rad1_cv,
+        s::wave::pro_rad2_cv,
+        s::wave::obl_ang1_cv,
+        s::wave::obl_rad1_cv,
+        s::wave::obl_rad2_cv,
     ] as [WithCv; 6]
     {
         let value = function(2, 1, 1.0, 2.0, 2.0);
@@ -154,62 +154,62 @@ fn wave_functions_validate_before_entering_recurrences() {
         let value = function(0, 1, 1.0, f64::NAN, 2.0);
         assert!(value.0.is_nan() && value.1.is_nan());
     }
-    assert!(s::obl_cv(0, 129, 1.0).is_nan());
-    assert!(s::obl_cv_seq(2, 1, 1.0).is_err());
+    assert!(s::wave::obl_cv(0, 129, 1.0).is_nan());
+    assert!(s::wave::obl_cv_seq(2, 1, 1.0).is_err());
 }
 
 #[test]
 fn zero_and_sequence_apis_enforce_work_limits() {
     type Zeros = fn(usize) -> sci::Result<Vec<f64>>;
     for function in [
-        s::ber_zeros,
-        s::bei_zeros,
-        s::ker_zeros,
-        s::kei_zeros,
-        s::berp_zeros,
-        s::beip_zeros,
-        s::kerp_zeros,
-        s::keip_zeros,
+        s::bessel::ber_zeros,
+        s::bessel::bei_zeros,
+        s::bessel::ker_zeros,
+        s::bessel::kei_zeros,
+        s::bessel::berp_zeros,
+        s::bessel::beip_zeros,
+        s::bessel::kerp_zeros,
+        s::bessel::keip_zeros,
     ] as [Zeros; 8]
     {
         assert!(function(0).is_err());
         assert!(function(4097).is_err());
     }
-    assert!(s::kelvin_zeros(0).is_err());
-    assert!(s::bernoulli(257).is_err());
-    assert!(s::euler(257).is_err());
-    assert!(s::pbdv_seq(f64::NAN, 1.0).is_err());
-    assert!(s::pbvv_seq(5000.0, 1.0).is_err());
-    assert!(s::pbdn_seq(257, 1.0).is_err());
-    assert!(s::riccati_jn(4097, 1.0).is_err());
-    assert!(s::riccati_yn(1, 0.0).is_err());
-    assert!(s::lmbda(f64::NAN, 1.0).is_err());
-    assert!(s::jnjnp_zeros(129).is_err());
-    assert!(s::lqn(4097, 0.5).is_err());
-    assert!(s::lqmn(1, 4097, 0.5).is_err());
+    assert!(s::bessel::kelvin_zeros(0).is_err());
+    assert!(s::combinatorics::bernoulli(257).is_err());
+    assert!(s::combinatorics::euler(257).is_err());
+    assert!(s::wave::pbdv_seq(f64::NAN, 1.0).is_err());
+    assert!(s::wave::pbvv_seq(5000.0, 1.0).is_err());
+    assert!(s::wave::pbdn_seq(257, 1.0).is_err());
+    assert!(s::bessel::riccati_jn(4097, 1.0).is_err());
+    assert!(s::bessel::riccati_yn(1, 0.0).is_err());
+    assert!(s::wave::lmbda(f64::NAN, 1.0).is_err());
+    assert!(s::bessel::jnjnp_zeros(129).is_err());
+    assert!(s::orthogonal::lqn(4097, 0.5).is_err());
+    assert!(s::orthogonal::lqmn(1, 4097, 0.5).is_err());
 }
 
 #[test]
 fn elementary_limits_preserve_parity_and_overflow_conventions() {
     let tau = std::f64::consts::TAU;
-    assert_eq!(s::diric(tau, 2), -1.0);
-    assert_eq!(s::diric(tau, 3), 1.0);
-    assert!(s::diric(0.0, 0).is_nan());
-    assert_eq!(s::factorial2(-1), 0.0);
-    assert_eq!(s::factorial2(301), f64::INFINITY);
-    assert!(s::factorialk(1, 0).is_nan());
-    assert_eq!(s::factorialk(-1, 3), 0.0);
-    assert_eq!(s::factorialk(1000, 1), f64::INFINITY);
-    assert!(s::perm(1.0, 100001).is_nan());
-    assert_eq!(s::perm(1.0, 2), 0.0);
-    assert!(s::stirling2(4097, 2).is_nan());
-    assert_eq!(s::stirling2(2, 3), 0.0);
-    assert!(s::jvp(1.0, 2.0, 1025).is_nan());
+    assert_eq!(s::elementary::diric(tau, 2), -1.0);
+    assert_eq!(s::elementary::diric(tau, 3), 1.0);
+    assert!(s::elementary::diric(0.0, 0).is_nan());
+    assert_eq!(s::combinatorics::factorial2(-1), 0.0);
+    assert_eq!(s::combinatorics::factorial2(301), f64::INFINITY);
+    assert!(s::combinatorics::factorialk(1, 0).is_nan());
+    assert_eq!(s::combinatorics::factorialk(-1, 3), 0.0);
+    assert_eq!(s::combinatorics::factorialk(1000, 1), f64::INFINITY);
+    assert!(s::combinatorics::perm(1.0, 100001).is_nan());
+    assert_eq!(s::combinatorics::perm(1.0, 2), 0.0);
+    assert!(s::combinatorics::stirling2(4097, 2).is_nan());
+    assert_eq!(s::combinatorics::stirling2(2, 3), 0.0);
+    assert!(s::bessel::jvp(1.0, 2.0, 1025).is_nan());
     for function in [
-        s::spherical_jn,
-        s::spherical_yn,
-        s::spherical_in,
-        s::spherical_kn,
+        s::bessel::spherical_jn,
+        s::bessel::spherical_yn,
+        s::bessel::spherical_in,
+        s::bessel::spherical_kn,
     ] {
         assert!(function(i64::MAX, 1.0_f64, false).is_nan());
         assert!(function(i64::MAX, 1.0_f64, true).is_nan());
@@ -250,7 +250,7 @@ fn hyp1f1_cancellation_matches_independent_precision_checked_series() {
         .skip(1)
     {
         let fields: Vec<f64> = row.split(',').map(|value| value.parse().unwrap()).collect();
-        let actual = s::hyp1f1(fields[0], fields[1], fields[2]);
+        let actual = s::hypergeometric::hyp1f1(fields[0], fields[1], fields[2]);
         let expected = fields[3];
         // Relative accuracy matters for exponentially small functions as well.
         // No absolute floor hides cancellation or premature underflow to zero.
@@ -268,46 +268,49 @@ fn hyp1f1_continuation_identities_and_work_limits() {
         (1000.0, 0.2, -100.0),
         (32.0, 3.2, -50.0),
     ] {
-        let value = s::hyp1f1(a, b, x);
-        let contiguous =
-            s::hyp1f1(a, b + 1.0, x) + a * x / (b * (b + 1.0)) * s::hyp1f1(a + 1.0, b + 2.0, x);
+        let value = s::hypergeometric::hyp1f1(a, b, x);
+        let contiguous = s::hypergeometric::hyp1f1(a, b + 1.0, x)
+            + a * x / (b * (b + 1.0)) * s::hypergeometric::hyp1f1(a + 1.0, b + 2.0, x);
         assert!((value - contiguous).abs() <= 3e-12 * value.abs());
     }
     for x in [-20.0_f64, -100.0, -1000.0] {
         let scale = (x * 0.5).exp();
         let expected = ((1.0 + x) * scale) * scale;
-        assert_eq!(s::hyp1f1(2.0, 1.0, x), expected);
+        assert_eq!(s::hypergeometric::hyp1f1(2.0, 1.0, x), expected);
     }
-    assert!(s::hyp1f1(100000.0, 0.2, -1000.0).is_nan()); // Continuation step budget.
-    assert!(s::hyp1f1(65.1, -3.0, -20.0).is_infinite()); // Denominator pole unchanged.
-    assert_eq!(s::hyp1f1(65.1, 65.1, -20.0), (-20.0_f64).exp());
+    assert!(s::hypergeometric::hyp1f1(100000.0, 0.2, -1000.0).is_nan()); // Continuation step budget.
+    assert!(s::hypergeometric::hyp1f1(65.1, -3.0, -20.0).is_infinite()); // Denominator pole unchanged.
+    assert_eq!(
+        s::hypergeometric::hyp1f1(65.1, 65.1, -20.0),
+        (-20.0_f64).exp()
+    );
 }
 
 #[test]
 fn beta_quantiles_preserve_extreme_tails_and_small_coordinates() {
     let mut previous = 0.0;
     for p in [1e-300_f64, 1e-20, 1e-12, 0.01, 0.4] {
-        let x = s::betaincinv(1000.0, 0.1, p);
+        let x = s::beta::betaincinv(1000.0, 0.1, p);
         assert!(x > previous && x < 1.0);
-        assert!((s::betainc(1000.0, 0.1, x) / p - 1.0).abs() < 3e-11);
+        assert!((s::beta::betainc(1000.0, 0.1, x) / p - 1.0).abs() < 3e-11);
         previous = x;
     }
     for p in [0.9_f64, 1.0 - 1e-12] {
-        let x = s::betaincinv(0.1, 1000.0, p);
+        let x = s::beta::betaincinv(0.1, 1000.0, p);
         assert!((0.0..0.1).contains(&x));
-        assert!((s::betaincc(0.1, 1000.0, x) / (1.0 - p) - 1.0).abs() < 3e-11);
+        assert!((s::beta::betaincc(0.1, 1000.0, x) / (1.0 - p) - 1.0).abs() < 3e-11);
     }
     // For b=1, I_x(a,1)=x^a. Reflection must not erase a tiny x even
     // when p is near one half rather than in the extreme probability tail.
     for a in [0.001_f64, 0.01] {
         for p in [0.6_f64, 0.9, 0.99] {
             let expected = (p.ln() / a).exp();
-            let x = s::betaincinv(a, 1.0, p);
+            let x = s::beta::betaincinv(a, 1.0, p);
             assert!(x > 0.0 && (x / expected - 1.0).abs() < 3e-11);
         }
     }
-    let x = s::betaincinv(1000.0_f32, 0.1, 1e-20);
-    assert!((x as f64 / s::betaincinv(1000.0, 0.1, 1e-20) - 1.0).abs() < 1e-7);
+    let x = s::beta::betaincinv(1000.0_f32, 0.1, 1e-20);
+    assert!((x as f64 / s::beta::betaincinv(1000.0, 0.1, 1e-20) - 1.0).abs() < 1e-7);
 }
 
 #[test]
@@ -335,7 +338,7 @@ fn beta_quantile_refinement_recovers_far_tail_starts() {
             5.609_963_436_013_65e-150,
         ),
     ] {
-        let x = s::betaincinv(a, b, p);
+        let x = s::beta::betaincinv(a, b, p);
         assert!(
             (x / expected - 1.0).abs() < 1e-13,
             "a={a}, b={b}, p={p:e}: {x:e} vs {expected:e}"
@@ -343,7 +346,7 @@ fn beta_quantile_refinement_recovers_far_tail_starts() {
     }
     // The p > 1/2 branch refines against the exact upper tail 1-y = 1e-15
     // instead of the rounded lower tail.
-    let p = s::nbdtri(500, 20, 0.999999999999999_f64);
+    let p = s::probability::nbdtri(500, 20, 0.999999999999999_f64);
     assert!((p / 0.142_285_681_213_949_08 - 1.0).abs() < 1e-13, "{p:e}");
 }
 
@@ -351,36 +354,37 @@ fn beta_quantile_refinement_recovers_far_tail_starts() {
 fn hyperu_zero_second_parameter_continues_negative_noninteger_orders() {
     for a in [-5.5_f64, -2.5, -1.5, -0.99, -0.25] {
         for x in [0.01_f64, 0.1, 2.0, 30.0] {
-            let value = s::hyperu(a, 0.0, x);
+            let value = s::hypergeometric::hyperu(a, 0.0, x);
             assert!(value.is_finite() && value != 0.0);
-            let contiguous = (x + 2.0 * a) * value - a * (1.0 + a) * s::hyperu(a + 1.0, 0.0, x);
-            let previous = s::hyperu(a - 1.0, 0.0, x);
+            let contiguous =
+                (x + 2.0 * a) * value - a * (1.0 + a) * s::hypergeometric::hyperu(a + 1.0, 0.0, x);
+            let previous = s::hypergeometric::hyperu(a - 1.0, 0.0, x);
             assert!(
                 (contiguous - previous).abs() < 3e-10 * previous.abs(),
                 "a={a}, x={x}: contiguous={contiguous:e}, previous={previous:e}"
             );
         }
     }
-    assert!(s::itairy(150.0)[1].is_infinite());
+    assert!(s::wave::itairy(150.0)[1].is_infinite());
 }
 
 #[test]
 fn bessel_recurrence_and_integral_tails_retain_small_results() {
     let (v, x) = (30.25_f64, 1e-4_f64);
-    let value = s::jv(v, x);
-    let recurrence = x / (2.0 * v) * (s::jv(v - 1.0, x) + s::jv(v + 1.0, x));
+    let value = s::bessel::jv(v, x);
+    let recurrence = x / (2.0 * v) * (s::bessel::jv(v - 1.0, x) + s::bessel::jv(v + 1.0, x));
     assert!(value > 0.0 && (value / recurrence - 1.0).abs() < 3e-11);
     let mut previous = f64::INFINITY;
     for x in [4.0_f64, 12.0, 19.9, 30.0, 100.0] {
-        let tail = s::it2i0k0(x).1;
+        let tail = s::bessel::it2i0k0(x).1;
         assert!(tail > 0.0 && tail < previous);
         previous = tail;
         let h = 1e-4;
-        let derivative = (s::it2i0k0(x + h).1 - s::it2i0k0(x - h).1) / (2.0 * h);
+        let derivative = (s::bessel::it2i0k0(x + h).1 - s::bessel::it2i0k0(x - h).1) / (2.0 * h);
         // A centered difference has O(h²) truncation error. Avoid the
         // algorithm transition at x=4 when checking the derivative.
         if x > 4.0 {
-            assert!((derivative / (-s::k0(x) / x) - 1.0).abs() < 3e-8);
+            assert!((derivative / (-s::bessel::k0(x) / x) - 1.0).abs() < 3e-8);
         }
     }
 }
@@ -412,8 +416,8 @@ fn gamma_quantiles_match_references_after_early_halley_stop() {
     ];
     for (a, p, lower, upper) in cases {
         for (value, expected) in [
-            (s::gammaincinv(a, p), lower),
-            (s::gammainccinv(a, p), upper),
+            (s::gamma::gammaincinv(a, p), lower),
+            (s::gamma::gammainccinv(a, p), upper),
         ] {
             let rel = ((value - expected) / expected).abs();
             assert!(
@@ -436,34 +440,38 @@ fn parameter_inverses_round_trip_after_bracketed_brent_search() {
     };
     for p in [1e-6, 0.05, 0.5, 0.95, 0.999_999] {
         for shape in [0.05, 1.0, 7.0, 300.0] {
-            let a = s::btdtria(p, shape, 0.4);
-            close("btdtria", s::betainc(a, shape, 0.4), p);
-            let b = s::btdtrib(shape, p, 0.4);
-            close("btdtrib", s::betainc(shape, b, 0.4), p);
-            let n = s::nbdtrin(3.0, p, 0.3);
-            close("nbdtrin", s::betainc(n, 4.0, 0.3), p);
-            let k = s::pdtrik(p, shape);
-            close("pdtrik", s::gammaincc(k + 1.0, shape), p);
-            let v = s::chdtriv(p, shape);
-            close("chdtriv", s::gammainc(v / 2.0, shape / 2.0), p);
+            let a = s::probability::btdtria(p, shape, 0.4);
+            close("btdtria", s::beta::betainc(a, shape, 0.4), p);
+            let b = s::probability::btdtrib(shape, p, 0.4);
+            close("btdtrib", s::beta::betainc(shape, b, 0.4), p);
+            let n = s::probability::nbdtrin(3.0, p, 0.3);
+            close("nbdtrin", s::beta::betainc(n, 4.0, 0.3), p);
+            let k = s::probability::pdtrik(p, shape);
+            close("pdtrik", s::gamma::gammaincc(k + 1.0, shape), p);
+            let v = s::probability::chdtriv(p, shape);
+            close("chdtriv", s::gamma::gammainc(v / 2.0, shape / 2.0), p);
         }
-        let k = s::bdtrik(p, 50.0, 0.3);
-        close("bdtrik", s::betainc(50.0 - k, k + 1.0, 0.7), p);
-        let x = s::chndtrix(p, 3.0, 40.0);
-        close("chndtrix", s::chndtr(x, 3.0, 40.0), p);
-        let t = s::nctdtrit(5.0, -3.0, p);
-        close("nctdtrit", s::nctdtr(5.0, -3.0, t), p);
+        let k = s::probability::bdtrik(p, 50.0, 0.3);
+        close("bdtrik", s::beta::betainc(50.0 - k, k + 1.0, 0.7), p);
+        let x = s::probability::chndtrix(p, 3.0, 40.0);
+        close("chndtrix", s::probability::chndtr(x, 3.0, 40.0), p);
+        let t = s::probability::nctdtrit(5.0, -3.0, p);
+        close("nctdtrit", s::probability::nctdtr(5.0, -3.0, t), p);
     }
     // Large noncentralities: the root lies far from the start at zero.
-    let nc = s::chndtrinc(400.0, 3.0, 0.5);
-    close("chndtrinc", s::chndtr(400.0, 3.0, nc), 0.5);
+    let nc = s::probability::chndtrinc(400.0, 3.0, 0.5);
+    close("chndtrinc", s::probability::chndtr(400.0, 3.0, nc), 0.5);
     assert!(nc > 300.0, "chndtrinc root {nc}");
-    let nc = s::ncfdtrinc(3.0, 20.0, 0.5, 60.0);
-    close("ncfdtrinc", s::ncfdtr(3.0, 20.0, nc, 60.0), 0.5);
-    let nc = s::nctdtrinc(10.0, 0.5, 40.0);
-    close("nctdtrinc", s::nctdtr(10.0, nc, 40.0), 0.5);
+    let nc = s::probability::ncfdtrinc(3.0, 20.0, 0.5, 60.0);
+    close(
+        "ncfdtrinc",
+        s::probability::ncfdtr(3.0, 20.0, nc, 60.0),
+        0.5,
+    );
+    let nc = s::probability::nctdtrinc(10.0, 0.5, 40.0);
+    close("nctdtrinc", s::probability::nctdtr(10.0, nc, 40.0), 0.5);
     // No root inside the noncentrality interval still returns NaN.
-    assert!(s::chndtrinc(2.5, 3.0, 0.9).is_nan());
+    assert!(s::probability::chndtrinc(2.5, 3.0, 0.9).is_nan());
 }
 
 // Independent Bonnet recurrence, deliberately not using the backend's
@@ -496,11 +504,11 @@ fn legendre_public_table_crosses_coefficient_boundary_without_changing_values() 
         (128, 0.95),
         (128, -0.95),
     ] {
-        let table = s::legendre_p_all(n, x).unwrap();
+        let table = s::orthogonal::legendre_p_all(n, x).unwrap();
         let reference = legendre_reference(n, x);
         assert_eq!(table.len(), n + 1);
         for degree in 0..=n {
-            let scalar = s::eval_legendre(degree as i32, x);
+            let scalar = s::orthogonal::eval_legendre(degree as i32, x);
             assert_eq!(
                 table[degree].to_bits(),
                 scalar.to_bits(),
@@ -515,7 +523,7 @@ fn legendre_public_table_crosses_coefficient_boundary_without_changing_values() 
             );
         }
     }
-    assert!(s::legendre_p_all(129, 0.3).is_err());
+    assert!(s::orthogonal::legendre_p_all(129, 0.3).is_err());
 }
 
 #[test]
@@ -533,7 +541,7 @@ fn legendre_public_small_argument_and_large_degree_paths() {
     ] {
         let reference = legendre_reference(128, x);
         for degree in [2, 3, 64, 65, 66, 128] {
-            let value = s::eval_legendre(degree as i32, x);
+            let value = s::orthogonal::eval_legendre(degree as i32, x);
             assert!(
                 (value - reference[degree]).abs() <= 3e-12 * (1.0 + reference[degree].abs()),
                 "P_{degree}({x})={value}, reference={}",
@@ -542,11 +550,11 @@ fn legendre_public_small_argument_and_large_degree_paths() {
         }
     }
     assert_eq!(
-        s::eval_legendre(1, -0.0_f64).to_bits(),
+        s::orthogonal::eval_legendre(1, -0.0_f64).to_bits(),
         (-0.0_f64).to_bits()
     );
     assert_eq!(
-        s::legendre_p_all(1, -0.0).unwrap()[1].to_bits(),
+        s::orthogonal::legendre_p_all(1, -0.0).unwrap()[1].to_bits(),
         (-0.0_f64).to_bits()
     );
 
@@ -555,9 +563,9 @@ fn legendre_public_small_argument_and_large_degree_paths() {
     for k in 1..=64 {
         even *= -((2 * k - 1) as f64) / (2 * k) as f64;
         if matches!(k, 1 | 32 | 33 | 64) {
-            let actual = s::eval_legendre(2 * k, 0.0_f64);
+            let actual = s::orthogonal::eval_legendre(2 * k, 0.0_f64);
             assert!((actual - even).abs() <= 2e-13 * (1.0 + even.abs()));
-            assert_eq!(s::eval_legendre(2 * k - 1, 0.0_f64), 0.0);
+            assert_eq!(s::orthogonal::eval_legendre(2 * k - 1, 0.0_f64), 0.0);
         }
     }
 
@@ -566,21 +574,21 @@ fn legendre_public_small_argument_and_large_degree_paths() {
         let x = 0.3_f64;
         let reference = legendre_reference(n as usize, x);
         let independent = reference[n as usize];
-        let p = s::eval_legendre(n, x);
-        let prior = s::eval_legendre(n - 1, x);
-        let previous = s::eval_legendre(n - 2, x);
+        let p = s::orthogonal::eval_legendre(n, x);
+        let prior = s::orthogonal::eval_legendre(n - 1, x);
+        let previous = s::orthogonal::eval_legendre(n - 2, x);
         assert!((prior - reference[n as usize - 1]).abs() <= 2e-12 * (1.0 + prior.abs()));
         assert!((previous - reference[n as usize - 2]).abs() <= 2e-12 * (1.0 + previous.abs()));
         let k = (n - 1) as f64;
         let expected = ((2.0 * k + 1.0) * x * prior - k * previous) / (k + 1.0);
         assert!((p - expected).abs() <= 2e-12 * (1.0 + expected.abs()));
         assert!((p - independent).abs() <= 2e-12 * (1.0 + independent.abs()));
-        let alias = s::legendre_p(n, x);
+        let alias = s::orthogonal::legendre_p(n, x);
         assert!((alias - independent).abs() <= 2e-12 * (1.0 + independent.abs()));
         let x32 = 0.3_f32;
         let independent32 = legendre_reference(n as usize, f64::from(x32))[n as usize];
-        let value32 = s::eval_legendre(n, x32);
-        let promoted = s::eval_legendre(n, f64::from(x32));
+        let value32 = s::orthogonal::eval_legendre(n, x32);
+        let promoted = s::orthogonal::eval_legendre(n, f64::from(x32));
         assert!(
             (f64::from(value32) - independent32).abs()
                 <= 4.0 * f64::from(f32::EPSILON) * (1.0 + independent32.abs()),
@@ -594,19 +602,22 @@ fn legendre_public_small_argument_and_large_degree_paths() {
 #[test]
 fn legendre_public_endpoints_and_nonfinite_inputs() {
     for n in [0, 1, 2, 3, 64, 65, 128, 4096] {
-        assert_eq!(s::eval_legendre(n, 1.0_f64), 1.0);
+        assert_eq!(s::orthogonal::eval_legendre(n, 1.0_f64), 1.0);
         assert_eq!(
-            s::eval_legendre(n, -1.0_f64),
+            s::orthogonal::eval_legendre(n, -1.0_f64),
             if n % 2 == 0 { 1.0 } else { -1.0 }
         );
-        assert!(s::eval_legendre(n, f64::NAN).is_nan());
+        assert!(s::orthogonal::eval_legendre(n, f64::NAN).is_nan());
         if n == 0 {
-            assert_eq!(s::eval_legendre(n, f64::INFINITY), 1.0);
-            assert_eq!(s::eval_legendre(n, f64::NEG_INFINITY), 1.0);
+            assert_eq!(s::orthogonal::eval_legendre(n, f64::INFINITY), 1.0);
+            assert_eq!(s::orthogonal::eval_legendre(n, f64::NEG_INFINITY), 1.0);
         } else {
-            assert_eq!(s::eval_legendre(n, f64::INFINITY), f64::INFINITY);
             assert_eq!(
-                s::eval_legendre(n, f64::NEG_INFINITY),
+                s::orthogonal::eval_legendre(n, f64::INFINITY),
+                f64::INFINITY
+            );
+            assert_eq!(
+                s::orthogonal::eval_legendre(n, f64::NEG_INFINITY),
                 if n % 2 == 0 {
                     f64::INFINITY
                 } else {
@@ -616,7 +627,7 @@ fn legendre_public_endpoints_and_nonfinite_inputs() {
         }
     }
     for x in [-1.0_f64, 1.0] {
-        let table = s::legendre_p_all(128, x).unwrap();
+        let table = s::orthogonal::legendre_p_all(128, x).unwrap();
         assert_eq!(table.len(), 129);
         for (degree, &value) in table.iter().enumerate() {
             assert_eq!(
@@ -630,10 +641,10 @@ fn legendre_public_endpoints_and_nonfinite_inputs() {
         }
     }
     for x in [f64::INFINITY, f64::NEG_INFINITY, f64::NAN] {
-        let table = s::legendre_p_all(3, x).unwrap();
+        let table = s::orthogonal::legendre_p_all(3, x).unwrap();
         assert_eq!(table.len(), 4);
         for (n, &value) in table.iter().enumerate() {
-            let scalar = s::eval_legendre(n as i32, x);
+            let scalar = s::orthogonal::eval_legendre(n as i32, x);
             if scalar.is_nan() {
                 assert!(value.is_nan());
             } else {
@@ -644,7 +655,7 @@ fn legendre_public_endpoints_and_nonfinite_inputs() {
     // Retain the near-endpoint difference recurrence and shifted public wrapper.
     for n in [65, 128, 4096] {
         let near_one = 1.0 - f64::EPSILON;
-        let value = s::eval_legendre(n, near_one);
+        let value = s::orthogonal::eval_legendre(n, near_one);
         let first_order = 1.0 - (n as f64 * (n + 1) as f64 / 2.0) * f64::EPSILON;
         assert!((value - first_order).abs() < 2e-11);
     }
@@ -652,12 +663,12 @@ fn legendre_public_endpoints_and_nonfinite_inputs() {
         let shifted = 0.65_f64;
         let x = 2.0 * shifted - 1.0;
         let independent = legendre_reference(n as usize, x)[n as usize];
-        let value = s::eval_sh_legendre(n, shifted);
+        let value = s::orthogonal::eval_sh_legendre(n, shifted);
         assert!(
             (value - independent).abs() <= 3e-12 * (1.0 + independent.abs()),
             "shifted P_{n}({shifted})={value}, reference={independent}"
         );
-        let scalar = s::eval_legendre(n, x);
+        let scalar = s::orthogonal::eval_legendre(n, x);
         assert!((scalar - independent).abs() <= 3e-12 * (1.0 + independent.abs()));
         assert_eq!(value.to_bits(), scalar.to_bits());
     }
@@ -690,9 +701,9 @@ fn mathieu_characteristic_values_match_references_across_starting_guesses() {
     ];
     for (even, m, q, expected) in cases {
         let value = if even {
-            s::mathieu_a(m, q)
+            s::wave::mathieu_a(m, q)
         } else {
-            s::mathieu_b(m, q)
+            s::wave::mathieu_b(m, q)
         };
         let scale = expected.abs().max(q.abs()).max(1.0);
         assert!(

@@ -7,7 +7,7 @@
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::gamma(5.0_f64) - (24.0)).abs() < 1e-12);
+/// assert!((sci_special::gamma::gamma(5.0_f64) - (24.0)).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -34,7 +34,7 @@ pub fn gamma<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::gammaln(1.0_f64) - (0.0)).abs() < 1e-12);
+/// assert!((sci_special::gamma::gammaln(1.0_f64) - (0.0)).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -63,7 +63,7 @@ pub fn gammaln<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::digamma(1.0_f64) - (-0.5772156649015329)).abs() < 1e-12);
+/// assert!((sci_special::gamma::digamma(1.0_f64) - (-0.5772156649015329)).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -91,7 +91,7 @@ pub fn digamma<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::trigamma(1.0) - (1.6449340668482264)).abs() < 1e-12);
+/// assert!((sci_special::gamma::trigamma(1.0) - (1.6449340668482264)).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -135,7 +135,7 @@ fn trigamma_positive(mut x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::erf(0.0_f64) - (0.0)).abs() < 1e-12);
+/// assert!((sci_special::elementary::erf(0.0_f64) - (0.0)).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -162,7 +162,7 @@ pub fn erf<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::erfc(0.0_f64) - (1.0)).abs() < 1e-12);
+/// assert!((sci_special::elementary::erfc(0.0_f64) - (1.0)).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -189,7 +189,7 @@ pub fn erfc<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::erfinv(0.0_f64) - (0.0)).abs() < 1e-12);
+/// assert!((sci_special::elementary::erfinv(0.0_f64) - (0.0)).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -216,7 +216,7 @@ pub fn erfinv<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::beta(1.0, 1.0) - (1.0)).abs() < 1e-12);
+/// assert!((sci_special::beta::beta(1.0, 1.0) - (1.0)).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -235,7 +235,7 @@ pub fn beta(a: f64, b: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::betaln(1.0, 1.0) - (0.0)).abs() < 1e-12);
+/// assert!((sci_special::beta::betaln(1.0, 1.0) - (0.0)).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -259,7 +259,7 @@ pub fn betaln(a: f64, b: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::betainc(1.0_f64, 1.0, 0.5) - (0.5)).abs() < 1e-12);
+/// assert!((sci_special::beta::betainc(1.0_f64, 1.0, 0.5) - (0.5)).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -293,7 +293,7 @@ pub fn betainc<T: sci_core::Float>(a: T, b: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::betaincinv(1.0_f64, 1.0, 0.5) - 0.5).abs() < 1e-12);
+/// assert!((sci_special::beta::betaincinv(1.0_f64, 1.0, 0.5) - 0.5).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -334,7 +334,7 @@ pub fn betaincinv<T: sci_core::Float>(a: T, b: T, probability: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::gammainc(1.0_f64, 1.0) - (1.0 - (-1.0_f64).exp())).abs() < 1e-12);
+/// assert!((sci_special::gamma::gammainc(1.0_f64, 1.0) - (1.0 - (-1.0_f64).exp())).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -388,7 +388,7 @@ pub fn gammainc<T: sci_core::Float>(a: T, x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::lambertw(0.0_f64) - (0.0)).abs() < 1e-12);
+/// assert!((sci_special::elementary::lambertw(0.0_f64) - (0.0)).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -428,7 +428,7 @@ pub fn lambertw<T: sci_core::Float>(x: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let w = sci_special::lambertwm1(-0.1_f64);
+/// let w = sci_special::elementary::lambertwm1(-0.1_f64);
 /// assert!(w < -1.0);
 /// assert!((w * w.exp() + 0.1).abs() < 1e-14);
 /// ```
@@ -450,8 +450,7 @@ pub fn lambertwm1<T: sci_core::Float>(x: T) -> T {
 /// and maps its errors into [`crate::Error`].
 pub mod elliptic;
 
-// Re-export Sci functions, never backend traits or native types.
-pub use elliptic::*;
+// Implementation modules remain private behind the public family namespaces.
 mod scipy;
 pub use scipy::*;
 mod waves;

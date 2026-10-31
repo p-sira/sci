@@ -1067,8 +1067,8 @@ pub fn firwin(
                 .0
                 .iter()
                 .map(|band| {
-                    band[1] * crate::special::sinc(band[1] * t)
-                        - band[0] * crate::special::sinc(band[0] * t)
+                    band[1] * crate::special::elementary::sinc(band[1] * t)
+                        - band[0] * crate::special::elementary::sinc(band[0] * t)
                 })
                 .sum::<f64>()
                 * taper[i]

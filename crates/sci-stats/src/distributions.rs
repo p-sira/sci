@@ -243,7 +243,7 @@ fn normal_value(mean: f64, std_dev: f64, x: f64, op: Operation) -> Result<f64> {
     normal(mean, std_dev)?;
     let standard = Normal::standard();
     if matches!(op, Operation::Ppf) {
-        let z = crate::special::ndtri(x);
+        let z = crate::special::probability::ndtri(x);
         let value = std_dev.mul_add(z, mean);
         return if x == 0. || x == 1. {
             Ok(value)
@@ -263,11 +263,11 @@ fn normal_value(mean: f64, std_dev: f64, x: f64, op: Operation) -> Result<f64> {
         x / std_dev - mean / std_dev
     };
     match op {
-        Operation::Cdf => match crate::special::ndtr(z) {
+        Operation::Cdf => match crate::special::probability::ndtr(z) {
             value if value.is_finite() => Ok(value),
             _ => Err(crate::Error::NonFiniteEvaluation),
         },
-        Operation::Sf => match crate::special::ndtr(-z) {
+        Operation::Sf => match crate::special::probability::ndtr(-z) {
             value if value.is_finite() => Ok(value),
             _ => Err(crate::Error::NonFiniteEvaluation),
         },
@@ -424,13 +424,13 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
             match op {
                 // Reuse the central beta branches in the shared module.
                 Operation::Cdf if df == 1. || df == 2. || x.abs() <= df.sqrt() => {
-                    sci_special::stdtr(df, x)
+                    sci_special::probability::stdtr(df, x)
                 }
                 Operation::Sf if df == 1. || df == 2. || x.abs() <= df.sqrt() => {
-                    sci_special::stdtr(df, -x)
+                    sci_special::probability::stdtr(df, -x)
                 }
                 Operation::Ppf if df == 1. || df == 2. || (x > 0.25 && x < 0.75) => {
-                    sci_special::stdtrit(df, x)
+                    sci_special::probability::stdtrit(df, x)
                 }
                 _ => continuous(&d, x, op)?,
             }
@@ -991,7 +991,7 @@ pub fn logpdf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> 
 /// ## Numerical behavior
 ///
 /// Uses statrs privately. Central Student-t probabilities and quantiles reuse
-/// [`sci_special::stdtr`] and [`sci_special::stdtrit`] to preserve small deviations
+/// [`sci_special::probability::stdtr`] and [`sci_special::probability::stdtrit`] to preserve small deviations
 /// from the median. The df=1 and df=2 cases also reuse stable elementary tails;
 /// other degrees retain the statrs tail formulas.
 /// Other quantiles use bounded bracketing and bisection
@@ -1038,7 +1038,7 @@ pub fn cdf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 /// ## Numerical behavior
 ///
 /// Uses statrs privately. Central Student-t probabilities and quantiles reuse
-/// [`sci_special::stdtr`] and [`sci_special::stdtrit`] to preserve small deviations
+/// [`sci_special::probability::stdtr`] and [`sci_special::probability::stdtrit`] to preserve small deviations
 /// from the median. The df=1 and df=2 cases also reuse stable elementary tails;
 /// other degrees retain the statrs tail formulas.
 /// Other quantiles use bounded bracketing and bisection
@@ -1086,7 +1086,7 @@ pub fn sf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 /// ## Numerical behavior
 ///
 /// Uses statrs privately. Central Student-t probabilities and quantiles reuse
-/// [`sci_special::stdtr`] and [`sci_special::stdtrit`] to preserve small deviations
+/// [`sci_special::probability::stdtr`] and [`sci_special::probability::stdtrit`] to preserve small deviations
 /// from the median. The df=1 and df=2 cases also reuse stable elementary tails;
 /// other degrees retain the statrs tail formulas.
 /// Other quantiles use bounded bracketing and bisection

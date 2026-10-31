@@ -5,15 +5,15 @@ use sci::{Float, complex::Complex, special as s};
 fn evaluate<T: Float>(name: &str, args: &[&str]) -> Vec<f64> {
     let real = |i: usize| T::from(args[i].parse::<f64>().unwrap()).unwrap();
     let scalar = match name {
-        "log1pmx" => Some(s::log1pmx(real(0))),
-        "digammainv" => Some(s::digammainv(real(0))),
-        "gamma_ratio" => Some(s::gamma_ratio(real(0), real(1))),
-        "scaled_exp1" => Some(s::scaled_exp1(real(0))),
-        "iv_ratio" => Some(s::iv_ratio(real(0), real(1))),
-        "iv_ratio_c" => Some(s::iv_ratio_c(real(0), real(1))),
-        "iv_ratioinv" => Some(s::iv_ratioinv(real(0), real(1))),
+        "log1pmx" => Some(s::elementary::log1pmx(real(0))),
+        "digammainv" => Some(s::gamma::digammainv(real(0))),
+        "gamma_ratio" => Some(s::gamma::gamma_ratio(real(0), real(1))),
+        "scaled_exp1" => Some(s::integrals::scaled_exp1(real(0))),
+        "iv_ratio" => Some(s::bessel::iv_ratio(real(0), real(1))),
+        "iv_ratio_c" => Some(s::bessel::iv_ratio_c(real(0), real(1))),
+        "iv_ratioinv" => Some(s::bessel::iv_ratioinv(real(0), real(1))),
         "normalized_gen_harmonic" => Some(
-            s::normalized_gen_harmonic(
+            s::combinatorics::normalized_gen_harmonic(
                 args[0].parse().unwrap(),
                 args[1].parse().unwrap(),
                 args[2].parse().unwrap(),
@@ -110,17 +110,17 @@ fn native_apis_match_independent_references() {
 #[test]
 fn scalar_domains_and_limits() {
     for x in [f64::NAN, -2.0, f64::NEG_INFINITY] {
-        assert!(s::log1pmx(x).is_nan());
+        assert!(s::elementary::log1pmx(x).is_nan());
     }
-    assert_eq!(s::log1pmx(-1.0), f64::NEG_INFINITY);
-    assert_eq!(s::log1pmx(f64::INFINITY), f64::NEG_INFINITY);
+    assert_eq!(s::elementary::log1pmx(-1.0), f64::NEG_INFINITY);
+    assert_eq!(s::elementary::log1pmx(f64::INFINITY), f64::NEG_INFINITY);
     for zero in [0.0_f64, -0.0] {
-        assert!(s::log1pmx(zero).is_sign_negative());
+        assert!(s::elementary::log1pmx(zero).is_sign_negative());
     }
-    assert!(s::digammainv(f64::NAN).is_nan());
-    assert_eq!(s::digammainv(f64::NEG_INFINITY), 0.0);
-    assert_eq!(s::digammainv(f64::INFINITY), f64::INFINITY);
-    assert_eq!(s::digammainv(1000.0), f64::INFINITY);
+    assert!(s::gamma::digammainv(f64::NAN).is_nan());
+    assert_eq!(s::gamma::digammainv(f64::NEG_INFINITY), 0.0);
+    assert_eq!(s::gamma::digammainv(f64::INFINITY), f64::INFINITY);
+    assert_eq!(s::gamma::digammainv(1000.0), f64::INFINITY);
     for (a, b) in [
         (0.0, 1.0),
         (-1.0, 1.0),
@@ -128,11 +128,11 @@ fn scalar_domains_and_limits() {
         (f64::INFINITY, 1.0),
         (1.0, f64::NAN),
     ] {
-        assert!(s::gamma_ratio(a, b).is_nan());
+        assert!(s::gamma::gamma_ratio(a, b).is_nan());
     }
-    assert_eq!(s::scaled_exp1(f64::INFINITY), 1.0);
-    assert!(s::scaled_exp1(-1.0).is_nan());
-    assert!(s::scaled_exp1(f64::NAN).is_nan());
+    assert_eq!(s::integrals::scaled_exp1(f64::INFINITY), 1.0);
+    assert!(s::integrals::scaled_exp1(-1.0).is_nan());
+    assert!(s::integrals::scaled_exp1(f64::NAN).is_nan());
     for (v, x) in [
         (0.49, 1.0),
         (1.0, -1.0),
@@ -140,17 +140,17 @@ fn scalar_domains_and_limits() {
         (1.0, f64::NAN),
         (f64::INFINITY, f64::INFINITY),
     ] {
-        assert!(s::iv_ratio(v, x).is_nan());
-        assert!(s::iv_ratio_c(v, x).is_nan());
+        assert!(s::bessel::iv_ratio(v, x).is_nan());
+        assert!(s::bessel::iv_ratio_c(v, x).is_nan());
     }
-    assert!(s::iv_ratio(1.0, -0.0_f64).is_sign_negative());
-    assert_eq!(s::iv_ratio_c(1.0, 0.0), 1.0);
-    assert_eq!(s::iv_ratio(1.0, f64::INFINITY), 1.0);
-    assert_eq!(s::iv_ratio_c(1.0, f64::INFINITY), 0.0);
-    assert_eq!(s::iv_ratio(f64::INFINITY, 1.0), 0.0);
-    assert_eq!(s::iv_ratio_c(f64::INFINITY, 1.0), 1.0);
-    assert_eq!(s::iv_ratioinv(1.0, 0.0), 0.0);
-    assert_eq!(s::iv_ratioinv(1.0, 1.0), f64::INFINITY);
+    assert!(s::bessel::iv_ratio(1.0, -0.0_f64).is_sign_negative());
+    assert_eq!(s::bessel::iv_ratio_c(1.0, 0.0), 1.0);
+    assert_eq!(s::bessel::iv_ratio(1.0, f64::INFINITY), 1.0);
+    assert_eq!(s::bessel::iv_ratio_c(1.0, f64::INFINITY), 0.0);
+    assert_eq!(s::bessel::iv_ratio(f64::INFINITY, 1.0), 0.0);
+    assert_eq!(s::bessel::iv_ratio_c(f64::INFINITY, 1.0), 1.0);
+    assert_eq!(s::bessel::iv_ratioinv(1.0, 0.0), 0.0);
+    assert_eq!(s::bessel::iv_ratioinv(1.0, 1.0), f64::INFINITY);
     for (v, r) in [
         (0.0, 0.5),
         (f64::INFINITY, 0.5),
@@ -158,7 +158,7 @@ fn scalar_domains_and_limits() {
         (1.0, 1.1),
         (1.0, f64::NAN),
     ] {
-        assert!(s::iv_ratioinv(v, r).is_nan());
+        assert!(s::bessel::iv_ratioinv(v, r).is_nan());
     }
     for (j, k, n, a) in [
         (0, 1, 1, 1.0),
@@ -167,7 +167,7 @@ fn scalar_domains_and_limits() {
         (1, 1, 1_000_001, 1.0),
         (1, 1, 1, f64::NAN),
     ] {
-        assert!(s::normalized_gen_harmonic(j, k, n, a).is_err());
+        assert!(s::combinatorics::normalized_gen_harmonic(j, k, n, a).is_err());
     }
 }
 
@@ -175,14 +175,14 @@ fn scalar_domains_and_limits() {
 fn identities_and_shared_types() {
     for v in [0.51, 1.0, 10.0, 1000.0] {
         for x in [1e-6, 0.1, 1.0, 100.0, 1000.0] {
-            assert!((s::iv_ratio(v, x) + s::iv_ratio_c(v, x) - 1.0).abs() < 3e-15);
-            let r = s::iv_ratio(v, x);
-            assert!((s::iv_ratioinv(v, r) / x - 1.0).abs() < 2e-10);
+            assert!((s::bessel::iv_ratio(v, x) + s::bessel::iv_ratio_c(v, x) - 1.0).abs() < 3e-15);
+            let r = s::bessel::iv_ratio(v, x);
+            assert!((s::bessel::iv_ratioinv(v, r) / x - 1.0).abs() < 2e-10);
         }
     }
     for a in [-1000.0, -2.0, 0.0, 2.0, 1000.0] {
-        let left = s::normalized_gen_harmonic(1, 5, 10, a).unwrap();
-        let right = s::normalized_gen_harmonic(6, 10, 10, a).unwrap();
+        let left = s::combinatorics::normalized_gen_harmonic(1, 5, 10, a).unwrap();
+        let right = s::combinatorics::normalized_gen_harmonic(6, 10, 10, a).unwrap();
         assert!((left + right - 1.0_f64).abs() < 3e-15);
     }
     let z = Complex {
@@ -269,9 +269,9 @@ fn complex_domains_cuts_and_scaling() {
         // than testing only the wrapper's own reflection construction.
         if i == 0 || i == 4 {
             let magnitude = if i == 0 {
-                s::jv(0.3, 2.0)
+                s::bessel::jv(0.3, 2.0)
             } else {
-                s::iv(0.3, 2.0)
+                s::bessel::iv(0.3, 2.0)
             };
             assert!((b.re - magnitude * (0.3 * std::f64::consts::PI).cos()).abs() < 1e-14);
             assert!((b.im + magnitude * (0.3 * std::f64::consts::PI).sin()).abs() < 1e-14);
@@ -294,9 +294,9 @@ fn normalized_harmonics_retain_small_probabilities_at_work_limit() {
     // far from the maximum weight, where ln1p(i/n-1) would lose digits.
     let n = 1_000_000;
     let expected = 2.0_f64 / (n as f64 * (n + 1) as f64);
-    let f = s::normalized_gen_harmonic(1, 1, n, -1.0_f32).unwrap() as f64;
+    let f = s::combinatorics::normalized_gen_harmonic(1, 1, n, -1.0_f32).unwrap() as f64;
     assert!((f / expected - 1.0).abs() < 3e-6);
-    let d = s::normalized_gen_harmonic(1, 1, n, -1.0_f64).unwrap();
+    let d = s::combinatorics::normalized_gen_harmonic(1, 1, n, -1.0_f64).unwrap();
     assert!((d / expected - 1.0).abs() < 5e-15);
 }
 
@@ -551,18 +551,18 @@ fn complex_error_family_identities_and_domains() {
         let dawson = dawsn(z).unwrap();
         // The separate real erfcx path uses a rational approximation at these inputs.
         assert!(
-            (scaled.re / s::erfcx(x) - 1.0).abs() < 2e-14,
+            (scaled.re / s::elementary::erfcx(x) - 1.0).abs() < 2e-14,
             "erfcx({x}): complex={}, real={}",
             scaled.re,
-            s::erfcx(x)
+            s::elementary::erfcx(x)
         );
-        assert!((dawson.re / s::dawsn(x) - 1.0).abs() < 2e-15);
+        assert!((dawson.re / s::elementary::dawsn(x) - 1.0).abs() < 2e-15);
     }
     // Erfi agrees with the real facade and preserves the input imaginary zero.
     for y in [0.0_f64, -0.0] {
         let value = erfi(Complex { re: 1.0, im: y }).unwrap();
         assert_eq!(value.im.to_bits(), y.to_bits());
-        assert!((value.re / s::erfi(1.0) - 1.0).abs() < 2e-15);
+        assert!((value.re / s::elementary::erfi(1.0) - 1.0).abs() < 2e-15);
     }
     for (f, slope) in [
         (erfi::<f64> as fn(_) -> _, 2.0 / std::f64::consts::PI.sqrt()),

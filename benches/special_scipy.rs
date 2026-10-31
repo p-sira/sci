@@ -99,28 +99,28 @@ mod airy_elliptic_benches {
             bencher,
             range(N, 1, 0.1, 10.0),
             range(N, 2, 0.1, 10.0),
-            special::agm,
+            special::elementary::agm,
         );
     }
 
     #[divan::bench]
     fn airy(bencher: Bencher) {
         sum1(bencher, range(N, 3, -10.0, 10.0), |x| {
-            quad(special::airy(x))
+            quad(special::wave::airy(x))
         });
     }
 
     #[divan::bench]
     fn airye(bencher: Bencher) {
         sum1(bencher, range(SMALL, 4, 0.0, 20.0), |x| {
-            quad(special::airye(x))
+            quad(special::wave::airye(x))
         });
     }
 
     #[divan::bench]
     fn itairy(bencher: Bencher) {
         sum1(bencher, range(N, 5, -10.0, 10.0), |x| {
-            quad(special::itairy(x))
+            quad(special::wave::itairy(x))
         });
     }
 
@@ -131,7 +131,7 @@ mod airy_elliptic_benches {
             range(N, 6, -5.0, 5.0),
             unit_values(N, 7),
             |u, m| {
-                let (sn, cn, dn, ph) = special::ellipj(u, m);
+                let (sn, cn, dn, ph) = special::elliptic::ellipj(u, m);
                 sn + cn + dn + ph
             },
         );
@@ -149,32 +149,44 @@ mod gamma_error_benches {
             .zip(unit_values(N, 9))
             .map(|(n, u)| n * u)
             .collect();
-        sum2(bencher, n, k, special::binom);
+        sum2(bencher, n, k, special::combinatorics::binom);
     }
 
     #[divan::bench]
     fn erfcx(bencher: Bencher) {
-        sum1(bencher, range(N, 10, -5.0, 20.0), special::erfcx);
+        sum1(
+            bencher,
+            range(N, 10, -5.0, 20.0),
+            special::elementary::erfcx,
+        );
     }
 
     #[divan::bench]
     fn erfi(bencher: Bencher) {
-        sum1(bencher, range(N, 11, -5.0, 5.0), special::erfi);
+        sum1(bencher, range(N, 11, -5.0, 5.0), special::elementary::erfi);
     }
 
     #[divan::bench]
     fn erfcinv(bencher: Bencher) {
-        sum1(bencher, range(N, 12, 0.0, 2.0), special::erfcinv);
+        sum1(
+            bencher,
+            range(N, 12, 0.0, 2.0),
+            special::elementary::erfcinv,
+        );
     }
 
     #[divan::bench]
     fn dawsn(bencher: Bencher) {
-        sum1(bencher, range(N, 13, -10.0, 10.0), special::dawsn);
+        sum1(
+            bencher,
+            range(N, 13, -10.0, 10.0),
+            special::elementary::dawsn,
+        );
     }
 
     #[divan::bench]
     fn gammasgn(bencher: Bencher) {
-        sum1(bencher, range(N, 14, -10.0, 10.0), special::gammasgn);
+        sum1(bencher, range(N, 14, -10.0, 10.0), special::gamma::gammasgn);
     }
 
     #[divan::bench]
@@ -183,7 +195,7 @@ mod gamma_error_benches {
             bencher,
             range(N, 15, 0.1, 20.0),
             range(N, 16, 0.0, 20.0),
-            special::gammaincc,
+            special::gamma::gammaincc,
         );
     }
 
@@ -193,7 +205,7 @@ mod gamma_error_benches {
             bencher,
             range(N, 17, 0.1, 20.0),
             unit_values(N, 18),
-            special::gammaincinv,
+            special::gamma::gammaincinv,
         );
     }
 
@@ -203,18 +215,18 @@ mod gamma_error_benches {
             bencher,
             range(N, 19, 0.1, 20.0),
             unit_values(N, 20),
-            special::gammainccinv,
+            special::gamma::gammainccinv,
         );
     }
 
     #[divan::bench]
     fn loggamma(bencher: Bencher) {
-        sum1(bencher, range(N, 21, 0.01, 50.0), special::loggamma);
+        sum1(bencher, range(N, 21, 0.01, 50.0), special::gamma::loggamma);
     }
 
     #[divan::bench]
     fn rgamma(bencher: Bencher) {
-        sum1(bencher, range(N, 22, -10.0, 10.0), special::rgamma);
+        sum1(bencher, range(N, 22, -10.0, 10.0), special::gamma::rgamma);
     }
 
     #[divan::bench]
@@ -223,14 +235,14 @@ mod gamma_error_benches {
             bencher,
             ints(N, 24, 0, 4),
             range(N, 25, 0.1, 20.0),
-            |n, x| special::polygamma(n as u32, x),
+            |n, x| special::gamma::polygamma(n as u32, x),
         );
     }
 
     #[divan::bench]
     fn multigammaln(bencher: Bencher) {
         sum1(bencher, range(N, 26, 1.5, 30.0), |a| {
-            special::multigammaln(a, 3)
+            special::gamma::multigammaln(a, 3)
         });
     }
 }
@@ -253,123 +265,123 @@ mod bessel_benches {
 
     #[divan::bench]
     fn jv(bencher: Bencher) {
-        sum2(bencher, orders(), args(), special::jv);
+        sum2(bencher, orders(), args(), special::bessel::jv);
     }
 
     #[divan::bench]
     fn jve(bencher: Bencher) {
-        sum2(bencher, orders(), args(), special::jve);
+        sum2(bencher, orders(), args(), special::bessel::jve);
     }
 
     #[divan::bench]
     fn yv(bencher: Bencher) {
-        sum2(bencher, half(orders()), half(args()), special::yv);
+        sum2(bencher, half(orders()), half(args()), special::bessel::yv);
     }
 
     #[divan::bench]
     fn yve(bencher: Bencher) {
-        sum2(bencher, half(orders()), half(args()), special::yve);
+        sum2(bencher, half(orders()), half(args()), special::bessel::yve);
     }
 
     #[divan::bench]
     fn iv(bencher: Bencher) {
-        sum2(bencher, orders(), args(), special::iv);
+        sum2(bencher, orders(), args(), special::bessel::iv);
     }
 
     #[divan::bench]
     fn ive(bencher: Bencher) {
-        sum2(bencher, orders(), args(), special::ive);
+        sum2(bencher, orders(), args(), special::bessel::ive);
     }
 
     #[divan::bench]
     fn kv(bencher: Bencher) {
-        sum2(bencher, orders(), args(), special::kv);
+        sum2(bencher, orders(), args(), special::bessel::kv);
     }
 
     #[divan::bench]
     fn kve(bencher: Bencher) {
-        sum2(bencher, orders(), args(), special::kve);
+        sum2(bencher, orders(), args(), special::bessel::kve);
     }
 
     #[divan::bench]
     fn jn(bencher: Bencher) {
         sum2(bencher, ints(N, 32, 0, 5), args(), |n, x| {
-            special::jn(n as i32, x)
+            special::bessel::jn(n as i32, x)
         });
     }
 
     #[divan::bench]
     fn yn(bencher: Bencher) {
         sum2(bencher, ints(HALF, 33, 0, 5), half(args()), |n, x| {
-            special::yn(n as i32, x)
+            special::bessel::yn(n as i32, x)
         });
     }
 
     #[divan::bench]
     fn kn(bencher: Bencher) {
         sum2(bencher, ints(N, 34, 0, 5), args(), |n, x| {
-            special::kn(n as i32, x)
+            special::bessel::kn(n as i32, x)
         });
     }
 
     #[divan::bench]
     fn j0(bencher: Bencher) {
-        sum1(bencher, args(), special::j0);
+        sum1(bencher, args(), special::bessel::j0);
     }
 
     #[divan::bench]
     fn j1(bencher: Bencher) {
-        sum1(bencher, args(), special::j1);
+        sum1(bencher, args(), special::bessel::j1);
     }
 
     #[divan::bench]
     fn y0(bencher: Bencher) {
-        sum1(bencher, args(), special::y0);
+        sum1(bencher, args(), special::bessel::y0);
     }
 
     #[divan::bench]
     fn y1(bencher: Bencher) {
-        sum1(bencher, args(), special::y1);
+        sum1(bencher, args(), special::bessel::y1);
     }
 
     #[divan::bench]
     fn i0(bencher: Bencher) {
-        sum1(bencher, args(), special::i0);
+        sum1(bencher, args(), special::bessel::i0);
     }
 
     #[divan::bench]
     fn i1(bencher: Bencher) {
-        sum1(bencher, args(), special::i1);
+        sum1(bencher, args(), special::bessel::i1);
     }
 
     #[divan::bench]
     fn i0e(bencher: Bencher) {
-        sum1(bencher, args(), special::i0e);
+        sum1(bencher, args(), special::bessel::i0e);
     }
 
     #[divan::bench]
     fn i1e(bencher: Bencher) {
-        sum1(bencher, args(), special::i1e);
+        sum1(bencher, args(), special::bessel::i1e);
     }
 
     #[divan::bench]
     fn k0(bencher: Bencher) {
-        sum1(bencher, args(), special::k0);
+        sum1(bencher, args(), special::bessel::k0);
     }
 
     #[divan::bench]
     fn k1(bencher: Bencher) {
-        sum1(bencher, args(), special::k1);
+        sum1(bencher, args(), special::bessel::k1);
     }
 
     #[divan::bench]
     fn k0e(bencher: Bencher) {
-        sum1(bencher, args(), special::k0e);
+        sum1(bencher, args(), special::bessel::k0e);
     }
 
     #[divan::bench]
     fn k1e(bencher: Bencher) {
-        sum1(bencher, args(), special::k1e);
+        sum1(bencher, args(), special::bessel::k1e);
     }
 
     #[divan::bench]
@@ -379,28 +391,28 @@ mod bessel_benches {
             range(SMALL, 35, 0.0, 2.0),
             range(SMALL, 36, 0.0, 2.0),
             range(SMALL, 37, 0.0, 3.0),
-            special::besselpoly,
+            special::bessel::besselpoly,
         );
     }
 
     #[divan::bench]
     fn itj0y0(bencher: Bencher) {
-        sum1(bencher, args(), |x| pair(special::itj0y0(x)));
+        sum1(bencher, args(), |x| pair(special::bessel::itj0y0(x)));
     }
 
     #[divan::bench]
     fn it2j0y0(bencher: Bencher) {
-        sum1(bencher, args(), |x| pair(special::it2j0y0(x)));
+        sum1(bencher, args(), |x| pair(special::bessel::it2j0y0(x)));
     }
 
     #[divan::bench]
     fn iti0k0(bencher: Bencher) {
-        sum1(bencher, args(), |x| pair(special::iti0k0(x)));
+        sum1(bencher, args(), |x| pair(special::bessel::iti0k0(x)));
     }
 
     #[divan::bench]
     fn it2i0k0(bencher: Bencher) {
-        sum1(bencher, args(), |x| pair(special::it2i0k0(x)));
+        sum1(bencher, args(), |x| pair(special::bessel::it2i0k0(x)));
     }
 }
 
@@ -413,7 +425,7 @@ mod struve_benches {
             bencher,
             range(HALF_SMALL, 40, 0.0, 3.0),
             range(HALF_SMALL, 41, 0.1, 20.0),
-            special::struve,
+            special::bessel::struve,
         );
     }
 
@@ -423,23 +435,31 @@ mod struve_benches {
             bencher,
             range(SMALL, 42, 0.0, 3.0),
             range(SMALL, 43, 0.1, 20.0),
-            special::modstruve,
+            special::bessel::modstruve,
         );
     }
 
     #[divan::bench]
     fn itstruve0(bencher: Bencher) {
-        sum1(bencher, range(N, 44, 0.1, 20.0), special::itstruve0);
+        sum1(bencher, range(N, 44, 0.1, 20.0), special::bessel::itstruve0);
     }
 
     #[divan::bench]
     fn it2struve0(bencher: Bencher) {
-        sum1(bencher, range(N, 45, 0.1, 20.0), special::it2struve0);
+        sum1(
+            bencher,
+            range(N, 45, 0.1, 20.0),
+            special::bessel::it2struve0,
+        );
     }
 
     #[divan::bench]
     fn itmodstruve0(bencher: Bencher) {
-        sum1(bencher, range(N, 46, 0.1, 20.0), special::itmodstruve0);
+        sum1(
+            bencher,
+            range(N, 46, 0.1, 20.0),
+            special::bessel::itmodstruve0,
+        );
     }
 }
 
@@ -452,7 +472,7 @@ mod hypergeometric_benches {
             bencher,
             range(N, 50, 0.5, 5.0),
             range(N, 51, -10.0, 10.0),
-            special::hyp0f1,
+            special::hypergeometric::hyp0f1,
         );
     }
 
@@ -463,7 +483,7 @@ mod hypergeometric_benches {
             range(N, 52, -3.0, 3.0),
             range(N, 53, 0.5, 5.0),
             range(N, 54, -5.0, 5.0),
-            special::hyp1f1,
+            special::hypergeometric::hyp1f1,
         );
     }
 
@@ -477,7 +497,7 @@ mod hypergeometric_benches {
                 range(N, 57, 0.5, 5.0),
                 range(N, 58, -0.9, 0.9),
             ],
-            special::hyp2f1,
+            special::hypergeometric::hyp2f1,
         );
     }
 
@@ -488,7 +508,7 @@ mod hypergeometric_benches {
             range(SMALL, 59, 0.5, 2.0),
             range(SMALL, 60, 0.5, 3.0),
             range(SMALL, 61, 0.5, 10.0),
-            special::hyperu,
+            special::hypergeometric::hyperu,
         );
     }
 }
@@ -498,12 +518,12 @@ mod integral_benches {
 
     #[divan::bench]
     fn exp1(bencher: Bencher) {
-        sum1(bencher, range(N, 70, 0.01, 20.0), special::exp1);
+        sum1(bencher, range(N, 70, 0.01, 20.0), special::integrals::exp1);
     }
 
     #[divan::bench]
     fn expi(bencher: Bencher) {
-        sum1(bencher, range(N, 71, 0.01, 20.0), special::expi);
+        sum1(bencher, range(N, 71, 0.01, 20.0), special::integrals::expi);
     }
 
     #[divan::bench]
@@ -512,34 +532,34 @@ mod integral_benches {
             bencher,
             ints(N, 72, 0, 5),
             range(N, 73, 0.01, 20.0),
-            |n, x| special::expn(n as u32, x),
+            |n, x| special::integrals::expn(n as u32, x),
         );
     }
 
     #[divan::bench]
     fn sici(bencher: Bencher) {
         sum1(bencher, range(N, 74, -20.0, 20.0), |x| {
-            pair(special::sici(x))
+            pair(special::integrals::sici(x))
         });
     }
 
     #[divan::bench]
     fn shichi(bencher: Bencher) {
         sum1(bencher, range(N, 75, -20.0, 20.0), |x| {
-            pair(special::shichi(x))
+            pair(special::integrals::shichi(x))
         });
     }
 
     #[divan::bench]
     fn fresnel(bencher: Bencher) {
         sum1(bencher, range(N, 76, -10.0, 10.0), |x| {
-            pair(special::fresnel(x))
+            pair(special::integrals::fresnel(x))
         });
     }
 
     #[divan::bench]
     fn spence(bencher: Bencher) {
-        sum1(bencher, range(N, 77, 0.0, 10.0), special::spence);
+        sum1(bencher, range(N, 77, 0.0, 10.0), special::integrals::spence);
     }
 
     #[divan::bench]
@@ -548,18 +568,22 @@ mod integral_benches {
             bencher,
             range(N, 78, 1.1, 11.0),
             range(N, 79, 0.1, 10.0),
-            special::zeta,
+            special::zeta::zeta,
         );
     }
 
     #[divan::bench]
     fn zetac(bencher: Bencher) {
-        sum1(bencher, range(N, 80, 1.1, 30.0), special::zetac);
+        sum1(bencher, range(N, 80, 1.1, 30.0), special::zeta::zetac);
     }
 
     #[divan::bench]
     fn wrightomega(bencher: Bencher) {
-        sum1(bencher, range(N, 81, -10.0, 10.0), special::wrightomega);
+        sum1(
+            bencher,
+            range(N, 81, -10.0, 10.0),
+            special::elementary::wrightomega,
+        );
     }
 
     #[divan::bench]
@@ -569,7 +593,7 @@ mod integral_benches {
             range(HALF_SMALL, 82, 0.0, 1.0),
             range(HALF_SMALL, 83, 0.0, 2.0),
             range(HALF_SMALL, 84, 0.0, 10.0),
-            special::wright_bessel,
+            special::hypergeometric::wright_bessel,
         );
     }
 
@@ -580,7 +604,7 @@ mod integral_benches {
             range(HALF_SMALL, 85, 0.0, 1.0),
             range(HALF_SMALL, 86, 0.0, 2.0),
             range(HALF_SMALL, 87, 0.0, 10.0),
-            special::log_wright_bessel,
+            special::hypergeometric::log_wright_bessel,
         );
     }
 
@@ -591,7 +615,7 @@ mod integral_benches {
             range(N, 88, -5.0, 5.0),
             range(N, 89, 0.1, 2.0),
             range(N, 90, 0.1, 2.0),
-            special::voigt_profile,
+            special::probability::voigt_profile,
         );
     }
 }
@@ -602,21 +626,21 @@ mod distribution_benches {
     #[divan::bench]
     fn bdtr(bencher: Bencher) {
         sum2(bencher, ints(N, 100, 0, 19), unit_values(N, 101), |k, p| {
-            special::bdtr(k, 20, p)
+            special::probability::bdtr(k, 20, p)
         });
     }
 
     #[divan::bench]
     fn bdtrc(bencher: Bencher) {
         sum2(bencher, ints(N, 102, 0, 19), unit_values(N, 103), |k, p| {
-            special::bdtrc(k, 20, p)
+            special::probability::bdtrc(k, 20, p)
         });
     }
 
     #[divan::bench]
     fn bdtri(bencher: Bencher) {
         sum2(bencher, ints(N, 104, 0, 19), unit_values(N, 105), |k, y| {
-            special::bdtri(k, 20, y)
+            special::probability::bdtri(k, 20, y)
         });
     }
 
@@ -626,7 +650,7 @@ mod distribution_benches {
             bencher,
             range(N, 106, 0.5, 20.0),
             range(N, 107, 0.0, 30.0),
-            special::chdtr,
+            special::probability::chdtr,
         );
     }
 
@@ -636,7 +660,7 @@ mod distribution_benches {
             bencher,
             range(N, 108, 0.5, 20.0),
             range(N, 109, 0.0, 30.0),
-            special::chdtrc,
+            special::probability::chdtrc,
         );
     }
 
@@ -646,7 +670,7 @@ mod distribution_benches {
             bencher,
             range(N, 110, 0.5, 20.0),
             unit_values(N, 111),
-            special::chdtri,
+            special::probability::chdtri,
         );
     }
 
@@ -656,7 +680,7 @@ mod distribution_benches {
             bencher,
             range(SMALL, 112, 0.05, 0.95),
             range(SMALL, 113, 1.0, 20.0),
-            special::chdtriv,
+            special::probability::chdtriv,
         );
     }
 
@@ -667,7 +691,7 @@ mod distribution_benches {
             range(HALF, 114, 1.0, 20.0),
             range(HALF, 115, 1.0, 20.0),
             range(N, 116, 0.0, 5.0),
-            special::fdtr,
+            special::probability::fdtr,
         );
     }
 
@@ -678,7 +702,7 @@ mod distribution_benches {
             range(N, 117, 1.0, 20.0),
             range(N, 118, 1.0, 20.0),
             range(N, 119, 0.0, 5.0),
-            special::fdtrc,
+            special::probability::fdtrc,
         );
     }
 
@@ -689,7 +713,7 @@ mod distribution_benches {
             range(HALF, 120, 1.0, 20.0),
             range(HALF, 121, 1.0, 20.0),
             unit_values(HALF, 122),
-            special::fdtri,
+            special::probability::fdtri,
         );
     }
 
@@ -700,7 +724,7 @@ mod distribution_benches {
             range(N, 123, 0.1, 5.0),
             range(N, 124, 0.5, 10.0),
             range(N, 125, 0.0, 10.0),
-            special::gdtr,
+            special::probability::gdtr,
         );
     }
 
@@ -711,7 +735,7 @@ mod distribution_benches {
             range(N, 126, 0.1, 5.0),
             range(N, 127, 0.5, 10.0),
             range(N, 128, 0.0, 10.0),
-            special::gdtrc,
+            special::probability::gdtrc,
         );
     }
 
@@ -722,7 +746,7 @@ mod distribution_benches {
             range(SMALL, 129, 0.1, 5.0),
             range(SMALL, 130, 0.05, 0.95),
             range(SMALL, 131, 0.1, 10.0),
-            special::gdtrib,
+            special::probability::gdtrib,
         );
     }
 
@@ -733,7 +757,7 @@ mod distribution_benches {
             range(SMALL, 132, 0.05, 0.95),
             range(SMALL, 133, 0.5, 10.0),
             range(SMALL, 134, 0.1, 10.0),
-            special::gdtria,
+            special::probability::gdtria,
         );
     }
 
@@ -744,49 +768,61 @@ mod distribution_benches {
             range(SMALL, 135, 0.1, 5.0),
             range(SMALL, 136, 0.5, 10.0),
             range(SMALL, 137, 0.05, 0.95),
-            special::gdtrix,
+            special::probability::gdtrix,
         );
     }
 
     #[divan::bench]
     fn nbdtr(bencher: Bencher) {
         sum2(bencher, ints(N, 138, 0, 30), unit_values(N, 139), |k, p| {
-            special::nbdtr(k as i32, 10, p)
+            special::probability::nbdtr(k as i32, 10, p)
         });
     }
 
     #[divan::bench]
     fn nbdtrc(bencher: Bencher) {
         sum2(bencher, ints(N, 140, 0, 30), unit_values(N, 141), |k, p| {
-            special::nbdtrc(k as i32, 10, p)
+            special::probability::nbdtrc(k as i32, 10, p)
         });
     }
 
     #[divan::bench]
     fn nbdtri(bencher: Bencher) {
         sum2(bencher, ints(N, 142, 0, 30), unit_values(N, 143), |k, y| {
-            special::nbdtri(k as i32, 10, y)
+            special::probability::nbdtri(k as i32, 10, y)
         });
     }
 
     #[divan::bench]
     fn ndtr(bencher: Bencher) {
-        sum1(bencher, range(N, 144, -10.0, 10.0), special::ndtr);
+        sum1(
+            bencher,
+            range(N, 144, -10.0, 10.0),
+            special::probability::ndtr,
+        );
     }
 
     #[divan::bench]
     fn ndtri(bencher: Bencher) {
-        sum1(bencher, unit_values(N, 145), special::ndtri);
+        sum1(bencher, unit_values(N, 145), special::probability::ndtri);
     }
 
     #[divan::bench]
     fn log_ndtr(bencher: Bencher) {
-        sum1(bencher, range(N, 146, -30.0, 10.0), special::log_ndtr);
+        sum1(
+            bencher,
+            range(N, 146, -30.0, 10.0),
+            special::probability::log_ndtr,
+        );
     }
 
     #[divan::bench]
     fn ndtri_exp(bencher: Bencher) {
-        sum1(bencher, range(N, 147, -30.0, -0.01), special::ndtri_exp);
+        sum1(
+            bencher,
+            range(N, 147, -30.0, -0.01),
+            special::probability::ndtri_exp,
+        );
     }
 
     #[divan::bench]
@@ -796,7 +832,7 @@ mod distribution_benches {
             unit_values(N, 148),
             range(N, 149, 0.5, 3.0),
             range(N, 150, -5.0, 5.0),
-            special::nrdtrimn,
+            special::probability::nrdtrimn,
         );
     }
 
@@ -807,7 +843,7 @@ mod distribution_benches {
             range(N, 151, -5.0, -0.1),
             range(N, 152, 0.55, 0.99),
             range(N, 153, 0.1, 5.0),
-            special::nrdtrisd,
+            special::probability::nrdtrisd,
         );
     }
 
@@ -817,7 +853,7 @@ mod distribution_benches {
             bencher,
             ints(N, 154, 0, 20),
             range(N, 155, 0.1, 15.0),
-            special::pdtr,
+            special::probability::pdtr,
         );
     }
 
@@ -827,14 +863,14 @@ mod distribution_benches {
             bencher,
             ints(N, 156, 0, 20),
             range(N, 157, 0.1, 15.0),
-            special::pdtrc,
+            special::probability::pdtrc,
         );
     }
 
     #[divan::bench]
     fn pdtri(bencher: Bencher) {
         sum2(bencher, ints(N, 158, 0, 20), unit_values(N, 159), |k, p| {
-            special::pdtri(k as i32, p)
+            special::probability::pdtri(k as i32, p)
         });
     }
 
@@ -844,7 +880,7 @@ mod distribution_benches {
             bencher,
             range(N, 160, 1.0, 30.0),
             range(N, 161, -5.0, 5.0),
-            special::stdtr,
+            special::probability::stdtr,
         );
     }
 
@@ -854,31 +890,35 @@ mod distribution_benches {
             bencher,
             range(SMALL, 162, 1.0, 30.0),
             unit_values(SMALL, 163),
-            special::stdtrit,
+            special::probability::stdtrit,
         );
     }
 
     #[divan::bench]
     fn kolmogorov(bencher: Bencher) {
-        sum1(bencher, range(N, 164, 0.1, 3.0), special::kolmogorov);
+        sum1(
+            bencher,
+            range(N, 164, 0.1, 3.0),
+            special::probability::kolmogorov,
+        );
     }
 
     #[divan::bench]
     fn kolmogi(bencher: Bencher) {
-        sum1(bencher, unit_values(N, 165), special::kolmogi);
+        sum1(bencher, unit_values(N, 165), special::probability::kolmogi);
     }
 
     #[divan::bench]
     fn smirnov(bencher: Bencher) {
         sum1(bencher, unit_values(SMALL, 166), |x| {
-            special::smirnov(10, x)
+            special::probability::smirnov(10, x)
         });
     }
 
     #[divan::bench]
     fn smirnovi(bencher: Bencher) {
         sum1(bencher, unit_values(TINY, 167), |q| {
-            special::smirnovi(10, q)
+            special::probability::smirnovi(10, q)
         });
     }
 
@@ -888,7 +928,7 @@ mod distribution_benches {
             bencher,
             range(N, 168, -5.0, 5.0),
             range(N, 169, -5.0, 5.0),
-            special::owens_t,
+            special::probability::owens_t,
         );
     }
 
@@ -898,7 +938,7 @@ mod distribution_benches {
             bencher,
             range(HALF, 170, -3.0, 3.0),
             range(HALF, 171, -0.5, 2.0),
-            special::tklmbda,
+            special::probability::tklmbda,
         );
     }
 
@@ -909,7 +949,7 @@ mod distribution_benches {
             range(N, 172, 0.5, 10.0),
             range(N, 173, 0.5, 10.0),
             unit_values(N, 174),
-            special::betaincc,
+            special::beta::betaincc,
         );
     }
 
@@ -920,7 +960,7 @@ mod distribution_benches {
             range(HALF, 175, 0.5, 10.0),
             range(HALF, 176, 0.5, 10.0),
             unit_values(HALF, 177),
-            special::betainccinv,
+            special::beta::betainccinv,
         );
     }
 }
@@ -934,7 +974,7 @@ mod parabolic_mathieu_benches {
             bencher,
             range(HALF_SMALL, 180, 0.0, 5.0),
             range(HALF_SMALL, 181, -5.0, 5.0),
-            |v, x| pair(special::pbdv(v, x)),
+            |v, x| pair(special::wave::pbdv(v, x)),
         );
     }
 
@@ -944,7 +984,7 @@ mod parabolic_mathieu_benches {
             bencher,
             range(HALF_SMALL, 182, 0.0, 5.0),
             range(HALF_SMALL, 183, -5.0, 5.0),
-            |v, x| pair(special::pbvv(v, x)),
+            |v, x| pair(special::wave::pbvv(v, x)),
         );
     }
 
@@ -954,7 +994,7 @@ mod parabolic_mathieu_benches {
             bencher,
             range(SMALL, 184, -4.9, 4.9),
             range(SMALL, 185, -4.9, 4.9),
-            |a, x| pair(special::pbwa(a, x)),
+            |a, x| pair(special::wave::pbwa(a, x)),
         );
     }
 
@@ -964,7 +1004,7 @@ mod parabolic_mathieu_benches {
             bencher,
             ints(SMALL, 186, 0, 5),
             range(SMALL, 187, 0.0, 10.0),
-            |m, q| special::mathieu_a(m as u32, q),
+            |m, q| special::wave::mathieu_a(m as u32, q),
         );
     }
 
@@ -974,7 +1014,7 @@ mod parabolic_mathieu_benches {
             bencher,
             ints(SMALL, 188, 1, 5),
             range(SMALL, 189, 0.0, 10.0),
-            |m, q| special::mathieu_b(m as u32, q),
+            |m, q| special::wave::mathieu_b(m as u32, q),
         );
     }
 
@@ -985,7 +1025,7 @@ mod parabolic_mathieu_benches {
             ints(SMALL, 190, 0, 5),
             range(SMALL, 191, 0.0, 10.0),
             range(SMALL, 192, 0.0, 180.0),
-            |m, q, x| pair(special::mathieu_cem(m as u32, q, x)),
+            |m, q, x| pair(special::wave::mathieu_cem(m as u32, q, x)),
         );
     }
 
@@ -996,7 +1036,7 @@ mod parabolic_mathieu_benches {
             ints(SMALL, 193, 1, 5),
             range(SMALL, 194, 0.0, 10.0),
             range(SMALL, 195, 0.0, 180.0),
-            |m, q, x| pair(special::mathieu_sem(m as u32, q, x)),
+            |m, q, x| pair(special::wave::mathieu_sem(m as u32, q, x)),
         );
     }
 
@@ -1007,7 +1047,7 @@ mod parabolic_mathieu_benches {
             ints(SMALL, 196, 0, 5),
             range(SMALL, 197, 0.5, 10.0),
             range(SMALL, 198, 0.1, 2.0),
-            |m, q, x| pair(special::mathieu_modcem1(m as u32, q, x)),
+            |m, q, x| pair(special::wave::mathieu_modcem1(m as u32, q, x)),
         );
     }
 
@@ -1018,7 +1058,7 @@ mod parabolic_mathieu_benches {
             ints(SMALL, 199, 0, 5),
             range(SMALL, 200, 0.5, 10.0),
             range(SMALL, 201, 0.1, 2.0),
-            |m, q, x| pair(special::mathieu_modcem2(m as u32, q, x)),
+            |m, q, x| pair(special::wave::mathieu_modcem2(m as u32, q, x)),
         );
     }
 
@@ -1029,7 +1069,7 @@ mod parabolic_mathieu_benches {
             ints(SMALL, 202, 1, 5),
             range(SMALL, 203, 0.5, 10.0),
             range(SMALL, 204, 0.1, 2.0),
-            |m, q, x| pair(special::mathieu_modsem1(m as u32, q, x)),
+            |m, q, x| pair(special::wave::mathieu_modsem1(m as u32, q, x)),
         );
     }
 
@@ -1040,7 +1080,7 @@ mod parabolic_mathieu_benches {
             ints(SMALL, 205, 1, 5),
             range(SMALL, 206, 0.5, 10.0),
             range(SMALL, 207, 0.1, 2.0),
-            |m, q, x| pair(special::mathieu_modsem2(m as u32, q, x)),
+            |m, q, x| pair(special::wave::mathieu_modsem2(m as u32, q, x)),
         );
     }
 }
@@ -1057,87 +1097,87 @@ mod kelvin_benches {
 
     #[divan::bench]
     fn ber(bencher: Bencher) {
-        sum1(bencher, args(210), special::ber);
+        sum1(bencher, args(210), special::bessel::ber);
     }
 
     #[divan::bench]
     fn bei(bencher: Bencher) {
-        sum1(bencher, args(211), special::bei);
+        sum1(bencher, args(211), special::bessel::bei);
     }
 
     #[divan::bench]
     fn ker(bencher: Bencher) {
-        sum1(bencher, args(212), special::ker);
+        sum1(bencher, args(212), special::bessel::ker);
     }
 
     #[divan::bench]
     fn kei(bencher: Bencher) {
-        sum1(bencher, args(213), special::kei);
+        sum1(bencher, args(213), special::bessel::kei);
     }
 
     #[divan::bench]
     fn berp(bencher: Bencher) {
-        sum1(bencher, args(214), special::berp);
+        sum1(bencher, args(214), special::bessel::berp);
     }
 
     #[divan::bench]
     fn beip(bencher: Bencher) {
-        sum1(bencher, args(215), special::beip);
+        sum1(bencher, args(215), special::bessel::beip);
     }
 
     #[divan::bench]
     fn kerp(bencher: Bencher) {
-        sum1(bencher, args(216), special::kerp);
+        sum1(bencher, args(216), special::bessel::kerp);
     }
 
     #[divan::bench]
     fn keip(bencher: Bencher) {
-        sum1(bencher, args(217), special::keip);
+        sum1(bencher, args(217), special::bessel::keip);
     }
 
     #[divan::bench]
     fn ber_zeros(bencher: Bencher) {
-        bencher.bench(|| special::ber_zeros(black_box(ZEROS)).unwrap());
+        bencher.bench(|| special::bessel::ber_zeros(black_box(ZEROS)).unwrap());
     }
 
     #[divan::bench]
     fn bei_zeros(bencher: Bencher) {
-        bencher.bench(|| special::bei_zeros(black_box(ZEROS)).unwrap());
+        bencher.bench(|| special::bessel::bei_zeros(black_box(ZEROS)).unwrap());
     }
 
     #[divan::bench]
     fn ker_zeros(bencher: Bencher) {
-        bencher.bench(|| special::ker_zeros(black_box(ZEROS)).unwrap());
+        bencher.bench(|| special::bessel::ker_zeros(black_box(ZEROS)).unwrap());
     }
 
     #[divan::bench]
     fn kei_zeros(bencher: Bencher) {
-        bencher.bench(|| special::kei_zeros(black_box(ZEROS)).unwrap());
+        bencher.bench(|| special::bessel::kei_zeros(black_box(ZEROS)).unwrap());
     }
 
     #[divan::bench]
     fn berp_zeros(bencher: Bencher) {
-        bencher.bench(|| special::berp_zeros(black_box(ZEROS)).unwrap());
+        bencher.bench(|| special::bessel::berp_zeros(black_box(ZEROS)).unwrap());
     }
 
     #[divan::bench]
     fn beip_zeros(bencher: Bencher) {
-        bencher.bench(|| special::beip_zeros(black_box(ZEROS)).unwrap());
+        bencher.bench(|| special::bessel::beip_zeros(black_box(ZEROS)).unwrap());
     }
 
     #[divan::bench]
     fn kerp_zeros(bencher: Bencher) {
-        bencher.bench(|| special::kerp_zeros(black_box(ZEROS)).unwrap());
+        bencher.bench(|| special::bessel::kerp_zeros(black_box(ZEROS)).unwrap());
     }
 
     #[divan::bench]
     fn keip_zeros(bencher: Bencher) {
-        bencher.bench(|| special::keip_zeros(black_box(ZEROS)).unwrap());
+        bencher.bench(|| special::bessel::keip_zeros(black_box(ZEROS)).unwrap());
     }
 
     #[divan::bench]
     fn kelvin_zeros(bencher: Bencher) {
-        bencher.bench(|| special::kelvin_zeros(black_box(ZEROS)).unwrap());
+        bencher.bench(|| special::bessel::kelvin_zeros(black_box(ZEROS)).unwrap());
     }
 }
 
@@ -1151,7 +1191,7 @@ mod legendre_benches {
             ints(N, 220, 0, 3),
             range(N, 221, 3.0, 8.0),
             range(N, 222, -0.99, 0.99),
-            |m, v, x| special::lpmv(m as i32, v, x),
+            |m, v, x| special::orthogonal::lpmv(m as i32, v, x),
         );
     }
 
@@ -1161,7 +1201,7 @@ mod legendre_benches {
             bencher,
             ints(N, 223, 0, 20),
             range(N, 224, -1.0, 1.0),
-            |n, x| special::legendre_p(n as i32, x),
+            |n, x| special::orthogonal::legendre_p(n as i32, x),
         );
     }
 
@@ -1172,7 +1212,7 @@ mod legendre_benches {
             ints(N, 225, 4, 20),
             ints(N, 226, 0, 4),
             range(N, 227, -0.99, 0.99),
-            |n, m, x| special::assoc_legendre_p(n as i32, m as i32, x),
+            |n, m, x| special::orthogonal::assoc_legendre_p(n as i32, m as i32, x),
         );
     }
 
@@ -1183,7 +1223,7 @@ mod legendre_benches {
             ints(N, 228, 4, 20),
             ints(N, 229, 0, 4),
             range(N, 230, 0.0, std::f64::consts::PI),
-            |n, m, theta| special::sph_legendre_p(n as i32, m as i32, theta),
+            |n, m, theta| special::orthogonal::sph_legendre_p(n as i32, m as i32, theta),
         );
     }
 
@@ -1193,7 +1233,7 @@ mod legendre_benches {
         bencher.bench(|| {
             black_box(&xs)
                 .iter()
-                .map(|&x| special::lqn(32, x).unwrap())
+                .map(|&x| special::orthogonal::lqn(32, x).unwrap())
                 .collect::<Vec<_>>()
         });
     }
@@ -1204,7 +1244,7 @@ mod legendre_benches {
         bencher.bench(|| {
             black_box(&xs)
                 .iter()
-                .map(|&x| special::lqmn(8, 8, x).unwrap())
+                .map(|&x| special::orthogonal::lqmn(8, 8, x).unwrap())
                 .collect::<Vec<_>>()
         });
     }
@@ -1215,57 +1255,93 @@ mod elementary_benches {
 
     #[divan::bench]
     fn expit(bencher: Bencher) {
-        sum1(bencher, range(N, 245, -20.0, 20.0), special::expit);
+        sum1(
+            bencher,
+            range(N, 245, -20.0, 20.0),
+            special::elementary::expit,
+        );
     }
 
     #[divan::bench]
     fn logit(bencher: Bencher) {
-        sum1(bencher, unit_values(N, 246), special::logit);
+        sum1(bencher, unit_values(N, 246), special::elementary::logit);
     }
 
     #[divan::bench]
     fn softplus(bencher: Bencher) {
-        sum1(bencher, range(N, 247, -20.0, 20.0), special::softplus);
+        sum1(
+            bencher,
+            range(N, 247, -20.0, 20.0),
+            special::elementary::softplus,
+        );
     }
 
     #[divan::bench]
     fn log_expit(bencher: Bencher) {
-        sum1(bencher, range(N, 248, -20.0, 20.0), special::log_expit);
+        sum1(
+            bencher,
+            range(N, 248, -20.0, 20.0),
+            special::elementary::log_expit,
+        );
     }
 
     #[divan::bench]
     fn exprel(bencher: Bencher) {
-        sum1(bencher, range(N, 249, -5.0, 5.0), special::exprel);
+        sum1(
+            bencher,
+            range(N, 249, -5.0, 5.0),
+            special::elementary::exprel,
+        );
     }
 
     #[divan::bench]
     fn sinc(bencher: Bencher) {
-        sum1(bencher, range(N, 250, -10.0, 10.0), special::sinc);
+        sum1(
+            bencher,
+            range(N, 250, -10.0, 10.0),
+            special::elementary::sinc,
+        );
     }
 
     #[divan::bench]
     fn cosm1(bencher: Bencher) {
-        sum1(bencher, values(N, 251), special::cosm1);
+        sum1(bencher, values(N, 251), special::elementary::cosm1);
     }
 
     #[divan::bench]
     fn sindg(bencher: Bencher) {
-        sum1(bencher, range(N, 252, -360.0, 360.0), special::sindg);
+        sum1(
+            bencher,
+            range(N, 252, -360.0, 360.0),
+            special::elementary::sindg,
+        );
     }
 
     #[divan::bench]
     fn cosdg(bencher: Bencher) {
-        sum1(bencher, range(N, 253, -360.0, 360.0), special::cosdg);
+        sum1(
+            bencher,
+            range(N, 253, -360.0, 360.0),
+            special::elementary::cosdg,
+        );
     }
 
     #[divan::bench]
     fn tandg(bencher: Bencher) {
-        sum1(bencher, range(N, 254, -80.0, 80.0), special::tandg);
+        sum1(
+            bencher,
+            range(N, 254, -80.0, 80.0),
+            special::elementary::tandg,
+        );
     }
 
     #[divan::bench]
     fn cotdg(bencher: Bencher) {
-        sum1(bencher, range(N, 255, 10.0, 170.0), special::cotdg);
+        sum1(
+            bencher,
+            range(N, 255, 10.0, 170.0),
+            special::elementary::cotdg,
+        );
     }
 
     #[divan::bench]
@@ -1275,7 +1351,7 @@ mod elementary_benches {
             range(N, 256, 0.0, 360.0),
             range(N, 257, 0.0, 60.0),
             range(N, 258, 0.0, 60.0),
-            special::radian,
+            special::elementary::radian,
         );
     }
 }
@@ -1285,7 +1361,7 @@ mod information_benches {
 
     #[divan::bench]
     fn entr(bencher: Bencher) {
-        sum1(bencher, unit_values(N, 260), special::entr);
+        sum1(bencher, unit_values(N, 260), special::elementary::entr);
     }
 
     #[divan::bench]
@@ -1294,7 +1370,7 @@ mod information_benches {
             bencher,
             unit_values(N, 261),
             unit_values(N, 262),
-            special::rel_entr,
+            special::elementary::rel_entr,
         );
     }
 
@@ -1304,7 +1380,7 @@ mod information_benches {
             bencher,
             unit_values(N, 263),
             unit_values(N, 264),
-            special::kl_div,
+            special::elementary::kl_div,
         );
     }
 
@@ -1314,7 +1390,7 @@ mod information_benches {
             bencher,
             range(N, 265, 0.1, 2.0),
             range(N, 266, -5.0, 5.0),
-            special::huber,
+            special::elementary::huber,
         );
     }
 
@@ -1324,7 +1400,7 @@ mod information_benches {
             bencher,
             range(N, 267, 0.1, 2.0),
             range(N, 268, -5.0, 5.0),
-            special::pseudo_huber,
+            special::elementary::pseudo_huber,
         );
     }
 
@@ -1334,7 +1410,7 @@ mod information_benches {
             bencher,
             range(N, 269, 0.0, 5.0),
             range(N, 270, 0.01, 10.0),
-            special::xlogy,
+            special::elementary::xlogy,
         );
     }
 
@@ -1344,7 +1420,7 @@ mod information_benches {
             bencher,
             range(N, 271, 0.0, 5.0),
             range(N, 272, -0.9, 10.0),
-            special::xlog1py,
+            special::elementary::xlog1py,
         );
     }
 
@@ -1354,7 +1430,7 @@ mod information_benches {
             bencher,
             range(N, 273, 0.1, 5.0),
             range(N, 274, -3.0, 3.0),
-            special::powm1,
+            special::elementary::powm1,
         );
     }
 
@@ -1364,7 +1440,7 @@ mod information_benches {
             bencher,
             range(N, 275, 0.1, 10.0),
             range(N, 276, -2.0, 2.0),
-            special::boxcox,
+            special::probability::boxcox,
         );
     }
 
@@ -1374,7 +1450,7 @@ mod information_benches {
             bencher,
             range(N, 277, -0.9, 10.0),
             range(N, 278, -2.0, 2.0),
-            special::boxcox1p,
+            special::probability::boxcox1p,
         );
     }
 
@@ -1384,7 +1460,7 @@ mod information_benches {
             bencher,
             range(N, 279, 0.0, 2.0),
             range(N, 280, -0.4, 2.0),
-            special::inv_boxcox,
+            special::probability::inv_boxcox,
         );
     }
 
@@ -1394,7 +1470,7 @@ mod information_benches {
             bencher,
             range(N, 281, 0.0, 2.0),
             range(N, 282, -0.4, 2.0),
-            special::inv_boxcox1p,
+            special::probability::inv_boxcox1p,
         );
     }
 }

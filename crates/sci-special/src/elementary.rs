@@ -32,7 +32,7 @@ use sci_core::Float;
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::logsumexp(&[1000.0,1000.0])-1000.0-2.0_f64.ln()).abs()<1e-12);
+/// assert!((sci_special::elementary::logsumexp(&[1000.0,1000.0])-1000.0-2.0_f64.ln()).abs()<1e-12);
 /// ```
 pub fn logsumexp<T: Float>(values: &[T]) -> T {
     if values.iter().any(|x| x.is_nan()) {
@@ -78,7 +78,7 @@ pub fn logsumexp<T: Float>(values: &[T]) -> T {
 /// ## Examples
 ///
 /// ```
-/// assert_eq!(sci_special::softmax(&[1000.0,1000.0]),vec![0.5,0.5]);
+/// assert_eq!(sci_special::elementary::softmax(&[1000.0,1000.0]),vec![0.5,0.5]);
 /// ```
 pub fn softmax<T: Float>(values: &[T]) -> Vec<T> {
     let maximum = values.iter().copied().fold(T::neg_infinity(), T::max);
@@ -116,7 +116,7 @@ pub fn softmax<T: Float>(values: &[T]) -> Vec<T> {
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_special::log_softmax(&[1000.0,1000.0])[0]+2.0_f64.ln()).abs()<1e-14);
+/// assert!((sci_special::elementary::log_softmax(&[1000.0,1000.0])[0]+2.0_f64.ln()).abs()<1e-14);
 /// ```
 pub fn log_softmax<T: Float>(values: &[T]) -> Vec<T> {
     let maximum = values.iter().copied().fold(T::neg_infinity(), T::max);
@@ -173,7 +173,7 @@ fn bernoulli_numbers(n: usize) -> Vec<f64> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::jvp(0.5,2.0,2);
+/// let value = sci_special::bessel::jvp(0.5,2.0,2);
 /// let _ = value;
 /// ```
 ///
@@ -194,7 +194,7 @@ pub fn jvp(v: f64, x: f64, n: u32) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::yvp(0.5,2.0,2);
+/// let value = sci_special::bessel::yvp(0.5,2.0,2);
 /// let _ = value;
 /// ```
 ///
@@ -215,7 +215,7 @@ pub fn yvp(v: f64, x: f64, n: u32) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ivp(0.5,2.0,2);
+/// let value = sci_special::bessel::ivp(0.5,2.0,2);
 /// let _ = value;
 /// ```
 ///
@@ -236,7 +236,7 @@ pub fn ivp(v: f64, x: f64, n: u32) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::kvp(0.5,2.0,2);
+/// let value = sci_special::bessel::kvp(0.5,2.0,2);
 /// let _ = value;
 /// ```
 ///
@@ -257,7 +257,7 @@ pub fn kvp(v: f64, x: f64, n: u32) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::h1vp(0.5,2.0,2);
+/// let value = sci_special::bessel::h1vp(0.5,2.0,2);
 /// let _ = value;
 /// ```
 ///
@@ -281,7 +281,7 @@ pub fn h1vp(v: f64, x: f64, n: u32) -> Complex {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::h2vp(0.5,2.0,2);
+/// let value = sci_special::bessel::h2vp(0.5,2.0,2);
 /// let _ = value;
 /// ```
 ///
@@ -305,7 +305,7 @@ pub fn h2vp(v: f64, x: f64, n: u32) -> Complex {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::spherical_jn(2,0.5_f64,false);
+/// let value = sci_special::bessel::spherical_jn(2,0.5_f64,false);
 /// let _ = value;
 /// ```
 ///
@@ -340,7 +340,7 @@ pub fn spherical_jn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::spherical_yn(2,0.5_f64,false);
+/// let value = sci_special::bessel::spherical_yn(2,0.5_f64,false);
 /// let _ = value;
 /// ```
 ///
@@ -375,7 +375,7 @@ pub fn spherical_yn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::spherical_in(2,0.5_f64,false);
+/// let value = sci_special::bessel::spherical_in(2,0.5_f64,false);
 /// let _ = value;
 /// ```
 ///
@@ -410,7 +410,7 @@ pub fn spherical_in<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::spherical_kn(2,0.5_f64,false);
+/// let value = sci_special::bessel::spherical_kn(2,0.5_f64,false);
 /// let _ = value;
 /// ```
 ///
@@ -445,7 +445,7 @@ pub fn spherical_kn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_chebyc(3,0.3);
+/// let value = sci_special::orthogonal::eval_chebyc(3,0.3);
 /// let _ = value;
 /// ```
 ///
@@ -467,7 +467,7 @@ pub fn eval_chebyc(n: i32, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_chebys(3,0.3);
+/// let value = sci_special::orthogonal::eval_chebys(3,0.3);
 /// let _ = value;
 /// ```
 ///
@@ -489,7 +489,7 @@ pub fn eval_chebys(n: i32, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_sh_chebyt(3,0.3);
+/// let value = sci_special::orthogonal::eval_sh_chebyt(3,0.3);
 /// let _ = value;
 /// ```
 ///
@@ -511,7 +511,7 @@ pub fn eval_sh_chebyt(n: i32, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_sh_chebyu(3,0.3);
+/// let value = sci_special::orthogonal::eval_sh_chebyu(3,0.3);
 /// let _ = value;
 /// ```
 ///
@@ -533,7 +533,7 @@ pub fn eval_sh_chebyu(n: i32, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_sh_legendre(3,0.3);
+/// let value = sci_special::orthogonal::eval_sh_legendre(3,0.3);
 /// let _ = value;
 /// ```
 ///
@@ -554,7 +554,7 @@ pub fn eval_sh_legendre(n: i32, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::eval_sh_jacobi(3,2.5,1.5,0.3);
+/// let value = sci_special::orthogonal::eval_sh_jacobi(3,2.5,1.5,0.3);
 /// let _ = value;
 /// ```
 ///
@@ -577,7 +577,7 @@ pub fn eval_sh_jacobi(n: i32, p: f64, q: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::diric(0.3,3);
+/// let value = sci_special::elementary::diric(0.3,3);
 /// let _ = value;
 /// ```
 ///
@@ -612,7 +612,7 @@ pub fn diric(x: f64, n: u32) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::factorial(5.0);
+/// let value = sci_special::combinatorics::factorial(5.0);
 /// let _ = value;
 /// ```
 ///
@@ -633,7 +633,7 @@ pub fn factorial(n: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::factorial2(7);
+/// let value = sci_special::combinatorics::factorial2(7);
 /// let _ = value;
 /// ```
 ///
@@ -660,7 +660,7 @@ pub fn factorial2(n: i32) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::factorialk(8,3);
+/// let value = sci_special::combinatorics::factorialk(8,3);
 /// let _ = value;
 /// ```
 ///
@@ -696,7 +696,7 @@ pub fn factorialk(n: i32, k: u32) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::comb(5.0_f64,2.0);
+/// let value = sci_special::combinatorics::comb(5.0_f64,2.0);
 /// let _ = value;
 /// ```
 ///
@@ -729,7 +729,7 @@ pub fn comb<T: sci_core::Float>(n: T, k: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::perm(5.0,2);
+/// let value = sci_special::combinatorics::perm(5.0,2);
 /// let _ = value;
 /// ```
 ///
@@ -756,7 +756,7 @@ pub fn perm(n: f64, k: u32) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::poch(2.5_f64,3.0);
+/// let value = sci_special::combinatorics::poch(2.5_f64,3.0);
 /// let _ = value;
 /// ```
 ///
@@ -785,7 +785,7 @@ pub fn poch<T: sci_core::Float>(a: T, m: T) -> T {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::stirling2(5,2);
+/// let value = sci_special::combinatorics::stirling2(5,2);
 /// let _ = value;
 /// ```
 ///
@@ -820,7 +820,7 @@ pub fn stirling2(n: u32, k: u32) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::bernoulli(8)?;
+/// let value = sci_special::combinatorics::bernoulli(8)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -849,7 +849,7 @@ pub fn bernoulli(n: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::euler(8)?;
+/// let value = sci_special::combinatorics::euler(8)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -891,7 +891,7 @@ pub fn euler(n: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pbdv_seq(2.5,0.3)?;
+/// let value = sci_special::wave::pbdv_seq(2.5,0.3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -918,7 +918,7 @@ pub fn pbdv_seq(v: f64, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pbvv_seq(2.5,0.3)?;
+/// let value = sci_special::wave::pbvv_seq(2.5,0.3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -973,7 +973,7 @@ pub fn pbvv_seq(v: f64, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let (values, derivatives) = sci_special::pbdn_seq(3, 0.3)?;
+/// let (values, derivatives) = sci_special::wave::pbdn_seq(3, 0.3)?;
 /// assert_eq!(values.len(), 4);
 /// assert_eq!(derivatives.len(), 4);
 /// # Ok::<(),sci_core::Error>(())
@@ -1000,7 +1000,7 @@ pub fn pbdn_seq(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::riccati_jn(3,0.5)?;
+/// let value = sci_special::bessel::riccati_jn(3,0.5)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1035,7 +1035,7 @@ pub fn riccati_jn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::riccati_yn(3,0.5)?;
+/// let value = sci_special::bessel::riccati_yn(3,0.5)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1087,7 +1087,7 @@ pub fn riccati_yn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::lmbda(2.5,0.5)?;
+/// let value = sci_special::wave::lmbda(2.5,0.5)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

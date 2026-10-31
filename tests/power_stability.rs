@@ -18,8 +18,8 @@ fn power_transforms_match_independent_references() -> Result<()> {
             "yeojohnson" => stats::yeojohnson(&x, p)?,
             api => {
                 let function = match api {
-                    "boxcox" => special::boxcox,
-                    "boxcox1p" => special::boxcox1p,
+                    "boxcox" => special::probability::boxcox,
+                    "boxcox1p" => special::probability::boxcox1p,
                     _ => panic!("unknown API"),
                 };
                 let values: Vec<_> = x.iter().map(|&v| function(v, p)).collect();
@@ -106,10 +106,10 @@ fn yeojohnson_half_power_preserves_small_and_large_values() -> Result<()> {
 fn power_transform_domains_remain_explicit() {
     for p in [-1., 0., 1e-20, 1.] {
         let expected = if p > 0. { -1. / p } else { f64::NEG_INFINITY };
-        assert_eq!(special::boxcox(0., p), expected);
-        assert_eq!(special::boxcox1p(-1., p), expected);
-        assert!(special::boxcox(-1., p).is_nan());
-        assert!(special::boxcox1p(-2., p).is_nan());
+        assert_eq!(special::probability::boxcox(0., p), expected);
+        assert_eq!(special::probability::boxcox1p(-1., p), expected);
+        assert!(special::probability::boxcox(-1., p).is_nan());
+        assert!(special::probability::boxcox1p(-2., p).is_nan());
     }
     for value in [f64::NAN, f64::INFINITY, 0., -1.] {
         assert!(stats::pmean(&[value], 1.).is_err());
@@ -120,8 +120,8 @@ fn power_transform_domains_remain_explicit() {
     }
     assert!(stats::pmean(&[], 1.).is_err());
     assert!(stats::boxcox(&[100.], 200.).is_err());
-    assert!(special::boxcox(2., f64::NAN).is_nan());
-    assert!(special::boxcox1p(1., f64::NAN).is_nan());
+    assert!(special::probability::boxcox(2., f64::NAN).is_nan());
+    assert!(special::probability::boxcox1p(1., f64::NAN).is_nan());
     assert!(stats::yeojohnson(&[f64::INFINITY], 1.).is_err());
     assert_eq!(stats::yeojohnson(&[], 1.).unwrap(), Vec::<f64>::new());
 }

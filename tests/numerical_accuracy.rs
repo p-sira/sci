@@ -18,7 +18,7 @@ fn independent_accuracy_references() {
             "rosen_der" => optimize::rosen_der(&x).unwrap(),
             "student_ppf" => {
                 let distribution = stats::Distribution::StudentT { df: p[0] };
-                let result = special::stdtrit(p[0], p[1]);
+                let result = special::probability::stdtrit(p[0], p[1]);
                 let quantile = stats::ppf(distribution, p[1]).unwrap();
                 if p[1] > 0.25 && p[1] < 0.75 {
                     assert_eq!(quantile, result);
@@ -38,12 +38,12 @@ fn independent_accuracy_references() {
                 let distribution = stats::Distribution::StudentT { df: p[0] };
                 let cdf = stats::cdf(distribution, p[1]).unwrap();
                 let sf = stats::sf(distribution, p[1]).unwrap();
-                assert_eq!(cdf, special::stdtr(p[0], p[1]));
-                assert_eq!(sf, special::stdtr(p[0], -p[1]));
+                assert_eq!(cdf, special::probability::stdtr(p[0], p[1]));
+                assert_eq!(sf, special::probability::stdtr(p[0], -p[1]));
                 vec![cdf, sf]
             }
             "student_special_cdf" => {
-                let result = special::stdtr(p[0], p[1]);
+                let result = special::probability::stdtr(p[0], p[1]);
                 assert_eq!(
                     stats::cdf(stats::Distribution::StudentT { df: p[0] }, p[1]).unwrap(),
                     result
@@ -55,7 +55,7 @@ fn independent_accuracy_references() {
                 vec![result]
             }
             "student_special_ppf" => {
-                let result = special::stdtrit(p[0], p[1]);
+                let result = special::probability::stdtrit(p[0], p[1]);
                 assert_eq!(
                     stats::ppf(stats::Distribution::StudentT { df: p[0] }, p[1]).unwrap(),
                     result
@@ -114,24 +114,27 @@ fn independent_accuracy_references() {
 fn domains_endpoints_and_exact_medians() {
     for df in [0.25, 1., 2., 4.5, 1000.] {
         let distribution = stats::Distribution::StudentT { df };
-        assert_eq!(special::stdtrit(df, 0.5).to_bits(), 0_f64.to_bits());
-        assert_eq!(special::stdtrit(df, 0.), f64::NEG_INFINITY);
-        assert_eq!(special::stdtrit(df, 1.), f64::INFINITY);
+        assert_eq!(
+            special::probability::stdtrit(df, 0.5).to_bits(),
+            0_f64.to_bits()
+        );
+        assert_eq!(special::probability::stdtrit(df, 0.), f64::NEG_INFINITY);
+        assert_eq!(special::probability::stdtrit(df, 1.), f64::INFINITY);
         assert_eq!(stats::ppf(distribution, 0.).unwrap(), f64::NEG_INFINITY);
         assert_eq!(stats::ppf(distribution, 1.).unwrap(), f64::INFINITY);
-        assert_eq!(special::stdtr(df, f64::NEG_INFINITY), 0.);
-        assert_eq!(special::stdtr(df, f64::INFINITY), 1.);
+        assert_eq!(special::probability::stdtr(df, f64::NEG_INFINITY), 0.);
+        assert_eq!(special::probability::stdtr(df, f64::INFINITY), 1.);
     }
     for df in [-1., 0., f64::NAN] {
-        assert!(special::stdtrit(df, 0.4).is_nan());
-        assert!(special::stdtr(df, 1e-10).is_nan());
+        assert!(special::probability::stdtrit(df, 0.4).is_nan());
+        assert!(special::probability::stdtr(df, 1e-10).is_nan());
         assert!(stats::ppf(stats::Distribution::StudentT { df }, 0.4).is_err());
     }
     for p in [-0.1, 1.1, f64::NAN] {
-        assert!(special::stdtrit(4.5, p).is_nan());
+        assert!(special::probability::stdtrit(4.5, p).is_nan());
     }
-    assert!(special::stdtr(f64::NAN, 0.).is_nan());
-    assert!(special::stdtr(3., f64::NAN).is_nan());
+    assert!(special::probability::stdtr(f64::NAN, 0.).is_nan());
+    assert!(special::probability::stdtr(3., f64::NAN).is_nan());
     assert!(stats::shapiro(&[0., 1.]).is_err());
     assert!(stats::shapiro(&[0., 1., f64::INFINITY]).is_err());
     assert!(stats::shapiro(&[1., 1., 1.]).unwrap().statistic.is_nan());

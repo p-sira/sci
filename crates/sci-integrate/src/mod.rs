@@ -482,7 +482,7 @@ pub fn romb<T: Float>(y: &[T], dx: T) -> Result<T> {
 /// Invalid bounds/order, callback overflow, or quadrature backend failure.
 /// ## Numerical behavior
 ///
-/// Uses shared [`sci_special::roots_legendre`] to generate binary64 nodes and
+/// Uses shared [`sci_special::orthogonal::roots_legendre`] to generate binary64 nodes and
 /// weights, rounds them to the selected type, and performs exactly `n` evaluations
 /// for nonzero intervals. Finite bounds map to clamped convex combinations,
 /// including when their difference overflows. At most 256 callback values
@@ -512,7 +512,7 @@ pub fn fixed_quad<T: Float>(f: impl Fn(T) -> T, a: T, b: T, n: usize) -> Result<
     if a == b {
         return Ok(0.0);
     }
-    let (nodes, weights) = crate::special::roots_legendre(n)?;
+    let (nodes, weights) = crate::special::orthogonal::roots_legendre(n)?;
     let width = b - a;
     let half = 0.5 * b - 0.5 * a;
     let mut values = Vec::with_capacity(n);

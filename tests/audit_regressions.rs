@@ -86,9 +86,9 @@ fn evaluate(row: &[&str]) -> Result<Vec<f64>> {
             };
             vec![t.statistic, t.pvalue, t.df]
         }
-        "rel_entr" => vec![special::rel_entr(x[0], x[1])],
-        "kl_div" => vec![special::kl_div(x[0], x[1])],
-        "pseudo_huber" => vec![special::pseudo_huber(x[0], x[1])],
+        "rel_entr" => vec![special::elementary::rel_entr(x[0], x[1])],
+        "kl_div" => vec![special::elementary::kl_div(x[0], x[1])],
+        "pseudo_huber" => vec![special::elementary::pseudo_huber(x[0], x[1])],
         "particle_update" => {
             let prior = filter::ParticleSet {
                 states: (0..x.len()).map(|i| vec![i as f64]).collect(),
@@ -225,9 +225,9 @@ fn audit_fixes_match_independent_references() {
 #[test]
 fn numerical_losses_and_probabilities_preserve_independent_identities() {
     for x in [1e-300_f64, 1e-100, 1., 1e100, 1e308] {
-        assert_eq!(special::kl_div(x, x), 0.);
+        assert_eq!(special::elementary::kl_div(x, x), 0.);
         for y in [x.next_down(), x.next_up()] {
-            let divergence = special::kl_div(x, y);
+            let divergence = special::elementary::kl_div(x, y);
             assert!(divergence >= 0. && divergence.is_finite());
             // Neighbor differences at these scales give strictly positive KL
             // except when its squared relative difference truly underflows.
@@ -239,8 +239,8 @@ fn numerical_losses_and_probabilities_preserve_independent_identities() {
     for delta in [1e-308, 1., 1e308] {
         for r in [1e-155, 1., 1e150, 1e308] {
             assert_eq!(
-                special::pseudo_huber(delta, r),
-                special::pseudo_huber(delta, -r)
+                special::elementary::pseudo_huber(delta, r),
+                special::elementary::pseudo_huber(delta, -r)
             );
         }
     }

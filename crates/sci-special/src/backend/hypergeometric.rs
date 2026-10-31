@@ -193,7 +193,7 @@ mod tests {
         ];
         for &(v, z, expected) in REFERENCES {
             let actual = real_kernel(v, z).unwrap();
-            let public = crate::hyp0f1(v, z);
+            let public = crate::hypergeometric::hyp0f1(v, z);
             assert!(
                 (actual - expected).abs() <= 3e-12 * expected.abs().max(1.0),
                 "0F1(;{v};{z}): got {actual}, reference {expected}"
@@ -219,7 +219,7 @@ mod tests {
         }
         for &v in &[0.0, -1.0, -2.0, -3.0] {
             assert!(real_kernel(v, -10.0).is_err());
-            assert!(crate::hyp0f1(v, -10.0).is_nan());
+            assert!(crate::hypergeometric::hyp0f1(v, -10.0).is_nan());
         }
         assert!(real_kernel(1.0, f64::NAN).is_err());
     }

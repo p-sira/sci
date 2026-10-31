@@ -20,7 +20,7 @@ use sci_core::Float;
 ///
 /// ## Examples
 /// ```
-/// assert!((sci_special::log1pmx(1e-10_f64) + 5e-21).abs() < 1e-30);
+/// assert!((sci_special::elementary::log1pmx(1e-10_f64) + 5e-21).abs() < 1e-30);
 /// ```
 ///
 /// ## References
@@ -68,7 +68,7 @@ pub fn log1pmx<T: Float>(x: T) -> T {
 ///
 /// ## Examples
 /// ```
-/// let x = sci_special::digammainv(sci_special::digamma(2.5_f64));
+/// let x = sci_special::gamma::digammainv(sci_special::gamma::digamma(2.5_f64));
 /// assert!((x - 2.5).abs() < 1e-13);
 /// ```
 ///
@@ -85,7 +85,7 @@ pub fn digammainv<T: Float>(y: T) -> T {
         return T::from(x).unwrap_or(T::nan());
     }
     for _ in 0..32 {
-        let step = (crate::digamma(x) - y) / crate::trigamma(x);
+        let step = (crate::gamma::digamma(x) - y) / crate::gamma::trigamma(x);
         let next = if step < x { x - step } else { x * 0.5 };
         if next == x || (next - x).abs() <= 4.0 * f64::EPSILON * x {
             return T::from(next).unwrap_or(T::nan());
@@ -109,7 +109,7 @@ pub fn digammainv<T: Float>(y: T) -> T {
 /// The positive ratio, converted from binary64 to the requested float type.
 ///
 /// ## Numerical behavior
-/// Reuses [`crate::poch`] for representable argument differences up to 10,000
+/// Reuses [`crate::combinatorics::poch`] for representable argument differences up to 10,000
 /// where recurrence cannot cross a tiny argument (bounded
 /// product/reciprocal recurrence), and log-beta and log-gamma otherwise through
 /// `Γ(b+d)/Γ(b) = Γ(d)/B(b,d)`.
@@ -120,7 +120,7 @@ pub fn digammainv<T: Float>(y: T) -> T {
 ///
 /// ## Examples
 /// ```
-/// assert!((sci_special::gamma_ratio(201.0_f64, 200.0) - 200.0).abs() < 1e-10);
+/// assert!((sci_special::gamma::gamma_ratio(201.0_f64, 200.0) - 200.0).abs() < 1e-10);
 /// ```
 ///
 /// ## References
@@ -138,9 +138,9 @@ pub fn gamma_ratio<T: Float>(a: T, b: T) -> T {
     }
     let d = (a - b).abs();
     if d <= 10000.0 && b + (a - b) == a && ((a >= 1.0 && b >= 1.0) || d < 1.0) {
-        return T::from(crate::poch(b, a - b)).unwrap_or(T::nan());
+        return T::from(crate::combinatorics::poch(b, a - b)).unwrap_or(T::nan());
     }
-    let log = crate::gammaln(d) - crate::betaln(a.min(b), d);
+    let log = crate::gamma::gammaln(d) - crate::beta::betaln(a.min(b), d);
     T::from(if a > b { log.exp() } else { (-log).exp() }).unwrap_or(T::nan())
 }
 
@@ -164,7 +164,7 @@ pub fn gamma_ratio<T: Float>(a: T, b: T) -> T {
 ///
 /// ## Examples
 /// ```
-/// assert!((sci_special::scaled_exp1(1000.0_f64) - 0.9990019940238807).abs() < 1e-14);
+/// assert!((sci_special::integrals::scaled_exp1(1000.0_f64) - 0.9990019940238807).abs() < 1e-14);
 /// ```
 ///
 /// ## References
@@ -181,7 +181,7 @@ pub fn scaled_exp1<T: Float>(x: T) -> T {
         return T::one();
     }
     if x <= 1.0 {
-        return x * x.exp() * crate::exp1(x);
+        return x * x.exp() * crate::integrals::exp1(x);
     }
     let count = 20 + (80.0 / x).to_usize().unwrap_or(0);
     let mut tail = T::zero();
@@ -216,7 +216,7 @@ pub fn scaled_exp1<T: Float>(x: T) -> T {
 ///
 /// ## Examples
 /// ```
-/// assert_eq!(sci_special::normalized_gen_harmonic(2, 3, 4, 0.0_f64)?, 0.5);
+/// assert_eq!(sci_special::combinatorics::normalized_gen_harmonic(2, 3, 4, 0.0_f64)?, 0.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -285,7 +285,7 @@ pub fn normalized_gen_harmonic<T: Float>(j: u32, k: u32, n: u32, a: T) -> Result
 ///
 /// ## Examples
 /// ```
-/// assert!((sci_special::iv_ratio(1.0_f64, 1.0) - 0.4463899658965345).abs() < 1e-14);
+/// assert!((sci_special::bessel::iv_ratio(1.0_f64, 1.0) - 0.4463899658965345).abs() < 1e-14);
 /// ```
 ///
 /// ## References
@@ -318,7 +318,7 @@ pub fn iv_ratio<T: Float>(v: T, x: T) -> T {
 ///
 /// ## Examples
 /// ```
-/// let c = sci_special::iv_ratio_c(1.0_f64, 1e10);
+/// let c = sci_special::bessel::iv_ratio_c(1.0_f64, 1e10);
 /// assert!((c / 5e-11 - 1.0).abs() < 1e-9);
 /// ```
 ///
@@ -354,8 +354,8 @@ pub fn iv_ratio_c<T: Float>(v: T, x: T) -> T {
 ///
 /// ## Examples
 /// ```
-/// let x = sci_special::iv_ratioinv(1.0_f64, 0.5);
-/// assert!((sci_special::iv_ratio(1.0, x) - 0.5).abs() < 1e-14);
+/// let x = sci_special::bessel::iv_ratioinv(1.0_f64, 0.5);
+/// assert!((sci_special::bessel::iv_ratio(1.0, x) - 0.5).abs() < 1e-14);
 /// ```
 ///
 /// ## References

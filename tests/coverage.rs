@@ -286,27 +286,41 @@ fn spatial_zero_weights_exclude_overflowing_coordinate_differences() {
 
 #[test]
 fn special_reductions_handle_empty_and_nonfinite_normalization() {
-    assert_eq!(special::logsumexp::<f64>(&[]), f64::NEG_INFINITY);
-    assert!(special::softmax::<f64>(&[]).is_empty());
-    assert!(special::log_softmax::<f64>(&[]).is_empty());
     assert_eq!(
-        special::logsumexp(&[f64::NEG_INFINITY; 2]),
+        special::elementary::logsumexp::<f64>(&[]),
         f64::NEG_INFINITY
     );
-    assert_eq!(special::logsumexp(&[0.0, f64::INFINITY]), f64::INFINITY);
-    assert!(special::logsumexp(&[f64::INFINITY, f64::NAN]).is_nan());
+    assert!(special::elementary::softmax::<f64>(&[]).is_empty());
+    assert!(special::elementary::log_softmax::<f64>(&[]).is_empty());
+    assert_eq!(
+        special::elementary::logsumexp(&[f64::NEG_INFINITY; 2]),
+        f64::NEG_INFINITY
+    );
+    assert_eq!(
+        special::elementary::logsumexp(&[0.0, f64::INFINITY]),
+        f64::INFINITY
+    );
+    assert!(special::elementary::logsumexp(&[f64::INFINITY, f64::NAN]).is_nan());
     for input in [
         [f64::NEG_INFINITY; 2],
         [f64::INFINITY, 0.0],
         [0.0, f64::NAN],
     ] {
-        assert!(special::softmax(&input).iter().all(|x| x.is_nan()));
-        assert!(special::log_softmax(&input).iter().all(|x| x.is_nan()));
+        assert!(
+            special::elementary::softmax(&input)
+                .iter()
+                .all(|x| x.is_nan())
+        );
+        assert!(
+            special::elementary::log_softmax(&input)
+                .iter()
+                .all(|x| x.is_nan())
+        );
     }
     for shift in [-1000.0, 0.0, 1000.0] {
         let values = [shift - 2.0, shift, shift + 3.0];
-        let probabilities = special::softmax(&values);
-        let logs = special::log_softmax(&values);
+        let probabilities = special::elementary::softmax(&values);
+        let logs = special::elementary::log_softmax(&values);
         finite_close(probabilities.iter().sum(), 1.0, 2e-12, 2e-12);
         for (p, log) in probabilities.iter().zip(logs) {
             finite_close(*p, log.exp(), 2e-12, 2e-12);
@@ -485,77 +499,77 @@ fn elliptic_functions_reject_nonfinite_and_singular_parameters() {
 #[test]
 fn special_polynomials_and_sequences_bound_native_work() {
     for f in [
-        special::legendre,
-        special::laguerre,
-        special::hermite,
-        special::hermitenorm,
-        special::chebyt,
-        special::chebyu,
-        special::chebyc,
-        special::chebys,
-        special::sh_chebyt,
-        special::sh_chebyu,
-        special::sh_legendre,
+        special::orthogonal::legendre,
+        special::orthogonal::laguerre,
+        special::orthogonal::hermite,
+        special::orthogonal::hermitenorm,
+        special::orthogonal::chebyt,
+        special::orthogonal::chebyu,
+        special::orthogonal::chebyc,
+        special::orthogonal::chebys,
+        special::orthogonal::sh_chebyt,
+        special::orthogonal::sh_chebyu,
+        special::orthogonal::sh_legendre,
     ] {
         assert!(f(257, false).is_err());
         assert!(f(usize::MAX, true).is_err());
     }
     for f in [
-        special::roots_legendre,
-        special::roots_laguerre,
-        special::roots_hermite,
-        special::roots_hermitenorm,
-        special::roots_chebyt,
-        special::roots_chebyu,
-        special::roots_chebyc,
-        special::roots_chebys,
-        special::roots_sh_chebyt,
-        special::roots_sh_chebyu,
-        special::roots_sh_legendre,
+        special::orthogonal::roots_legendre,
+        special::orthogonal::roots_laguerre,
+        special::orthogonal::roots_hermite,
+        special::orthogonal::roots_hermitenorm,
+        special::orthogonal::roots_chebyt,
+        special::orthogonal::roots_chebyu,
+        special::orthogonal::roots_chebyc,
+        special::orthogonal::roots_chebys,
+        special::orthogonal::roots_sh_chebyt,
+        special::orthogonal::roots_sh_chebyu,
+        special::orthogonal::roots_sh_legendre,
     ] {
         for n in [0, 257, usize::MAX] {
             assert!(f(n).is_err());
         }
     }
     for bad in [-1.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-        assert!(special::jacobi(2, bad, 0.0, false).is_err());
-        assert!(special::jacobi(2, 0.0, bad, false).is_err());
-        assert!(special::roots_jacobi(2, bad, 0.0).is_err());
-        assert!(special::roots_jacobi(2, 0.0, bad).is_err());
-        assert!(special::genlaguerre(2, bad, false).is_err());
-        assert!(special::roots_genlaguerre(2, bad).is_err());
-        assert!(special::gegenbauer(2, bad, false).is_err());
-        assert!(special::roots_gegenbauer(2, bad).is_err());
-        assert!(special::sh_jacobi(2, 1.0, bad, false).is_err());
-        assert!(special::roots_sh_jacobi(2, 1.0, bad).is_err());
+        assert!(special::orthogonal::jacobi(2, bad, 0.0, false).is_err());
+        assert!(special::orthogonal::jacobi(2, 0.0, bad, false).is_err());
+        assert!(special::orthogonal::roots_jacobi(2, bad, 0.0).is_err());
+        assert!(special::orthogonal::roots_jacobi(2, 0.0, bad).is_err());
+        assert!(special::orthogonal::genlaguerre(2, bad, false).is_err());
+        assert!(special::orthogonal::roots_genlaguerre(2, bad).is_err());
+        assert!(special::orthogonal::gegenbauer(2, bad, false).is_err());
+        assert!(special::orthogonal::roots_gegenbauer(2, bad).is_err());
+        assert!(special::orthogonal::sh_jacobi(2, 1.0, bad, false).is_err());
+        assert!(special::orthogonal::roots_sh_jacobi(2, 1.0, bad).is_err());
     }
-    assert!(special::gegenbauer(2, 0.0, true).is_err());
+    assert!(special::orthogonal::gegenbauer(2, 0.0, true).is_err());
     for n in [0, 4097, usize::MAX] {
-        assert!(special::fresnel_zeros(n).is_err());
-        assert!(special::fresnels_zeros(n).is_err());
-        assert!(special::fresnelc_zeros(n).is_err());
+        assert!(special::integrals::fresnel_zeros(n).is_err());
+        assert!(special::integrals::fresnels_zeros(n).is_err());
+        assert!(special::integrals::fresnelc_zeros(n).is_err());
     }
     for n in [129, usize::MAX] {
-        assert!(special::legendre_p_all(n, 0.3).is_err());
-        assert!(special::assoc_legendre_p_all(n, 1, 0.3).is_err());
-        assert!(special::sph_legendre_p_all(1, n, 0.3).is_err());
-        assert!(special::sph_harm_y_all(n, 1, 0.3, 0.4).is_err());
-        let z = special::sph_harm_y(n, 0, 0.3, 0.4);
+        assert!(special::orthogonal::legendre_p_all(n, 0.3).is_err());
+        assert!(special::orthogonal::assoc_legendre_p_all(n, 1, 0.3).is_err());
+        assert!(special::orthogonal::sph_legendre_p_all(1, n, 0.3).is_err());
+        assert!(special::wave::sph_harm_y_all(n, 1, 0.3, 0.4).is_err());
+        let z = special::wave::sph_harm_y(n, 0, 0.3, 0.4);
         assert!(z.re.is_nan() && z.im.is_nan());
     }
     for n in [-1, 4097, i32::MAX] {
         for f in [
-            special::eval_legendre,
-            special::eval_laguerre,
-            special::eval_chebyt,
-            special::eval_chebyu,
-            special::eval_hermite,
-            special::eval_hermitenorm,
+            special::orthogonal::eval_legendre,
+            special::orthogonal::eval_laguerre,
+            special::orthogonal::eval_chebyt,
+            special::orthogonal::eval_chebyu,
+            special::orthogonal::eval_hermite,
+            special::orthogonal::eval_hermitenorm,
         ] {
             assert!(f(n, 0.3_f64).is_nan());
         }
-        assert!(special::eval_jacobi(n, 0.0_f64, 0.0, 0.3).is_nan());
-        assert!(special::eval_genlaguerre(n, 0.0_f64, 0.3).is_nan());
-        assert!(special::eval_gegenbauer(n, 1.0_f64, 0.3).is_nan());
+        assert!(special::orthogonal::eval_jacobi(n, 0.0_f64, 0.0, 0.3).is_nan());
+        assert!(special::orthogonal::eval_genlaguerre(n, 0.0_f64, 0.3).is_nan());
+        assert!(special::orthogonal::eval_gegenbauer(n, 1.0_f64, 0.3).is_nan());
     }
 }

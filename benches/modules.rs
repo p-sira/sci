@@ -195,13 +195,21 @@ mod special_benches {
     #[divan::bench]
     fn gamma(bencher: Bencher) {
         let x = grid();
-        bencher.bench(|| x.iter().map(|&v| special::gamma(black_box(v))).sum::<f64>());
+        bencher.bench(|| {
+            x.iter()
+                .map(|&v| special::gamma::gamma(black_box(v)))
+                .sum::<f64>()
+        });
     }
 
     #[divan::bench]
     fn erf(bencher: Bencher) {
         let x = values(1_000, 4);
-        bencher.bench(|| x.iter().map(|&v| special::erf(black_box(v))).sum::<f64>());
+        bencher.bench(|| {
+            x.iter()
+                .map(|&v| special::elementary::erf(black_box(v)))
+                .sum::<f64>()
+        });
     }
 
     #[divan::bench]
@@ -209,7 +217,7 @@ mod special_benches {
         let x = grid();
         bencher.bench(|| {
             x.iter()
-                .map(|&v| special::jv(2.5, black_box(v)))
+                .map(|&v| special::bessel::jv(2.5, black_box(v)))
                 .sum::<f64>()
         });
     }
@@ -219,7 +227,7 @@ mod special_benches {
         let x: Vec<f64> = values(1_000, 9).iter().map(|v| 0.9 * v).collect();
         bencher.bench(|| {
             x.iter()
-                .map(|&v| special::hyp2f1(0.5, 1.5, 2.5, black_box(v)))
+                .map(|&v| special::hypergeometric::hyp2f1(0.5, 1.5, 2.5, black_box(v)))
                 .sum::<f64>()
         });
     }

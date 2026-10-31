@@ -45,7 +45,7 @@ simple_window!(cosine, "w[i] = sin(pi (i+1/2)/n)", |i, n| (PI * (i + 0.5)
     / n)
     .sin());
 simple_window!(lanczos, "w[i] = sinc(2i/(n-1)-1)", |i, n| {
-    crate::special::sinc(2. * i / (n - 1.) - 1.)
+    crate::special::elementary::sinc(2. * i / (n - 1.) - 1.)
 });
 simple_window!(
     barthann,
@@ -432,7 +432,7 @@ pub fn kaiser(m: usize, beta: f64, symmetric: bool) -> Result<Vec<f64>> {
     evaluate(m, symmetric, |i, n| {
         let x = 2. * i / (n - 1.) - 1.;
         let a = b * (1. - x * x).max(0.).sqrt();
-        crate::special::i0e(a) / crate::special::i0e(b) * (a - b).exp()
+        crate::special::bessel::i0e(a) / crate::special::bessel::i0e(b) * (a - b).exp()
     })
 }
 /// Evaluates KBD weights `sqrt(cumsum(kaiser(M/2+1))/sum(kaiser(M/2+1)))` mirrored about the midpoint.

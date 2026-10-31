@@ -25,7 +25,7 @@ use crate::{Error, Result, complex::Complex};
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::hankel1(0.5,2.0);
+/// let value = sci_special::bessel::hankel1(0.5,2.0);
 /// let _ = value;
 /// ```
 ///
@@ -59,7 +59,7 @@ pub fn hankel1(v: f64, x: f64) -> Complex {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::hankel1e(0.5,2.0);
+/// let value = sci_special::bessel::hankel1e(0.5,2.0);
 /// let _ = value;
 /// ```
 ///
@@ -93,7 +93,7 @@ pub fn hankel1e(v: f64, x: f64) -> Complex {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::hankel2(0.5,2.0);
+/// let value = sci_special::bessel::hankel2(0.5,2.0);
 /// let _ = value;
 /// ```
 ///
@@ -127,7 +127,7 @@ pub fn hankel2(v: f64, x: f64) -> Complex {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::hankel2e(0.5,2.0);
+/// let value = sci_special::bessel::hankel2e(0.5,2.0);
 /// let _ = value;
 /// ```
 ///
@@ -152,7 +152,7 @@ pub fn hankel2e(v: f64, x: f64) -> Complex {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::wofz(sci_complex::Complex { re: 0.5, im: 0.3 });
+/// let value = sci_special::elementary::wofz(sci_complex::Complex { re: 0.5, im: 0.3 });
 /// let _ = value;
 /// ```
 ///
@@ -177,7 +177,7 @@ pub fn wofz(z: Complex) -> Complex {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::kelvin(0.5);
+/// let value = sci_special::bessel::kelvin(0.5);
 /// let _ = value;
 /// ```
 ///
@@ -202,7 +202,7 @@ pub fn kelvin(x: f64) -> [Complex; 4] {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::modfresnelp(0.5);
+/// let value = sci_special::integrals::modfresnelp(0.5);
 /// let _ = value;
 /// ```
 ///
@@ -230,7 +230,7 @@ pub fn modfresnelp(x: f64) -> (Complex, Complex) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::modfresnelm(0.5);
+/// let value = sci_special::integrals::modfresnelm(0.5);
 /// let _ = value;
 /// ```
 ///
@@ -261,7 +261,7 @@ pub fn modfresnelm(x: f64) -> (Complex, Complex) {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::fresnel_zeros(3)?;
+/// let value = sci_special::integrals::fresnel_zeros(3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -301,7 +301,7 @@ pub fn fresnel_zeros(nt: usize) -> Result<(Vec<Complex>, Vec<Complex>)> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::fresnels_zeros(3)?;
+/// let value = sci_special::integrals::fresnels_zeros(3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -335,7 +335,7 @@ pub fn fresnels_zeros(nt: usize) -> Result<Vec<Complex>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::fresnelc_zeros(3)?;
+/// let value = sci_special::integrals::fresnelc_zeros(3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -366,7 +366,7 @@ pub fn fresnelc_zeros(nt: usize) -> Result<Vec<Complex>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::sph_harm_y(3,1,0.5,0.3);
+/// let value = sci_special::wave::sph_harm_y(3,1,0.5,0.3);
 /// let _ = value;
 /// ```
 ///
@@ -404,7 +404,7 @@ pub fn sph_harm_y(n: usize, m: isize, theta: f64, phi: f64) -> Complex {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::sph_harm_y_all(3,2,0.5,0.3)?;
+/// let value = sci_special::wave::sph_harm_y_all(3,2,0.5,0.3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -441,7 +441,7 @@ pub fn sph_harm_y_all(n: usize, m: usize, theta: f64, phi: f64) -> Result<Vec<Ve
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::legendre_p_all(3,0.3)?;
+/// let value = sci_special::orthogonal::legendre_p_all(3,0.3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -476,7 +476,7 @@ pub fn legendre_p_all(n: usize, x: f64) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::assoc_legendre_p_all(3,2,0.3)?;
+/// let value = sci_special::orthogonal::assoc_legendre_p_all(3,2,0.3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -510,7 +510,7 @@ pub fn assoc_legendre_p_all(n: usize, m: usize, x: f64) -> Result<Vec<Vec<f64>>>
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::sph_legendre_p_all(3,2,0.3)?;
+/// let value = sci_special::orthogonal::sph_legendre_p_all(3,2,0.3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -545,7 +545,7 @@ pub fn sph_legendre_p_all(n: usize, m: usize, x: f64) -> Result<Vec<Vec<f64>>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::mathieu_even_coef(2,0.5)?;
+/// let value = sci_special::wave::mathieu_even_coef(2,0.5)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -582,7 +582,7 @@ pub fn mathieu_even_coef(m: u32, q: f64) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::mathieu_odd_coef(2,0.5)?;
+/// let value = sci_special::wave::mathieu_odd_coef(2,0.5)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -618,7 +618,7 @@ pub fn mathieu_odd_coef(m: u32, q: f64) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pro_cv_seq(1,3,0.5)?;
+/// let value = sci_special::wave::pro_cv_seq(1,3,0.5)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -652,7 +652,7 @@ pub fn pro_cv_seq(m: u64, n: u64, c: f64) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::obl_cv_seq(1,3,0.5)?;
+/// let value = sci_special::wave::obl_cv_seq(1,3,0.5)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

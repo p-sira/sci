@@ -38,7 +38,7 @@ fn complex_scaled_erfcx_matches_large_real_asymptotic_across_cutovers() {
         let w = s::complex::wofz(c(0.0, x)).unwrap();
         close(complex.re, expected, 3e-13, 1e-300);
         close(w.re, expected, 3e-13, 1e-300);
-        close(s::erfcx(x), expected, 3e-12, 1e-300);
+        close(s::elementary::erfcx(x), expected, 3e-12, 1e-300);
         assert_eq!(complex.im, 0.0);
         assert_eq!(w.im, 0.0);
     }
@@ -47,7 +47,7 @@ fn complex_scaled_erfcx_matches_large_real_asymptotic_across_cutovers() {
     // erfcx(+x) is small compared to 2 exp(x²), so reflection is well
     // conditioned; beyond x~26.6 the complex result is nonrepresentable.
     for x in [3.0_f64, 6.1, 12.0] {
-        let expected = 2.0 * (x * x).exp() - s::erfcx(x);
+        let expected = 2.0 * (x * x).exp() - s::elementary::erfcx(x);
         close_complex(
             s::complex::erfcx(c(-x, 0.0)).unwrap(),
             c(expected, 0.0),
@@ -56,7 +56,7 @@ fn complex_scaled_erfcx_matches_large_real_asymptotic_across_cutovers() {
         );
     }
     assert!(s::complex::erfcx(c(-27.0, 0.0)).is_err());
-    assert!(s::erfcx(-27.0_f64).is_infinite());
+    assert!(s::elementary::erfcx(-27.0_f64).is_infinite());
 }
 
 #[test]
@@ -106,7 +106,9 @@ fn wofz_reflection_and_upper_half_plane_symmetries_across_regions() {
             // would not constrain it. The public scalar Dawson path uses
             // an independent Cephes kernel.
             let near_axis = (-z.re * z.re).exp()
-                + std::f64::consts::FRAC_2_SQRT_PI * z.im * (2.0 * z.re * s::dawsn(z.re) - 1.0);
+                + std::f64::consts::FRAC_2_SQRT_PI
+                    * z.im
+                    * (2.0 * z.re * s::elementary::dawsn(z.re) - 1.0);
             close(value.re, near_axis, 2e-7, 1e-300);
         }
     }
@@ -143,7 +145,7 @@ fn dawson_negative_small_imaginary_and_huge_real_paths() {
     // exponentials of opposite magnitudes.
     for (x, y) in [(1.4, -1e-5), (12.0, -1e-5), (41.0, -2e-5)] {
         let got = s::complex::dawsn(c(x, y)).unwrap();
-        let real = s::dawsn(x);
+        let real = s::elementary::dawsn(x);
         let slope = 1.0 - 2.0 * x * real;
         close(got.re, real, 2e-7, 2e-9);
         close(got.im / y, slope, 3e-5, 2e-9);
