@@ -33,6 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: cargo fmt --all -- --check
+      - run: python tests/scipy/case_catalog.py
 
   audits:
     if: false # Keep the SciPy coverage audits available for re-enabling.

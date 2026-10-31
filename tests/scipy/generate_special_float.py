@@ -5,26 +5,26 @@
 """Generate scalar f32/f64 references after quantizing each floating input.
 
 Run with ``uv run tests/scipy/generate_special_float.py``. Inputs and integer
-parameter types are recorded separately in special_float_cases.json. Expected
+parameter types are recorded separately in special_float_cases.jsonl. Expected
 values come exclusively from SciPy or the independent reference identities in
 generate_special.py. Rust tests read the committed CSV without Python. Sci-specific finite-parameter domains
 and limiting IEEE conventions that differ from SciPy are checked separately by
 nonfinite_values_follow_sci_domains_and_limits in tests/special_float.rs.
 """
 import csv
-import json
 from pathlib import Path
 
 import numpy as np
 import scipy
 from generate_special import reference
+from case_catalog import read_cases
 
 
 def generate():
     assert np.__version__ == "2.5.4"
     assert scipy.__version__ == "1.18.1"
     root = Path(__file__).resolve().parent
-    cases = json.loads((root / "special_float_cases.json").read_text())
+    cases = read_cases(root / "special_float_cases.jsonl")
     with (root.parent / "fixtures" / "special_float.csv").open("w", newline="") as output:
         writer = csv.writer(output, lineterminator="\n")
         writer.writerow(["precision", "function", "arguments", "expected"])

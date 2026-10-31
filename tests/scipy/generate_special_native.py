@@ -5,7 +5,7 @@
 """Native special APIs: independent defining sums/integrals and SciPy references.
 
 Run with uv run tests/scipy/generate_special_native.py. Inputs are kept separately
-in special_native_cases.json. Bessel ratios use 100-digit Decimal defining 0F1
+in special_native_cases.jsonl. Bessel ratios use 100-digit Decimal defining 0F1
 series (or large-x asymptotic series), never XSF's Perron fraction. Inverses use
 SciPy brentq with those references. Digamma inverses solve SciPy digamma in log x.
 Scaled E1 uses its defining Laplace integral, avoiding an overflowing exp(x).
@@ -13,7 +13,6 @@ Complex functions use the corresponding SciPy complex overloads. Both precisions
 quantize inputs before reference evaluation. No Sci or Rust backend is used.
 """
 import csv
-import json
 import math
 from decimal import Decimal, localcontext
 from pathlib import Path
@@ -21,6 +20,7 @@ from pathlib import Path
 import numpy as np
 import scipy
 from scipy import integrate, optimize, special
+from case_catalog import read_cases
 
 
 def ratio(v, x):
@@ -109,7 +109,7 @@ def generate():
     assert np.__version__ == '2.5.4'
     assert scipy.__version__ == '1.18.1'
     root = Path(__file__).resolve().parent
-    cases = json.loads((root/'special_native_cases.json').read_text())
+    cases = read_cases(root / 'special_native_cases.jsonl')
     with (root.parent/'fixtures/special_native.csv').open('w', newline='') as output:
         writer = csv.writer(output,lineterminator='\n')
         writer.writerow(['precision','function','arguments','expected'])

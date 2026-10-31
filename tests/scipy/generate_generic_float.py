@@ -15,7 +15,6 @@ stencil error.
 Extreme IEEE range and branch behavior are exercised separately in Rust.
 """
 import csv
-import json
 import re
 from pathlib import Path
 import numpy as np
@@ -23,6 +22,7 @@ import scipy
 from scipy import constants, fft, fftpack, integrate, interpolate, special, stats
 
 from elliptic_reference import extended_reference
+from case_catalog import read_cases
 
 if (np.__version__, scipy.__version__) != ("2.5.4", "1.18.1"):
     raise RuntimeError("Use NumPy 2.5.4 and SciPy 1.18.1")
@@ -175,9 +175,9 @@ with (ROOT/"generic_float_inputs.csv").open() as source, (ROOT/"generic_float_ex
     actual_apis = {(row["group"], row["function"]) for row in cases}
     # The scalar migration added a separate f32/f64 fixture suite. Count its
     # public API references without duplicating those rows in this older suite.
-    scalar_cases = json.loads((Path(__file__).parent / "special_float_cases.json").read_text())
+    scalar_cases = read_cases(Path(__file__).parent / "special_float_cases.jsonl")
     separate_apis = {("special", row["name"]) for row in scalar_cases if "T" in row["types"]}
-    native_cases = json.loads((Path(__file__).parent / "special_native_cases.json").read_text())
+    native_cases = read_cases(Path(__file__).parent / "special_native_cases.jsonl")
     separate_apis.update(("special", row["name"]) for row in native_cases
                          if not row["name"].startswith("complex."))
     missing = expected_apis - actual_apis - separate_apis

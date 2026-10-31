@@ -4,14 +4,13 @@
 # ///
 """Independent defining-series references for real 1F1 cancellation.
 
-Inputs live in hyp1f1_cancellation_cases.json. Decimal precision exceeds a
+Inputs live in hyp1f1_cancellation_cases.jsonl. Decimal precision exceeds a
 conservative exponential-term bound by 100 digits; regenerate at 80 additional
 digits and require identical binary64 rounding. This uses the original defining
 series, never Taylor ODE continuation or Sci's backend. SciPy is recorded as an
 additional comparison, since it too can lose digits at large parameters.
 """
 import csv
-import json
 import math
 from decimal import Decimal, localcontext
 from pathlib import Path
@@ -19,6 +18,7 @@ from pathlib import Path
 import numpy as np
 import scipy
 from scipy import special
+from case_catalog import read_cases
 
 
 def defining_series(args, precision):
@@ -40,7 +40,7 @@ def generate():
     assert np.__version__ == '2.5.4'
     assert scipy.__version__ == '1.18.1'
     root = Path(__file__).resolve().parent
-    cases = json.loads((root/'hyp1f1_cancellation_cases.json').read_text())
+    cases = read_cases(root / 'hyp1f1_cancellation_cases.jsonl')
     with (root.parent/'fixtures/hyp1f1_cancellation.csv').open('w',newline='') as stream:
         writer = csv.writer(stream,lineterminator='\n')
         writer.writerow(['a','b','x','expected','scipy','log10_series_condition'])

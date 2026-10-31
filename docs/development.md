@@ -127,9 +127,13 @@ python tests/scipy/audit_signal.py
 Python and SciPy are required only for fixture generation. Ordinary Rust tests
 read the checked-in CSVs. Comparisons use absolute and relative tolerances;
 Statrs' approximate normal CDF is checked at a relative tolerance of `1e-10`.
-Special-function cases are defined in `tests/scipy/special_cases.json`, which
-contains inputs only. Expected values come from SciPy; ellip-only functions use
-SciPy elliptic identities or independent SciPy quadrature. CSV rows carry
+Special-function input cases are defined in
+`tests/scipy/special_cases.jsonl`, with one independent JSON object per
+line. Other large input catalogs use the same JSON Lines format. Run
+`python tests/scipy/case_catalog.py` to check their canonical formatting.
+Expected values are kept in separately generated CSV fixtures for Rust
+tests to use without Python. References come from SciPy, elliptic
+identities, or independent SciPy quadrature. CSV rows carry
 relative and absolute tolerances, normally `2e-11`. Noncentral F parameter
 inverses use `1e-4` relative tolerance because SciPy's CDFLIB inversion is
 approximate; noncentral t comparisons use `5e-6` relative / `1e-7` absolute.

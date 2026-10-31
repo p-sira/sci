@@ -21,7 +21,6 @@ is removed. Other newly added inverse/U cases use 3e-11 with a 1e-300 floor.
 """
 
 import csv
-import json
 import math
 from decimal import Decimal, localcontext
 from pathlib import Path
@@ -31,6 +30,7 @@ import scipy
 from scipy import special, integrate, optimize
 
 from elliptic_reference import extended_reference
+from case_catalog import read_cases
 
 
 def hyp0f1_decimal(parameter, z):
@@ -345,7 +345,7 @@ def flatten(value):
 
 def generate():
     directory = Path(__file__).resolve().parent
-    cases = json.loads((directory / "special_cases.json").read_text())
+    cases = read_cases(directory / "special_cases.jsonl")
     if (np.__version__, scipy.__version__) != ("2.5.4", "1.18.1"):
         raise RuntimeError("Use NumPy 2.5.4 and SciPy 1.18.1")
     path = directory.parent / "fixtures" / "special_extended.csv"

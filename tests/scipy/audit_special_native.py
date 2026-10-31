@@ -9,6 +9,7 @@ import csv
 import json
 import re
 from pathlib import Path
+from case_catalog import read_cases
 
 ROOT = Path(__file__).resolve().parents[2]
 SCALAR = {'digammainv','gamma_ratio','iv_ratio','iv_ratio_c','iv_ratioinv',
@@ -23,7 +24,7 @@ def audit(xsf=None):
         exported = set(re.findall(r'^pub fn (\w+)<T: Float>',(source/filename).read_text(),re.M))
         assert exported == expected,(filename,exported ^ expected)
     names = SCALAR | {'complex.'+name for name in COMPLEX}
-    cases = json.loads((ROOT/'tests/scipy/special_native_cases.json').read_text())
+    cases = read_cases(ROOT / 'tests/scipy/special_native_cases.jsonl')
     assert {case['name'] for case in cases} == names
     with (ROOT/'tests/fixtures/special_native.csv').open() as stream:
         rows = list(csv.DictReader(stream))
