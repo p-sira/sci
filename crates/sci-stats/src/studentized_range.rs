@@ -29,7 +29,7 @@ fn rule(order: usize) -> Result<&'static Rule> {
     let cache = if order == 32 { &COARSE } else { &FINE };
     cache
         .get_or_init(|| {
-            let (nodes, weights) = crate::special::roots_legendre(order)?;
+            let (nodes, weights) = crate::special::orthogonal::roots_legendre(order)?;
             let composite = |edges: &[f64]| {
                 edges
                     .windows(2)
@@ -56,7 +56,7 @@ fn rule(order: usize) -> Result<&'static Rule> {
 // cancellation of a*log(a)-a-logGamma(a) for large a.
 fn log_normalizer(a: f64) -> f64 {
     if a < 8. {
-        return a * a.ln() - a - crate::special::gammaln(a) - 0.5 * a.ln();
+        return a * a.ln() - a - crate::special::gamma::gammaln(a) - 0.5 * a.ln();
     }
     let r = 1. / a;
     let r2 = r * r;

@@ -93,9 +93,9 @@ pub fn ks_1samp(
     };
     let (statistic, location, sign) = select(plus, minus, choice);
     let pvalue = if matches!(alternative, Alternative::TwoSided) {
-        crate::special::kolmogorov(n.sqrt() * statistic)
+        crate::special::probability::kolmogorov(n.sqrt() * statistic)
     } else {
-        crate::special::smirnov(x.len() as i32, statistic)
+        crate::special::probability::smirnov(x.len() as i32, statistic)
     };
     Ok(KsResult {
         statistic,
@@ -177,7 +177,7 @@ pub fn ks_2samp(first: &[f64], second: &[f64], alternative: Alternative) -> Resu
     let m = b.len() as f64;
     let effective = n * m / (n + m);
     let pvalue = if matches!(alternative, Alternative::TwoSided) {
-        crate::special::kolmogorov(effective.sqrt() * statistic)
+        crate::special::probability::kolmogorov(effective.sqrt() * statistic)
     } else {
         (-2. * effective * statistic * statistic).exp()
     };

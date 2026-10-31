@@ -3,7 +3,7 @@ use super::{
     BandType, IirFamily, TransferFunction, Zpk, buttord, cheb1ord, cheb2ord, checked, iirfilter,
     nonempty, positive, size,
 };
-use crate::special::{ellipj, ellipk, ellipkinc, ellipkm1};
+use crate::special::elliptic::{ellipj, ellipk, ellipkinc, ellipkm1};
 use crate::{
     Error, Result,
     complex::{Complex, native, owned},

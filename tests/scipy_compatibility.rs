@@ -37,18 +37,18 @@ fn special_functions_match_scipy() {
         let y: f64 = number(row[2]);
         let expected = number(row[3]);
         let actual = match row[0] {
-            "gamma" => special::gamma(x),
-            "digamma" => special::digamma(x),
-            "erf" => special::erf(x),
-            "gammaln" => special::gammaln(x),
-            "trigamma" => special::trigamma(x),
-            "erfc" => special::erfc(x),
-            "erfinv" => special::erfinv(x),
-            "betaln" => special::betaln(x, y),
-            "lambertw" => special::lambertw(x),
-            "lambertwm1" => special::lambertwm1(x),
-            "gammainc" => special::gammainc(x, y),
-            "beta" => special::beta(x, y),
+            "gamma" => special::gamma::gamma(x),
+            "digamma" => special::gamma::digamma(x),
+            "erf" => special::elementary::erf(x),
+            "gammaln" => special::gamma::gammaln(x),
+            "trigamma" => special::gamma::trigamma(x),
+            "erfc" => special::elementary::erfc(x),
+            "erfinv" => special::elementary::erfinv(x),
+            "betaln" => special::beta::betaln(x, y),
+            "lambertw" => special::elementary::lambertw(x),
+            "lambertwm1" => special::elementary::lambertwm1(x),
+            "gammainc" => special::gamma::gammainc(x, y),
+            "beta" => special::beta::beta(x, y),
             "ellipk" => special::elliptic::ellipk(x).unwrap(),
             "ellipe" => special::elliptic::ellipe(x).unwrap(),
             function => panic!("unknown fixture function {function}"),
@@ -64,9 +64,9 @@ fn incomplete_beta_matches_scipy() {
         let b = number(row[1]);
         let x = number(row[2]);
         let expected = number(row[3]);
-        assert_close(special::betainc(a, b, x), expected, 2e-12, 2e-14);
+        assert_close(special::beta::betainc(a, b, x), expected, 2e-12, 2e-14);
         assert_close(
-            special::betaincinv(a, b, expected),
+            special::beta::betaincinv(a, b, expected),
             number(row[4]),
             2e-12,
             2e-14,

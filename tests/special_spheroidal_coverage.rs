@@ -22,25 +22,25 @@ fn spheroidal_characteristics_and_sequences_follow_scalar_limits() {
     for m in 0..=3 {
         for n in m..=m + 3 {
             let spherical = (n * (n + 1)) as f64;
-            finite_close(s::pro_cv(m, n, 0.0), spherical, 0.0, 0.0);
-            finite_close(s::obl_cv(m, n, 0.0), spherical, 0.0, 0.0);
-            finite_close(s::pro_cv(m, n, 1e-12), spherical, 0.0, 0.0);
-            finite_close(s::obl_cv(m, n, 1e-12), spherical, 0.0, 0.0);
+            finite_close(s::wave::pro_cv(m, n, 0.0), spherical, 0.0, 0.0);
+            finite_close(s::wave::obl_cv(m, n, 0.0), spherical, 0.0, 0.0);
+            finite_close(s::wave::pro_cv(m, n, 1e-12), spherical, 0.0, 0.0);
+            finite_close(s::wave::obl_cv(m, n, 1e-12), spherical, 0.0, 0.0);
         }
 
         // Sequence order and endpoints must agree with the scalar public API.
         // Reversing c must not change either spectrum.
-        let prolate = s::pro_cv_seq(m, m + 3, 0.75).unwrap();
-        let oblate = s::obl_cv_seq(m, m + 3, 0.75).unwrap();
+        let prolate = s::wave::pro_cv_seq(m, m + 3, 0.75).unwrap();
+        let oblate = s::wave::obl_cv_seq(m, m + 3, 0.75).unwrap();
         assert_eq!(prolate.len(), 4);
         assert_eq!(oblate.len(), 4);
         for (offset, (&pro, &obl)) in prolate.iter().zip(&oblate).enumerate() {
             let n = m + offset as u64;
-            finite_close(pro, s::pro_cv(m, n, 0.75), 0.0, 0.0);
-            finite_close(obl, s::obl_cv(m, n, 0.75), 0.0, 0.0);
+            finite_close(pro, s::wave::pro_cv(m, n, 0.75), 0.0, 0.0);
+            finite_close(obl, s::wave::obl_cv(m, n, 0.75), 0.0, 0.0);
         }
-        assert_eq!(prolate, s::pro_cv_seq(m, m + 3, -0.75).unwrap());
-        assert_eq!(oblate, s::obl_cv_seq(m, m + 3, -0.75).unwrap());
+        assert_eq!(prolate, s::wave::pro_cv_seq(m, m + 3, -0.75).unwrap());
+        assert_eq!(oblate, s::wave::obl_cv_seq(m, m + 3, -0.75).unwrap());
     }
 }
 
@@ -50,24 +50,24 @@ fn spheroidal_angular_cv_reuse_and_reflection_are_consistent() {
     // the angular endpoints, where derivatives can be singular.
     for (m, n) in [(0, 2), (1, 2), (1, 3), (2, 4), (3, 5)] {
         let c = 0.75;
-        let pro_cv = s::pro_cv(m, n, c);
-        let obl_cv = s::obl_cv(m, n, c);
+        let pro_cv = s::wave::pro_cv(m, n, c);
+        let obl_cv = s::wave::obl_cv(m, n, c);
         let parity = if (n - m) % 2 == 0 { 1.0 } else { -1.0 };
 
         for x in [0.25, 0.6] {
-            let pro = s::pro_ang1(m, n, c, x);
-            let pro_with_cv = s::pro_ang1_cv(m, n, c, pro_cv, x);
-            let pro_reflected = s::pro_ang1(m, n, c, -x);
-            let pro_negative_c = s::pro_ang1(m, n, -c, x);
+            let pro = s::wave::pro_ang1(m, n, c, x);
+            let pro_with_cv = s::wave::pro_ang1_cv(m, n, c, pro_cv, x);
+            let pro_reflected = s::wave::pro_ang1(m, n, c, -x);
+            let pro_negative_c = s::wave::pro_ang1(m, n, -c, x);
             close_pair(pro_with_cv, pro, 2e-12, 2e-12);
             close_pair(pro_negative_c, pro, 2e-12, 2e-12);
             finite_close(pro_reflected.0, parity * pro.0, 2e-11, 2e-11);
             finite_close(pro_reflected.1, -parity * pro.1, 2e-11, 2e-11);
 
-            let obl = s::obl_ang1(m, n, c, x);
-            let obl_with_cv = s::obl_ang1_cv(m, n, c, obl_cv, x);
-            let obl_reflected = s::obl_ang1(m, n, c, -x);
-            let obl_negative_c = s::obl_ang1(m, n, -c, x);
+            let obl = s::wave::obl_ang1(m, n, c, x);
+            let obl_with_cv = s::wave::obl_ang1_cv(m, n, c, obl_cv, x);
+            let obl_reflected = s::wave::obl_ang1(m, n, c, -x);
+            let obl_negative_c = s::wave::obl_ang1(m, n, -c, x);
             close_pair(obl_with_cv, obl, 2e-12, 2e-12);
             close_pair(obl_negative_c, obl, 2e-12, 2e-12);
             finite_close(obl_reflected.0, parity * obl.0, 2e-11, 2e-11);
@@ -76,18 +76,18 @@ fn spheroidal_angular_cv_reuse_and_reflection_are_consistent() {
     }
 
     // The m=0 endpoint has a regular derivative formula (unlike m=1).
-    let pro = s::pro_ang1(0, 2, 0.5, 1.0);
-    let pro_left = s::pro_ang1(0, 2, 0.5, -1.0);
-    let obl = s::obl_ang1(0, 2, 0.5, 1.0);
-    let obl_left = s::obl_ang1(0, 2, 0.5, -1.0);
+    let pro = s::wave::pro_ang1(0, 2, 0.5, 1.0);
+    let pro_left = s::wave::pro_ang1(0, 2, 0.5, -1.0);
+    let obl = s::wave::obl_ang1(0, 2, 0.5, 1.0);
+    let obl_left = s::wave::obl_ang1(0, 2, 0.5, -1.0);
     close_pair(
-        s::pro_ang1_cv(0, 2, 0.5, s::pro_cv(0, 2, 0.5), 1.0),
+        s::wave::pro_ang1_cv(0, 2, 0.5, s::wave::pro_cv(0, 2, 0.5), 1.0),
         pro,
         2e-12,
         2e-12,
     );
     close_pair(
-        s::obl_ang1_cv(0, 2, 0.5, s::obl_cv(0, 2, 0.5), 1.0),
+        s::wave::obl_ang1_cv(0, 2, 0.5, s::wave::obl_cv(0, 2, 0.5), 1.0),
         obl,
         2e-12,
         2e-12,
@@ -104,12 +104,12 @@ fn prolate_radial_pairs_obey_wronskian_and_supplied_cv_identity() {
     // both radial solutions and their derivatives away from the x=1 singularity.
     for (m, n) in [(0, 2), (1, 3), (2, 4)] {
         let c = 0.75;
-        let cv = s::pro_cv(m, n, c);
+        let cv = s::wave::pro_cv(m, n, c);
         for x in [1.5, 2.0] {
-            let first = s::pro_rad1(m, n, c, x);
-            let second = s::pro_rad2(m, n, c, x);
-            let first_with_cv = s::pro_rad1_cv(m, n, c, cv, x);
-            let second_with_cv = s::pro_rad2_cv(m, n, c, cv, x);
+            let first = s::wave::pro_rad1(m, n, c, x);
+            let second = s::wave::pro_rad2(m, n, c, x);
+            let first_with_cv = s::wave::pro_rad1_cv(m, n, c, cv, x);
+            let second_with_cv = s::wave::pro_rad2_cv(m, n, c, cv, x);
             close_pair(first_with_cv, first, 2e-11, 2e-11);
             close_pair(second_with_cv, second, 2e-11, 2e-11);
             // The m=0 basis is well conditioned for this Wronskian check;
@@ -129,12 +129,17 @@ fn prolate_radial_pairs_obey_wronskian_and_supplied_cv_identity() {
         // The oblate Wronskian is covered separately; here exercise both
         // supplied-characteristic-value radial entry points against the
         // automatically computed spectrum at a regular positive argument.
-        let oblate_cv = s::obl_cv(m, n, c);
-        let first = s::obl_rad1(m, n, c, 2.0);
-        let second = s::obl_rad2(m, n, c, 2.0);
-        close_pair(s::obl_rad1_cv(m, n, c, oblate_cv, 2.0), first, 2e-11, 2e-11);
+        let oblate_cv = s::wave::obl_cv(m, n, c);
+        let first = s::wave::obl_rad1(m, n, c, 2.0);
+        let second = s::wave::obl_rad2(m, n, c, 2.0);
         close_pair(
-            s::obl_rad2_cv(m, n, c, oblate_cv, 2.0),
+            s::wave::obl_rad1_cv(m, n, c, oblate_cv, 2.0),
+            first,
+            2e-11,
+            2e-11,
+        );
+        close_pair(
+            s::wave::obl_rad2_cv(m, n, c, oblate_cv, 2.0),
             second,
             2e-11,
             2e-11,
@@ -145,40 +150,40 @@ fn prolate_radial_pairs_obey_wronskian_and_supplied_cv_identity() {
 #[test]
 fn spheroidal_public_parameter_and_coordinate_domains_are_checked() {
     type Characteristic = fn(u64, u64, f64) -> f64;
-    for function in [s::pro_cv, s::obl_cv] as [Characteristic; 2] {
+    for function in [s::wave::pro_cv, s::wave::obl_cv] as [Characteristic; 2] {
         for (m, n, c) in [(1, 0, 1.0), (0, 129, 1.0), (0, 2, f64::NAN), (0, 2, 65.0)] {
             assert!(function(m, n, c).is_nan());
         }
     }
 
     type CharacteristicSequence = fn(u64, u64, f64) -> sci::Result<Vec<f64>>;
-    for function in [s::pro_cv_seq, s::obl_cv_seq] as [CharacteristicSequence; 2] {
+    for function in [s::wave::pro_cv_seq, s::wave::obl_cv_seq] as [CharacteristicSequence; 2] {
         for (m, n, c) in [(1, 0, 1.0), (0, 129, 1.0), (0, 2, f64::NAN), (0, 2, 65.0)] {
             assert!(function(m, n, c).is_err());
         }
     }
 
     type Angular = fn(u64, u64, f64, f64) -> (f64, f64);
-    for function in [s::pro_ang1, s::obl_ang1] as [Angular; 2] {
+    for function in [s::wave::pro_ang1, s::wave::obl_ang1] as [Angular; 2] {
         nan_pair(function(0, 2, 0.5, -1.01));
         nan_pair(function(0, 2, 0.5, 1.01));
     }
 
-    for function in [s::pro_rad1, s::pro_rad2] as [Angular; 2] {
+    for function in [s::wave::pro_rad1, s::wave::pro_rad2] as [Angular; 2] {
         nan_pair(function(0, 2, 0.5, 1.0));
     }
-    for function in [s::obl_rad1, s::obl_rad2] as [Angular; 2] {
+    for function in [s::wave::obl_rad1, s::wave::obl_rad2] as [Angular; 2] {
         nan_pair(function(0, 2, 0.5, -0.1));
     }
 
     type WithCv = fn(u64, u64, f64, f64, f64) -> (f64, f64);
     for function in [
-        s::pro_ang1_cv,
-        s::pro_rad1_cv,
-        s::pro_rad2_cv,
-        s::obl_ang1_cv,
-        s::obl_rad1_cv,
-        s::obl_rad2_cv,
+        s::wave::pro_ang1_cv,
+        s::wave::pro_rad1_cv,
+        s::wave::pro_rad2_cv,
+        s::wave::obl_ang1_cv,
+        s::wave::obl_rad1_cv,
+        s::wave::obl_rad2_cv,
     ] as [WithCv; 6]
     {
         nan_pair(function(0, 129, 0.5, 2.0, 0.3));
@@ -186,14 +191,14 @@ fn spheroidal_public_parameter_and_coordinate_domains_are_checked() {
         nan_pair(function(0, 2, 0.5, f64::INFINITY, 0.3));
     }
 
-    for function in [s::pro_ang1_cv, s::obl_ang1_cv] as [WithCv; 2] {
+    for function in [s::wave::pro_ang1_cv, s::wave::obl_ang1_cv] as [WithCv; 2] {
         nan_pair(function(0, 2, 0.5, 2.0, -1.01));
         nan_pair(function(0, 2, 0.5, 2.0, 1.01));
     }
-    for function in [s::pro_rad1_cv, s::pro_rad2_cv] as [WithCv; 2] {
+    for function in [s::wave::pro_rad1_cv, s::wave::pro_rad2_cv] as [WithCv; 2] {
         nan_pair(function(0, 2, 0.5, 2.0, 1.0));
     }
-    for function in [s::obl_rad1_cv, s::obl_rad2_cv] as [WithCv; 2] {
+    for function in [s::wave::obl_rad1_cv, s::wave::obl_rad2_cv] as [WithCv; 2] {
         nan_pair(function(0, 2, 0.5, 2.0, -0.1));
     }
 }

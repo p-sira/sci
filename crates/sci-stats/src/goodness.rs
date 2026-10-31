@@ -86,11 +86,11 @@ pub fn anderson(values: &[f64], family: AndersonFamily) -> Result<AndersonResult
             let scores = zscore(&ordered, 1)?;
             let lower = scores
                 .iter()
-                .map(|&z| special::log_ndtr(z))
+                .map(|&z| special::probability::log_ndtr(z))
                 .collect::<Vec<_>>();
             let upper = scores
                 .iter()
-                .map(|&z| special::log_ndtr(-z))
+                .map(|&z| special::probability::log_ndtr(-z))
                 .collect::<Vec<_>>();
             (
                 location,
@@ -150,11 +150,11 @@ fn cvm_infinite(x: f64) -> Result<f64> {
         let k = k as f64;
         let y = 4. * k + 1.;
         let q = y * y / (16. * x);
-        let term = match (special::gammaln(k + 0.5) - special::gammaln(k + 1.)).exp()
+        let term = match (special::gamma::gammaln(k + 0.5) - special::gamma::gammaln(k + 1.)).exp()
             / (PI.powf(1.5) * x.sqrt())
             * y.sqrt()
             * (-q).exp()
-            * special::kv(0.25, q)
+            * special::bessel::kv(0.25, q)
         {
             value if value.is_finite() => Ok(value),
             _ => Err(crate::Error::NonFiniteEvaluation),
@@ -171,13 +171,17 @@ fn cvm_infinite(x: f64) -> Result<f64> {
 fn cvm_correction(x: f64) -> Result<f64> {
     let ed2 = |y: f64| {
         let z = y * y / 4.;
-        (-z).exp() * (y / 2.).powf(1.5) * (special::kv(0.25, z) + special::kv(0.75, z)) / PI.sqrt()
+        (-z).exp()
+            * (y / 2.).powf(1.5)
+            * (special::bessel::kv(0.25, z) + special::bessel::kv(0.75, z))
+            / PI.sqrt()
     };
     let ed3 = |y: f64| {
         let z = y * y / 4.;
         (-z).exp()
             * (y / 2.).powf(2.5)
-            * (2. * special::kv(0.25, z) + 3. * special::kv(0.75, z) - special::kv(1.25, z))
+            * (2. * special::bessel::kv(0.25, z) + 3. * special::bessel::kv(0.75, z)
+                - special::bessel::kv(1.25, z))
             / PI.sqrt()
     };
     let mut sum = 0.;
@@ -185,7 +189,7 @@ fn cvm_correction(x: f64) -> Result<f64> {
         let k = k as f64;
         let m = 2. * k + 1.;
         let sx = 2. * x.sqrt();
-        let g = (special::gammaln(k + 0.5) - special::gammaln(k + 1.)).exp();
+        let g = (special::gamma::gammaln(k + 0.5) - special::gamma::gammaln(k + 1.)).exp();
         let term = match -g / PI
             * (m * ed2((4. * k + 3.) / sx) / (9. * x.powf(0.75))
                 + ed3((4. * k + 1.) / sx) / (72. * x.powf(1.25))

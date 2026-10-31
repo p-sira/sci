@@ -59,35 +59,35 @@ fn inventory_has_references_or_intentional_exclusions() {
 fn small_sequences_and_native_work_limits_are_safe() {
     for m in 0..=1 {
         for n in 0..=1 {
-            let (values, derivatives) = s::lqmn(m, n, 0.3).unwrap();
+            let (values, derivatives) = s::orthogonal::lqmn(m, n, 0.3).unwrap();
             assert_eq!(values.len(), m + 1);
             assert_eq!(values[0].len(), n + 1);
             assert_eq!(derivatives.len(), m + 1);
             finite_close(values[0][0], 0.5 * (1.3_f64 / 0.7).ln(), 1e-14, 1e-14);
         }
     }
-    assert_eq!(s::lqn(0, 0.3).unwrap().0.len(), 1);
-    assert!(s::polygamma(u32::MAX, 1.0).is_nan());
-    assert!(s::multigammaln(1.0, u32::MAX).is_nan());
-    assert!(s::mathieu_a(u32::MAX, 0.5).is_nan());
-    assert!(s::mathieu_even_coef(1, f64::MAX).is_err());
-    assert!(s::pro_cv(1, 3, f64::MAX).is_nan());
-    assert!(s::pro_cv_seq(1, 3, f64::MAX).is_err());
-    assert!(s::chndtr(f64::INFINITY, 3.0, -1.0).is_nan());
-    assert!(s::ncfdtr(3.0, 5.0, -1.0, f64::INFINITY).is_nan());
+    assert_eq!(s::orthogonal::lqn(0, 0.3).unwrap().0.len(), 1);
+    assert!(s::gamma::polygamma(u32::MAX, 1.0).is_nan());
+    assert!(s::gamma::multigammaln(1.0, u32::MAX).is_nan());
+    assert!(s::wave::mathieu_a(u32::MAX, 0.5).is_nan());
+    assert!(s::wave::mathieu_even_coef(1, f64::MAX).is_err());
+    assert!(s::wave::pro_cv(1, 3, f64::MAX).is_nan());
+    assert!(s::wave::pro_cv_seq(1, 3, f64::MAX).is_err());
+    assert!(s::probability::chndtr(f64::INFINITY, 3.0, -1.0).is_nan());
+    assert!(s::probability::ncfdtr(3.0, 5.0, -1.0, f64::INFINITY).is_nan());
 }
 
 #[test]
 fn lambert_real_branches_preserve_domains_and_inverse_identity() {
     let branch_point = -1.0 / std::f64::consts::E;
-    assert_eq!(s::lambertw(branch_point), -1.0);
-    assert_eq!(s::lambertwm1(branch_point), -1.0);
+    assert_eq!(s::elementary::lambertw(branch_point), -1.0);
+    assert_eq!(s::elementary::lambertwm1(branch_point), -1.0);
     // lambert_w 2.1 corrects the rounded branch-point offset internally.
     // The first representable input above -1/e must produce distinct roots
     // on either side of -1 rather than losing the square-root separation.
     let nearest_interior = f64::from_bits(branch_point.to_bits() - 1);
-    let upper = s::lambertw(nearest_interior);
-    let lower = s::lambertwm1(nearest_interior);
+    let upper = s::elementary::lambertw(nearest_interior);
+    let lower = s::elementary::lambertwm1(nearest_interior);
     assert!(upper > -1.0);
     assert!(lower < -1.0);
     finite_close(
@@ -103,26 +103,26 @@ fn lambert_real_branches_preserve_domains_and_inverse_identity() {
         8.0 * f64::EPSILON,
     );
     for x in [f64::NAN, f64::NEG_INFINITY, -0.5] {
-        assert!(s::lambertw(x).is_nan());
-        assert!(s::lambertwm1(x).is_nan());
+        assert!(s::elementary::lambertw(x).is_nan());
+        assert!(s::elementary::lambertwm1(x).is_nan());
     }
-    assert_eq!(s::lambertw(f64::INFINITY), f64::INFINITY);
+    assert_eq!(s::elementary::lambertw(f64::INFINITY), f64::INFINITY);
     for x in [0.1, f64::INFINITY] {
-        assert!(s::lambertwm1(x).is_nan());
+        assert!(s::elementary::lambertwm1(x).is_nan());
     }
     for x in [0.0_f64, -0.0] {
-        assert_eq!(s::lambertw(x).to_bits(), x.to_bits());
-        assert_eq!(s::lambertwm1(x), f64::NEG_INFINITY);
+        assert_eq!(s::elementary::lambertw(x).to_bits(), x.to_bits());
+        assert_eq!(s::elementary::lambertwm1(x), f64::NEG_INFINITY);
     }
     for x in [-0.36, -1e-3, -1e-12, 1e-300, 1e-3, 0.5, 1e100, 1e300] {
-        let w: f64 = s::lambertw(x);
+        let w: f64 = s::elementary::lambertw(x);
         assert!(w >= -1.0);
         // The relative condition number of w * exp(w) is |1 + w|.
         let rtol = 8.0 * f64::EPSILON * (1.0 + w.abs());
         finite_close(w * w.exp(), x, 0.0, rtol);
     }
     for x in [-0.36, -1e-12, -1e-100, -1e-300] {
-        let w: f64 = s::lambertwm1(x);
+        let w: f64 = s::elementary::lambertwm1(x);
         assert!(w <= -1.0);
         let rtol = 8.0 * f64::EPSILON * (1.0 + w.abs());
         finite_close(w * w.exp(), x, 0.0, rtol);
@@ -133,24 +133,44 @@ fn lambert_real_branches_preserve_domains_and_inverse_identity() {
 fn distribution_inverses_round_trip() {
     for p in [0.01, 0.2, 0.5, 0.9, 0.99] {
         for nc in [0.0, 0.5, 5.0] {
-            finite_close(s::chndtr(s::chndtrix(p, 3.0, nc), 3.0, nc), p, 2e-13, 2e-13);
             finite_close(
-                s::ncfdtr(3.0, 5.0, nc, s::ncfdtri(3.0, 5.0, nc, p)),
+                s::probability::chndtr(s::probability::chndtrix(p, 3.0, nc), 3.0, nc),
                 p,
                 2e-13,
                 2e-13,
             );
-            finite_close(s::nctdtr(5.0, nc, s::nctdtrit(5.0, nc, p)), p, 2e-12, 2e-12);
+            finite_close(
+                s::probability::ncfdtr(3.0, 5.0, nc, s::probability::ncfdtri(3.0, 5.0, nc, p)),
+                p,
+                2e-13,
+                2e-13,
+            );
+            finite_close(
+                s::probability::nctdtr(5.0, nc, s::probability::nctdtrit(5.0, nc, p)),
+                p,
+                2e-12,
+                2e-12,
+            );
         }
     }
-    let p = s::ncfdtr(3.0, 5.0, 0.5, 0.5);
-    finite_close(s::ncfdtrinc(3.0, 5.0, p, 0.5), 0.5, 2e-12, 2e-12);
-    finite_close(s::ncfdtridfd(3.0, p, 0.5, 0.5), 5.0, 2e-12, 2e-12);
+    let p = s::probability::ncfdtr(3.0, 5.0, 0.5, 0.5);
+    finite_close(
+        s::probability::ncfdtrinc(3.0, 5.0, p, 0.5),
+        0.5,
+        2e-12,
+        2e-12,
+    );
+    finite_close(
+        s::probability::ncfdtridfd(3.0, p, 0.5, 0.5),
+        5.0,
+        2e-12,
+        2e-12,
+    );
 }
 
 #[test]
 fn quadrature_composes_with_polynomial_evaluation_and_linalg() {
-    let (nodes, weights) = s::roots_legendre(16).unwrap();
+    let (nodes, weights) = s::orthogonal::roots_legendre(16).unwrap();
     for degree in 0..=30 {
         let values: Vec<_> = nodes.iter().map(|x| x.powi(degree)).collect();
         let expected = if degree % 2 == 0 {
@@ -165,33 +185,36 @@ fn quadrature_composes_with_polynomial_evaluation_and_linalg() {
             3e-14,
         );
     }
-    let coefficients = s::legendre(7, false).unwrap();
+    let coefficients = s::orthogonal::legendre(7, false).unwrap();
     for x in [-0.9, 0.0, 0.3, 0.9] {
         let value = coefficients.iter().fold(0.0, |v, c| v * x + c);
-        finite_close(value, s::eval_legendre(7, x), 2e-13, 2e-13);
+        finite_close(value, s::orthogonal::eval_legendre(7, x), 2e-13, 2e-13);
     }
 }
 
 #[test]
 fn elementary_limits_and_elliptic_conventions() {
-    assert_eq!(s::kl_div(-1.0, 2.0), f64::INFINITY);
-    assert_eq!(s::kl_div(0.0, f64::INFINITY), f64::INFINITY);
-    assert_eq!(s::pseudo_huber(1.0, f64::INFINITY), f64::INFINITY);
-    assert_eq!(s::pseudo_huber(f64::INFINITY, 2.0), 2.0);
+    assert_eq!(s::elementary::kl_div(-1.0, 2.0), f64::INFINITY);
+    assert_eq!(s::elementary::kl_div(0.0, f64::INFINITY), f64::INFINITY);
+    assert_eq!(
+        s::elementary::pseudo_huber(1.0, f64::INFINITY),
+        f64::INFINITY
+    );
+    assert_eq!(s::elementary::pseudo_huber(f64::INFINITY, 2.0), 2.0);
     for m in [-2.0, 0.0, 0.5, 0.99] {
-        let (k, e) = s::ellipke(m).unwrap();
-        finite_close(k, s::ellipk(m).unwrap(), 1e-14, 1e-14);
-        finite_close(e, s::ellipe(m).unwrap(), 1e-14, 1e-14);
+        let (k, e) = s::elliptic::ellipke(m).unwrap();
+        finite_close(k, s::elliptic::ellipk(m).unwrap(), 1e-14, 1e-14);
+        finite_close(e, s::elliptic::ellipe(m).unwrap(), 1e-14, 1e-14);
         finite_close(
-            s::cel3((1.0 - m).sqrt(), 0.8).unwrap(),
-            s::ellippi(0.2, m).unwrap(),
+            s::elliptic::cel3((1.0 - m).sqrt(), 0.8).unwrap(),
+            s::elliptic::ellippi(0.2, m).unwrap(),
             1e-14,
             1e-14,
         );
     }
-    assert!(s::ellipkm1(1e-20_f64).unwrap().is_finite());
+    assert!(s::elliptic::ellipkm1(1e-20_f64).unwrap().is_finite());
     finite_close(
-        s::logsumexp(&[1000.0, 1000.0]),
+        s::elementary::logsumexp(&[1000.0, 1000.0]),
         1000.0 + 2.0_f64.ln(),
         1e-14,
         1e-14,
@@ -200,39 +223,39 @@ fn elementary_limits_and_elliptic_conventions() {
 
 #[test]
 fn kelvin_zero_sequences_agree_and_remain_ordered_after_exponential_underflow() {
-    let zeros = s::keip_zeros(4096).unwrap();
+    let zeros = s::bessel::keip_zeros(4096).unwrap();
     assert_eq!(zeros.len(), 4096);
     assert!(zeros.iter().all(|x| x.is_finite() && *x > 0.));
     assert!(zeros.windows(2).all(|pair| pair[0] < pair[1]));
     for count in [1, 3, 5] {
-        let grouped = s::kelvin_zeros(count).unwrap();
+        let grouped = s::bessel::kelvin_zeros(count).unwrap();
         assert_eq!(grouped[7], zeros[..count]);
         for &x in &grouped[7] {
             // The scalar Kelvin series has cancellation near x=9.4;
             // compare the derivative residual on its local envelope scale.
             let envelope = (-x / std::f64::consts::SQRT_2).exp() / x.sqrt();
-            assert!(s::keip(x).abs() <= 2e-9 * envelope);
+            assert!(s::bessel::keip(x).abs() <= 2e-9 * envelope);
         }
     }
-    assert!(s::keip_zeros(0).is_err());
-    assert!(s::keip_zeros(4097).is_err());
+    assert!(s::bessel::keip_zeros(0).is_err());
+    assert!(s::bessel::keip_zeros(4097).is_err());
 }
 
 #[test]
 fn rust_kernel_recurrences_and_reflections() {
     for x in [0.0_f64, 0.25, 2.0, 8.0] {
         for v in [-2.5, -0.5, 0.5, 2.5] {
-            let previous = s::pbdv(v - 1.0, x).0;
-            let (value, slope) = s::pbdv(v, x);
-            let next = s::pbdv(v + 1.0, x).0;
+            let previous = s::wave::pbdv(v - 1.0, x).0;
+            let (value, slope) = s::wave::pbdv(v, x);
+            let next = s::wave::pbdv(v + 1.0, x).0;
             finite_close(next, x * value - v * previous, 2e-11, 2e-11);
             finite_close(slope, 0.5 * x * value - next, 2e-11, 2e-11);
         }
     }
     for x in [0.25_f64, 1.0, 8.0] {
-        let (positive, _) = s::modfresnelp(x);
-        let (negative, _) = s::modfresnelp(-x);
-        let (minus, _) = s::modfresnelm(-x);
+        let (positive, _) = s::integrals::modfresnelp(x);
+        let (negative, _) = s::integrals::modfresnelp(-x);
+        let (minus, _) = s::integrals::modfresnelm(-x);
         let complete = (std::f64::consts::PI / 2.0).sqrt();
         finite_close(positive.re + negative.re, complete, 1e-14, 1e-14);
         finite_close(positive.im + negative.im, complete, 1e-14, 1e-14);
@@ -240,18 +263,18 @@ fn rust_kernel_recurrences_and_reflections() {
         finite_close(minus.im, -negative.im, 1e-14, 1e-14);
     }
     for n in 0..=8 {
-        finite_close(s::pro_cv(0, n, 0.0), (n * (n + 1)) as f64, 0.0, 0.0);
+        finite_close(s::wave::pro_cv(0, n, 0.0), (n * (n + 1)) as f64, 0.0, 0.0);
         finite_close(
-            s::pro_ang1(0, n, 0.0, 0.3).0,
-            s::eval_legendre(n as i32, 0.3),
+            s::wave::pro_ang1(0, n, 0.0, 0.3).0,
+            s::orthogonal::eval_legendre(n as i32, 0.3),
             2e-13,
             2e-13,
         );
     }
-    assert!(s::pbdv(4097.0, 1.0).0.is_nan());
-    assert!(s::hyperu(100001.0, 1.0, 1.0).is_nan());
-    assert!(s::hyp2f1(100001.0, 1.0, 2.0, 0.5).is_nan());
-    assert!(s::lpmv(4097, 0.5, 0.3).is_nan());
+    assert!(s::wave::pbdv(4097.0, 1.0).0.is_nan());
+    assert!(s::hypergeometric::hyperu(100001.0, 1.0, 1.0).is_nan());
+    assert!(s::hypergeometric::hyp2f1(100001.0, 1.0, 2.0, 0.5).is_nan());
+    assert!(s::orthogonal::lpmv(4097, 0.5, 0.3).is_nan());
 }
 
 #[test]
@@ -261,14 +284,14 @@ fn parabolic_cylinder_sequence_reuses_the_shared_recurrence() {
     // check the normalization and derivatives without using either sequence.
     for v in [-3.5, -0.5, 0.0, 0.5, 2.5, 16.5] {
         for x in [-2.0, 0.0, 1.5, 5.0] {
-            let (values, derivatives) = s::pbdv_seq(v, x).unwrap();
+            let (values, derivatives) = s::wave::pbdv_seq(v, x).unwrap();
             let n = v.trunc().max(1.0) as usize;
             assert_eq!(values.len(), n + 1);
             assert_eq!(derivatives.len(), n + 1);
             let base = v - v.trunc();
             for i in 0..=n {
                 let order = base + i as f64;
-                let (expected, expected_derivative) = s::pbdv(order, x);
+                let (expected, expected_derivative) = s::wave::pbdv(order, x);
                 finite_close(values[i], expected, 2e-12, 2e-11);
                 finite_close(derivatives[i], expected_derivative, 2e-12, 2e-11);
                 if i < n {
@@ -283,7 +306,7 @@ fn parabolic_cylinder_sequence_reuses_the_shared_recurrence() {
         }
     }
     for x in [-2.0_f64, 0.0, 1.5, 5.0] {
-        let (values, derivatives) = s::pbdv_seq(16.0, x).unwrap();
+        let (values, derivatives) = s::wave::pbdv_seq(16.0, x).unwrap();
         let d0 = (-0.25 * x * x).exp();
         finite_close(values[0], d0, 2e-14, 2e-14);
         finite_close(values[1], x * d0, 2e-14, 2e-14);
@@ -308,8 +331,8 @@ fn oblate_radial_pairs_preserve_the_defining_wronskian() {
         for n in [1, 3] {
             for c in [0.01, 1.0, 5.0] {
                 for x in [0.0, 0.5, 1.01, 2.0] {
-                    let (first, first_prime) = s::obl_rad1(m, n, c, x);
-                    let (second, second_prime) = s::obl_rad2(m, n, c, x);
+                    let (first, first_prime) = s::wave::obl_rad1(m, n, c, x);
+                    let (second, second_prime) = s::wave::obl_rad2(m, n, c, x);
                     finite_close(
                         first * second_prime - first_prime * second,
                         1.0 / (c * (1.0 + x * x)),
@@ -330,11 +353,11 @@ fn real_modified_bessel_i_matches_scipy() {
         let x: f64 = common::number(row[2]);
         let actual = if row[0] == "f32" {
             [
-                s::iv(v as f32, x as f32) as f64,
-                s::ive(v as f32, x as f32) as f64,
+                s::bessel::iv(v as f32, x as f32) as f64,
+                s::bessel::ive(v as f32, x as f32) as f64,
             ]
         } else {
-            [s::iv(v, x), s::ive(v, x)]
+            [s::bessel::iv(v, x), s::bessel::ive(v, x)]
         };
         let (rtol, atol) = if row[0] == "f32" {
             (3e-6, 2.0 * f32::from_bits(1) as f64)
@@ -361,11 +384,11 @@ fn real_modified_bessel_i_matches_scipy() {
 fn real_modified_bessel_i_recurrence_and_scaling() {
     for v in [0.3_f64, 1.0, 3.25, 20.5, 49.0, 50.0, 51.0, 100.25] {
         for x in [0.1, 2.0, 5.0, 20.0, 100.0, 710.0] {
-            let i = s::ive(v, x);
-            let lower = s::ive(v - 1.0, x);
-            let upper = s::ive(v + 1.0, x);
+            let i = s::bessel::ive(v, x);
+            let lower = s::bessel::ive(v - 1.0, x);
+            let upper = s::bessel::ive(v + 1.0, x);
             assert!((lower - upper - 2.0 * v / x * i).abs() <= 2e-12 * lower.abs());
-            let unscaled = s::iv(v, x);
+            let unscaled = s::bessel::iv(v, x);
             let half = (0.5_f64 * x).exp();
             let restored = (i * half) * half;
             assert!((unscaled - restored).abs() <= 2e-12 * unscaled.abs());
@@ -373,19 +396,19 @@ fn real_modified_bessel_i_recurrence_and_scaling() {
     }
     for v in [0.0, 1.0, 2.0, 3.0, 50.0, 51.0] {
         let sign = if v % 2.0 == 0.0 { 1.0 } else { -1.0 };
-        assert_eq!(s::iv(-v, 2.0), s::iv(v, 2.0));
-        assert_eq!(s::ive(v, -2.0), sign * s::ive(v, 2.0));
+        assert_eq!(s::bessel::iv(-v, 2.0), s::bessel::iv(v, 2.0));
+        assert_eq!(s::bessel::ive(v, -2.0), sign * s::bessel::ive(v, 2.0));
     }
     for v in [0.0, 0.5, 3.25, 51.0] {
         let x = 1e300_f64;
         let expected = (2.0 * core::f64::consts::PI).sqrt().recip() / x.sqrt();
-        assert!((s::ive(v, x) / expected - 1.0).abs() < 1e-12);
+        assert!((s::bessel::ive(v, x) / expected - 1.0).abs() < 1e-12);
     }
 }
 
 #[test]
 fn real_modified_bessel_i_special_values() {
-    for kernel in [s::iv::<f64>, s::ive::<f64>] {
+    for kernel in [s::bessel::iv::<f64>, s::bessel::ive::<f64>] {
         assert!(kernel(f64::INFINITY, 1.0).is_nan());
         assert!(kernel(f64::NAN, 1.0).is_nan());
         assert!(kernel(1.0, f64::NAN).is_nan());
@@ -395,10 +418,10 @@ fn real_modified_bessel_i_special_values() {
         assert_eq!(kernel(-3.25, 0.0), f64::INFINITY);
         assert_eq!(kernel(3.0, -1e-300).to_bits(), (-0.0_f64).to_bits());
     }
-    assert_eq!(s::iv(0.3, f64::INFINITY), f64::INFINITY);
-    assert_eq!(s::iv(3.0, f64::NEG_INFINITY), f64::NEG_INFINITY);
-    assert_eq!(s::ive(0.3, f64::INFINITY), 0.0);
-    assert!(s::ive(0.3, f64::NEG_INFINITY).is_nan());
+    assert_eq!(s::bessel::iv(0.3, f64::INFINITY), f64::INFINITY);
+    assert_eq!(s::bessel::iv(3.0, f64::NEG_INFINITY), f64::NEG_INFINITY);
+    assert_eq!(s::bessel::ive(0.3, f64::INFINITY), 0.0);
+    assert!(s::bessel::ive(0.3, f64::NEG_INFINITY).is_nan());
 }
 
 #[test]
@@ -453,8 +476,8 @@ fn modified_fresnel_matches_high_precision_around_real_kernel_switch() {
         ),
     ];
     for (x, expected) in references {
-        let (f, k) = s::modfresnelp(x);
-        let (f_minus, k_minus) = s::modfresnelm(x);
+        let (f, k) = s::integrals::modfresnelp(x);
+        let (f_minus, k_minus) = s::integrals::modfresnelm(x);
         for (got, reference) in [f.re, f.im, k.re, k.im].into_iter().zip(expected) {
             finite_close(got, reference, 1e-14, 1e-14);
         }
@@ -568,10 +591,10 @@ fn kelvin_first_kind_matches_references_across_kernel_switches() {
         let derivative_scale = berp.hypot(beip);
         for sign in [1.0, -1.0] {
             let got = [
-                (s::ber(sign * x), ber, value_scale),
-                (s::bei(sign * x), bei, value_scale),
-                (sign * s::berp(sign * x), berp, derivative_scale),
-                (sign * s::beip(sign * x), beip, derivative_scale),
+                (s::bessel::ber(sign * x), ber, value_scale),
+                (s::bessel::bei(sign * x), bei, value_scale),
+                (sign * s::bessel::berp(sign * x), berp, derivative_scale),
+                (sign * s::bessel::beip(sign * x), beip, derivative_scale),
             ];
             for (index, (value, expected, scale)) in got.into_iter().enumerate() {
                 assert!(
@@ -581,7 +604,7 @@ fn kelvin_first_kind_matches_references_across_kernel_switches() {
                 );
             }
         }
-        let [be, _, bep, _] = s::kelvin(x);
+        let [be, _, bep, _] = s::bessel::kelvin(x);
         assert!((be.re - ber).abs() <= 2e-15 * value_scale);
         assert!((be.im - bei).abs() <= 2e-15 * value_scale);
         assert!((bep.re - berp).abs() <= 2e-15 * derivative_scale);
@@ -682,10 +705,10 @@ fn kelvin_second_kind_matches_references_across_kernel_switches() {
         let value_scale = ker.hypot(kei);
         let derivative_scale = kerp.hypot(keip);
         let got = [
-            (s::ker(x), ker, value_scale),
-            (s::kei(x), kei, value_scale),
-            (s::kerp(x), kerp, derivative_scale),
-            (s::keip(x), keip, derivative_scale),
+            (s::bessel::ker(x), ker, value_scale),
+            (s::bessel::kei(x), kei, value_scale),
+            (s::bessel::kerp(x), kerp, derivative_scale),
+            (s::bessel::keip(x), keip, derivative_scale),
         ];
         for (index, (value, expected, scale)) in got.into_iter().enumerate() {
             assert!(
@@ -693,7 +716,7 @@ fn kelvin_second_kind_matches_references_across_kernel_switches() {
                 "component {index} at x = {x}: {value}, expected {expected}"
             );
         }
-        let [_, ke, _, kep] = s::kelvin(x);
+        let [_, ke, _, kep] = s::bessel::kelvin(x);
         assert!((ke.re - ker).abs() <= 2e-15 * value_scale);
         assert!((ke.im - kei).abs() <= 2e-15 * value_scale);
         assert!((kep.re - kerp).abs() <= 2e-15 * derivative_scale);
@@ -712,7 +735,7 @@ fn real_modified_bessel_i_large_arguments_beyond_cf1() {
         (3.25, 2e3, 0.008_897_645_994_093_099),
         (0.0, 1500.0, 0.010_301_504_096_519_597),
     ] {
-        let value = s::ive(v, x);
+        let value = s::bessel::ive(v, x);
         assert!(
             (value - expected).abs() <= 1e-13 * expected,
             "ive({v}, {x}) = {value}, expected {expected}"
@@ -720,9 +743,9 @@ fn real_modified_bessel_i_large_arguments_beyond_cf1() {
     }
     for v in [0.3_f64, 7.0, 25.5, 49.0] {
         for x in [1e3_f64, 1.5e3, 4e4, 1e5, 1e7] {
-            let i = s::ive(v, x);
-            let lower = s::ive(v - 1.0, x);
-            let upper = s::ive(v + 1.0, x);
+            let i = s::bessel::ive(v, x);
+            let lower = s::bessel::ive(v - 1.0, x);
+            let upper = s::bessel::ive(v + 1.0, x);
             assert!((lower - upper - 2.0 * v / x * i).abs() <= 1e-11 * lower.abs());
         }
     }
@@ -731,7 +754,7 @@ fn real_modified_bessel_i_large_arguments_beyond_cf1() {
 #[test]
 fn odd_modified_mathieu_functions_of_order_zero_are_undefined() {
     // Odd Mathieu functions start at order one; order zero used to panic.
-    for f in [s::mathieu_modsem1, s::mathieu_modsem2] {
+    for f in [s::wave::mathieu_modsem1, s::wave::mathieu_modsem2] {
         let (value, derivative) = f(0, 1.0, 0.5);
         assert!(value.is_nan() && derivative.is_nan());
     }
@@ -743,13 +766,13 @@ fn modified_mathieu_pairs_preserve_wronskians_and_first_kind_parity() {
     // The first-kind solutions inherit even/odd parity in the real coordinate.
     for (first, second, odd) in [
         (
-            s::mathieu_modcem1 as fn(u32, f64, f64) -> (f64, f64),
-            s::mathieu_modcem2 as fn(u32, f64, f64) -> (f64, f64),
+            s::wave::mathieu_modcem1 as fn(u32, f64, f64) -> (f64, f64),
+            s::wave::mathieu_modcem2 as fn(u32, f64, f64) -> (f64, f64),
             false,
         ),
         (
-            s::mathieu_modsem1 as fn(u32, f64, f64) -> (f64, f64),
-            s::mathieu_modsem2 as fn(u32, f64, f64) -> (f64, f64),
+            s::wave::mathieu_modsem1 as fn(u32, f64, f64) -> (f64, f64),
+            s::wave::mathieu_modsem2 as fn(u32, f64, f64) -> (f64, f64),
             true,
         ),
     ] {
@@ -787,16 +810,16 @@ fn mathieu_zero_coupling_scalar_and_fourier_paths_agree() {
                 continue;
             }
             let lambda = if odd {
-                s::mathieu_b(m, 0.0)
+                s::wave::mathieu_b(m, 0.0)
             } else {
-                s::mathieu_a(m, 0.0)
+                s::wave::mathieu_a(m, 0.0)
             };
             assert_eq!(lambda, f64::from(m).powi(2), "order={m}, odd={odd}");
 
             let coefficients = if odd {
-                s::mathieu_odd_coef(m, 0.0).unwrap()
+                s::wave::mathieu_odd_coef(m, 0.0).unwrap()
             } else {
-                s::mathieu_even_coef(m, 0.0).unwrap()
+                s::wave::mathieu_even_coef(m, 0.0).unwrap()
             };
             let harmonic = if odd && m % 2 == 0 {
                 (m / 2 - 1) as usize
@@ -832,9 +855,9 @@ fn mathieu_zero_coupling_scalar_and_fourier_paths_agree() {
             let radians = 23.0_f64.to_radians();
             let frequency = f64::from(m);
             let (value, derivative) = if odd {
-                s::mathieu_sem(m, 0.0, 23.0)
+                s::wave::mathieu_sem(m, 0.0, 23.0)
             } else {
-                s::mathieu_cem(m, 0.0, 23.0)
+                s::wave::mathieu_cem(m, 0.0, 23.0)
             };
             let (expected, expected_derivative) = if odd {
                 (
@@ -878,14 +901,14 @@ fn mathieu_fourier_coefficients_satisfy_eigenvalue_recurrences_and_norms() {
                 continue;
             }
             let lambda = if odd {
-                s::mathieu_b(m, q)
+                s::wave::mathieu_b(m, q)
             } else {
-                s::mathieu_a(m, q)
+                s::wave::mathieu_a(m, q)
             };
             let coefficients = if odd {
-                s::mathieu_odd_coef(m, q).unwrap()
+                s::wave::mathieu_odd_coef(m, q).unwrap()
             } else {
-                s::mathieu_even_coef(m, q).unwrap()
+                s::wave::mathieu_even_coef(m, q).unwrap()
             };
             // Finite guards are prerequisites, not the numerical test: below
             // we also require weighted unit norm and every Fourier row's
@@ -955,9 +978,9 @@ fn mathieu_angular_short_vectors_match_full_fourier_coefficients() {
                 continue;
             }
             let coefficients = if odd {
-                s::mathieu_odd_coef(m, q).unwrap()
+                s::wave::mathieu_odd_coef(m, q).unwrap()
             } else {
-                s::mathieu_even_coef(m, q).unwrap()
+                s::wave::mathieu_even_coef(m, q).unwrap()
             };
             let first_harmonic = if m % 2 == 1 {
                 1
@@ -981,9 +1004,9 @@ fn mathieu_angular_short_vectors_match_full_fourier_coefficients() {
                     }
                 }
                 let (angular, angular_derivative) = if odd {
-                    s::mathieu_sem(m, q, degrees)
+                    s::wave::mathieu_sem(m, q, degrees)
                 } else {
-                    s::mathieu_cem(m, q, degrees)
+                    s::wave::mathieu_cem(m, q, degrees)
                 };
                 finite_close(angular, value, 5e-11, 5e-11);
                 finite_close(angular_derivative, derivative, 1e-9, 5e-11);
@@ -999,14 +1022,34 @@ fn mathieu_characteristic_values_respect_negative_coupling_symmetry() {
     // both signs without sharing the scalar solver's starting estimate.
     for q in [0.1, 2.9, 9.5, 75.0] {
         for m in [0_u32, 2, 4, 12] {
-            finite_close(s::mathieu_a(m, -q), s::mathieu_a(m, q), 3e-11, 3e-12);
+            finite_close(
+                s::wave::mathieu_a(m, -q),
+                s::wave::mathieu_a(m, q),
+                3e-11,
+                3e-12,
+            );
             if m > 0 {
-                finite_close(s::mathieu_b(m, -q), s::mathieu_b(m, q), 3e-11, 3e-12);
+                finite_close(
+                    s::wave::mathieu_b(m, -q),
+                    s::wave::mathieu_b(m, q),
+                    3e-11,
+                    3e-12,
+                );
             }
         }
         for m in [1_u32, 3, 5, 13] {
-            finite_close(s::mathieu_a(m, -q), s::mathieu_b(m, q), 3e-11, 3e-12);
-            finite_close(s::mathieu_b(m, -q), s::mathieu_a(m, q), 3e-11, 3e-12);
+            finite_close(
+                s::wave::mathieu_a(m, -q),
+                s::wave::mathieu_b(m, q),
+                3e-11,
+                3e-12,
+            );
+            finite_close(
+                s::wave::mathieu_b(m, -q),
+                s::wave::mathieu_a(m, q),
+                3e-11,
+                3e-12,
+            );
         }
     }
 }
@@ -1014,12 +1057,12 @@ fn mathieu_characteristic_values_respect_negative_coupling_symmetry() {
 #[test]
 fn cylinder_sequences_match_hermite_polynomials_and_derivatives() {
     for x in [-5.0, -1.5, 0.0, 0.3, 1.5, 5.0] {
-        let (values, slopes) = s::pbdn_seq(32, x).unwrap();
+        let (values, slopes) = s::wave::pbdn_seq(32, x).unwrap();
         assert_eq!(values.len(), 33);
         assert_eq!(slopes.len(), 33);
         for n in 0..=32 {
             // D_n(x) = exp(-x^2/4) He_n(x), D_n' = n D_(n-1) - x D_n/2.
-            let expected = (-0.25 * x * x).exp() * s::eval_hermitenorm(n as i32, x);
+            let expected = (-0.25 * x * x).exp() * s::orthogonal::eval_hermitenorm(n as i32, x);
             finite_close(values[n], expected, 2e-12, 2e-12);
             let derivative = if n == 0 {
                 0.0
@@ -1035,7 +1078,7 @@ fn cylinder_sequences_match_hermite_polynomials_and_derivatives() {
 fn lambda_sequences_preserve_half_order_identities() {
     for v in [16.5, 32.5, 128.5] {
         for x in [0.1_f64, 0.7, 1.2, 3.0, 7.5, 16.0, 32.0, 50.0] {
-            let (values, slopes) = s::lmbda(v, x).unwrap();
+            let (values, slopes) = s::wave::lmbda(v, x).unwrap();
             assert_eq!(values.len(), v.floor() as usize + 1);
             assert_eq!(slopes.len(), values.len());
             // Lambda_(1/2) = sin(x)/x from J_(1/2)'s elementary form.
@@ -1123,7 +1166,7 @@ fn lambda_sequences_match_high_precision_series_across_cancellation() {
         ),
     ];
     for &(v, x, reference) in cases {
-        let (values, derivatives) = s::lmbda(v, x).unwrap();
+        let (values, derivatives) = s::wave::lmbda(v, x).unwrap();
         for &(index, value, derivative) in reference {
             finite_close(values[index], value, 2e-13, 5e-13);
             finite_close(derivatives[index], derivative, 2e-13, 5e-13);

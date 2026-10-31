@@ -1,6 +1,15 @@
 # Changelog
 
-## 0.3.0
+## 0.3.0 (unreleased)
+
+- **Breaking:** Move all 362 formerly root-exported `sci::special` numerical
+  functions to public mathematical-family modules. Calls such as
+  `special::gamma(x)`, `special::jv(v, x)`, and
+  `special::eval_legendre(n, x)` move to `special::gamma::gamma(x)`,
+  `special::bessel::jv(v, x)`, and `special::orthogonal::eval_legendre(n, x)`.
+  No root-level numerical functions or compatibility aliases remain;
+  `Error` and `Result` stay exported. `ellipj` lives under `special::elliptic`.
+  See MIGRATING.md for the module list and migration paths.
 
 - Add generic complex erfcx, erfi and Dawson integrals using private Faddeeva
   kernels, explicit series bounds, shared Sci errors and independent references.

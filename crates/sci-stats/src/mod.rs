@@ -296,7 +296,7 @@ pub fn normal_pdf(x: f64, mean: f64, std_dev: f64) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Standardizes before the shared [`sci_special::ndtr`] evaluation; an
+/// Standardizes before the shared [`sci_special::probability::ndtr`] evaluation; an
 /// overflowing finite coordinate difference is divided before subtraction.
 /// Infinite observations retain their limiting probabilities at every valid scale.
 /// Extreme lower tails can underflow to zero; near-one probabilities can round to one.
@@ -341,7 +341,7 @@ pub fn normal_cdf(x: f64, mean: f64, std_dev: f64) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses the shared [`sci_special::ndtri`] standard-normal inverse, followed by fused scale and
+/// Uses the shared [`sci_special::probability::ndtri`] standard-normal inverse, followed by fused scale and
 /// location arithmetic. This avoids overflowing intermediate scale products,
 /// including when the product and location cancel. Interior quantiles outside
 /// the finite range return an evaluation error; extreme probabilities can lose accuracy.

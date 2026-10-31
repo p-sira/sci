@@ -1,11 +1,59 @@
-# Migrating to Sci 0.3
+# Migrating to Sci 0.3 (unreleased)
 
-All workspace packages advance one minor version: `0.2.x` becomes `0.3.0`,
+The upcoming 0.3.0 release is unreleased. Workspace packages advance one minor
+version: `0.2.x` becomes `0.3.0`,
 while `sci-io` and `sci-sparse` advance from `0.1.x` to `0.2.0`.
 Use matching workspace releases so shared error and numerical types agree.
 
 Sci uses SciPy for independent numerical references. Its public API follows
 Rust types and ownership; SciPy inventory names do not require extra exports.
+
+## Special-function family modules (breaking)
+
+All 362 formerly root-exported numerical functions are assigned to public
+mathematical-family modules in 0.3.0: `gamma`, `beta`, `bessel`, `orthogonal`,
+`hypergeometric`, `wave`, `integrals`, `zeta`, `probability`, `elementary`,
+`combinatorics`, and `elliptic`. The existing `complex` module retains its
+qualified complex APIs. There are **no root-level numerical functions, aliases,
+or numerical function re-exports** in `sci::special` or `sci_special`.
+The shared `Error` and `Result` re-exports remain at the crate root.
+Import the relevant family module or use a fully qualified function path.
+
+| Before (0.2.x) | After (0.3.0) |
+| --- | --- |
+| `sci::special::gamma(x)` | `sci::special::gamma::gamma(x)` |
+| `sci::special::betainc(a, b, x)` | `sci::special::beta::betainc(a, b, x)` |
+| `sci::special::jv(v, x)` | `sci::special::bessel::jv(v, x)` |
+| `sci::special::eval_legendre(n, x)` | `sci::special::orthogonal::eval_legendre(n, x)` |
+| `sci::special::hyp1f1(a, b, x)` | `sci::special::hypergeometric::hyp1f1(a, b, x)` |
+| `sci::special::airy(x)` | `sci::special::wave::airy(x)` |
+| `sci::special::exp1(x)` | `sci::special::integrals::exp1(x)` |
+| `sci::special::zeta(x, q)` | `sci::special::zeta::zeta(x, q)` |
+| `sci::special::ndtr(x)` | `sci::special::probability::ndtr(x)` |
+| `sci::special::logsumexp(&values)` | `sci::special::elementary::logsumexp(&values)` |
+| `sci::special::comb(n, k)` | `sci::special::combinatorics::comb(n, k)` |
+| `sci::special::ellipf(phi, m)` | `sci::special::elliptic::ellipf(phi, m)` |
+| `sci::special::ellipj(u, m)` | `sci::special::elliptic::ellipj(u, m)` |
+
+For example, an existing `use sci::special::{gamma, jv};` import must be
+replaced with module-qualified calls:
+
+```rust
+use sci::special::{bessel, gamma};
+
+let g = gamma::gamma(5.0_f64);
+let j = bessel::jv(0.0_f64, 1.0);
+assert_eq!(g, 24.0);
+assert!(j.is_finite());
+```
+
+The existing `special::complex` and `special::elliptic` family paths remain
+available. `ellipkinc` remains a compatibility name **inside** `elliptic`,
+without a root-level alias. Types and error handling use their documented
+module paths; the module move does not change numerical definitions, argument
+order or domain.
+The same path migration applies when using the `sci-special` crate directly:
+replace `sci::special` above with `sci_special`.
 
 ## Generic floating-point APIs
 
@@ -113,12 +161,12 @@ under the canonical names. Existing independent SciPy fixture labels may retain
 the old spelling while Rust tests call the canonical API.
 
 | Removed name | Replacement |
-| `stats::kstest(x, y, alternative)` | `stats::ks_2samp(x, y, alternative)`; use `ks_1samp` for a continuous null |
-| `special::psi(x)` | `special::digamma(x)` |
-| `special::assoc_laguerre(x, n, k)` | `special::eval_genlaguerre(n, k, x)` (arguments reordered) |
-| `special::ellipkinc(phi, m)` | Prefer `special::ellipf(phi, m)` (Ellip notation); `ellipkinc` remains an alias. |
-| `signal::closest_STFT_dual_window` | `signal::closest_stft_dual_window` |
 | --- | --- |
+| `stats::kstest(x, y, alternative)` | `stats::ks_2samp(x, y, alternative)`; use `ks_1samp` for a continuous null |
+| `special::psi(x)` | `special::gamma::digamma(x)` |
+| `special::assoc_laguerre(x, n, k)` | `special::orthogonal::eval_genlaguerre(n, k, x)` (arguments reordered) |
+| `special::ellipkinc(phi, m)` | Prefer `special::elliptic::ellipf(phi, m)` (Ellip notation); `elliptic::ellipkinc` remains an alias. |
+| `signal::closest_STFT_dual_window` | `signal::closest_stft_dual_window` |
 | `c_roots` | `roots_chebyc` |
 | `cg_roots` | `roots_gegenbauer` |
 | `h_roots` | `roots_hermite` |

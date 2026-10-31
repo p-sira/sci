@@ -25,7 +25,7 @@ impl DunnettQuadrature {
         };
         let normal = cache
             .get_or_init(|| {
-                let (nodes, weights) = crate::special::roots_hermitenorm(order)?;
+                let (nodes, weights) = crate::special::orthogonal::roots_hermitenorm(order)?;
                 let normalizer = (2. * std::f64::consts::PI).sqrt();
                 Ok(Arc::new(
                     nodes
@@ -36,8 +36,8 @@ impl DunnettQuadrature {
                 ))
             })
             .clone()?;
-        let (nodes, weights) = crate::special::roots_genlaguerre(order, df / 2. - 1.)?;
-        let log_gamma = crate::special::gammaln(df / 2.);
+        let (nodes, weights) = crate::special::orthogonal::roots_genlaguerre(order, df / 2. - 1.)?;
+        let log_gamma = crate::special::gamma::gammaln(df / 2.);
         let scales = nodes
             .into_iter()
             .zip(weights)

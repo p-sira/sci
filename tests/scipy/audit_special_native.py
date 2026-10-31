@@ -9,6 +9,7 @@ import csv
 import json
 import re
 from pathlib import Path
+from audit_special import public_families
 from case_catalog import read_cases
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,10 +17,23 @@ SCALAR = {'digammainv','gamma_ratio','iv_ratio','iv_ratio_c','iv_ratioinv',
           'log1pmx','scaled_exp1','normalized_gen_harmonic'}
 COMPLEX = {'erfcx','erfi','dawsn','loggamma','rgamma','digamma','gamma','erf','erfc','wofz','jv','jve','yv','yve','iv','ive','kv','kve',
            'hankel1','hankel1e','hankel2','hankel2e','airy','airye','fresnel'}
+SCALAR_FAMILIES = {
+    'digammainv': 'gamma',
+    'gamma_ratio': 'gamma',
+    'iv_ratio': 'bessel',
+    'iv_ratio_c': 'bessel',
+    'iv_ratioinv': 'bessel',
+    'log1pmx': 'elementary',
+    'scaled_exp1': 'integrals',
+    'normalized_gen_harmonic': 'combinatorics',
+}
 
 
 def audit(xsf=None):
     source = ROOT/'crates/sci-special/src'
+    families = public_families()
+    assert set(SCALAR_FAMILIES) == SCALAR
+    assert {name: families.get(name) for name in SCALAR} == SCALAR_FAMILIES
     for filename,expected in [('native.rs',SCALAR),('complex.rs',COMPLEX)]:
         exported = set(re.findall(r'^pub fn (\w+)<T: Float>',(source/filename).read_text(),re.M))
         assert exported == expected,(filename,exported ^ expected)
@@ -40,8 +54,8 @@ def audit(xsf=None):
         actual = {str(path.relative_to(include)) for directory in (include,include/'cpu')
                   for path in directory.glob('*.h')}
         assert actual==set(headers),(actual-set(headers),set(headers)-actual)
-    print(f'{len(headers)} XSF public-layer headers reviewed; {len(SCALAR)} scalar and '
-          f'{len(COMPLEX)} complex additions have {len(rows)} f32/f64 public reference rows.')
+    print(f'{len(headers)} XSF public-layer headers reviewed; {len(SCALAR)} scalar family APIs and '
+          f'{len(COMPLEX)} complex-module APIs have {len(rows)} f32/f64 public reference rows.')
     print('Numerical overload/domain gaps and intentional exclusions: function_coverages/SPECIAL_NATIVE_COVERAGE.md')
 
 

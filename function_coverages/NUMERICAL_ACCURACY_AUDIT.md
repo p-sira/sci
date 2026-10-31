@@ -27,7 +27,7 @@ oracle; Sci's measured outputs never generate expected results.
 | `linalg::solve` | LU rounding on ill-conditioned Hilbert matrices; at most four refinement updates, with compensated product residuals and reused faer factors | `5.44e-8` → `1.10e-16` |
 | `optimize::rosen` | Rounded squares destroy the small valley residual; evaluate that residual with fused multiply-add | `8.40e-9` → `4.94e-16` |
 | `optimize::rosen_der` | Reuse the same fused residual in the analytical gradient | `2.00e-6` → `7.55e-16` |
-| `special::stdtr`, `special::stdtrit`, Student-t `stats::{cdf,sf,ppf}` | Incomplete-beta complements lose central deviations; switch beta branches near the median, reuse the shared functions, and use stable elementary formulas for df=1 and df=2 | Student-t quantiles: `1.02e-9` → `5.48e-13` |
+| `special::probability::{stdtr,stdtrit}`, Student-t `stats::{cdf,sf,ppf}` | Incomplete-beta complements lose central deviations; switch beta branches near the median, reuse the shared functions, and use stable elementary formulas for df=1 and df=2 | Student-t quantiles: `1.02e-9` → `5.48e-13` |
 | `stats::shapiro` | Computing `acos(sqrt(W))` amplifies rounded W near one for n=3; use the exact gap ratio and `atan` | Independent near-symmetric cases agree within `2e-15` absolute + `2e-14` relative |
 | `integrate::newton_cotes` | Uniform-rule Vandermonde solutions and moment subtraction introduce avoidable error; use exact rational tabulations for all supported uniform orders | All 12 uniform orders agree with SciPy's tabulations within binary64 rounding |
 

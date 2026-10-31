@@ -37,17 +37,17 @@ fn beta_integer_factorials_and_logarithms() {
     ] {
         let expected = integer_beta(a, b);
         let (a, b) = (a as f64, b as f64);
-        close(s::beta(a, b), expected, 2e-12, 0.0);
-        close(s::beta(b, a), expected, 2e-12, 0.0);
-        close(s::betaln(a, b), expected.ln(), 2e-12, 3e-13);
-        close(s::betaln(b, a), expected.ln(), 2e-12, 3e-13);
+        close(s::beta::beta(a, b), expected, 2e-12, 0.0);
+        close(s::beta::beta(b, a), expected, 2e-12, 0.0);
+        close(s::beta::betaln(a, b), expected.ln(), 2e-12, 3e-13);
+        close(s::beta::betaln(b, a), expected.ln(), 2e-12, 3e-13);
     }
 
     // B(1/2,1/2) = π and B(1/2,1) = 2 exactly.
-    close(s::beta(0.5, 0.5), PI, 4e-14, 0.0);
-    close(s::betaln(0.5, 0.5), PI.ln(), 4e-14, 0.0);
-    close(s::beta(0.5, 1.0), 2.0, 4e-14, 0.0);
-    close(s::betaln(0.5, 1.0), 2.0_f64.ln(), 4e-14, 0.0);
+    close(s::beta::beta(0.5, 0.5), PI, 4e-14, 0.0);
+    close(s::beta::betaln(0.5, 0.5), PI.ln(), 4e-14, 0.0);
+    close(s::beta::beta(0.5, 1.0), 2.0, 4e-14, 0.0);
+    close(s::beta::betaln(0.5, 1.0), 2.0_f64.ln(), 4e-14, 0.0);
 }
 
 #[test]
@@ -61,28 +61,28 @@ fn beta_extreme_positive_arguments_preserve_closed_forms_and_asymptotics() {
         // math.lgamma subtraction has ~9.6e-12 error for the same
         // identity. Keep the larger allowance local to this input.
         let rtol = if a == 1e4 { 1.5e-11 } else { 3e-12 };
-        close(s::beta(a, 1.0), 1.0 / a, rtol, 0.0);
-        close(s::beta(1.0, a), 1.0 / a, rtol, 0.0);
-        close(s::betaln(a, 1.0), -a.ln(), 3e-12, 2e-13);
+        close(s::beta::beta(a, 1.0), 1.0 / a, rtol, 0.0);
+        close(s::beta::beta(1.0, a), 1.0 / a, rtol, 0.0);
+        close(s::beta::betaln(a, 1.0), -a.ln(), 3e-12, 2e-13);
     }
     for a in [3.0, 200.0, 1e7, 1e9] {
         let expected = (1.0 / a) / (a + 1.0);
-        close(s::beta(a, 2.0), expected, 3e-12, 0.0);
-        close(s::beta(2.0, a), expected, 3e-12, 0.0);
-        close(s::betaln(a, 2.0), expected.ln(), 3e-12, 2e-13);
+        close(s::beta::beta(a, 2.0), expected, 3e-12, 0.0);
+        close(s::beta::beta(2.0, a), expected, 3e-12, 0.0);
+        close(s::beta::betaln(a, 2.0), expected.ln(), 3e-12, 2e-13);
     }
     // The gamma-ratio expansion: B(a,1/2) =
     // sqrt(pi/a) (1 + 1/(8a) + O(a^-2)).
     for a in [1e8, 1e10] {
         let expected = (PI / a).sqrt() * (1.0 + 1.0 / (8.0 * a));
-        close(s::beta(a, 0.5), expected, 3e-12, 0.0);
-        close(s::betaln(a, 0.5), expected.ln(), 3e-12, 1e-12);
+        close(s::beta::beta(a, 0.5), expected, 3e-12, 0.0);
+        close(s::beta::betaln(a, 0.5), expected.ln(), 3e-12, 1e-12);
     }
 
     // beta(huge,2) underflows whereas log-beta remains a finite log.
     let huge = 1e308;
-    close(s::betaln(huge, 2.0), -2.0 * huge.ln(), 3e-12, 3e-12);
-    assert_eq!(s::beta(huge, 2.0), 0.0);
+    close(s::beta::betaln(huge, 2.0), -2.0 * huge.ln(), 3e-12, 3e-12);
+    assert_eq!(s::beta::beta(huge, 2.0), 0.0);
 
     // The public contract explicitly rejects poles and all nonfinite inputs.
     for (a, b) in [
@@ -94,8 +94,8 @@ fn beta_extreme_positive_arguments_preserve_closed_forms_and_asymptotics() {
         (f64::INFINITY, 2.0),
         (2.0, f64::NEG_INFINITY),
     ] {
-        assert!(s::beta(a, b).is_nan(), "beta({a},{b})");
-        assert!(s::betaln(a, b).is_nan(), "betaln({a},{b})");
+        assert!(s::beta::beta(a, b).is_nan(), "beta({a},{b})");
+        assert!(s::beta::betaln(a, b).is_nan(), "betaln({a},{b})");
     }
 }
 
@@ -117,21 +117,21 @@ fn riemann_zeta_even_and_negative_integer_closed_forms() {
         (6.0, PI.powi(6) / 945.0),
         (8.0, PI.powi(8) / 9450.0),
     ] {
-        close(s::zeta(x, 1.0), zeta, 6e-13, 3e-14);
-        close(s::zetac(x), zeta - 1.0, 6e-13, 3e-14);
+        close(s::zeta::zeta(x, 1.0), zeta, 6e-13, 3e-14);
+        close(s::zeta::zetac(x), zeta - 1.0, 6e-13, 3e-14);
     }
     // Trivial zeros of the reflection sine factor, including a large |s|.
     for x in [-20.0, -100.0, -200.0] {
-        assert_eq!(s::zeta(x, 1.0), 0.0);
-        assert_eq!(s::zetac(x), -1.0);
+        assert_eq!(s::zeta::zeta(x, 1.0), 0.0);
+        assert_eq!(s::zeta::zetac(x), -1.0);
     }
-    assert_eq!(s::zeta(1.0_f64, 1.0), f64::INFINITY);
-    assert_eq!(s::zetac(1.0_f64), f64::INFINITY);
-    assert_eq!(s::zetac(f64::INFINITY), 0.0);
-    assert_eq!(s::zeta(f64::INFINITY, 1.0), 1.0);
+    assert_eq!(s::zeta::zeta(1.0_f64, 1.0), f64::INFINITY);
+    assert_eq!(s::zeta::zetac(1.0_f64), f64::INFINITY);
+    assert_eq!(s::zeta::zetac(f64::INFINITY), 0.0);
+    assert_eq!(s::zeta::zeta(f64::INFINITY, 1.0), 1.0);
     for x in [f64::NAN, f64::NEG_INFINITY] {
-        assert!(s::zeta(x, 1.0).is_nan());
-        assert!(s::zetac(x).is_nan());
+        assert!(s::zeta::zeta(x, 1.0).is_nan());
+        assert!(s::zeta::zetac(x).is_nan());
     }
 }
 
@@ -151,12 +151,12 @@ fn zeta_near_zero_negative_transition_matches_high_precision_references() {
         (-31.5, 750_878_449.993_701),
         (-50.5, 2.399_094_238_135_732_2e24),
     ] {
-        close(s::zeta(s_value, 1.0), expected, 6e-12, 4e-14);
-        close(s::zetac(s_value), expected - 1.0, 6e-12, 4e-14);
+        close(s::zeta::zeta(s_value, 1.0), expected, 6e-12, 4e-14);
+        close(s::zeta::zetac(s_value), expected - 1.0, 6e-12, 4e-14);
     }
     // ζ'(0)=-ln(2π)/2, independently constraining the Taylor branch's slope.
     let epsilon = 1e-8;
-    let estimate = (s::zeta(-epsilon, 1.0) - s::zeta(0.0, 1.0)) / -epsilon;
+    let estimate = (s::zeta::zeta(-epsilon, 1.0) - s::zeta::zeta(0.0, 1.0)) / -epsilon;
     close(estimate, -(2.0 * PI).ln() / 2.0, 4e-7, 0.0);
 }
 
@@ -172,16 +172,26 @@ fn zeta_reflection_overflow_factoring_preserves_a_finite_answer() {
         (-258.00001, 3.338_320_121_969_053e300),
         (-260.0000001, -5.694_105_025_215_884e301),
     ] {
-        close(s::zeta(x, 1.0), expected, 5e-7, 0.0);
-        close(s::zetac(x), expected, 5e-7, 0.0);
+        close(s::zeta::zeta(x, 1.0), expected, 5e-7, 0.0);
+        close(s::zeta::zetac(x), expected, 5e-7, 0.0);
     }
     // ζ(-259) = -B_260/260 = 8.7601563446229215...e306:
     // a finite Bernoulli value (checked with 100-digit mpmath).
     // The next odd negative integer does overflow: ζ(-261) =
     // -B_262/262 = -1.505795433605468...e310.
-    close(s::zetac(-259.0), 8.760_156_344_622_921e306, 2e-12, 0.0);
-    close(s::zeta(-259.0, 1.0), 8.760_156_344_622_921e306, 2e-12, 0.0);
-    assert_eq!(s::zetac(-261.0), f64::NEG_INFINITY);
+    close(
+        s::zeta::zetac(-259.0),
+        8.760_156_344_622_921e306,
+        2e-12,
+        0.0,
+    );
+    close(
+        s::zeta::zeta(-259.0, 1.0),
+        8.760_156_344_622_921e306,
+        2e-12,
+        0.0,
+    );
+    assert_eq!(s::zeta::zetac(-261.0), f64::NEG_INFINITY);
 }
 
 #[test]
@@ -196,17 +206,17 @@ fn zetac_positive_interval_boundaries_match_independent_series() {
     ] {
         // These constants were independently computed to 85 digits using
         // the Dirichlet/Euler-Maclaurin definition of ζ(x)-1.
-        close(s::zetac(x), expected, 6e-12, 0.0);
+        close(s::zeta::zetac(x), expected, 6e-12, 0.0);
         if x <= 10.5 {
-            close(s::zeta(x, 1.0), 1.0 + expected, 6e-12, 0.0);
+            close(s::zeta::zeta(x, 1.0), 1.0 + expected, 6e-12, 0.0);
         }
     }
     // Beyond the tabulated range but below the deliberate underflow cutoff,
     // 2^-x dominates the positive Dirichlet series; for x=126 the omitted
     // 3^-x term is < 1e-22 times the leading term.
-    close(s::zetac(126.0_f64), 2.0_f64.powi(-126), 6e-12, 0.0);
-    assert_eq!(s::zetac(127.0_f64), 0.0);
-    assert_eq!(s::zetac(128.0_f64), 0.0);
+    close(s::zeta::zetac(126.0_f64), 2.0_f64.powi(-126), 6e-12, 0.0);
+    assert_eq!(s::zeta::zetac(127.0_f64), 0.0);
+    assert_eq!(s::zeta::zetac(128.0_f64), 0.0);
 }
 
 #[test]
@@ -219,11 +229,16 @@ fn hurwitz_zeta_half_shift_and_negative_half_shift_closed_forms() {
         (6.0, PI.powi(6) / 945.0),
     ] {
         let half = (2.0_f64.powf(order) - 1.0) * riemann;
-        close(s::zeta(order, 0.5), half, 6e-12, 0.0);
-        close(s::zeta(order, 1.5), half - 0.5_f64.powf(-order), 6e-12, 0.0);
-        close(s::zeta(order, 2.0), riemann - 1.0, 6e-12, 0.0);
+        close(s::zeta::zeta(order, 0.5), half, 6e-12, 0.0);
         close(
-            s::zeta(order, -0.5),
+            s::zeta::zeta(order, 1.5),
+            half - 0.5_f64.powf(-order),
+            6e-12,
+            0.0,
+        );
+        close(s::zeta::zeta(order, 2.0), riemann - 1.0, 6e-12, 0.0);
+        close(
+            s::zeta::zeta(order, -0.5),
             half + (-0.5_f64).powf(-order),
             6e-12,
             0.0,
@@ -231,8 +246,13 @@ fn hurwitz_zeta_half_shift_and_negative_half_shift_closed_forms() {
     }
     // q>>1 selects the Hurwitz Euler-Maclaurin limiting expansion.
     let q = 1e10;
-    close(s::zeta(2.0_f64, q), 1.0 / q + 0.5 / (q * q), 3e-12, 0.0);
-    assert!(s::zeta(2.5_f64, -0.5).is_nan()); // noninteger powers of negative q
-    assert!(s::zeta(0.0_f64, 0.5).is_nan()); // q!=1: this real API requires s>1
-    assert_eq!(s::zeta(1.0_f64, 2.0), f64::INFINITY);
+    close(
+        s::zeta::zeta(2.0_f64, q),
+        1.0 / q + 0.5 / (q * q),
+        3e-12,
+        0.0,
+    );
+    assert!(s::zeta::zeta(2.5_f64, -0.5).is_nan()); // noninteger powers of negative q
+    assert!(s::zeta::zeta(0.0_f64, 0.5).is_nan()); // q!=1: this real API requires s>1
+    assert_eq!(s::zeta::zeta(1.0_f64, 2.0), f64::INFINITY);
 }

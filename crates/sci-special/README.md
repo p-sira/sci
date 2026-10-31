@@ -10,8 +10,11 @@ the requested type.
 Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 
 Gamma, Bessel, elliptic, probability, polynomial, and combinatorial functions
-with floating-point scalars and shared Sci types. Specialized algorithms use private
-pure Rust kernels and ellip backends; elementary formulas use the standard library.
+are organized into public mathematical-family modules. For example,
+`gamma::gamma`, `bessel::jv`, `orthogonal::eval_legendre`, and
+`elliptic::ellipf` live in their respective modules. There are no root-level
+numerical functions. Specialized algorithms use private pure Rust kernels and
+ellip backends; elementary formulas use the standard library.
 Use `value.is_finite()` to check scalar results for NaN and infinity.
 Complex gamma (including log-gamma, reciprocal gamma and digamma),
 error/Bessel/Hankel/Airy/Fresnel APIs are available under
@@ -33,7 +36,7 @@ SciPy is an independent reference; complete SciPy parity is not required.
 ```rust
 fn main() -> Result<(), sci_core::Error> {
     use sci_special as special;
-    assert_eq!(special::gamma(5.0), 24.0);
+    assert_eq!(special::gamma::gamma(5.0), 24.0);
     let k = special::elliptic::ellipk(0.5_f64)?;
     assert!((k - 1.8540746773013719).abs() < 1e-14);
     Ok(())

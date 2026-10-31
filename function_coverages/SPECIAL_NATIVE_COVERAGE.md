@@ -44,7 +44,9 @@ replication and ambiguity with real scalar calls:
 
 Arguments/results use `sci::complex::Complex<T>`; errors use `sci::Result`.
 Airy returns `[Ai,Ai′,Bi,Bi′]`; Fresnel returns `(S,C)`. Existing real APIs
-and the original root-level `wofz` and Hankel functions are preserved.
+remain in their respective family modules; the former root-level `wofz` and
+Hankel functions now reside under `special::elementary::wofz` and
+`special::bessel::{hankel1, hankel1e, hankel2, hankel2e}`.
 The complex namespace requires finite inputs and finite results, returning
 errors on overflow, conversion overflow and backend failures. The kernels
 compute in binary64 before conversion to `T`. No arbitrary-precision claim is

@@ -105,7 +105,7 @@ fn airy_roots(nt: usize, component: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let zeros = sci_special::jn_zeros(2,3)?;
+/// let zeros = sci_special::bessel::jn_zeros(2,3)?;
 /// let _ = zeros;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -132,7 +132,7 @@ pub fn jn_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let zeros = sci_special::jnp_zeros(2,3)?;
+/// let zeros = sci_special::bessel::jnp_zeros(2,3)?;
 /// let _ = zeros;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -159,7 +159,7 @@ pub fn jnp_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let zeros = sci_special::yn_zeros(2,3)?;
+/// let zeros = sci_special::bessel::yn_zeros(2,3)?;
 /// let _ = zeros;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -186,7 +186,7 @@ pub fn yn_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let zeros = sci_special::ynp_zeros(2,3)?;
+/// let zeros = sci_special::bessel::ynp_zeros(2,3)?;
 /// let _ = zeros;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -213,7 +213,7 @@ pub fn ynp_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let zeros = sci_special::jnyn_zeros(2,3)?;
+/// let zeros = sci_special::bessel::jnyn_zeros(2,3)?;
 /// let _ = zeros;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -245,7 +245,7 @@ pub fn jnyn_zeros(n: u32, nt: usize) -> Result<[Vec<f64>; 4]> {
 /// ## Examples
 ///
 /// ```
-/// let zeros = sci_special::y0_zeros(3)?;
+/// let zeros = sci_special::bessel::y0_zeros(3)?;
 /// let _ = zeros;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -274,7 +274,7 @@ pub fn y0_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let zeros = sci_special::y1_zeros(3)?;
+/// let zeros = sci_special::bessel::y1_zeros(3)?;
 /// let _ = zeros;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -303,7 +303,7 @@ pub fn y1_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let zeros = sci_special::y1p_zeros(3)?;
+/// let zeros = sci_special::bessel::y1p_zeros(3)?;
 /// let _ = zeros;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -332,7 +332,7 @@ pub fn y1p_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let zeros = sci_special::ai_zeros(3)?;
+/// let zeros = sci_special::wave::ai_zeros(3)?;
 /// let _ = zeros;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -363,7 +363,7 @@ pub fn ai_zeros(nt: usize) -> Result<[Vec<f64>; 4]> {
 /// ## Examples
 ///
 /// ```
-/// let zeros = sci_special::bi_zeros(3)?;
+/// let zeros = sci_special::wave::bi_zeros(3)?;
 /// let _ = zeros;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -394,7 +394,7 @@ pub fn bi_zeros(nt: usize) -> Result<[Vec<f64>; 4]> {
 /// ## Examples
 ///
 /// ```
-/// let zeros = sci_special::erf_zeros(3)?;
+/// let zeros = sci_special::elementary::erf_zeros(3)?;
 /// let _ = zeros;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -449,7 +449,7 @@ pub fn erf_zeros(nt: usize) -> Result<Vec<Complex>> {
 /// ## Examples
 ///
 /// ```
-/// let zeros = sci_special::jnjnp_zeros(8)?;
+/// let zeros = sci_special::bessel::jnjnp_zeros(8)?;
 /// let _ = zeros;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

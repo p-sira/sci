@@ -182,7 +182,7 @@ fn quadrature(
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::jacobi(3,0.5,0.3,false)?;
+/// let coefficients = sci_special::orthogonal::jacobi(3,0.5,0.3,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -216,7 +216,7 @@ pub fn jacobi(n: usize, alpha: f64, beta: f64, monic: bool) -> Result<Vec<f64>> 
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_jacobi(3,0.5,0.3)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_jacobi(3,0.5,0.3)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -250,7 +250,7 @@ pub fn roots_jacobi(n: usize, alpha: f64, beta: f64) -> Result<(Vec<f64>, Vec<f6
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::legendre(3,false)?;
+/// let coefficients = sci_special::orthogonal::legendre(3,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -279,7 +279,7 @@ pub fn legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_legendre(3)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_legendre(3)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -308,7 +308,7 @@ pub fn roots_legendre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::gegenbauer(3,0.5,false)?;
+/// let coefficients = sci_special::orthogonal::gegenbauer(3,0.5,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -342,7 +342,7 @@ pub fn gegenbauer(n: usize, alpha: f64, monic: bool) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_gegenbauer(3,0.5)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_gegenbauer(3,0.5)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -376,7 +376,7 @@ pub fn roots_gegenbauer(n: usize, alpha: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::genlaguerre(3,0.5,false)?;
+/// let coefficients = sci_special::orthogonal::genlaguerre(3,0.5,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -410,7 +410,7 @@ pub fn genlaguerre(n: usize, alpha: f64, monic: bool) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_genlaguerre(3,0.5)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_genlaguerre(3,0.5)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -444,7 +444,7 @@ pub fn roots_genlaguerre(n: usize, alpha: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::laguerre(3,false)?;
+/// let coefficients = sci_special::orthogonal::laguerre(3,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -473,7 +473,7 @@ pub fn laguerre(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_laguerre(3)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_laguerre(3)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -502,7 +502,7 @@ pub fn roots_laguerre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::hermite(3,false)?;
+/// let coefficients = sci_special::orthogonal::hermite(3,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -531,7 +531,7 @@ pub fn hermite(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_hermite(3)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_hermite(3)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -560,7 +560,7 @@ pub fn roots_hermite(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::hermitenorm(3,false)?;
+/// let coefficients = sci_special::orthogonal::hermitenorm(3,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -589,7 +589,7 @@ pub fn hermitenorm(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_hermitenorm(3)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_hermitenorm(3)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -618,7 +618,7 @@ pub fn roots_hermitenorm(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::chebyt(3,false)?;
+/// let coefficients = sci_special::orthogonal::chebyt(3,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -647,7 +647,7 @@ pub fn chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_chebyt(3)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_chebyt(3)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -676,7 +676,7 @@ pub fn roots_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::chebyu(3,false)?;
+/// let coefficients = sci_special::orthogonal::chebyu(3,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -705,7 +705,7 @@ pub fn chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_chebyu(3)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_chebyu(3)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -734,7 +734,7 @@ pub fn roots_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::chebyc(3,false)?;
+/// let coefficients = sci_special::orthogonal::chebyc(3,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -763,7 +763,7 @@ pub fn chebyc(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_chebyc(3)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_chebyc(3)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -792,7 +792,7 @@ pub fn roots_chebyc(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::chebys(3,false)?;
+/// let coefficients = sci_special::orthogonal::chebys(3,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -821,7 +821,7 @@ pub fn chebys(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_chebys(3)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_chebys(3)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -850,7 +850,7 @@ pub fn roots_chebys(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::sh_chebyt(3,false)?;
+/// let coefficients = sci_special::orthogonal::sh_chebyt(3,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -879,7 +879,7 @@ pub fn sh_chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_sh_chebyt(3)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_sh_chebyt(3)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -908,7 +908,7 @@ pub fn roots_sh_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::sh_chebyu(3,false)?;
+/// let coefficients = sci_special::orthogonal::sh_chebyu(3,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -937,7 +937,7 @@ pub fn sh_chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_sh_chebyu(3)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_sh_chebyu(3)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -966,7 +966,7 @@ pub fn roots_sh_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::sh_legendre(3,false)?;
+/// let coefficients = sci_special::orthogonal::sh_legendre(3,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -995,7 +995,7 @@ pub fn sh_legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_sh_legendre(3)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_sh_legendre(3)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1024,7 +1024,7 @@ pub fn roots_sh_legendre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// ## Examples
 ///
 /// ```
-/// let coefficients = sci_special::sh_jacobi(3,2.5,1.5,false)?;
+/// let coefficients = sci_special::orthogonal::sh_jacobi(3,2.5,1.5,false)?;
 /// assert_eq!(coefficients.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1067,7 +1067,7 @@ pub fn sh_jacobi(n: usize, p: f64, q: f64, monic: bool) -> Result<Vec<f64>> {
 /// ## Examples
 ///
 /// ```
-/// let (nodes, weights) = sci_special::roots_sh_jacobi(3,2.5,1.5)?;
+/// let (nodes, weights) = sci_special::orthogonal::roots_sh_jacobi(3,2.5,1.5)?;
 /// assert_eq!(nodes.len(),weights.len());
 /// # Ok::<(),sci_core::Error>(())
 /// ```

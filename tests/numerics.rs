@@ -314,7 +314,7 @@ fn integration_domains_boundaries_and_properties() {
         close(value, x * x * x / 3.0, 3e-12, 3e-12);
     }
     for n in 1..=8 {
-        let (nodes, weights) = sci::special::roots_legendre(n).unwrap();
+        let (nodes, weights) = sci::special::orthogonal::roots_legendre(n).unwrap();
         let samples: Vec<_> = nodes.iter().map(|v| v.powi((2 * n - 2) as i32)).collect();
         close(
             i::fixed_quad(|v: f64| v.powi((2 * n - 2) as i32), -1.0, 1.0, n).unwrap(),

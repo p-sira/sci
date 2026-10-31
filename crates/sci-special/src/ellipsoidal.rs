@@ -162,7 +162,7 @@ impl Lame {
 /// ## Examples
 ///
 /// ```
-/// assert_eq!(sci_special::ellip_harm(0.5,1.5,0,1,2.0,1.0,1.0)?,1.0);
+/// assert_eq!(sci_special::wave::ellip_harm(0.5,1.5,0,1,2.0,1.0,1.0)?,1.0);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
@@ -208,7 +208,7 @@ pub fn ellip_harm(
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::ellip_harm_2(0.5,1.5,0,1,2.0)?.is_finite());
+/// assert!(sci_special::wave::ellip_harm_2(0.5,1.5,0,1,2.0)?.is_finite());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
@@ -256,7 +256,7 @@ pub fn ellip_harm_2(h2: f64, k2: f64, n: usize, p: usize, s: f64) -> Result<f64>
 /// ## Examples
 ///
 /// ```
-/// assert!(sci_special::ellip_normal(0.5,1.5,0,1)? > 0.0);
+/// assert!(sci_special::wave::ellip_normal(0.5,1.5,0,1)? > 0.0);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///

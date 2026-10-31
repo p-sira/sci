@@ -284,7 +284,7 @@ pub(super) fn integrate(f: impl Fn(f64) -> f64, a: f64, b: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::btdtria(0.3,2.5,0.5);
+/// let value = sci_special::probability::btdtria(0.3,2.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -311,7 +311,7 @@ pub fn btdtria(p: f64, b: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::btdtrib(2.5,0.3,0.5);
+/// let value = sci_special::probability::btdtrib(2.5,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -338,7 +338,7 @@ pub fn btdtrib(a: f64, p: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::bdtrik(0.3,5.0,0.5);
+/// let value = sci_special::probability::bdtrik(0.3,5.0,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -386,7 +386,7 @@ pub fn bdtrik(y: f64, n: f64, p: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::bdtrin(2.0,0.3,0.5);
+/// let value = sci_special::probability::bdtrin(2.0,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -413,7 +413,7 @@ pub fn bdtrin(k: f64, y: f64, p: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::nbdtrik(0.3,5.0,0.5);
+/// let value = sci_special::probability::nbdtrik(0.3,5.0,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -440,7 +440,7 @@ pub fn nbdtrik(y: f64, n: f64, p: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::nbdtrin(2.0,0.3,0.5);
+/// let value = sci_special::probability::nbdtrin(2.0,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -467,7 +467,7 @@ pub fn nbdtrin(k: f64, y: f64, p: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::pdtrik(0.3,5.0);
+/// let value = sci_special::probability::pdtrik(0.3,5.0);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -494,7 +494,7 @@ pub fn pdtrik(p: f64, m: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::stdtridf(0.6742760175759245,0.5);
+/// let value = sci_special::probability::stdtridf(0.6742760175759245,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -521,7 +521,7 @@ pub fn stdtridf(p: f64, t: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::fdtridfd(3.0,0.30154736269507604,0.5);
+/// let value = sci_special::probability::fdtridfd(3.0,0.30154736269507604,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -548,7 +548,7 @@ pub fn fdtridfd(dfn: f64, p: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::chndtr(2.5,3.0,0.5);
+/// let value = sci_special::probability::chndtr(2.5,3.0,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -581,7 +581,7 @@ pub fn chndtr(x: f64, df: f64, nc: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::chndtrix(0.3,3.0,0.5);
+/// let value = sci_special::probability::chndtrix(0.3,3.0,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -608,7 +608,7 @@ pub fn chndtrix(p: f64, df: f64, nc: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::chndtridf(2.5,0.3,0.5);
+/// let value = sci_special::probability::chndtridf(2.5,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -635,7 +635,7 @@ pub fn chndtridf(x: f64, p: f64, nc: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::chndtrinc(2.5,3.0,0.3);
+/// let value = sci_special::probability::chndtrinc(2.5,3.0,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -662,7 +662,7 @@ pub fn chndtrinc(x: f64, df: f64, p: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ncfdtr(3.0,5.0,0.5,2.5);
+/// let value = sci_special::probability::ncfdtr(3.0,5.0,0.5,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -703,7 +703,7 @@ pub fn ncfdtr(dfn: f64, dfd: f64, nc: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ncfdtri(3.0,5.0,0.5,0.3);
+/// let value = sci_special::probability::ncfdtri(3.0,5.0,0.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -730,7 +730,7 @@ pub fn ncfdtri(dfn: f64, dfd: f64, nc: f64, p: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ncfdtridfd(3.0,0.25637506749643246,0.5,0.5);
+/// let value = sci_special::probability::ncfdtridfd(3.0,0.25637506749643246,0.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -757,7 +757,7 @@ pub fn ncfdtridfd(dfn: f64, p: f64, nc: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ncfdtridfn(0.25637506749643246,5.0,0.5,0.5);
+/// let value = sci_special::probability::ncfdtridfn(0.25637506749643246,5.0,0.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -784,7 +784,7 @@ pub fn ncfdtridfn(p: f64, dfd: f64, nc: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::ncfdtrinc(3.0,5.0,0.3,2.5);
+/// let value = sci_special::probability::ncfdtrinc(3.0,5.0,0.3,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -818,7 +818,7 @@ pub fn ncfdtrinc(dfn: f64, dfd: f64, p: f64, x: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::nctdtr(3.0,0.5,0.3);
+/// let value = sci_special::probability::nctdtr(3.0,0.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -875,7 +875,7 @@ pub fn nctdtr(df: f64, nc: f64, t: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::nctdtrit(3.0,0.5,0.3);
+/// let value = sci_special::probability::nctdtrit(3.0,0.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -902,7 +902,7 @@ pub fn nctdtrit(df: f64, nc: f64, p: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::nctdtrinc(3.0,0.3,0.5);
+/// let value = sci_special::probability::nctdtrinc(3.0,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
@@ -936,7 +936,7 @@ pub fn nctdtrinc(df: f64, p: f64, t: f64) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let value = sci_special::nctdtridf(0.4120716320853016,0.5,0.3);
+/// let value = sci_special::probability::nctdtridf(0.4120716320853016,0.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///

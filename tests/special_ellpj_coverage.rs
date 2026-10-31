@@ -17,7 +17,7 @@ fn jacobi_zero_parameter_reduces_to_trigonometry() {
     // Exact m=0 formulas remain valid through many ordinary trigonometric
     // periods. The amplitude is unwrapped: am(u|0) = u, not arcsin(sin u).
     for u in [-8.0 * PI, -7.3, -PI, -0.25, 0.0, 0.25, PI, 7.3, 8.0 * PI] {
-        let actual = s::ellipj(u, 0.0);
+        let actual = s::elliptic::ellipj(u, 0.0);
         finite_close(actual.0, u.sin(), 1e-14, 1e-14);
         finite_close(actual.1, u.cos(), 1e-14, 1e-14);
         finite_close(actual.2, 1.0, 1e-14, 1e-14);
@@ -29,7 +29,7 @@ fn jacobi_zero_parameter_reduces_to_trigonometry() {
     // am(u|m) = u - m*(u - sin(u)cos(u))/4 + O(m²).
     for m in [1e-12, 5e-10] {
         for u in [-4.1_f64, -0.8, 0.0, 0.8, 4.1] {
-            let actual = s::ellipj(u, m);
+            let actual = s::elliptic::ellipj(u, m);
             let first_order_am = u - 0.25 * m * (u - u.sin() * u.cos());
             finite_close(actual.3, first_order_am, 2e-14, 2e-14);
             jacobi_relations(actual, m, 2e-13);
@@ -42,7 +42,7 @@ fn jacobi_unit_parameter_reduces_to_hyperbolic_functions() {
     // sn(u|1)=tanh(u), cn(u|1)=dn(u|1)=sech(u), and
     // am(u|1)=atan(sinh(u)). Avoid u where cosh/exp overflow.
     for u in [-8.0_f64, -3.0, -0.5, 0.0, 0.5, 3.0, 8.0] {
-        let actual = s::ellipj(u, 1.0);
+        let actual = s::elliptic::ellipj(u, 1.0);
         let sech = 1.0 / u.cosh();
         finite_close(actual.0, u.tanh(), 3e-14, 3e-14);
         finite_close(actual.1, sech, 3e-14, 3e-14);
@@ -56,7 +56,7 @@ fn jacobi_unit_parameter_reduces_to_hyperbolic_functions() {
     // here, while the algebraic Jacobi identities remain much tighter.
     for m in [1.0 - 5e-11, 1.0 - 1e-12] {
         for u in [-3.0_f64, -0.7, 0.0, 0.7, 3.0] {
-            let actual = s::ellipj(u, m);
+            let actual = s::elliptic::ellipj(u, m);
             finite_close(actual.0, u.tanh(), 2e-8, 2e-8);
             finite_close(actual.1, 1.0 / u.cosh(), 2e-8, 2e-8);
             finite_close(actual.2, 1.0 / u.cosh(), 2e-8, 2e-8);
@@ -72,7 +72,7 @@ fn jacobi_amplitude_inverts_an_independent_elliptic_integral() {
     // AGM Jacobi kernel. This checks the unwrapped amplitude quantitatively.
     for m in [0.2, 0.5, 0.9, 0.99] {
         for u in [-3.4_f64, -1.3, -0.2, 0.0, 0.2, 1.3, 3.4] {
-            let actual = s::ellipj(u, m);
+            let actual = s::elliptic::ellipj(u, m);
             finite_close(elliptic::ellipf(actual.3, m).unwrap(), u, 3e-11, 3e-11);
             jacobi_relations(actual, m, 3e-12);
         }
@@ -83,9 +83,9 @@ fn jacobi_amplitude_inverts_an_independent_elliptic_integral() {
     let h = 1e-5;
     for m in [0.2, 0.7, 0.99] {
         for u in [-1.5_f64, 0.4, 2.6] {
-            let (sn, cn, dn, _) = s::ellipj(u, m);
-            let plus = s::ellipj(u + h, m);
-            let minus = s::ellipj(u - h, m);
+            let (sn, cn, dn, _) = s::elliptic::ellipj(u, m);
+            let plus = s::elliptic::ellipj(u + h, m);
+            let minus = s::elliptic::ellipj(u - h, m);
             finite_close((plus.0 - minus.0) / (2.0 * h), cn * dn, 2e-9, 2e-9);
             finite_close((plus.1 - minus.1) / (2.0 * h), -sn * dn, 2e-9, 2e-9);
             finite_close((plus.2 - minus.2) / (2.0 * h), -m * sn * cn, 2e-9, 2e-9);
@@ -103,7 +103,7 @@ fn jacobi_quarter_periods_have_correct_dn_and_amplitude() {
         let k = elliptic::ellipk(m).unwrap();
         for multiple in [-3_i32, -1, 1, 3, 5] {
             let u = f64::from(multiple) * k;
-            let (sn, cn, dn, am) = s::ellipj(u, m);
+            let (sn, cn, dn, am) = s::elliptic::ellipj(u, m);
             let phase = f64::from(multiple) * FRAC_PI_2;
             finite_close(sn, phase.sin(), 2e-11, 2e-11);
             finite_close(cn, 0.0, 2e-11, 0.0);
@@ -120,10 +120,10 @@ fn jacobi_reflection_and_multiperiod_shifts_preserve_signs() {
     // unwrapped amplitude advances by pi. Check multiple periods both ways.
     for m in [0.4, 0.7, 0.95] {
         let k = elliptic::ellipk(m).unwrap();
-        let base = s::ellipj(0.37, m);
+        let base = s::elliptic::ellipj(0.37, m);
         for periods in [-4_i32, -2, -1, 0, 1, 2, 4] {
             let u = 0.37 + 2.0 * f64::from(periods) * k;
-            let result = s::ellipj(u, m);
+            let result = s::elliptic::ellipj(u, m);
             let sign = if periods % 2 == 0 { 1.0 } else { -1.0 };
             finite_close(result.0, sign * base.0, 2e-11, 2e-11);
             finite_close(result.1, sign * base.1, 2e-11, 2e-11);
@@ -132,8 +132,8 @@ fn jacobi_reflection_and_multiperiod_shifts_preserve_signs() {
             jacobi_relations(result, m, 2e-11);
         }
         for u in [0.2_f64, 1.1, 3.0] {
-            let positive = s::ellipj(u, m);
-            let negative = s::ellipj(-u, m);
+            let positive = s::elliptic::ellipj(u, m);
+            let negative = s::elliptic::ellipj(-u, m);
             finite_close(negative.0, -positive.0, 2e-12, 2e-12);
             finite_close(negative.1, positive.1, 2e-12, 2e-12);
             finite_close(negative.2, positive.2, 2e-12, 2e-12);
@@ -145,7 +145,7 @@ fn jacobi_reflection_and_multiperiod_shifts_preserve_signs() {
 #[test]
 fn jacobi_rejects_invalid_modulus_and_nonfinite_arguments() {
     for m in [-f64::INFINITY, -1e-3, f64::NAN, 1.0 + 1e-3, f64::INFINITY] {
-        let (sn, cn, dn, am) = s::ellipj(0.5, m);
+        let (sn, cn, dn, am) = s::elliptic::ellipj(0.5, m);
         assert!(
             sn.is_nan() && cn.is_nan() && dn.is_nan() && am.is_nan(),
             "m={m}"
@@ -153,7 +153,7 @@ fn jacobi_rejects_invalid_modulus_and_nonfinite_arguments() {
     }
     for u in [f64::NAN, f64::NEG_INFINITY, f64::INFINITY] {
         for m in [0.0, 0.5, 1.0] {
-            let (sn, cn, dn, am) = s::ellipj(u, m);
+            let (sn, cn, dn, am) = s::elliptic::ellipj(u, m);
             assert!(
                 sn.is_nan() && cn.is_nan() && dn.is_nan() && am.is_nan(),
                 "u={u}, m={m}"

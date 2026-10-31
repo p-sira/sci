@@ -238,7 +238,7 @@ fn order_evaluate(d: OrderStatisticDistribution, x: f64, op: Operation) -> Resul
                     })
                     .sum()
             } else {
-                -crate::special::betaln(a, b)
+                -crate::special::beta::betaln(a, b)
             };
             density_result(
                 log_density + log_f + log_s + constant,

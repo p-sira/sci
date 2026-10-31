@@ -37,7 +37,7 @@ fn sum(values: impl Iterator<Item = f64>) -> f64 {
 ///
 /// ## Examples
 /// ```
-/// assert!((sci_special::harmonic(3) - 11.0 / 6.0).abs() < 1e-12);
+/// assert!((sci_special::combinatorics::harmonic(3) - 11.0 / 6.0).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -46,7 +46,7 @@ pub fn harmonic(n: u64) -> f64 {
     match n {
         0 => 0.0,
         1 => 1.0,
-        _ => crate::digamma(n as f64 + 1.0) - crate::digamma(1.0),
+        _ => crate::gamma::digamma(n as f64 + 1.0) - crate::gamma::digamma(1.0),
     }
 }
 
@@ -74,7 +74,7 @@ pub fn harmonic(n: u64) -> f64 {
 ///
 /// ## Examples
 /// ```
-/// assert_eq!(sci_special::gen_harmonic(2, 2.0)?, 1.25);
+/// assert_eq!(sci_special::combinatorics::gen_harmonic(2, 2.0)?, 1.25);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -104,12 +104,12 @@ pub fn gen_harmonic(n: u64, m: f64) -> Result<f64> {
 /// The dimensionless logarithm, without overflowing the factorial itself.
 ///
 /// ## Numerical behavior
-/// Reuses [`crate::gammaln`] with constant work. Indices above 2^53 are rounded
+/// Reuses [`crate::gamma::gammaln`] with constant work. Indices above 2^53 are rounded
 /// to binary64; gamma approximation and argument rounding limit accuracy.
 ///
 /// ## Examples
 /// ```
-/// assert!((sci_special::ln_factorial(5) - 120.0_f64.ln()).abs() < 1e-12);
+/// assert!((sci_special::combinatorics::ln_factorial(5) - 120.0_f64.ln()).abs() < 1e-12);
 /// ```
 ///
 /// ## References
@@ -118,7 +118,7 @@ pub fn ln_factorial(n: u64) -> f64 {
     if n <= 1 {
         0.0
     } else {
-        crate::gammaln(n as f64 + 1.0)
+        crate::gamma::gammaln(n as f64 + 1.0)
     }
 }
 
@@ -145,7 +145,7 @@ pub fn ln_factorial(n: u64) -> f64 {
 ///
 /// ## Examples
 /// ```
-/// assert!((sci_special::ln_binomial(5, 2)? - 10.0_f64.ln()).abs() < 1e-12);
+/// assert!((sci_special::combinatorics::ln_binomial(5, 2)? - 10.0_f64.ln()).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -211,7 +211,7 @@ fn multinomial_work(n: u64, counts: &[u64]) -> Result<()> {
 ///
 /// ## Examples
 /// ```
-/// assert!((sci_special::ln_multinomial(4, &[2, 1, 1])? - 12.0_f64.ln()).abs() < 1e-12);
+/// assert!((sci_special::combinatorics::ln_multinomial(4, &[2, 1, 1])? - 12.0_f64.ln()).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -254,7 +254,7 @@ pub fn ln_multinomial(n: u64, counts: &[u64]) -> Result<f64> {
 ///
 /// ## Examples
 /// ```
-/// assert_eq!(sci_special::multinomial(4, &[2, 1, 1])?, 12.0);
+/// assert_eq!(sci_special::combinatorics::multinomial(4, &[2, 1, 1])?, 12.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

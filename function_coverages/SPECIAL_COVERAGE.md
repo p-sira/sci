@@ -8,6 +8,12 @@ follow-up adds **eight scalar and 25 qualified complex APIs**; see
 audit, Rust adaptations, deliberate exclusions and remaining numerical gaps.
 No numerical
 function family was removed in the pure Rust backend migration.
+In the unreleased Sci 0.3.0, all 362 formerly root-exported numerical functions
+are assigned to mathematical-family modules, including `elliptic::ellipj`.
+The inventory counts above refer to algorithms, not root-level Rust exports. See
+[the migration guide](../MIGRATING.md#special-function-family-modules-breaking)
+for paths. `sci::special` has no root-level numerical functions or aliases;
+only shared `Error` and `Result` remain as root re-exports.
 
 ## Inventory disposition
 
@@ -25,7 +31,7 @@ function family was removed in the pure Rust backend migration.
 represent 703 distinct implementations. Cython-only declarations and deprecated
 compatibility namespaces introduce no additional numerical name gaps.
 
-The 25 top-level names without identically named Sci exports are intentional:
+The 25 SciPy inventory names without identically named Sci functions are intentional:
 
 - `psi` uses `digamma`; `assoc_laguerre(x,n,k)` uses
   `eval_genlaguerre(n,k,x)`.
