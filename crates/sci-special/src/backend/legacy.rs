@@ -52,13 +52,22 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
     // By Weyl's inequality the eigenvalue is at most `upper_bound`. Where
     // d_j − λ > 2|q|, the minimal solution of the three-term recurrence
     // shrinks by at least ρ_j = |q|/(d_j − λ − |q|) per row, so truncating
-    // once q·(Π ρ_j)² < 1e-20 moves the eigenvalue by less than 1e-20; one
-    // further row is kept as a margin. Small |q| needs far fewer rows than
+    // once q·(Π ρ_j)² < 1e-20 moves the eigenvalue by less than 1e-20. The
+    // decay-qualified row is retained. Small |q| needs far fewer rows than
     // the fixed truncation, which remains an upper limit.
-    let radius = 2.0 * SQRT_2 * q.abs();
+    // Each Fourier recurrence is a symmetric/antisymmetric restriction of
+    // nearest-neighbor coupling on the full integer harmonics, whose norm is
+    // at most 2|q|. This is also valid for the sqrt(2) first edge of kd=1.
+    let radius = 2.0 * q.abs();
     let size = {
         let fixed = (extent + 10).min(251);
-        let upper_bound = diagonal_zero.max(diagonal_at(rank)) + radius;
+        // The lowest eigenvalue is no larger than the Rayleigh quotient of
+        // the first Fourier basis vector, which is diagonal_zero.
+        let upper_bound = if rank == 0 {
+            diagonal_zero
+        } else {
+            diagonal_zero.max(diagonal_at(rank)) + radius
+        };
         let mut decay = 1.0;
         let mut size = fixed;
         for j in rank + 1..fixed {
@@ -66,7 +75,7 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
             if excess > 2.0 * q.abs() {
                 decay *= q.abs() / (excess - q.abs());
                 if decay * decay * q.abs() < 1e-20 {
-                    size = (j + 2).min(fixed);
+                    size = (j + 1).min(fixed);
                     break;
                 }
             }
@@ -166,6 +175,28 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
                 pivot = -1e-300;
             }
             count += usize::from(pivot < 0.0);
+        }
+        count
+    };
+    // For small scalar matrices, the signs of leading principal determinants
+    // give the same Sturm inertia as the LDL pivots, with no divisions.
+    // Degenerate or non-finite minors fall back to the pivot recurrence.
+    let sturm_poly_count = |shift: f64| {
+        let mut p0 = 1.0;
+        let mut p1 = diagonal_zero - shift;
+        if p1 == 0.0 {
+            return count_below(shift);
+        }
+        let mut count = usize::from(p1.is_sign_negative());
+        for j in 1..size {
+            let edge = if j == 1 { b2_first } else { b2 };
+            let p2 = (diagonal_at(j) - shift) * p1 - edge * p0;
+            if p2 == 0.0 || !p2.is_finite() {
+                return count_below(shift);
+            }
+            count += usize::from(p2.is_sign_negative() != p1.is_sign_negative());
+            p0 = p1;
+            p1 = p2;
         }
         count
     };
@@ -347,7 +378,7 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
             estimate = next;
             if correction.abs() <= 2.0 * f64::EPSILON * next.abs().max(1.0) {
                 let delta = 4.0 * f64::EPSILON * next.abs().max(q.abs()).max(1.0);
-                if count_below(next - delta) <= rank && count_below(next + delta) > rank {
+                if sturm_poly_count(next - delta) <= rank && sturm_poly_count(next + delta) > rank {
                     return (next, Vec::new());
                 }
                 break;
@@ -1143,70 +1174,239 @@ pub(crate) fn airy_integrals(x: f64) -> [f64; 4] {
         return [positive.0, positive.1, -negative.0, -negative.1];
     }
     if x.abs() <= 10.0 {
-        // Integrate y''=x*y's two power-series solutions. Double-double
-        // summation retains oscillatory cancellation without quadrature.
-        // Constants are Ai(0), -Ai'(0), and sqrt(3) (DLMF 9.2.3–6).
-        use super::double_double::{Dd, DdFactor};
-        let c0 = Dd {
-            hi: 0.3550280538878172,
-            lo: 2.05233632436212e-17,
-        };
-        let c1 = Dd {
-            hi: 0.2588194037928068,
-            lo: -2.5222431116108322e-17,
-        };
-        let root3 = Dd {
-            hi: 1.7320508075688772,
-            lo: 1.0035084221806903e-16,
-        };
-        // The terms at -x are those at x with signs (-1)^(k+1) for f and
-        // (-1)^k for g, so sum even and odd k separately and evaluate both
-        // arguments from one pass over the terms.
-        let x = Dd::from(x);
-        let cube = x * x * x;
-        let factor = DdFactor::new(cube);
-        let (mut tf, mut tg) = (x, (x * x).mul_f64(0.5));
-        let (mut f_even, mut f_odd) = (tf, Dd::from(0.0));
-        let (mut g_even, mut g_odd) = (tg, Dd::from(0.0));
-        for n in 1..128u32 {
-            let k = f64::from(n);
-            // Integer factors below 2^53 are exact in binary64.
-            tf = factor
-                .mul(tf)
-                .mul_small(3.0 * k - 2.0)
-                .div_small((3.0 * k + 1.0) * (3.0 * k) * (3.0 * k - 1.0));
-            tg = factor
-                .mul(tg)
-                .mul_small(3.0 * k - 1.0)
-                .div_small((3.0 * k + 2.0) * (3.0 * k) * (3.0 * k + 1.0));
-            // For fixed parity every term shares the sign of x^(3n), so
-            // the cheaper same-sign addition is exact to double-double precision.
-            if n % 2 == 0 {
-                f_even = f_even.add_same_sign(tf);
-                g_even = g_even.add_same_sign(tg);
-            } else {
-                f_odd = f_odd.add_same_sign(tf);
-                g_odd = g_odd.add_same_sign(tg);
-            }
-            let scale = |f: f64, g: f64| f.abs().max(g.abs());
-            let positive = scale(f_even.hi + f_odd.hi, g_even.hi + g_odd.hi);
-            let negative = scale(f_odd.hi - f_even.hi, g_even.hi - g_odd.hi);
-            // Once the next term ratios, at most |x|³/((3k+3)(3k+2)), are
-            // below one half, each tail is at most twice its current term,
-            // and terms below 1e-20 of the sums are beyond binary64 resolution.
-            let tolerance = if 2.0 * (cube.hi.abs()) < (3.0 * k + 3.0) * (3.0 * k + 2.0) {
-                1e-20
-            } else {
-                1e-31
-            };
-            if tf.hi.abs().max(tg.hi.abs()) <= tolerance * positive.min(negative) {
-                break;
+        // Four integrated Airy functions on |x| in [4,10], with the
+        // exponentially growing Bi integral scaled by exp(-2 x^(3/2)/3).
+        // Coefficients are Chebyshev transforms of 100-digit integrated Airy
+        // power series (DLMF 9.2.3–6), and agree with independently
+        // integrated Ai/Bi to near binary64 rounding precision on this range.
+        // Clenshaw avoids catastrophic cancellation of the power series.
+        const COEFFS: [[f64; 4]; 34] = [
+            [
+                3.3326398370307125e-01,
+                1.5200730818641550e-01,
+                6.4628735362638334e-01,
+                2.5139550176491672e-02,
+            ],
+            [
+                1.2820265031341421e-04,
+                -6.0491459027561832e-02,
+                7.3097515188191173e-02,
+                -3.7621521824169261e-03,
+            ],
+            [
+                -1.0132562861626041e-04,
+                1.4886046547908786e-02,
+                -4.1162805060328718e-02,
+                2.8209012416829077e-02,
+            ],
+            [
+                6.8623105155420839e-05,
+                -3.9939749456703874e-03,
+                8.1906317437035442e-02,
+                2.6696805139045009e-02,
+            ],
+            [
+                -3.9933247681255034e-05,
+                1.0867393825169053e-03,
+                -1.2490555703831252e-02,
+                -3.7847968626900250e-02,
+            ],
+            [
+                2.0014932290234021e-05,
+                -2.7519282424254081e-04,
+                3.0723094273336492e-02,
+                4.5542094311466406e-02,
+            ],
+            [
+                -8.6495727858876829e-06,
+                5.7070103782878918e-05,
+                6.0169915797103395e-02,
+                -6.3428816170924704e-02,
+            ],
+            [
+                3.2182129674550579e-06,
+                -6.5900761715842510e-06,
+                -5.7529480803948055e-02,
+                -5.6976867542247039e-02,
+            ],
+            [
+                -1.0247832415242827e-06,
+                -1.3864141601953530e-06,
+                -4.3253913668449225e-02,
+                3.6218285142685200e-02,
+            ],
+            [
+                2.7531501830867372e-07,
+                1.1890444843788344e-06,
+                1.7345185179181172e-02,
+                2.7432690750687095e-02,
+            ],
+            [
+                -6.0391455838781031e-08,
+                -4.4876216607786443e-07,
+                1.4864737070137881e-02,
+                -6.3228436249751939e-03,
+            ],
+            [
+                9.9139463366964151e-09,
+                1.1783592536945530e-07,
+                -1.5493563367177349e-03,
+                -6.9823872307305012e-03,
+            ],
+            [
+                -8.2579961224950372e-10,
+                -2.1936541776518648e-08,
+                -2.8698112225915809e-03,
+                4.6664477874343577e-05,
+            ],
+            [
+                -1.5135186393930311e-10,
+                2.2434277762936651e-09,
+                -2.1164149989514296e-04,
+                1.0366075976759987e-03,
+            ],
+            [
+                8.5759619358899001e-11,
+                2.2143416721692686e-10,
+                3.2851772006070346e-04,
+                1.5169469293273746e-04,
+            ],
+            [
+                -2.1578037540455271e-11,
+                -1.6904851624619906e-10,
+                7.2387179181271840e-05,
+                -9.0303627944687329e-05,
+            ],
+            [
+                3.4392551481118638e-12,
+                4.5398733277016200e-11,
+                -2.0840684687954347e-05,
+                -2.7915927164569888e-05,
+            ],
+            [
+                -2.5701892320866565e-13,
+                -7.9647606881464559e-12,
+                -9.2203476134444342e-06,
+                3.6601761984911080e-06,
+            ],
+            [
+                -4.0492076442787870e-14,
+                9.4629674524215734e-13,
+                2.8334537927701887e-07,
+                2.6691038636554224e-06,
+            ],
+            [
+                1.8814721073845278e-14,
+                -7.0346087583483495e-14,
+                6.8209939763023628e-07,
+                1.2013763922854392e-07,
+            ],
+            [
+                -3.6740643760947358e-15,
+                5.3252259465568895e-15,
+                7.6179917060449394e-08,
+                -1.5307726740611649e-07,
+            ],
+            [
+                3.9149849247498737e-16,
+                -1.7963888013727657e-15,
+                -2.9467197557466401e-08,
+                -2.7781753501574485e-08,
+            ],
+            [
+                3.0582970944172041e-18,
+                3.9956126920985044e-16,
+                -8.0317490390992656e-09,
+                4.5387567240468000e-09,
+            ],
+            [
+                -1.0563294438682582e-17,
+                4.7015370375654564e-17,
+                4.1840612291675003e-10,
+                1.9818724414476244e-09,
+            ],
+            [
+                2.2993732710273916e-18,
+                -6.2693661107531691e-17,
+                4.2717955541784346e-10,
+                4.4453571015424740e-11,
+            ],
+            [
+                -2.5810269266458706e-19,
+                2.3738306716623947e-17,
+                3.5965936101654674e-11,
+                -8.0420324559753959e-11,
+            ],
+            [
+                4.0034996245121061e-21,
+                -5.6443993373265206e-18,
+                -1.2903744740624377e-11,
+                -1.1834161743565488e-11,
+            ],
+            [
+                4.6138569548891125e-21,
+                8.5067963024134088e-19,
+                -2.9590982932198841e-12,
+                1.6259970879733146e-12,
+            ],
+            [
+                -1.0017310430447336e-21,
+                -3.2464655966783258e-20,
+                1.0829628074882925e-13,
+                6.2325908740151481e-13,
+            ],
+            [
+                1.0500943451941871e-22,
+                -2.6247738924160258e-20,
+                1.1377261089597310e-13,
+                1.8640343645688717e-14,
+            ],
+            [
+                -1.1625070797148195e-24,
+                9.8547113974670272e-21,
+                9.8208889604906734e-15,
+                -1.7949508172086455e-14,
+            ],
+            [
+                -1.6748075212530260e-24,
+                -2.0710278249648721e-21,
+                -2.3558427177612730e-15,
+                -2.6416526988048270e-15,
+            ],
+            [
+                3.2198486160609161e-25,
+                2.6278065415366579e-22,
+                -5.5396188807530017e-16,
+                2.2358317266849235e-16,
+            ],
+            [
+                -2.9108189960924366e-26,
+                -5.3174570756479951e-24,
+                1.8298392062621150e-18,
+                1.0037360201277648e-16,
+            ],
+        ];
+        let t = (x.abs() - 7.0) / 3.0;
+        let mut b0 = [0.0; 4];
+        let mut b1 = [0.0; 4];
+        for coefficients in COEFFS[1..].iter().rev() {
+            for j in 0..4 {
+                let next = (2.0 * t).mul_add(b0[j], coefficients[j] - b1[j]);
+                b1[j] = b0[j];
+                b0[j] = next;
             }
         }
-        let integral = |f: Dd, g: Dd| ((c0 * f - c1 * g).hi, (root3 * (c0 * f + c1 * g)).hi);
-        let positive = integral(f_even + f_odd, g_even + g_odd);
-        let negative = integral(f_odd - f_even, g_even - g_odd);
-        return [positive.0, positive.1, -negative.0, -negative.1];
+        let mut result = [0.0; 4];
+        for j in 0..4 {
+            result[j] = t.mul_add(b0[j], COEFFS[0][j] - b1[j]);
+        }
+        let exponent = (2.0 / 3.0) * x.abs() * x.abs().sqrt();
+        result[1] *= exponent.exp();
+        return if x < 0.0 {
+            [-result[2], -result[3], -result[0], -result[1]]
+        } else {
+            result
+        };
     }
     if x.abs() <= 16.0 {
         // Each Airy evaluation returns Ai and Bi together. Integrating the
@@ -1513,42 +1713,52 @@ pub(crate) fn itstruve0(x: f64) -> f64 {
         }
         square * sum / PI
     } else if x.abs() <= 24.0 {
-        // Integrate H_0's defining power series term by term. Double-double
-        // arithmetic preserves the cancellation near the transition without
-        // repeatedly evaluating H_0 at quadrature nodes.
-        use super::double_double::{Dd, DdFactor};
-        let square = Dd::from(x) * Dd::from(x);
-        let factor = DdFactor::new(square);
-        // Terms alternate in sign; summing even and odd k separately keeps
-        // each partial sum single-signed, so the cheaper same-sign addition
-        // is exact to double-double precision. One full addition combines them.
-        let mut term = Dd::from(1.0);
-        let (mut even, mut odd) = (term, Dd::from(0.0));
-        for n in 1..128u32 {
-            let k = f64::from(n);
-            // Integer denominators below 2^53 are exact in binary64.
-            term = factor
-                .mul(term)
-                .mul_small(-k)
-                .div_small((k + 1.0) * (2.0 * k + 1.0) * (2.0 * k + 1.0));
-            if n % 2 == 0 {
-                even = even.add_same_sign(term);
-            } else {
-                odd = odd.add_same_sign(term);
-            }
-            // Once the next ratio x²(k+1)/((k+2)(2k+3)²) is below one half,
-            // the tail is at most twice the current term, and terms below
-            // 1e-20 of the sum are beyond binary64 resolution.
-            let tolerance = if x * x < (k + 2.0) * (2.0 * k + 3.0) {
-                1e-20
-            } else {
-                1e-31
-            };
-            if term.hi.abs() <= tolerance * (even.hi + odd.hi).abs() {
-                break;
-            }
+        // Chebyshev interpolation of ∫_0^x H_0(t) dt on [10,24].
+        // Coefficients are from the independently evaluated 100-digit
+        // integrated defining series, x²/pi * Σ(-x²)^k k! /
+        // ((k+1)! ((2k+1)!!)^2), with the latter written by recurrence.
+        // A 30-term Clenshaw evaluation agrees with the defining series
+        // within 2 ulps on a dense grid, avoiding cancellation in binary64.
+        const COEFFS: [f64; 30] = [
+            2.64043445892250972e+00,
+            2.49257779660430639e-01,
+            8.40097285831148816e-02,
+            -4.47291815478741001e-02,
+            6.37105452831351754e-02,
+            -5.53446457174878309e-02,
+            -1.17171559111163739e-01,
+            4.91628886389838052e-02,
+            4.06014366605065569e-02,
+            -1.38077229284536557e-02,
+            -6.86794559981943921e-03,
+            2.06806073252160764e-03,
+            7.11813275090017006e-04,
+            -1.96884902295914126e-04,
+            -5.05757532668807042e-05,
+            1.30976606909748167e-05,
+            2.63852449695768356e-06,
+            -6.46932392889342221e-07,
+            -1.05890399083151552e-07,
+            2.47553628306170966e-08,
+            3.38147571122969529e-09,
+            -7.57380213532717924e-10,
+            -8.81591380397010012e-11,
+            1.89829318710235639e-11,
+            1.91480515312742977e-12,
+            -3.97407039435626742e-13,
+            -3.52198413143367208e-14,
+            7.05995285185939658e-15,
+            5.55988095185977544e-16,
+            -1.09271641296022452e-16,
+        ];
+        let y = (x.abs() - 17.0) / 7.0;
+        let (mut b0, mut b1) = (0.0, 0.0);
+        for &coefficient in COEFFS[1..].iter().rev() {
+            let next = (2.0 * y).mul_add(b0, coefficient - b1);
+            b1 = b0;
+            b0 = next;
         }
-        (square * (even + odd) / Dd::from(PI)).hi
+        y.mul_add(b0, COEFFS[0] - b1)
     } else if x.abs() <= 128.0 {
         quadrature(0.0, x.abs(), |t| {
             super::struve_h(0.0, t).unwrap_or(f64::NAN)
@@ -2181,6 +2391,33 @@ mod tests {
                 ],
             ),
             (
+                5.0,
+                [
+                    0.33328759030591787,
+                    321.47831857046515,
+                    0.7178822045478277,
+                    0.15873093858143864,
+                ],
+            ),
+            (
+                8.0,
+                [
+                    0.33333331724248355,
+                    440065.2580490418,
+                    0.7839825965711773,
+                    -0.014756446293227662,
+                ],
+            ),
+            (
+                10.0,
+                [
+                    0.33333333329916903,
+                    147809803.1074067,
+                    0.7656984031342129,
+                    0.015040424806140021,
+                ],
+            ),
+            (
                 10.0001,
                 [
                     0.33333333329918006,
@@ -2207,7 +2444,11 @@ mod tests {
         for (x, reference) in [
             (10.0, 2.5189576695087033),
             (10.0001, 2.5189695426010035),
+            (16.0, 2.74642640255143),
+            (20.0, 2.5484516922939573),
+            (23.9999, 2.8918158419558813),
             (24.0, 2.8918032068700988),
+            (24.0001, 2.8917905712427223),
         ] {
             let actual = itstruve0(x);
             assert!(

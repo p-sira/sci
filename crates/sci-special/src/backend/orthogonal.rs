@@ -44,6 +44,22 @@ fn hermite(n: i32, x: f64, scale: f64) -> f64 {
             .step_by(2)
             .fold(1.0, |value, k| -scale * k as f64 * value);
     }
+    if n == 10 && scale == 1.0 && x.abs() <= 3.0 {
+        // He_10(x) is even. Evaluating its degree-five polynomial in y=x²
+        // avoids nine dependent Clenshaw steps. Center the polynomial in
+        // three ranges to limit cancellation near the roots; retain Clenshaw
+        // outside this interval, where the large polynomial terms grow.
+        let y = x * x;
+        if y < 1.0 {
+            return ((((y - 45.0) * y + 630.0) * y - 3150.0) * y + 4725.0) * y - 945.0;
+        }
+        if y < 4.0 {
+            let z = y - 2.0;
+            return ((((z - 35.0) * z + 310.0) * z - 370.0) * z - 1675.0) * z + 257.0;
+        }
+        let z = y - 6.0;
+        return ((((z - 15.0) * z - 90.0) * z + 630.0) * z + 2565.0) * z - 459.0;
+    }
     let (mut previous, mut current) = (0.0, 1.0);
     for k in (2..=n).rev() {
         let next = scale * x * current - scale * k as f64 * previous;
@@ -533,7 +549,83 @@ mod chebyshev_fast_tests {
 
 #[cfg(test)]
 mod recurrence_fast_tests {
-    use super::{legendre, legendre_all};
+    use super::{hermite, legendre, legendre_all};
+
+    fn hermite_clenshaw(n: i32, x: f64, scale: f64) -> f64 {
+        let (mut previous, mut current) = (0.0, 1.0);
+        for k in (2..=n).rev() {
+            let next = scale * x * current - scale * k as f64 * previous;
+            previous = current;
+            current = next;
+        }
+        scale * x * current - scale * previous
+    }
+
+    #[test]
+    fn probabilists_hermite_ten_polynomial_matches_clenshaw_and_public_api() {
+        let mut xs = vec![
+            -3.01,
+            -3.0,
+            -3.0 + f64::EPSILON,
+            -2.999999999,
+            -2.000000001,
+            -2.0,
+            -1.999999999,
+            -1.000000001,
+            -1.0,
+            -0.999999999,
+            -0.0,
+            0.0,
+            0.999999999,
+            1.0,
+            1.000000001,
+            1.999999999,
+            2.0,
+            2.000000001,
+            2.999999999,
+            3.0,
+            3.01,
+        ];
+        // Every positive root in the optimized interval and its neighbors.
+        for root in [0.484935707515497, 1.4659890943911582, 2.484325841638954] {
+            for x in [root, root - 1e-12, root + 1e-12, root - 1e-9, root + 1e-9] {
+                xs.extend([x, -x]);
+            }
+        }
+        for i in 0..=20_000 {
+            xs.push(-3.0 + i as f64 * (6.0 / 20_000.0));
+        }
+        for x in xs {
+            let expected = hermite_clenshaw(10, x, 1.0);
+            let actual = hermite(10, x, 1.0);
+            let tolerance = 4e-12 * (1.0 + expected.abs());
+            assert!(
+                (actual - expected).abs() <= tolerance,
+                "He_10({x}): actual={actual}, expected={expected}"
+            );
+            assert_eq!(actual, crate::eval_hermitenorm(10, x));
+            assert_eq!(actual, hermite(10, -x, 1.0));
+        }
+        assert_eq!(crate::eval_hermitenorm(10, 0.0_f64), -945.0);
+        assert_eq!(crate::eval_hermitenorm(10, -0.0_f64), -945.0);
+        assert_eq!(crate::eval_hermitenorm(10, f64::INFINITY), f64::INFINITY);
+        assert_eq!(
+            crate::eval_hermitenorm(10, f64::NEG_INFINITY),
+            f64::INFINITY
+        );
+        assert!(crate::eval_hermitenorm(10, f64::NAN).is_nan());
+        assert!(crate::eval_hermitenorm(-10, 0.3_f64).is_nan());
+        let x = 0.3_f32;
+        let expected = hermite_clenshaw(10, f64::from(x), 1.0) as f32;
+        assert!((crate::eval_hermitenorm(10, x) - expected).abs() <= f32::EPSILON * expected.abs());
+        // Physicists' H_n and other probabilists' degrees remain on Clenshaw.
+        for n in [1, 2, 3, 9, 11, 20] {
+            for x in [-2.5, 0.2, 2.5] {
+                assert_eq!(hermite(n, x, 2.0), hermite_clenshaw(n, x, 2.0));
+                assert_eq!(hermite(n, x, 1.0), hermite_clenshaw(n, x, 1.0));
+            }
+        }
+    }
 
     fn legendre_difference(n: i32, x: f64) -> f64 {
         let (mut difference, mut value) = (x - 1.0, x);

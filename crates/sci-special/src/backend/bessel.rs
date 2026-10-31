@@ -91,6 +91,23 @@ pub(crate) fn airy_real<T: Float>(x: T, scaled: bool) -> Result<Airy<T>, StrErr>
             crate::backend::utils::finish(d, "airy: Undefined result.")?,
         ));
     }
+    // The Cephes real Airy kernels are accurate through this moderate positive
+    // interval. Apply the real exponential factors once to all four outputs;
+    // this avoids four separate AMOS complex-Bessel evaluations for airye(x).
+    // Beyond it, keep the natively scaled kernels to avoid cancellation and
+    // overflow in the unscaled Ai/Bi values.
+    if scaled && x <= 20.0 {
+        let (ai, aip, bi, bip) = crate::backend::cephes64::airy(x);
+        let zeta = (2.0 / 3.0) * x * x.sqrt();
+        let exp = zeta.exp();
+        let inv_exp = (-zeta).exp();
+        return Ok((
+            crate::backend::utils::finish(ai * exp, "airye: Undefined result.")?,
+            crate::backend::utils::finish(aip * exp, "airye: Undefined result.")?,
+            crate::backend::utils::finish(bi * inv_exp, "airye: Undefined result.")?,
+            crate::backend::utils::finish(bip * inv_exp, "airye: Undefined result.")?,
+        ));
+    }
     let (a, b, c, d) = airy_values(Complex64::new(x, 0.0), scaled)?;
     Ok((
         crate::backend::utils::finish(a.re, "airy: Undefined result.")?,
@@ -225,4 +242,156 @@ bessel_complex! {
     cyl_hankel_1e, hankel1_scaled, "Scaled Hankel function exp(-i*z)*H_v^(1)(z).";
     cyl_hankel_2, hankel2, "Hankel function H_v^(2)(z).";
     cyl_hankel_2e, hankel2_scaled, "Scaled Hankel function exp(i*z)*H_v^(2)(z).";
+}
+
+#[cfg(test)]
+mod airy_tests {
+    use super::airy_real;
+
+    #[test]
+    fn scaled_real_airy_matches_high_precision_at_kernel_transitions() {
+        // mpmath 1.4, 70-digit Ai, Ai', Bi, Bi' with exp(±2x^(3/2)/3).
+        let references: [(f64, [f64; 4]); 14] = [
+            (
+                0.0,
+                [
+                    0.3550280538878172,
+                    -0.2588194037928068,
+                    0.6149266274460007,
+                    0.44828835735382636,
+                ],
+            ),
+            (
+                0.5,
+                [
+                    0.29327715912994736,
+                    -0.28469116209194257,
+                    0.6748924111156302,
+                    0.4302209614637694,
+                ],
+            ),
+            (
+                1e-12,
+                [
+                    0.3550280538875584,
+                    -0.2588194037928068,
+                    0.614926627446449,
+                    0.4482883573538264,
+                ],
+            ),
+            (
+                2.09,
+                [
+                    0.22801909727853855,
+                    -0.35295656709963385,
+                    0.49299852416324267,
+                    0.6328540952588387,
+                ],
+            ),
+            (
+                2.1,
+                [
+                    0.22778653656129074,
+                    -0.3532931777439597,
+                    0.492202880303034,
+                    0.6340057173130742,
+                ],
+            ),
+            (
+                4.0,
+                [
+                    0.1970948026430665,
+                    -0.40568791157876305,
+                    0.4048094678892981,
+                    0.7817739306272438,
+                ],
+            ),
+            (
+                8.3203353,
+                [
+                    0.16539804113168443,
+                    -0.48193818011893056,
+                    0.33368593640111104,
+                    0.9522113574366132,
+                ],
+            ),
+            (
+                8.33,
+                [
+                    0.16535122268088864,
+                    -0.482073267100383,
+                    0.33358641257956495,
+                    0.9524985171426074,
+                ],
+            ),
+            (
+                12.0,
+                [
+                    0.15119256068463708,
+                    -0.5268505009124518,
+                    0.3039054138807329,
+                    1.0463290385080119,
+                ],
+            ),
+            (
+                19.999,
+                [
+                    0.1332420614603509,
+                    -0.5975158764105255,
+                    0.2671056874514886,
+                    1.1911403614781674,
+                ],
+            ),
+            (
+                20.0,
+                [
+                    0.13324040735181362,
+                    -0.5975232737163193,
+                    0.2671023248341684,
+                    1.1911553993720082,
+                ],
+            ),
+            (
+                20.0001,
+                [
+                    0.13324024194659163,
+                    -0.5975240134318844,
+                    0.26710198858411147,
+                    1.1911569031298575,
+                ],
+            ),
+            (
+                30.0,
+                [
+                    0.12045939663973669,
+                    -0.6607833325212036,
+                    0.24122445526882688,
+                    1.3192228350679096,
+                ],
+            ),
+            (
+                100.0,
+                [
+                    0.08919692093633041,
+                    -0.8921920625040315,
+                    0.1784310111708354,
+                    1.7838637549628087,
+                ],
+            ),
+        ];
+        for (x, expected) in references {
+            let (ai, aip, bi, bip) = airy_real(x, true).unwrap();
+            for (actual, reference) in [ai, aip, bi, bip].into_iter().zip(expected) {
+                assert!(
+                    (actual - reference).abs() <= 1e-12 * reference.abs(),
+                    "airye({x}) = {actual}, expected {reference}"
+                );
+            }
+            // W[Ai,Bi] = 1/pi; opposing exponential scalings cancel.
+            assert!(
+                (ai * bip - aip * bi - core::f64::consts::FRAC_1_PI).abs() < 1e-12,
+                "Wronskian at x={x}"
+            );
+        }
+    }
 }
