@@ -235,6 +235,16 @@ path = "tests/special_spheroidal_coverage.rs"
 required-features = ["special"]
 
 [[test]]
+name = "special_beta_zeta_coverage"
+path = "tests/special_beta_zeta_coverage.rs"
+required-features = ["special"]
+
+[[test]]
+name = "special_ellpj_coverage"
+path = "tests/special_ellpj_coverage.rs"
+required-features = ["special"]
+
+[[test]]
 name = "statistics"
 path = "tests/statistics.rs"
 required-features = ["complex", "fft", "stats"]

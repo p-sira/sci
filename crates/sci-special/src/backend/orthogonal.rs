@@ -852,3 +852,125 @@ mod recurrence_fast_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod exceptional_orthogonal_coverage_tests {
+    use super::{chebyshev, gegenbauer, hermite, jacobi, laguerre, legendre};
+
+    fn close(actual: f64, expected: f64, relative: f64) {
+        assert!(
+            (actual - expected).abs() <= relative * expected.abs().max(f64::MIN_POSITIVE),
+            "actual={actual:e}, independent reference={expected:e}"
+        );
+    }
+
+    #[test]
+    fn laguerre_generalized_parameter_and_normalization_overflow() {
+        // L_1^(a)(x)=a+1-x and
+        // L_2^(a)(x)=[x²-2(a+2)x+(a+1)(a+2)]/2.
+        let alpha = 2.5;
+        let x = 1.25;
+        close(laguerre(1, alpha, x), alpha + 1.0 - x, 4e-15);
+        let second = (x * x - 2.0 * (alpha + 2.0) * x + (alpha + 1.0) * (alpha + 2.0)) / 2.0;
+        close(laguerre(2, alpha, x), second, 4e-15);
+        close(
+            laguerre(2, alpha, 0.0),
+            (alpha + 1.0) * (alpha + 2.0) / 2.0,
+            4e-15,
+        );
+        assert_eq!(laguerre(-2, alpha, x), 0.0);
+
+        // The normalization binomial overflows, but L_2^(a)(a)=1-a/2
+        // stays representable. This must use the unnormalized recurrence
+        // rather than multiplying an infinite scale by a tiny polynomial.
+        let huge = 1e308_f64;
+        close(laguerre(2, huge, huge), -huge / 2.0, 8e-15);
+        assert!(laguerre(2, -1.0, x).is_nan());
+        assert!(laguerre(2, f64::INFINITY, x).is_nan());
+        assert!(laguerre(2, f64::NAN, x).is_nan());
+        assert!(super::eval_genlaguerre(2, -1.0_f64, x).is_err());
+        assert_eq!(super::eval_genlaguerre(-2, alpha, x).unwrap(), 0.0);
+    }
+
+    #[test]
+    fn gegenbauer_zero_parameter_truncation_and_endpoint_formulas() {
+        // At alpha=0 this backend follows xsf's all-zero convention,
+        // including the degree-zero case.
+        assert_eq!(gegenbauer(0, 0.0, 0.3), 0.0);
+        assert_eq!(gegenbauer(4, 0.0, 0.3), 0.0);
+        assert_eq!(gegenbauer(-3, 1.5, 0.3), 0.0);
+        assert_eq!(gegenbauer(0, 1.5, 0.3), 1.0);
+
+        // (1-2xt+t²)^2 generates C_n^(-2); its t^4 coefficient
+        // equals one and every coefficient with n>4 is zero.
+        close(gegenbauer(4, -2.0, 0.3), 1.0, 4e-15);
+        assert_eq!(gegenbauer(5, -2.0, 0.3), 0.0);
+        // C_2^(-1)(x)=1, whereas C_3^(-1)(x)=0.
+        assert_eq!(gegenbauer(2, -1.0, -0.4), 1.0);
+        assert_eq!(gegenbauer(3, -1.0, -0.4), 0.0);
+
+        // C_n^(a)(1)=(2a)_n/n!, and C_n^(a)(-1)=(-1)^n C_n^(a)(1).
+        let endpoint = (3.0 * 4.0 * 5.0) / 6.0;
+        assert_eq!(gegenbauer(3, 1.5, 1.0), endpoint);
+        assert_eq!(gegenbauer(3, 1.5, -1.0), -endpoint);
+        assert_eq!(gegenbauer(4, 1.5, -1.0), 15.0);
+        assert!(gegenbauer(2, f64::INFINITY, 0.3).is_nan());
+        assert_eq!(super::eval_gegenbauer(0, 0.0_f64, 0.3).unwrap(), 0.0);
+    }
+
+    #[test]
+    fn jacobi_constant_endpoints_reflection_and_infinite_arguments() {
+        let (alpha, beta) = (2.5, 0.5);
+        assert_eq!(jacobi(0, alpha, beta, 0.3), 1.0);
+        assert_eq!(jacobi(0, alpha, beta, f64::INFINITY), 1.0);
+        // P_2^(5/2,1/2)(x)=(42x²+24x-3)/8.
+        let x = 0.3_f64;
+        close(
+            jacobi(2, alpha, beta, x),
+            (42.0 * x * x + 24.0 * x - 3.0) / 8.0,
+            4e-14,
+        );
+        // P_2^(a,b)(1)=(a+1)(a+2)/2; left endpoint exchanges a,b.
+        let at_one = (alpha + 1.0) * (alpha + 2.0) / 2.0;
+        let at_minus_one = (beta + 1.0) * (beta + 2.0) / 2.0;
+        assert_eq!(jacobi(2, alpha, beta, 1.0), at_one);
+        assert_eq!(jacobi(2, alpha, beta, -1.0), at_minus_one);
+        assert_eq!(
+            jacobi(3, alpha, beta, -1.0),
+            -(beta + 1.0) * (beta + 2.0) * (beta + 3.0) / 6.0
+        );
+        // The leading coefficient is positive for alpha,beta > -1.
+        // Thus the high-degree polynomial diverges with degree parity.
+        assert_eq!(jacobi(2, alpha, beta, f64::INFINITY), f64::INFINITY);
+        assert_eq!(jacobi(3, alpha, beta, f64::NEG_INFINITY), f64::NEG_INFINITY);
+        assert!(jacobi(-1, alpha, beta, 0.3).is_nan());
+        assert!(jacobi(2, -1.0, beta, 0.3).is_nan());
+        assert!(jacobi(2, alpha, f64::INFINITY, 0.3).is_nan());
+    }
+
+    #[test]
+    fn chebyshev_and_legendre_overflow_and_tiny_arguments() {
+        // T_3(x)=4x^3-3x, U_3(x)=8x^3-4x.
+        assert_eq!(chebyshev(3, 2.0, false), 26.0);
+        assert_eq!(chebyshev(3, 2.0, true), 56.0);
+        // T_n(2)=cosh(n acosh(2)) and U_n(2)=sinh((n+1)
+        // acosh(2))/sinh(acosh(2)); for n=1200 both exceed f64::MAX.
+        assert!(1200.0_f64 * 2.0_f64.acosh() > f64::MAX.ln());
+        assert_eq!(chebyshev(1200, 2.0, false), f64::INFINITY);
+        assert_eq!(chebyshev(1201, -2.0, false), f64::NEG_INFINITY);
+        assert_eq!(chebyshev(1200, 2.0, true), f64::INFINITY);
+        // For x>1, P_n(x)>0 and grows exponentially in n.
+        assert_eq!(legendre(4096, 2.0), f64::INFINITY);
+        assert_eq!(legendre(4095, -2.0), f64::NEG_INFINITY);
+        // P_2(x)=(3x²-1)/2; P_3(x)=(5x³-3x)/2.
+        for x in [1e-300_f64, -1e-300] {
+            close(legendre(2, x), (3.0 * x * x - 1.0) / 2.0, 2e-15);
+            let p3 = (5.0 * x * x - 3.0) * x / 2.0;
+            close(legendre(3, x), p3, 2e-14);
+        }
+        assert_eq!(legendre(1, -0.0).to_bits(), (-0.0_f64).to_bits());
+        assert!(hermite(-2, 0.3, 1.0).is_nan());
+        // The private macro limits work before entering a recurrence.
+        assert!(super::eval_legendre(1_000_001, 0.3_f64).is_err());
+    }
+}

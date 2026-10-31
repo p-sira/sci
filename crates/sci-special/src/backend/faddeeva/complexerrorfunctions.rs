@@ -1545,4 +1545,106 @@ mod tests {
             assert!(relative_error_im < tolerance);
         }
     }
+
+    fn assert_w_reference(z: Complex64, expected: Complex64, requested_relerr: f64) -> f64 {
+        let actual = w_with_relerror(z, requested_relerr);
+        // Every reference component below is nonzero. A component-wise
+        // relative check keeps the small imaginary values near the real axis
+        // meaningful instead of hiding them in a complex norm.
+        let error_re = relerr(actual.re, expected.re);
+        let error_im = relerr(actual.im, expected.im);
+        let error = error_re.max(error_im);
+        let tolerance = 0.5 * requested_relerr + 3.0e-14;
+        assert!(
+            error_re <= tolerance && error_im <= tolerance,
+            "w({z:?}, relerr={requested_relerr:e}) = {actual:?}, expected {expected:?}; component errors=({error_re:e}, {error_im:e}), tolerance={tolerance:e}"
+        );
+        error
+    }
+
+    #[test]
+    fn test_w_nondefault_relerr_uses_both_summation_regions() {
+        // Independent 160-digit Decimal Taylor references, generated from
+        // w(0)=1, w'(0)=2i/sqrt(pi), and
+        // (n+1)c[n+1] = -2c[n-1]. Negative-imaginary references use
+        // w(z)=2 exp(-z^2)-w(-z), with -z in the upper half-plane.
+        //
+        // |Re(z)| < 5e-4 exercises the joint sum4/sum5 small-x series;
+        // |Re(z)| > 5e-4 exercises the separate sum4/sum5 series. Positive
+        // and negative real parts check the signed imaginary component.
+        let references = [
+            (
+                Complex64::new(0.0004, 0.25),
+                Complex64::new(0.7703464542037910, 2.9728233181703642e-4),
+            ),
+            (
+                Complex64::new(0.0004, -0.25),
+                Complex64::new(1.3586420804139567, 7.2308004441788882e-4),
+            ),
+            (
+                Complex64::new(-0.0004, -0.25),
+                Complex64::new(1.3586420804139567, -7.2308004441788882e-4),
+            ),
+            (
+                Complex64::new(0.7, -0.4),
+                Complex64::new(0.7259341870708355, 1.0952994552430184),
+            ),
+            (
+                Complex64::new(0.7, 0.4),
+                Complex64::new(0.4922894280872569, 0.33153472612943524),
+            ),
+        ];
+
+        for (z, expected) in references {
+            let mut previous_error = f64::INFINITY;
+            for requested_relerr in [1.0e-1, 1.0e-2, 1.0e-3, 1.0e-4, 1.0e-6, 1.0e-8] {
+                let error = assert_w_reference(z, expected, requested_relerr);
+                assert!(
+                    error < previous_error,
+                    "tightening relerr to {requested_relerr:e} did not improve w({z:?}): {error:e} >= {previous_error:e}"
+                );
+                previous_error = error;
+            }
+        }
+    }
+
+    #[test]
+    fn test_w_nondefault_relerr_negative_imaginary_exponential_region() {
+        // Independent 160-digit Decimal references. These exercise both
+        // sides of the y=-6 switch in exp(-x^2)*erfcx(y) versus
+        // 2*exp(y^2-x^2), while retaining nonzero real and imaginary parts.
+        let references = [
+            (
+                Complex64::new(2.5, -5.9),
+                Complex64::new(-1.7131960251314727e12, -4.7652371370506104e12),
+            ),
+            (
+                Complex64::new(2.5, -6.2),
+                Complex64::new(1.7469004552207450e14, -7.7159818884434281e13),
+            ),
+        ];
+
+        for (z, expected) in references {
+            for requested_relerr in [1.0e-1, 1.0e-2, 1.0e-3, 1.0e-4, 1.0e-6, 1.0e-8] {
+                assert_w_reference(z, expected, requested_relerr);
+            }
+        }
+    }
+
+    #[test]
+    fn test_w_nondefault_relerr_is_capped_and_nan_inputs_are_handled() {
+        let z = Complex64::new(0.7, -0.4);
+        assert_eq!(
+            w_with_relerror(z, 0.2),
+            w_with_relerror(z, 0.1),
+            "relerr above 0.1 is capped at 0.1"
+        );
+
+        // These non-axis NaN inputs reach the two explicit NaN checks in
+        // the algorithm-816 summation and x>=10 summation regions.
+        let small_x = w_with_relerror(Complex64::new(1.0, f64::NAN), 1.0e-3);
+        assert!(small_x.re.is_nan() && small_x.im.is_nan());
+        let large_x = w_with_relerror(Complex64::new(10.0, f64::NAN), 1.0e-3);
+        assert!(large_x.re.is_nan() && large_x.im.is_nan());
+    }
 }

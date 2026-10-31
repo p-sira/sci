@@ -244,3 +244,108 @@ real_kernel! {
 /// Inverse Kolmogorov survival probability, for 0 <= p <= 1.
     kolmogi(p) { inverse(p,false)? }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{logarithms, series, series_ratio, tail};
+    use core::f64::consts::PI;
+
+    fn close(actual: f64, expected: f64, label: &str) {
+        let tolerance = 3e-13 * expected.abs().max(1e-300);
+        assert!(
+            (actual - expected).abs() <= tolerance,
+            "{label}: actual {actual}, expected {expected}, tolerance {tolerance}"
+        );
+    }
+
+    // Independent theta and alternating Gaussian representations of the
+    // Kolmogorov limiting law, evaluated term-by-term rather than through
+    // the recurrence ratios used by the production series.
+    fn reference(x: f64) -> (f64, f64) {
+        if x <= 0.82 {
+            let mut cdf = 0.0;
+            let mut pdf = 0.0;
+            for k in 1..=64 {
+                let odd = (2 * k - 1) as f64;
+                let exponent = -odd * odd * PI * PI / (8.0 * x * x);
+                let term = exponent.exp();
+                cdf += term;
+                pdf += (-2.0 * exponent - 1.0) * term;
+            }
+            let prefactor = (2.0 * PI).sqrt() / x;
+            (prefactor * cdf, prefactor * pdf / x)
+        } else {
+            let mut sf = 0.0;
+            let mut pdf = 0.0;
+            for k in 1..=64 {
+                let parity = if k % 2 == 0 { -1.0 } else { 1.0 };
+                let term = (-2.0 * (k * k) as f64 * x * x).exp();
+                sf += parity * term;
+                pdf += parity * (k * k) as f64 * term;
+            }
+            (2.0 * sf, 8.0 * x * pdf)
+        }
+    }
+
+    #[test]
+    fn private_log_series_matches_independent_distribution_and_density() {
+        for x in [0.25, 0.4, 0.7, 0.819, 0.82, 0.821, 1.0, 1.5, 2.0, 3.0] {
+            let (tail_probability, pdf) = reference(x);
+            let (log_tail, log_pdf) = series(x);
+            close(log_tail, tail_probability.ln(), "series log probability");
+            close(log_pdf, pdf.ln(), "series log density");
+            let (ratio_tail, hazard) = series_ratio(x);
+            close(ratio_tail, log_tail, "log probability / hazard path");
+            close(hazard, pdf / tail_probability, "pdf / tail ratio");
+
+            let (logcdf, logsf, logarithmic_pdf) = logarithms(x);
+            close(logarithmic_pdf, log_pdf, "logarithmic density");
+            if x <= 0.82 {
+                close(logcdf, log_tail, "logarithmic lower tail");
+                close(logsf, (-tail_probability).ln_1p(), "logarithmic survival");
+            } else {
+                close(logsf, log_tail, "logarithmic upper tail");
+                close(
+                    logcdf,
+                    (-tail_probability).ln_1p(),
+                    "logarithmic cumulative",
+                );
+            }
+            for lower in [false, true] {
+                let (log_probability, ratio) = tail(x, lower);
+                let expected = if lower { logcdf } else { logsf };
+                close(log_probability, expected, "requested log tail");
+                close(ratio, pdf / expected.exp(), "requested density / tail");
+            }
+        }
+    }
+
+    #[test]
+    fn private_log_tails_keep_extreme_limits_without_spurious_probabilities() {
+        for x in [-1.0, 0.0, 0.005] {
+            let (cdf, sf, density) = logarithms(x);
+            assert_eq!(cdf, f64::NEG_INFINITY);
+            assert_eq!(sf, 0.0);
+            assert_eq!(density, f64::NEG_INFINITY);
+            let (log_lower, _) = tail(x, true);
+            let (log_upper, _) = tail(x, false);
+            assert_eq!(log_lower, f64::NEG_INFINITY);
+            assert_eq!(log_upper, 0.0);
+        }
+        for x in [f64::INFINITY, f64::MAX] {
+            let (cdf, sf, density) = logarithms(x);
+            assert_eq!(cdf, 0.0);
+            assert_eq!(sf, f64::NEG_INFINITY);
+            assert_eq!(density, f64::NEG_INFINITY);
+        }
+        // At x=19, survival itself is subnormal, but its logarithm and
+        // hazard have precise leading-term analytical expressions.
+        let x = 19.0;
+        let (log_tail, log_pdf) = series(x);
+        let a = -2.0 * x * x;
+        close(log_tail, (2.0_f64).ln() + a, "subnormal tail logarithm");
+        close(log_pdf, (8.0 * x).ln() + a, "subnormal density logarithm");
+        let (_, hazard) = series_ratio(x);
+        close(hazard, 4.0 * x, "subnormal hazard");
+    }
+}

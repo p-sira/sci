@@ -361,3 +361,149 @@ fn incbi_impl(aa: f64, bb: f64, yy0: f64, accelerate: bool) -> (f64, bool) {
         (x, converged)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{incbi, incbi_status};
+
+    #[track_caller]
+    fn close(actual: f64, expected: f64, atol: f64, rtol: f64) {
+        assert!(
+            actual.is_finite() && (actual - expected).abs() <= atol + rtol * expected.abs(),
+            "inverse beta: got {actual:.17e}, expected {expected:.17e}; atol={atol:e}, rtol={rtol:e}"
+        );
+    }
+
+    #[test]
+    fn endpoints_bypass_the_scalar_and_accelerated_iterations() {
+        for (a, b) in [(0.25, 4.0), (4.0, 0.25), (2.0, 5.0), (1000.0, 0.1)] {
+            for (p, expected) in [(-1.0, 0.0), (0.0, 0.0), (1.0, 1.0), (2.0, 1.0)] {
+                assert_eq!(incbi(a, b, p), expected);
+                assert_eq!(incbi_status(a, b, p), (expected, false));
+            }
+        }
+    }
+
+    #[test]
+    fn unit_shape_inverse_matches_closed_form_for_both_solvers() {
+        // I_x(a,1) = x^a and I_x(1,b) = 1-(1-x)^b.
+        // exp_m1/ln_1p preserve the reference's lower-tail precision.
+        for (a, b) in [
+            (1.0, 1.0),
+            (0.2, 1.0),
+            (1.0, 0.2),
+            (1.0, 2.0),
+            (2.0, 1.0),
+            (1.0, 25.0),
+            (25.0, 1.0),
+            (1.0, 200.0),
+            (200.0, 1.0),
+        ] {
+            for p in [1e-6_f64, 0.001, 0.05, 0.3, 0.7, 0.99] {
+                // For a<1, p^1/a can fall far below the accuracy that the
+                // legacy interval-halving branch promises. Near-zero tails
+                // are instead checked with meaningful relative bounds in
+                // the independent high-precision test below.
+                if a < 1.0 && p < 0.05 {
+                    continue;
+                }
+                let expected = if b == 1.0 {
+                    p.powf(1.0 / a)
+                } else {
+                    -((-p).ln_1p() / b).exp_m1()
+                };
+                close(incbi(a, b, p), expected, 2e-15, 2e-8);
+                close(incbi_status(a, b, p).0, expected, 2e-15, 2e-8);
+            }
+        }
+    }
+
+    // For positive integer parameters, I_x(a,b) is a binomial survival sum:
+    // P(Binomial(a+b-1,x) >= a). This is independent of incbet and of the
+    // inverse implementation's continued fractions and Halley iteration.
+    fn binomial_beta_cdf(a: usize, b: usize, x: f64) -> f64 {
+        let n = a + b - 1;
+        let mut binomial = 1.0;
+        let mut sum = 0.0;
+        for j in 0..=n {
+            if j >= a {
+                sum += binomial * x.powi(j as i32) * (1.0 - x).powi((n - j) as i32);
+            }
+            if j < n {
+                binomial *= (n - j) as f64 / (j + 1) as f64;
+            }
+        }
+        sum
+    }
+
+    #[test]
+    fn integer_shapes_invert_independent_binomial_probabilities() {
+        // Known quantiles are chosen first; probabilities are then computed
+        // by an independent finite binomial sum, not by incbet (a roundtrip).
+        // These span both reflection states and the normal/Newton seed path.
+        for (a, b, x) in [
+            (2, 2, 0.2),
+            (2, 2, 0.8),
+            (2, 7, 0.125),
+            (7, 2, 0.8),
+            (3, 8, 0.4),
+            (8, 3, 0.65),
+            (12, 16, 0.3),
+            (16, 12, 0.7),
+        ] {
+            let p = binomial_beta_cdf(a, b, x);
+            assert!((0.0..1.0).contains(&p), "interior probability {p}");
+            close(incbi(a as f64, b as f64, p), x, 2e-10, 2e-9);
+            close(incbi_status(a as f64, b as f64, p).0, x, 2e-10, 2e-9);
+        }
+    }
+
+    #[test]
+    fn high_precision_quantiles_cover_skewed_and_extreme_tails() {
+        // Independently obtained using 130-digit mpmath betainc and 500
+        // bisection steps, not by calling the inverse or round-tripping it.
+        // Small shape parameters test accelerated power-law seeds; the large
+        // shapes and upper probabilities test normal seeds and reflection.
+        for (a, b, p, expected, atol, rtol) in [
+            (0.2, 0.7, 0.1, 1.7256094111498253e-5, 1e-12, 1e-7),
+            (0.3, 0.2, 0.99, 0.9999999991062152, 4e-12, 0.0),
+            (2.5, 7.25, 1e-30, 2.0278309782721155e-13, 2e-17, 1e-5),
+            (64.0, 64.0, 1e-15, 0.18768972065269468, 2e-11, 1e-9),
+            (
+                64.0,
+                64.0,
+                0.999999999999999,
+                // The binary64 p has 1-p = 9.992007221626409e-16, NOT
+                // exactly 1e-15. Independently verified by 85-digit Decimal
+                // bisection of the Beta(64,64) / Binomial(127,x) tail sum.
+                0.8123132934419462,
+                2e-11,
+                1e-9,
+            ),
+            (200.0, 600.0, 1e-50, 0.07659967618091494, 2e-11, 1e-9),
+            (1000.0, 0.1, 1e-20, 0.9603421729760104, 2e-10, 1e-9),
+            (30.0, 3.0, 0.999, 0.9938703901674368, 2e-11, 1e-9),
+        ] {
+            close(incbi(a, b, p), expected, atol, rtol);
+            close(incbi_status(a, b, p).0, expected, atol, rtol);
+        }
+    }
+
+    #[test]
+    fn complement_quantiles_match_for_nonsymmetric_shapes() {
+        // I_x(a,b) = 1-I_(1-x)(b,a). Unlike an incbet roundtrip, this
+        // independently changes the shape ordering and reflection branch.
+        for (a, b, p) in [
+            (2.5, 7.25, 1e-8),
+            (2.5, 7.25, 0.8),
+            (7.25, 2.5, 0.9),
+            (0.7, 3.0, 0.2),
+            (3.0, 0.7, 0.8),
+            (30.0, 3.0, 0.99),
+        ] {
+            let x = incbi(a, b, p);
+            let reflected = incbi(b, a, 1.0 - p);
+            close(x + reflected, 1.0, 3e-10, 3e-10);
+        }
+    }
+}
