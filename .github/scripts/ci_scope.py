@@ -7,6 +7,7 @@ Cargo metadata supplies dependencies and target feature requirements.
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -229,7 +230,41 @@ def run(scope, mode):
             args += ["--all-targets"]
         invocation = command + args + ["--locked"] + suffix
         print("Running:", " ".join(invocation), flush=True)
-        subprocess.run(invocation, cwd=ROOT, check=True)
+        if mode == "test" and os.environ.get("GITHUB_ACTIONS") == "true":
+            # GitHub's public check annotations otherwise report only the
+            # wrapper's exit code, concealing the actual failing Rust tests.
+            # Preserve the complete streamed Cargo output and annotate exact
+            # failing names on each target OS without changing test selection.
+            failures = set()
+            with subprocess.Popen(
+                invocation,
+                cwd=ROOT,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                errors="replace",
+                bufsize=1,
+            ) as process:
+                assert process.stdout is not None
+                for line in process.stdout:
+                    print(line, end="", flush=True)
+                    uncolored = re.sub(r"\x1b\[[0-9;]*m", "", line)
+                    match = re.match(r"^test (\S+) \.\.\. FAILED\s*$", uncolored)
+                    if match:
+                        failures.add(match.group(1))
+                exit_code = process.wait()
+            if exit_code:
+                for name in sorted(failures):
+                    print(f"::error title=Rust test failed::{name}", flush=True)
+                if not failures:
+                    print(
+                        f"::error title=Cargo test failed::Exit code {exit_code} "
+                        f"from {' '.join(invocation)}",
+                        flush=True,
+                    )
+                raise subprocess.CalledProcessError(exit_code, invocation)
+        else:
+            subprocess.run(invocation, cwd=ROOT, check=True)
     if mode == "coverage":
         subprocess.run(
             [

@@ -126,3 +126,23 @@ pub(crate) fn lambertw(z: Complex64, k: i32) -> Result<Complex64, StrErr> {
     }
     Err("lambertw: Failed to converge in 100 iterations.")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn private_kernel_validates_inputs_and_real_minus_one_initializer() {
+        // The public Complex<T> facade validates finite values before dispatch.
+        // Exercise this independent backend guard as a defense in depth.
+        assert!(lambertw(Complex64::new(f64::NAN, 0.0), 0).is_err());
+        assert!(lambertw(Complex64::new(0.0, f64::INFINITY), 2).is_err());
+
+        // The public real branch uses a more precise dedicated implementation;
+        // the private complex initializer must nevertheless retain its cut bank.
+        let z = Complex64::new(-0.05, 0.0);
+        let guess = initial(z, -1);
+        assert!((guess.re - 0.05_f64.ln()).abs() < 2e-15);
+        assert_eq!(guess.im.to_bits(), 0.0_f64.to_bits());
+    }
+}

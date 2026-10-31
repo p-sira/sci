@@ -175,3 +175,22 @@ pub(crate) fn xlog1py(x: Complex64, y: Complex64) -> Result<Complex64, StrErr> {
     }
     finite(x * log_one_minus(-y))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn dilogarithm_reflection_and_unit_argument_match_independent_values() {
+        let at_one = dilog(Complex64::new(1.0, 0.0)).unwrap();
+        assert_eq!(at_one.re, ZETA_TWO);
+        assert_eq!(at_one.im, 0.0);
+
+        // SciPy 1.18.1: spence(0.25 - 0.1i) = Li_2(0.75 + 0.1i).
+        // This tests the private reflection path independently of the public
+        // Spence argument reduction and catches incorrect logarithm branches.
+        let got = dilog(Complex64::new(0.75, 0.1)).unwrap();
+        let want = Complex64::new(0.964_578_687_021_021, 0.182_669_341_597_261_73);
+        assert!((got - want).norm() <= 2e-14 * want.norm());
+    }
+}

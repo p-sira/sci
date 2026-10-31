@@ -302,3 +302,19 @@ pub fn fresnel<T: Float>(z: Complex<T>) -> Result<(Complex<T>, Complex<T>), StrE
     };
     Ok((finish(s)?, finish(c)?))
 }
+
+#[cfg(test)]
+mod expint_kernel_tests {
+    use super::*;
+
+    #[test]
+    fn complex_ei_asymptotic_keeps_analytic_continuation_constant() {
+        // Independent SciPy 1.18.1 reference. The public dispatcher uses a
+        // continued fraction for this region; exercise the asymptotic kernel
+        // directly to check the optimally truncated complex branch.
+        let z = Complex64::new(50.0, 10.0);
+        let result = ei_asymptotic(z).unwrap();
+        let expected = Complex64::new(-9.655_359_163_882_457e19, -3.786_540_621_339_325e19);
+        assert!((result - expected).norm() <= 2e-13 * expected.norm());
+    }
+}

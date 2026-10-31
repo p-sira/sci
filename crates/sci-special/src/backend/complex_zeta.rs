@@ -120,3 +120,16 @@ pub(crate) fn hurwitz_zeta(s: Complex64, q: Complex64) -> Result<Complex64, StrE
     }
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn kernel_rejects_nonfinite_inputs_without_facade_filtering() {
+        for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert!(riemann_zeta(Complex64::new(2.0, bad)).is_err());
+            assert!(hurwitz_zeta(Complex64::new(2.0, 0.1), Complex64::new(bad, 1.0),).is_err());
+        }
+    }
+}
