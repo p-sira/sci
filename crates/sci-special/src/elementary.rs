@@ -473,6 +473,7 @@ pub fn eval_chebyc(n: i32, x: f64) -> f64 {
 /// ## References
 ///
 /// - [SciPy eval_chebys](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_chebys.html).
+#[inline]
 pub fn eval_chebys(n: i32, x: f64) -> f64 {
     super::eval_chebyu(n, x / 2.0)
 }
@@ -515,6 +516,7 @@ pub fn eval_sh_chebyt(n: i32, x: f64) -> f64 {
 /// ## References
 ///
 /// - [SciPy eval_sh_chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_sh_chebyu.html).
+#[inline]
 pub fn eval_sh_chebyu(n: i32, x: f64) -> f64 {
     super::eval_chebyu(n, 2.0 * x - 1.0)
 }

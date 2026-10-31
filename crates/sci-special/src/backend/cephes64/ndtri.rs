@@ -136,6 +136,35 @@ const Q2: [f64; 8] = [
     6.79019408009981274425E-9,
 ];
 
+// The overwhelmingly common ndtri_exp tail (sqrt(-2*y) < 8) has fixed
+// coefficients. Evaluate its numerator/denominator directly instead of
+// passing a runtime degree and slices through the shared Cephes helpers.
+// Keep the exact multiply-then-add order of polevl/p1evl (no FMA).
+#[inline(always)]
+fn ndtri_exp_p1(z: f64) -> f64 {
+    let mut ans = P1[0];
+    ans = ans * z + P1[1];
+    ans = ans * z + P1[2];
+    ans = ans * z + P1[3];
+    ans = ans * z + P1[4];
+    ans = ans * z + P1[5];
+    ans = ans * z + P1[6];
+    ans = ans * z + P1[7];
+    ans * z + P1[8]
+}
+
+#[inline(always)]
+fn ndtri_exp_q1(z: f64) -> f64 {
+    let mut ans = z + Q1[0];
+    ans = ans * z + Q1[1];
+    ans = ans * z + Q1[2];
+    ans = ans * z + Q1[3];
+    ans = ans * z + Q1[4];
+    ans = ans * z + Q1[5];
+    ans = ans * z + Q1[6];
+    ans * z + Q1[7]
+}
+
 pub fn ndtri(y0: f64) -> f64 {
     if y0 == 0.0 {
         return -f64::INFINITY;
@@ -186,7 +215,7 @@ pub(crate) fn ndtri_exp(y: f64) -> f64 {
         let x0 = x - x.ln() / x;
         let z = 1.0 / x;
         let correction = if x < 8.0 {
-            z * polevl(z, &P1, 8) / p1evl(z, &Q1, 8)
+            z * ndtri_exp_p1(z) / ndtri_exp_q1(z)
         } else {
             z * polevl(z, &P2, 8) / p1evl(z, &Q2, 8)
         };
@@ -195,5 +224,18 @@ pub(crate) fn ndtri_exp(y: f64) -> f64 {
         -ndtri(-y.exp_m1())
     } else {
         ndtri(y.exp())
+    }
+}
+
+#[cfg(test)]
+mod ndtri_exp_horner_tests {
+    use super::*;
+
+    #[test]
+    fn local_tail_horner_preserves_cephes_polynomial_order() {
+        for z in [0.125, 0.14, 0.2, 0.3, 0.4, 0.5, 0.75, 1.0] {
+            assert_eq!(ndtri_exp_p1(z).to_bits(), polevl(z, &P1, 8).to_bits());
+            assert_eq!(ndtri_exp_q1(z).to_bits(), p1evl(z, &Q1, 8).to_bits());
+        }
     }
 }
