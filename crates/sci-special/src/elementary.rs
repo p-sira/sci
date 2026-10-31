@@ -905,10 +905,7 @@ pub fn pbdv_seq(v: f64, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
             "invalid parabolic cylinder sequence arguments",
         ));
     }
-    let base = v - v.trunc();
-    Ok((0..=(v.trunc().max(1.0) as usize))
-        .map(|i| super::pbdv(base + i as f64, x))
-        .unzip())
+    Ok(crate::backend::legacy::pbdv_sequence(v, x))
 }
 
 /// Parabolic cylinder values and derivatives for orders frac(v) through frac(v)+max(trunc(v),1).

@@ -255,6 +255,51 @@ fn rust_kernel_recurrences_and_reflections() {
 }
 
 #[test]
+fn parabolic_cylinder_sequence_reuses_the_shared_recurrence() {
+    // The sequence must agree with the independently exposed scalar kernel,
+    // including the negative-order convention. The identities below also
+    // check the normalization and derivatives without using either sequence.
+    for v in [-3.5, -0.5, 0.0, 0.5, 2.5, 16.5] {
+        for x in [-2.0, 0.0, 1.5, 5.0] {
+            let (values, derivatives) = s::pbdv_seq(v, x).unwrap();
+            let n = v.trunc().max(1.0) as usize;
+            assert_eq!(values.len(), n + 1);
+            assert_eq!(derivatives.len(), n + 1);
+            let base = v - v.trunc();
+            for i in 0..=n {
+                let order = base + i as f64;
+                let (expected, expected_derivative) = s::pbdv(order, x);
+                finite_close(values[i], expected, 2e-12, 2e-11);
+                finite_close(derivatives[i], expected_derivative, 2e-12, 2e-11);
+                if i < n {
+                    finite_close(
+                        derivatives[i],
+                        0.5 * x * values[i] - values[i + 1],
+                        2e-12,
+                        2e-11,
+                    );
+                }
+            }
+        }
+    }
+    for x in [-2.0_f64, 0.0, 1.5, 5.0] {
+        let (values, derivatives) = s::pbdv_seq(16.0, x).unwrap();
+        let d0 = (-0.25 * x * x).exp();
+        finite_close(values[0], d0, 2e-14, 2e-14);
+        finite_close(values[1], x * d0, 2e-14, 2e-14);
+        finite_close(derivatives[0], -0.5 * x * d0, 2e-14, 2e-14);
+        for k in 1..16 {
+            finite_close(
+                values[k + 1],
+                x * values[k] - k as f64 * values[k - 1],
+                2e-12,
+                2e-11,
+            );
+        }
+    }
+}
+
+#[test]
 fn oblate_radial_pairs_preserve_the_defining_wronskian() {
     // DLMF 30.4: W(R^(1),R^(2)) = 1/[c*(1+x^2)]. This independent
     // identity checks values, derivatives, and normalization together,

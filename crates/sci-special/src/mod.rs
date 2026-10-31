@@ -241,6 +241,7 @@ pub fn beta(a: f64, b: f64) -> f64 {
 /// ## References
 ///
 /// - [NIST DLMF](https://dlmf.nist.gov/5.12).
+#[inline]
 pub fn betaln(a: f64, b: f64) -> f64 {
     if a.is_finite() && b.is_finite() && a > 0.0 && b > 0.0 {
         crate::backend::betaln(a, b).unwrap_or(f64::NAN)

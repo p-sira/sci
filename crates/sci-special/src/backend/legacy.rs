@@ -1110,6 +1110,32 @@ pub(crate) fn pbdn_sequence(n: usize, x: f64) -> (Vec<f64>, Vec<f64>) {
     (values, slopes)
 }
 
+/// Fractional-order D sequence from the shared cylinder recurrence.
+/// A single kernel evaluation computes all orders from `base` to `base+n`;
+/// repeated scalar evaluations otherwise recompute the same seed and prefix.
+pub(crate) fn pbdv_sequence(v: f64, x: f64) -> (Vec<f64>, Vec<f64>) {
+    let n = v.trunc().max(1.0) as usize;
+    let base = v - v.trunc();
+    // For negative orders the kernel enumerates D_base, D_(base-1), ...,
+    // not the increasing sequence requested by the public API.
+    if v < 0.0 {
+        return (0..=n).map(|i| pbdv(base + i as f64, x)).unzip();
+    }
+    let mut values = vec![0.0; n + 2];
+    let mut derivatives = vec![0.0; n + 2];
+    s::pbdv(
+        x,
+        base + n as f64,
+        &mut values,
+        &mut derivatives,
+        &mut [0.0],
+        &mut [0.0],
+    );
+    values.truncate(n + 1);
+    derivatives.truncate(n + 1);
+    (values, derivatives)
+}
+
 pub(crate) fn pbwa(a: f64, x: f64) -> (f64, f64) {
     if a.abs() > 5.0 || x.abs() > 5.0 || !a.is_finite() || !x.is_finite() {
         return (f64::NAN, f64::NAN);
@@ -1578,6 +1604,41 @@ pub(crate) fn sph_harm_y_all(n: usize, m: usize, theta: f64, phi: f64) -> Vec<Ve
 pub(crate) fn legendre_q_all(n: usize, x: f64) -> (Vec<f64>, Vec<f64>) {
     let mut values = vec![0.0; n + 1];
     let mut slopes = vec![0.0; n + 1];
+    // For short degree tables in the interior, evaluate the Q_n recurrence
+    // directly. The general associated-Q routine first initializes both
+    // arrays and then computes the m=0 values through several unused order
+    // branches. Reuse the two output vectors and a single denominator here.
+    //
+    // Keep the established routine for x=±0, near the branch endpoints and
+    // higher degrees to preserve its special-value and precision behavior.
+    if (1..=64).contains(&n) && x != 0.0 && x.abs() < 0.9 {
+        // k = 2..=64; precompute the two fixed recurrence ratios so the hot
+        // degree loop uses multiplications instead of a division per term.
+        const RATIOS: [(f64, f64); 63] = {
+            let mut ratios = [(0.0, 0.0); 63];
+            let mut i = 0;
+            while i < ratios.len() {
+                let k = (i + 2) as f64;
+                ratios[i] = ((2.0 * k - 1.0) / k, (k - 1.0) / k);
+                i += 1;
+            }
+            ratios
+        };
+        let reciprocal = 1.0 / ((1.0 - x) * (1.0 + x));
+        // Match the inexpensive logarithmic initializer of lqmns; atanh()
+        // may dispatch through a slower libm path on some targets.
+        values[0] = 0.5 * ((x + 1.0) / (x - 1.0)).abs().ln();
+        values[1] = x * values[0] - 1.0;
+        slopes[0] = reciprocal;
+        slopes[1] = (values[0] - x * values[1]) * reciprocal;
+        for (index, &(a, b)) in RATIOS[..n - 1].iter().enumerate() {
+            let degree = index + 2;
+            let next = a * x * values[degree - 1] - b * values[degree - 2];
+            values[degree] = next;
+            slopes[degree] = degree as f64 * (values[degree - 1] - x * next) * reciprocal;
+        }
+        return (values, slopes);
+    }
     if x.is_finite() {
         s::lqmns(
             0,
@@ -1729,106 +1790,78 @@ pub(crate) fn it2i0k0(x: f64) -> (f64, f64) {
         }
         0.125 * square * sum
     };
-    let second = {
-        // Shift the defining K tail: exp(-x) ∫ exp(-u) K0e(x+u)/(x+u) du.
-        // The old eight-term asymptotic loses ~2e-6 relatively at x=19.9;
-        // the small-x series also cancels before its x=12 transition.
-        // A 32-point Gaussian rule resolves the smooth shifted integrand on
-        // [0,48] near x=4. At larger x the remaining factor varies slowly
-        // enough for shorter Gauss-Laguerre rules (with exp(-u) in the weights).
-        // The nodes and their exp(-u) weights do not depend on x, so they
-        // are tabulated as (u, 24 w exp(-u)), sorted by u. The six nodes beyond
-        // u = 44 have weights below 1e-19 and K0e(x+u)/(x+u) only decreases,
-        // so together they change the sum by under 1e-19 relatively and are
-        // dropped; a unit test re-derives the table.
-        const NODES: [(f64, f64); 26] = [
-            (0.06566731561244232, 0.15774056799892153),
-            (0.34532372291355884, 0.2765310482031931),
-            (0.8457058658998466, 0.2615916500409001),
-            (1.562254177494248, 0.17246299683299984),
-            (2.48829226161475, 0.08538223504570523),
-            (3.6151772704183207, 0.03293922306990191),
-            (4.932388896769383, 0.010153654031119359),
-            (6.427629150233047, 0.002553288646578059),
-            (8.086937593674834, 0.0005339642208046494),
-            (9.894821826221705, 9.464933659751057e-5),
-            (11.834402185626494, 1.449782460042314e-5),
-            (13.887569372864753, 1.9573964074942813e-6),
-            (16.035153545228937, 2.3774039031616317e-7),
-            (18.25710330594871, 2.6525304499069184e-8),
-            (20.532672922012885, 2.777272208722698e-9),
-            (22.840616023494277, 2.7884665049272796e-10),
-            (25.159383976505723, 2.7437043088658582e-11),
-            (27.467327077987115, 2.7035625036831377e-12),
-            (29.74289669405129, 2.7254843297461865e-13),
-            (31.964846454771067, 2.870286460342419e-14),
-            (34.11243062713525, 3.2220564647021825e-15),
-            (36.1655978143735, 3.930056930103593e-16),
-            (38.1051781737783, 5.30292494105746e-17),
-            (39.91306240632517, 8.046402826858624e-18),
-            (41.572370849766955, 1.3929403727552428e-18),
-            (43.06761110323062, 2.784234374611805e-19),
-        ];
-        // For x >= 6 the 16-point rule differs from the defining integral
-        // by < 3e-13 relatively; 12 nodes suffice to 1e-12 for x >= 8,
-        // and eight nodes are within 1.4e-12 for x >= 15.
-        const LAGUERRE_16: [(f64, f64); 16] = [
-            (0.087649410478927756, 0.2061517149578049),
-            (0.46269632891508039, 0.33105785495087831),
-            (1.1410577748312265, 0.26579577764421441),
-            (2.1292836450983805, 0.13629693429637874),
-            (3.4370866338932067, 0.047328928694125631),
-            (5.0780186145497677, 0.011299900080339598),
-            (7.0703385350482337, 0.0018490709435263271),
-            (9.4383143363919384, 0.00020427191530828089),
-            (12.214223368866159, 1.4844586873981502e-05),
-            (15.441527368781617, 6.8283193308713307e-07),
-            (19.180156856753136, 1.8810248410797222e-08),
-            (23.515905693991908, 2.8623502429738969e-10),
-            (28.578729742882139, 2.1270790332241214e-12),
-            (34.583398702286622, 6.2979670025178797e-15),
-            (41.940452647688332, 5.0504737000356082e-18),
-            (51.701160339543321, 4.161462370372851e-22),
-        ];
-        const LAGUERRE_12: [(f64, f64); 12] = [
-            (0.11572211735802068, 0.2647313710554442),
-            (0.61175748451513068, 0.37775927587313751),
-            (1.5126102697764188, 0.24408201131987708),
-            (2.8337513377435073, 0.090449222211680808),
-            (4.5992276394183484, 0.020102381154634023),
-            (6.8445254531151773, 0.0026639735418653122),
-            (9.6213168424568671, 0.00020323159266299928),
-            (13.006054993306346, 8.3650558568198412e-6),
-            (17.116855187462253, 1.6684938765409072e-7),
-            (22.151090379397004, 1.3423910305149902e-9),
-            (28.487967250983999, 3.0616016350350716e-12),
-            (37.099121044466919, 8.1480774674260206e-16),
-        ];
-        const LAGUERRE_8: [(f64, f64); 8] = [
-            (0.17027963230510093, 0.36918858934163495),
-            (0.90370177679938002, 0.41878678081434467),
-            (2.2510866298661312, 0.17579498663717255),
-            (4.2667001702876588, 0.033343492261215794),
-            (7.0459054023934655, 0.0027945362352256834),
-            (10.758516010180996, 9.0765087733581389e-05),
-            (15.740678641278004, 8.4857467162725705e-07),
-            (22.863131736889265, 1.0480011748715153e-09),
-        ];
-        let nodes: &[(f64, f64)] = if x >= 15.0 {
-            &LAGUERRE_8
-        } else if x >= 8.0 {
-            &LAGUERRE_12
-        } else if x >= 6.0 {
-            &LAGUERRE_16
-        } else {
-            &NODES
-        };
-        let mut second = 0.0;
-        for &(u, weight) in nodes {
-            second += weight * c::k0e(x + u) / (x + u);
-        }
-        second * (-x).exp()
+    // The scaled K tail, H(x) = exp(x) * x^(3/2) * integral_x^inf K0(t)/t dt,
+    // is smooth in these variables. Chebyshev interpolation avoids 8-26
+    // independent 25-term K0e evaluations per call. The coefficients were
+    // formed by integrating the exponentially shifted K0e kernel with a
+    // 128-point Gauss-Legendre rule on [0, 48] and cosine-node interpolation.
+    // Against the defining integral, the relative discrepancy is below
+    // 5e-13 throughout the two intervals, including their shared endpoint;
+    // the quadrature tail beyond 48 is exponentially negligible.
+    const TAIL_4_TO_20: [f64; 30] = [
+        1.08149453318463951e+00,
+        1.06404120700074878e-01,
+        -3.33484655396161719e-02,
+        1.05675055860129964e-02,
+        -3.38232887722809137e-03,
+        1.09249365161849066e-03,
+        -3.55824511700227519e-04,
+        1.16777067548016575e-04,
+        -3.85929280831032200e-05,
+        1.28362792801558122e-05,
+        -4.29467611678576357e-06,
+        1.44471726971998984e-06,
+        -4.88447612504809061e-07,
+        1.65910964078364032e-07,
+        -5.65990551389579822e-08,
+        1.93860449619146857e-08,
+        -6.66494487748063095e-09,
+        2.29944597437044722e-09,
+        -7.95925244230962404e-10,
+        2.76345442825250619e-10,
+        -9.62261270665010241e-11,
+        3.35964071377740454e-11,
+        -1.17622948418253746e-11,
+        4.12563316842806687e-12,
+        -1.45310800429380521e-12,
+        5.11600021605810643e-13,
+        -1.83782618753032985e-13,
+        6.24333917897956806e-14,
+        -2.29538610341251115e-14,
+        5.52012139702166354e-15,
+    ];
+    const TAIL_20_TO_INF: [f64; 16] = [
+        1.20665583860878023e+00,
+        -4.53290024763691179e-02,
+        1.27891347997383109e-03,
+        -4.80235938443152044e-05,
+        2.22885246944914961e-06,
+        -1.22074026914775757e-07,
+        7.64871926905996702e-09,
+        -5.36277064422385763e-10,
+        4.13909462260164673e-11,
+        -3.47147310897355510e-12,
+        3.13582493305375465e-13,
+        -2.96013213940682363e-14,
+        1.37390099297363122e-15,
+        2.06779038336435406e-15,
+        8.84708972748171618e-16,
+        4.03670152859803011e-15,
+    ];
+    let (t, coefficients): (f64, &[f64]) = if x < 20.0 {
+        ((x - 12.0) * 0.125, &TAIL_4_TO_20)
+    } else {
+        (40.0 / x - 1.0, &TAIL_20_TO_INF)
     };
+    let two_t = 2.0 * t;
+    let (mut b0, mut b1) = (0.0, 0.0);
+    for &coefficient in coefficients[1..].iter().rev() {
+        let next = two_t * b0 + (coefficient - b1);
+        b1 = b0;
+        b0 = next;
+    }
+    let scaled_tail = t * b0 + (coefficients[0] - b1);
+    let second = scaled_tail * (-x).exp() / (x * x.sqrt());
     (first, second)
 }
 fn bessel_integrals(x: f64, kernel: fn(f64, &mut [f64], &mut [f64]), odd: bool) -> (f64, f64) {
@@ -2513,7 +2546,7 @@ mod tests {
     }
 
     #[test]
-    fn it2i0k0_tabulated_nodes_match_gauss_rule() {
+    fn it2i0k0_tail_matches_independent_gauss_rule() {
         let mut nodes = [(0.0, 0.0); 32];
         for (pair, &(z, weight)) in nodes
             .as_chunks_mut::<2>()
@@ -2526,9 +2559,9 @@ mod tests {
             }
         }
         nodes.sort_by(|a, b| a.0.total_cmp(&b.0));
-        let kept: Vec<_> = nodes.iter().copied().filter(|&(_, w)| w >= 1e-19).collect();
-        assert_eq!(kept.len(), 26);
-        for x in [4.0, 6.0, 12.5, 40.0] {
+        for x in [
+            4.0, 4.00001, 5.99999, 6.0, 7.99999, 8.0, 14.99999, 15.0, 19.99999, 20.0, 40.0, 100.0,
+        ] {
             let sum = |nodes: &[(f64, f64)]| -> f64 {
                 nodes
                     .iter()
@@ -2536,14 +2569,51 @@ mod tests {
                     .sum()
             };
             let full = sum(&nodes) * (-x).exp();
-            let shortened = it2i0k0(x).1;
+            let interpolated = it2i0k0(x).1;
             assert!(
-                ((shortened - full) / full).abs() < 5e-13,
-                "x={x}: shortened={shortened:e}, reference={full:e}"
+                ((interpolated - full) / full).abs() < 1e-12,
+                "x={x}: interpolated={interpolated:e}, independent quadrature={full:e}"
             );
-            if x < 6.0 {
-                assert_eq!(shortened, sum(&kept) * (-x).exp());
-            }
+        }
+    }
+
+    #[test]
+    fn it2i0k0_tail_matches_high_precision_defining_integral() {
+        // Independent 45-digit mpmath quadrature of ∫_x^∞ K0(t)/t dt,
+        // using mpmath.besselk (not Cephes k0e) and 16-point Gauss-Legendre
+        // integration on shifted intervals [0,4], [4,12], [12,32], [32,64].
+        // For points 1e-5 from an anchor, the corresponding direct K0/t
+        // integral over that short interval uses composite Simpson;
+        // the neglected remainder beyond 64 is < 1e-27 relative.
+        let cases = [
+            (3.99999, 2.1204502661632774e-3),
+            (4.0, 2.1204223667821441e-3),
+            (4.00001, 2.1203944677828463e-3),
+            (5.99999, 1.6996850000951825e-4),
+            (6.0, 1.6996642667271107e-4),
+            (6.00001, 1.6996435336175809e-4),
+            (7.99999, 1.5660321697170718e-5),
+            (8.0, 1.5660138607703697e-5),
+            (8.00001, 1.5659955520407652e-5),
+            (14.99999, 5.983667035091793e-9),
+            (15.0, 5.983601571155363e-9),
+            (15.00001, 5.983536107938692e-9),
+            (19.99999, 2.6790778782837200e-11),
+            (20.0, 2.6790491719403897e-11),
+            (20.00001, 2.6790204659055655e-11),
+            (40.0, 2.0242046145399134e-20),
+            (100.0, 4.5885214327746765e-47),
+            (700.0, 6.656866442254127e-309),
+        ];
+        for (x, expected) in cases {
+            let actual = it2i0k0(x).1;
+            // The x<4 case uses the unmodified legacy special-function
+            // kernel; the remaining cases use the new scaled interpolation.
+            let max_relative = if x < 4.0 { 5e-11 } else { 8e-13 };
+            assert!(
+                actual.is_finite() && (actual / expected - 1.0).abs() < max_relative,
+                "it2i0k0 tail at x={x}: actual={actual:e}, reference={expected:e}, rtol={max_relative:e}"
+            );
         }
     }
 
@@ -2711,5 +2781,97 @@ mod tests {
         assert_eq!(owens_t(2.0, -0.0).to_bits(), (-0.0_f64).to_bits());
         assert!(owens_t(f64::NAN, 2.0).is_nan());
         assert!(owens_t(1.0, f64::NAN).is_nan());
+    }
+
+    #[test]
+    fn legendre_q_short_interior_table_matches_independent_high_precision_values() {
+        // Independently evaluated with mpmath 1.4.1 at 70 decimal digits:
+        // legenq(n, 0, x, type=2), with its derivative obtained from mpmath's
+        // neighboring Legendre-Q values and the analytic derivative identity.
+        // Include both signs, low degrees, and the n=32 benchmark endpoint.
+        type ReferenceDegree = (usize, f64, f64);
+        let references: &[(f64, &[ReferenceDegree])] = &[
+            (
+                0.3,
+                &[
+                    (0, 0.3095196042031117, 1.098901098901099),
+                    (1, -0.9071441187390665, 0.6391899338734414),
+                    (2, -0.5629746555341358, -1.6225312573161006),
+                    (8, 0.22875767420043008, -3.314929565594577),
+                    (16, -0.3000491852831814, 1.656448471025743),
+                    (32, -0.10372428176230092, -6.823357061057721),
+                ],
+            ),
+            (
+                -0.7,
+                &[
+                    (0, -0.8673005276940532, 1.9607843137254901),
+                    (1, -0.39288963061416276, -2.2398495473018963),
+                    (2, 0.8461843759918975, 0.7821154218830019),
+                    (8, -0.16067491577070817, 5.862727358569286),
+                    (16, -0.08500596322385005, 8.265630257433847),
+                    (32, -0.01856818131185757, 11.8231467637495),
+                ],
+            ),
+        ];
+        for &(x, degrees) in references {
+            let (values, slopes) = legendre_q_all(32, x);
+            assert_eq!(values.len(), 33);
+            assert_eq!(slopes.len(), 33);
+            for &(degree, expected_value, expected_slope) in degrees {
+                for (actual, expected, part) in [
+                    (values[degree], expected_value, "value"),
+                    (slopes[degree], expected_slope, "derivative"),
+                ] {
+                    let tolerance = 2e-12 * expected.abs().max(1e-4);
+                    assert!(
+                        (actual - expected).abs() <= tolerance,
+                        "Q_{degree} {part} at x={x}: got={actual:.17e}, expected={expected:.17e}, tolerance={tolerance:.3e}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn legendre_q_optimized_table_preserves_special_and_exterior_domains() {
+        let (positive, positive_slopes) = legendre_q_all(8, 1.5);
+        let (negative, negative_slopes) = legendre_q_all(8, -1.5);
+        let expected_q0 = 0.5 * (5.0_f64).ln();
+        for (actual, expected, label) in [
+            (positive[0], expected_q0, "Q0(1.5)"),
+            (negative[0], -expected_q0, "Q0(-1.5)"),
+            (positive_slopes[0], -0.8, "Q0'(1.5)"),
+            (negative_slopes[0], -0.8, "Q0'(-1.5)"),
+        ] {
+            assert!(
+                (actual - expected).abs() <= 2e-14 * expected.abs(),
+                "{label}: actual={actual}, expected={expected}"
+            );
+        }
+        for degree in 0..=8 {
+            let phase = if degree % 2 == 0 { -1.0 } else { 1.0 };
+            let tolerance = 2e-13 * positive[degree].abs().max(1e-14);
+            assert!(
+                (negative[degree] - phase * positive[degree]).abs() <= tolerance,
+                "Q_{degree} parity at x=±1.5"
+            );
+            let tolerance = 2e-13 * positive_slopes[degree].abs().max(1e-14);
+            assert!(
+                (negative_slopes[degree] + phase * positive_slopes[degree]).abs() <= tolerance,
+                "Q_{degree} derivative parity at x=±1.5"
+            );
+        }
+        for x in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let (values, slopes) = legendre_q_all(8, x);
+            assert!(values.iter().all(|value| value.is_nan()), "Q_n at {x}");
+            assert!(slopes.iter().all(|value| value.is_nan()), "Q'_n at {x}");
+        }
+        // Existing pole convention: the backend returns 1e300 at both ±1.
+        for x in [-1.0, 1.0] {
+            let (values, slopes) = legendre_q_all(8, x);
+            assert!(values.iter().all(|&value| value == 1e300));
+            assert!(slopes.iter().all(|&value| value == 1e300));
+        }
     }
 }

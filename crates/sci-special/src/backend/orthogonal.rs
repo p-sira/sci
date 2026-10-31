@@ -249,6 +249,7 @@ fn legendre(n: i32, x: f64) -> f64 {
 
 /// P_0(x), ..., P_n(x) in one pass of the recurrence used by [`legendre`];
 /// each entry is bit-identical to the corresponding single-degree value.
+#[inline]
 pub(crate) fn legendre_all(n: usize, x: f64) -> Vec<f64> {
     let per_degree = |k: usize| {
         if x.is_nan() {
@@ -261,39 +262,37 @@ pub(crate) fn legendre_all(n: usize, x: f64) -> Vec<f64> {
     if x.is_nan() || a < 1e-5 || a == 1.0 || a.is_infinite() || n < 2 {
         return (0..=n).map(per_degree).collect();
     }
+    if a < 0.9 {
+        // Fill a fixed-length output slice instead of checking a Vec's spare
+        // capacity on every degree. The signed recurrence already has the
+        // required parity, so no per-degree sign correction is necessary.
+        let mut table = vec![0.0; n + 1];
+        table[0] = 1.0;
+        table[1] = x;
+        let (mut previous, mut value) = (1.0, x);
+        let table_steps = (n - 1).min(LEGENDRE_RECURRENCE_RATIOS.len());
+        for (slot, &(coefficient, prior_coefficient)) in table[2..table_steps + 2]
+            .iter_mut()
+            .zip(&LEGENDRE_RECURRENCE_RATIOS[..table_steps])
+        {
+            let next = coefficient * x * value - prior_coefficient * previous;
+            previous = value;
+            value = next;
+            *slot = value;
+        }
+        for (offset, slot) in table[table_steps + 2..].iter_mut().enumerate() {
+            let k = table_steps + 1 + offset;
+            let kf = k as f64;
+            let next = ((2.0 * kf + 1.0) * x * value - kf * previous) / (kf + 1.0);
+            previous = value;
+            value = next;
+            *slot = value;
+        }
+        return table;
+    }
     let mut out = Vec::with_capacity(n + 1);
     out.push(1.0);
     out.push(x);
-    if a < 0.9 {
-        let (mut previous, mut value) = (1.0, a);
-        let table_steps = (n - 1).min(LEGENDRE_RECURRENCE_RATIOS.len());
-        for (index, &(coefficient, prior_coefficient)) in
-            LEGENDRE_RECURRENCE_RATIOS[..table_steps].iter().enumerate()
-        {
-            let next = coefficient * a * value - prior_coefficient * previous;
-            previous = value;
-            value = next;
-            let degree = index + 2;
-            out.push(if x < 0.0 && degree % 2 != 0 {
-                -value
-            } else {
-                value
-            });
-        }
-        for k in (table_steps + 1)..n {
-            let kf = k as f64;
-            let next = ((2.0 * kf + 1.0) * a * value - kf * previous) / (kf + 1.0);
-            previous = value;
-            value = next;
-            let degree = k + 1;
-            out.push(if x < 0.0 && degree % 2 != 0 {
-                -value
-            } else {
-                value
-            });
-        }
-        return out;
-    }
     let (mut difference, mut value) = (a - 1.0, a);
     for k in 1..n {
         if !value.is_infinite() {

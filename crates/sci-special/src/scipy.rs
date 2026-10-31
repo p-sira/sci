@@ -198,6 +198,7 @@ pub fn ellipj(u: f64, m: f64) -> (f64, f64, f64, f64) {
 /// Domain or numerical backend errors return NaN. Iterations are bounded by
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+#[inline]
 pub fn binom<T: sci_core::Float>(n: T, k: T) -> T {
     crate::backend::binom(n, k).unwrap_or(T::nan())
 }

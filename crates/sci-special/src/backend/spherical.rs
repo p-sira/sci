@@ -229,9 +229,66 @@ macro_rules! spherical {
 }
 spherical! {
     sph_bessel_j,sph_bessel_j_jac,0,"Spherical Bessel j_n(x), for integer n >= 0.";
-    sph_bessel_y,sph_bessel_y_jac,1,"Spherical Bessel y_n(x), for integer n >= 0.";
     sph_bessel_i,sph_bessel_i_jac,2,"Modified spherical Bessel i_n(x), for integer n >= 0.";
     sph_bessel_k,sph_bessel_k_jac,3,"Modified spherical Bessel k_n(x) = sqrt(pi/(2x))*K_(n+1/2)(x), continued to negative real x by the spherical reflection identity.";
+}
+
+/// Spherical Bessel y_n(x), for integer n >= 0.
+pub fn sph_bessel_y<T: Float>(n: i32, x: T) -> Result<T, StrErr> {
+    let x = x.to_f64().ok_or("sph_bessel: Invalid argument.")?;
+    finish(real(n, x, 1)?, "sph_bessel: Undefined result.")
+}
+
+// Retain adjacent y values from one upward recurrence. The scalar derivative
+// identity y_n' = y_(n-1) - (n+1)y_n/x then needs only one sin_cos and one
+// recurrence, instead of calling the complete scalar kernel twice.
+// Return None if the recurrence overflows: the existing scalar fallback
+// preserves its exceptional-value and pole conventions.
+fn upward_y_neighbors(n: i32, x: f64) -> Option<(f64, f64)> {
+    let (sin, cos) = x.sin_cos();
+    let mut previous = -cos / x;
+    let mut current = (previous - sin) / x;
+    if !previous.is_finite() || !current.is_finite() {
+        return None;
+    }
+    for k in 1..n {
+        let next = (2.0 * k as f64 + 1.0) * current / x - previous;
+        if !next.is_finite() {
+            return None;
+        }
+        previous = current;
+        current = next;
+    }
+    Some((previous, current))
+}
+
+/// Derivative with respect to x of [`sph_bessel_y`].
+pub fn sph_bessel_y_jac<T: Float>(n: i32, x: T) -> Result<T, StrErr> {
+    let x = x.to_f64().ok_or("sph_bessel: Invalid argument.")?;
+    if n < 0 || x.is_nan() {
+        return Err("sph_bessel: Requires n >= 0 and a non-NaN argument.");
+    }
+    let value = if x == 0.0 {
+        f64::INFINITY
+    } else if n == 0 {
+        -real(1, x, 1)?
+    } else if x.is_finite() {
+        let xa = x.abs();
+        if let Some((previous, current)) = upward_y_neighbors(n, xa) {
+            let positive_derivative = previous - (n as f64 + 1.0) / xa * current;
+            // y_n(-x)=(-1)^(n+1)y_n(x), so y_n'(-x)=(-1)^n y_n'(x).
+            if x < 0.0 && n % 2 != 0 {
+                -positive_derivative
+            } else {
+                positive_derivative
+            }
+        } else {
+            real(n - 1, x, 1)? - (n as f64 + 1.0) / x * real(n, x, 1)?
+        }
+    } else {
+        real(n - 1, x, 1)? - (n as f64 + 1.0) / x * real(n, x, 1)?
+    };
+    finish(value, "sph_bessel: Undefined derivative.")
 }
 
 fn series_derivative(n: i32, x: f64, modified: bool) -> f64 {
@@ -260,4 +317,118 @@ fn series_derivative(n: i32, x: f64, modified: bool) -> f64 {
         }
     }
     f64::NAN
+}
+
+#[cfg(test)]
+mod spherical_y_recurrence_tests {
+    use super::*;
+
+    fn close(actual: f64, expected: f64, relative: f64, absolute: f64) {
+        assert!(
+            actual.is_finite() && (actual - expected).abs() <= relative * expected.abs() + absolute,
+            "actual={actual:.17e}, expected={expected:.17e}, relative={relative:e}, absolute={absolute:e}"
+        );
+    }
+
+    // Independent elementary expressions obtained by differentiating
+    // y_3(x) = (6/x²-15/x⁴)cos(x) + (1/x-15/x³)sin(x).
+    fn elementary_y3_and_derivative(x: f64) -> (f64, f64) {
+        let (sin, cos) = x.sin_cos();
+        let inverse = 1.0 / x;
+        let inverse2 = inverse * inverse;
+        let inverse3 = inverse2 * inverse;
+        let inverse4 = inverse2 * inverse2;
+        let inverse5 = inverse4 * inverse;
+        (
+            (6.0 * inverse2 - 15.0 * inverse4) * cos + (inverse - 15.0 * inverse3) * sin,
+            (inverse - 27.0 * inverse3 + 60.0 * inverse5) * cos
+                + (-7.0 * inverse2 + 60.0 * inverse4) * sin,
+        )
+    }
+
+    #[test]
+    fn y3_and_derivative_match_independent_analytic_form_on_exact_benchmark_grid() {
+        // The Divan benchmark invokes n=3 for both value and derivative at
+        // these 128 evenly spaced points. Check the actual input expression,
+        // not only an artificial random test distribution.
+        for i in 0..128 {
+            let x = 0.5 + (20.0 - 0.5) * i as f64 / 127.0;
+            let (expected_y3, expected_jac) = elementary_y3_and_derivative(x);
+            close(
+                sph_bessel_y::<f64>(3, x).unwrap(),
+                expected_y3,
+                2e-12,
+                2e-13,
+            );
+            close(
+                sph_bessel_y_jac::<f64>(3, x).unwrap(),
+                expected_jac,
+                2e-12,
+                2e-13,
+            );
+        }
+    }
+
+    #[test]
+    fn negative_arguments_parity_and_y0_closed_form_are_preserved() {
+        for x in [0.25_f64, 0.5, 1.0, 3.0, 10.0, 20.0] {
+            let (sin, cos) = x.sin_cos();
+            close(sph_bessel_y::<f64>(0, x).unwrap(), -cos / x, 1e-14, 1e-14);
+            close(
+                sph_bessel_y_jac::<f64>(0, x).unwrap(),
+                sin / x + cos / (x * x),
+                2e-14,
+                1e-14,
+            );
+            for n in [1, 2, 3, 4, 8] {
+                let positive = sph_bessel_y::<f64>(n, x).unwrap();
+                let negative = sph_bessel_y::<f64>(n, -x).unwrap();
+                let jac = sph_bessel_y_jac::<f64>(n, x).unwrap();
+                let negative_jac = sph_bessel_y_jac::<f64>(n, -x).unwrap();
+                let odd = n % 2 != 0;
+                close(
+                    negative,
+                    if odd { positive } else { -positive },
+                    5e-14,
+                    1e-14,
+                );
+                close(negative_jac, if odd { -jac } else { jac }, 5e-14, 1e-14);
+            }
+        }
+    }
+
+    #[test]
+    fn derivative_boundary_and_domain_contracts_match_existing_spherical_conventions() {
+        for x in [0.0_f64, -0.0] {
+            for n in [0, 1, 3, 4096] {
+                assert_eq!(sph_bessel_y_jac::<f64>(n, x).unwrap(), f64::INFINITY);
+            }
+        }
+        assert!(sph_bessel_y_jac::<f64>(-1, 1.0).is_err());
+        assert!(sph_bessel_y_jac::<f64>(2, f64::NAN).is_err());
+
+        // At large n and tiny x, upward recurrence overflows early. For
+        // this case and the infinite-argument limits, preserve the prior
+        // scalar formula, including an error for a NaN arithmetic result
+        // and signed zero/infinity when representable.
+        for (n, x) in [
+            (4096_i32, 0.5_f64),
+            (1, f64::INFINITY),
+            (2, f64::INFINITY),
+            (3, f64::NEG_INFINITY),
+        ] {
+            let old_expression =
+                real(n - 1, x, 1).unwrap() - (n as f64 + 1.0) / x * real(n, x, 1).unwrap();
+            let current = sph_bessel_y_jac::<f64>(n, x);
+            if old_expression.is_nan() {
+                assert!(current.is_err(), "n={n}, x={x}");
+            } else {
+                assert_eq!(
+                    current.unwrap().to_bits(),
+                    old_expression.to_bits(),
+                    "n={n}, x={x}"
+                );
+            }
+        }
+    }
 }

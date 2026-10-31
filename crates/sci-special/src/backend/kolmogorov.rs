@@ -155,7 +155,18 @@ fn inverse(mut p: f64, mut lower: bool) -> Result<f64, StrErr> {
     let target = p.ln();
     // Leading-term inverses of the two tail series start the iteration.
     let initial = if lower {
-        PI / (-8.0 * target).sqrt()
+        // The lower-tail leading term is
+        //   p = 4 sqrt(a/pi) exp(-a),  a = pi^2/(8 x^2).
+        // Hence a - ln(a)/2 = -ln(p) + ln(4/sqrt(pi)).  The old
+        // estimate a=-ln(p) ignored the 1/x prefactor, often starting
+        // above the 0.82 series transition and costing extra Newton steps.
+        // One scalar Newton correction at a=rhs greatly improves the seed;
+        // the safeguarded inverse iteration below remains authoritative.
+        // ln(4/sqrt(pi)), evaluated once at binary64 precision.
+        const LOG_SCALE: f64 = 0.813_929_418_195_190_5;
+        let rhs = -target + LOG_SCALE;
+        let a = rhs + (0.5 * rhs.ln()) / (1.0 - 0.5 / rhs);
+        PI / (8.0 * a).sqrt()
     } else {
         ((LN_2 - target) * 0.5).sqrt()
     };
@@ -347,5 +358,38 @@ mod tests {
         close(log_pdf, (8.0 * x).ln() + a, "subnormal density logarithm");
         let (_, hazard) = series_ratio(x);
         close(hazard, 4.0 * x, "subnormal hazard");
+    }
+
+    #[test]
+    fn inverse_matches_independent_series_on_exact_seeded_benchmark_inputs() {
+        // The 256 `kolmogi` values in benches/special_scipy.rs use seed 165.
+        // Verify the resulting quantile against independently evaluated
+        // Gaussian/theta series, not the inverse's recurrence-ratio kernel.
+        let mut state = 165_u64
+            .wrapping_mul(6_364_136_223_846_793_005)
+            .wrapping_add(1_442_695_040_888_963_407);
+        for _ in 0..256 {
+            state = state
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            let v = ((state >> 11) as f64 / (1_u64 << 53) as f64) * 2.0 - 1.0;
+            let p = 0.5 * (v + 1.0).clamp(1e-6, 2.0 - 1e-6);
+            let x = super::inverse(p, false).unwrap();
+            let (tail, _) = reference(x);
+            if x <= 0.82 {
+                // Use the CDF directly to avoid subtracting two nearly
+                // equal numbers in the upper survival tail.
+                close(tail, 1.0 - p, "inverse lower-tail reference");
+            } else {
+                close(tail, p, "inverse survival reference");
+            }
+        }
+        // Independent SciPy fixture; this exercises the unreflected upper
+        // survival branch in addition to the seeded comparisons above.
+        close(
+            super::inverse(0.3, false).unwrap(),
+            0.973_063_375_332_372_6,
+            "SciPy inverse quantile",
+        );
     }
 }

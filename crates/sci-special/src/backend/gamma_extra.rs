@@ -79,6 +79,13 @@ real_kernel! {
                     if num.abs() > 1e50 { num /= den; den = 1.0; }
                 }
                 num / den
+            } else if (1.0..=32.0).contains(&n) && k > 0.05 && n - k > 0.05 {
+                // Gamma arguments are all positive and <= 33 here: the
+                // numerator and denominator product are finite, nonzero,
+                // and no signed/pole handling or logarithm is needed.
+                // Near k=0 or k=n retain the general beta path.
+                cephes64::gamma(n + 1.0)
+                    / (cephes64::gamma(k + 1.0) * cephes64::gamma(n - k + 1.0))
             } else if n >= 1e10 * k && k > 0.0 { (-cephes64::lbeta(1.0 + n - k, 1.0 + k) - (n + 1.0).ln()).exp() }
             else if k > 1e8 * n.abs() {
                 let g = cephes64::gamma(1.0 + n);
@@ -200,7 +207,131 @@ real_kernel! {
 
 #[cfg(test)]
 mod tests {
-    use super::sign_gamma;
+    use super::{binom, sign_gamma};
+
+    fn assert_relative(actual: f64, expected: f64, relative_tolerance: f64) {
+        assert!(
+            actual.is_finite()
+                && (actual - expected).abs() <= relative_tolerance * expected.abs().max(1.0),
+            "binom: got {actual:.17e}, expected {expected:.17e}, rtol={relative_tolerance:e}"
+        );
+    }
+
+    #[test]
+    fn binom_bounded_fractional_arguments_match_exact_gamma_half_integer_values() {
+        // For half-integer arguments, the sqrt(pi) factors cancel exactly.
+        // Values below are independent rational evaluations of Gamma ratios.
+        for (n, k, expected) in [
+            (1.5, 0.5, 1.5),
+            (2.5, 0.5, 1.875),
+            (3.5, 0.5, 2.1875),
+            (4.5, 1.5, 6.5625),
+            (
+                10.0,
+                0.5,
+                2.0 * 4.0_f64.powi(10) / (std::f64::consts::PI * 184756.0),
+            ),
+        ] {
+            assert_relative(binom(n, k).unwrap(), expected, 6e-14);
+            assert_relative(binom(n, n - k).unwrap(), expected, 6e-14);
+        }
+    }
+
+    #[test]
+    fn binom_bounded_fractional_arguments_obey_recurrences_and_symmetry() {
+        for (n, k) in [
+            (1.2_f64, 0.3),
+            (2.7, 0.6),
+            (4.125, 1.25),
+            (12.5, 3.75),
+            (29.5, 12.25),
+        ] {
+            let value = binom(n, k).unwrap();
+            assert_relative(binom(n, n - k).unwrap(), value, 1e-12);
+            assert_relative(
+                binom(n, k + 1.0).unwrap(),
+                value * (n - k) / (k + 1.0),
+                1e-12,
+            );
+        }
+        // Existing signed and pole paths must remain untouched by the
+        // positive-argument fast path.
+        assert_relative(binom(0.5_f64, 2.0).unwrap(), -0.125, 2e-14);
+        assert_relative(binom(0.1_f64, 2.0).unwrap(), -0.045, 2e-14);
+        assert_relative(binom(30.0_f64, 15.0).unwrap(), 155117520.0, 2e-14);
+        assert_relative(binom(2.0_f64, 12.0).unwrap(), 0.0, 0.0);
+        assert!(binom(-3.0_f64, 2.0).is_err());
+    }
+
+    #[test]
+    fn binom_exact_seeded_benchmark_matches_original_beta_evaluation() {
+        // Reproduce benches/special_scipy.rs binom (256 pairs, seeds 8/9)
+        // and independently evaluate the former, general Cephes beta path.
+        // The benchmark inputs are generated outside its timed closure.
+        const MULTIPLIER: u64 = 6364136223846793005;
+        const INCREMENT: u64 = 1442695040888963407;
+        let unit_values = |seed: u64| {
+            let mut state = seed.wrapping_mul(MULTIPLIER).wrapping_add(INCREMENT);
+            (0..256).map(move |_| {
+                state = state.wrapping_mul(MULTIPLIER).wrapping_add(INCREMENT);
+                let v = ((state >> 11) as f64 / (1_u64 << 53) as f64) * 2.0 - 1.0;
+                0.5 * (v + 1.0).clamp(1e-6, 2.0 - 1e-6)
+            })
+        };
+        let mut fast_path_cases = 0;
+        for (n, fraction) in unit_values(8).map(|u| 30.0 * u).zip(unit_values(9)) {
+            let k = n * fraction;
+            if (1.0..=32.0).contains(&n) && k > 0.05 && n - k > 0.05 {
+                fast_path_cases += 1;
+            }
+            let original = 1.0 / (n + 1.0) / super::cephes64::beta(1.0 + n - k, 1.0 + k);
+            assert_relative(binom(n, k).unwrap(), original, 5e-13);
+        }
+        assert_eq!(fast_path_cases, 245);
+    }
+
+    #[test]
+    fn binom_seeded_cases_match_100_digit_gamma_references() {
+        // Independently computed with mpmath at 100 decimal digits, treating
+        // n and k as exact binary64 values and n-k at arbitrary precision.
+        // Indices are from the benchmark's fixed (seed 8, seed 9) sequence;
+        // the n<1 case also checks the retained general-beta fallback.
+        for (n, k, reference) in [
+            (
+                15.990223953834528,
+                10.321218532934989,
+                "6713.18982494697864623107385750211826870114555812464024624959410409239341446866887814",
+            ),
+            (
+                18.463499181702076,
+                3.095743195849104,
+                "1021.17259154394229533013294316947146555051393852909399628256408494735210698760707714",
+            ),
+            (
+                0.09935884396120476,
+                0.05067905159747982,
+                "1.00379197716347086154031807812627649896523765424537176430885407529346603267795366854",
+            ),
+            (
+                26.34572709026411,
+                4.406417431487581,
+                "29933.8479301254403024943219609438703156023254840901823550776501824382542107748611688",
+            ),
+            (
+                15.061315477248781,
+                4.232291738267407,
+                "1715.95907738636030818785699339486878050358299933238476706294387922196516307070950558",
+            ),
+            (
+                28.27617055736016,
+                12.430054578325967,
+                "39595701.864916808560415119087182910499797153602495802943786715250907119168336140177",
+            ),
+        ] {
+            let expected: f64 = reference.parse().unwrap();
+            assert_relative(binom(n, k).unwrap(), expected, 2e-13);
+        }
+    }
 
     #[test]
     fn sign_gamma_handles_negative_intervals_and_large_exact_parity() {
