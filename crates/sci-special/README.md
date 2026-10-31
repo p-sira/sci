@@ -2,20 +2,31 @@
 
 Special mathematical functions.
 
-Elliptic integrals and logsumexp/softmax reductions accept `T: sci_core::Float`; other special functions use `f64`.
+Elliptic integrals, 104 scalar and polynomial APIs, and stable reductions accept
+`T: sci_core::Float`. Other sequence and wave APIs currently use `f64`.
+Specialized kernels generally evaluate internally in binary64 and convert to
+the requested type.
 
 Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 
 Gamma, Bessel, elliptic, probability, polynomial, and combinatorial functions
 with floating-point scalars and shared Sci types. Specialized algorithms use private
-special, xsf, and ellip backends; elementary formulas use the standard library.
+pure Rust kernels and ellip backends; elementary formulas use the standard library.
 Use `value.is_finite()` to check scalar results for NaN and infinity.
-There is no broadcasting, general complex-input overloading, exact integer
+Complex gamma (including log-gamma, reciprocal gamma and digamma),
+error/Bessel/Hankel/Airy/Fresnel APIs are available under
+`complex` using shared generic complex values and errors.
+There is no broadcasting, implicit complex-input overloading, exact integer
 mode, or derivative-axis output for array functions. Polynomial constructors
 return descending coefficients. Read each function's documented real domain,
 output ordering, and bounded order/size limits.
 Scalar functions return documented IEEE values; fallible integrals and
 sequences return the shared `sci_special::Result`.
+
+Elliptic integrals use Ellip's notation: `ellipf(phi, m)` computes `F(phi, m)`,
+with radians and elliptic parameter `m = k²`; incomplete third-kind arguments
+are `(phi, n, m)`. Supported principal values are documented per function.
+SciPy is an independent reference; complete SciPy parity is not required.
 
 ## Examples
 
@@ -36,5 +47,6 @@ fn main() -> Result<(), sci_core::Error> {
 
 ## Acknowledgments
 
-We thank `ellip`, `nalgebra`, `num-complex`, `special`,
-and `xsf` for their specialized numerical algorithms.
+We thank `ellip`, `nalgebra`, `num-complex`, `complex-bessel`, and `lambert_w`
+for their specialized numerical algorithms. Third-party license notices are
+retained in `LICENSES`.

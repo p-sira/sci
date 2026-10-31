@@ -1235,7 +1235,7 @@ fn minimum_order(
     } else {
         (numerator / ratio.acosh()).ceil()
     };
-    if !n.is_finite() || n < 1. || n > 64. {
+    if !n.is_finite() || !(1. ..=64.).contains(&n) {
         return Err(Error::InvalidInput("required order outside 1..64"));
     }
     let cutoff = match family {

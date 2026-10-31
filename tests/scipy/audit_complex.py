@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 exports = set(
     re.findall(
-        r"^pub fn (\w+)\(",
+        r"^pub fn (\w+)(?:<[^>]*>)?\(",
         (ROOT / "crates/sci-complex/src/mod.rs").read_text(),
         re.MULTILINE,
     )

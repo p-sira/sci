@@ -2,6 +2,20 @@
 
 ## 0.3.0
 
+- Add generic complex erfcx, erfi and Dawson integrals using private Faddeeva
+  kernels, explicit series bounds, shared Sci errors and independent references.
+
+- Fix catastrophic real 1F1 cancellation in a bounded negative-argument region
+  using double-double Taylor continuation and scaled polynomial recurrences;
+  add independently precision-checked references and explicit remaining limits.
+
+- Add generic complex log-gamma, reciprocal gamma and digamma with shared errors,
+  signed branch-cut banks, overflow-resistant evaluation and independent fixtures.
+
+- Add eight generic scalar special functions and 19 shared-complex functions,
+  with bounded numerical work, independent precision fixtures and an explicit
+  native XSF capability audit. See function_coverages/SPECIAL_NATIVE_COVERAGE.md.
+
 - Add ellip-style generic floats to 142 numerical APIs, with native `f32`/`f64`
   arithmetic, generic shared containers defaulting to `f64`, independent reference
   fixtures, and documented remaining binary64 APIs. See MIGRATING.md and

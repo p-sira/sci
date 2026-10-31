@@ -22,5 +22,5 @@ sci-fft.workspace = true
 nalgebra.workspace = true
 num-complex.workspace = true
 pm-remez.workspace = true
-xsf.workspace = true
+complex-bessel.workspace = true
 rustfft.workspace = true

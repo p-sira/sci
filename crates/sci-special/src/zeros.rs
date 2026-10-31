@@ -102,7 +102,7 @@ fn airy_roots(nt: usize, component: usize) -> Result<Vec<f64>> {
 /// returns [`Error::NonFiniteEvaluation`], and failed bracketing or convergence
 /// returns [`Error::NumericalFailure`]. All iterations have finite work limits.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let zeros = sci_special::jn_zeros(2,3)?;
@@ -110,7 +110,7 @@ fn airy_roots(nt: usize, component: usize) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy jn_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jn_zeros.html).
 pub fn jn_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
@@ -129,7 +129,7 @@ pub fn jn_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 /// returns [`Error::NonFiniteEvaluation`], and failed bracketing or convergence
 /// returns [`Error::NumericalFailure`]. All iterations have finite work limits.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let zeros = sci_special::jnp_zeros(2,3)?;
@@ -137,7 +137,7 @@ pub fn jn_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy jnp_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jnp_zeros.html).
 pub fn jnp_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
@@ -156,7 +156,7 @@ pub fn jnp_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 /// returns [`Error::NonFiniteEvaluation`], and failed bracketing or convergence
 /// returns [`Error::NumericalFailure`]. All iterations have finite work limits.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let zeros = sci_special::yn_zeros(2,3)?;
@@ -164,7 +164,7 @@ pub fn jnp_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy yn_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.yn_zeros.html).
 pub fn yn_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
@@ -183,7 +183,7 @@ pub fn yn_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 /// returns [`Error::NonFiniteEvaluation`], and failed bracketing or convergence
 /// returns [`Error::NumericalFailure`]. All iterations have finite work limits.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let zeros = sci_special::ynp_zeros(2,3)?;
@@ -191,7 +191,7 @@ pub fn yn_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ynp_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ynp_zeros.html).
 pub fn ynp_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
@@ -210,7 +210,7 @@ pub fn ynp_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 /// returns [`Error::NonFiniteEvaluation`], and failed bracketing or convergence
 /// returns [`Error::NumericalFailure`]. All iterations have finite work limits.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let zeros = sci_special::jnyn_zeros(2,3)?;
@@ -218,7 +218,7 @@ pub fn ynp_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy jnyn_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jnyn_zeros.html).
 pub fn jnyn_zeros(n: u32, nt: usize) -> Result<[Vec<f64>; 4]> {
@@ -242,7 +242,7 @@ pub fn jnyn_zeros(n: u32, nt: usize) -> Result<[Vec<f64>; 4]> {
 /// returns [`Error::NonFiniteEvaluation`], and failed bracketing or convergence
 /// returns [`Error::NumericalFailure`]. All iterations have finite work limits.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let zeros = sci_special::y0_zeros(3)?;
@@ -250,7 +250,7 @@ pub fn jnyn_zeros(n: u32, nt: usize) -> Result<[Vec<f64>; 4]> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy y0_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.y0_zeros.html).
 pub fn y0_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -271,7 +271,7 @@ pub fn y0_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// returns [`Error::NonFiniteEvaluation`], and failed bracketing or convergence
 /// returns [`Error::NumericalFailure`]. All iterations have finite work limits.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let zeros = sci_special::y1_zeros(3)?;
@@ -279,7 +279,7 @@ pub fn y0_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy y1_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.y1_zeros.html).
 pub fn y1_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -300,7 +300,7 @@ pub fn y1_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// returns [`Error::NonFiniteEvaluation`], and failed bracketing or convergence
 /// returns [`Error::NumericalFailure`]. All iterations have finite work limits.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let zeros = sci_special::y1p_zeros(3)?;
@@ -308,7 +308,7 @@ pub fn y1_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy y1p_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.y1p_zeros.html).
 pub fn y1p_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
@@ -329,7 +329,7 @@ pub fn y1p_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// returns [`Error::NonFiniteEvaluation`], and failed bracketing or convergence
 /// returns [`Error::NumericalFailure`]. All iterations have finite work limits.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let zeros = sci_special::ai_zeros(3)?;
@@ -337,7 +337,7 @@ pub fn y1p_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ai_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ai_zeros.html).
 pub fn ai_zeros(nt: usize) -> Result<[Vec<f64>; 4]> {
@@ -360,7 +360,7 @@ pub fn ai_zeros(nt: usize) -> Result<[Vec<f64>; 4]> {
 /// returns [`Error::NonFiniteEvaluation`], and failed bracketing or convergence
 /// returns [`Error::NumericalFailure`]. All iterations have finite work limits.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let zeros = sci_special::bi_zeros(3)?;
@@ -368,7 +368,7 @@ pub fn ai_zeros(nt: usize) -> Result<[Vec<f64>; 4]> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy bi_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bi_zeros.html).
 pub fn bi_zeros(nt: usize) -> Result<[Vec<f64>; 4]> {
@@ -391,7 +391,7 @@ pub fn bi_zeros(nt: usize) -> Result<[Vec<f64>; 4]> {
 /// returns [`Error::NonFiniteEvaluation`], and failed bracketing or convergence
 /// returns [`Error::NumericalFailure`]. All iterations have finite work limits.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let zeros = sci_special::erf_zeros(3)?;
@@ -399,7 +399,7 @@ pub fn bi_zeros(nt: usize) -> Result<[Vec<f64>; 4]> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy erf_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.erf_zeros.html).
 pub fn erf_zeros(nt: usize) -> Result<Vec<Complex>> {
@@ -412,7 +412,7 @@ pub fn erf_zeros(nt: usize) -> Result<Vec<Complex>> {
         let mut z = num_complex::Complex64::new(u / 2.0 - correction, u / 2.0 + correction);
         let mut converged = false;
         for _ in 0..100 {
-            let f = xsf::erf(z);
+            let f = crate::backend::complex::erf(z).map_err(Error::NumericalFailure)?;
             let derivative = 2.0 / std::f64::consts::PI.sqrt() * (-z * z).exp();
             let step = f / derivative;
             z -= step;
@@ -446,7 +446,7 @@ pub fn erf_zeros(nt: usize) -> Result<Vec<Complex>> {
 /// returns [`Error::NonFiniteEvaluation`], and failed bracketing or convergence
 /// returns [`Error::NumericalFailure`]. All iterations have finite work limits.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
 /// let zeros = sci_special::jnjnp_zeros(8)?;
@@ -454,7 +454,7 @@ pub fn erf_zeros(nt: usize) -> Result<Vec<Complex>> {
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy jnjnp_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jnjnp_zeros.html).
 pub fn jnjnp_zeros(nt: usize) -> Result<[Vec<f64>; 4]> {

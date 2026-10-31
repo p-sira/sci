@@ -12,7 +12,7 @@ SciPy inventories supply numerical definitions rather than export requirements.
 | `stats::kstest` | Remove the two-sample-only forwarding alias. `ks_1samp` and `ks_2samp` make the supported input explicit without Python overload dispatch. |
 | `special::psi` | Remove the synonym of `digamma`; signature and implementation were identical. |
 | `special::assoc_laguerre` | Remove the argument-order wrapper; use `eval_genlaguerre(n, k, x)`. |
-| `special::ellipf` | Consolidate on `ellipkinc(phi, m)`, consistent with `ellipeinc` and the complete/incomplete naming family. Preserve the implementation and parameter convention `m=k²`. |
+| `special::ellipf` | Prefer Ellip’s `ellipf(phi, m)` notation for `F(phi, m)`; retain `ellipkinc` as a compatibility alias. Parameter convention remains `m=k²`. This supersedes the earlier consolidation on the SciPy name. |
 | `signal::choose_conv_method`, `ConvolutionMethod` | Remove the SciPy-calibrated timing model. Sci uses different kernels and work limits; numerical parity cannot validate a performance recommendation. Explicit direct, FFT, and overlap-add functions remain available. |
 | `signal::closest_STFT_dual_window` | Rename to `closest_stft_dual_window`; retain its numerical definition, signature, and independent fixtures. |
 

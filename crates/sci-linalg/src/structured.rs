@@ -172,7 +172,11 @@ pub fn circulant(c: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>
     size(n, n)?;
     crate::error::is_finite_slice(c)?;
     Ok((0..n)
-        .map(|i| (0..n).map(|j| c[(i + n - j) % n]).collect())
+        .map(|i| {
+            (0..n)
+                .map(|j| c[if i >= j { i - j } else { n + i - j }])
+                .collect()
+        })
         .collect())
 }
 /// Constructs the Hilbert matrix `H[i,j]=1/(i+j+1)`, using zero-based indices.

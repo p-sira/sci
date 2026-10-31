@@ -33,7 +33,7 @@ realfft = "3.5.0"
 special = { version = "0.14.2", default-features = false, features = ["std"] }
 statrs = { version = "0.19.1", default-features = false, features = ["std", "nalgebra"] }
 lapjv = "0.3.0"
-xsf = "0.6.0"
+complex-bessel = { version = "0.3.0", default-features = false, features = ["std"] }
 pm-remez = { version = "=0.3.5", default-features = false, features = ["nalgebra-backend"] }
 faer = { version = "0.24.4", default-features = false, features = ["std", "linalg"] }
 dyn-stack = "0.13.2"
@@ -205,6 +205,46 @@ path = "tests/special_properties.rs"
 required-features = ["linalg", "special"]
 
 [[test]]
+name = "special_associated_legendre_coverage"
+path = "tests/special_associated_legendre_coverage.rs"
+required-features = ["special"]
+
+[[test]]
+name = "special_legacy_integrals_coverage"
+path = "tests/special_legacy_integrals_coverage.rs"
+required-features = ["special"]
+
+[[test]]
+name = "special_bessel_coverage"
+path = "tests/special_bessel_coverage.rs"
+required-features = ["special"]
+
+[[test]]
+name = "special_distribution_coverage"
+path = "tests/special_distribution_coverage.rs"
+required-features = ["special"]
+
+[[test]]
+name = "special_faddeeva_coverage"
+path = "tests/special_faddeeva_coverage.rs"
+required-features = ["special", "complex"]
+
+[[test]]
+name = "special_spheroidal_coverage"
+path = "tests/special_spheroidal_coverage.rs"
+required-features = ["special"]
+
+[[test]]
+name = "special_beta_zeta_coverage"
+path = "tests/special_beta_zeta_coverage.rs"
+required-features = ["special"]
+
+[[test]]
+name = "special_ellpj_coverage"
+path = "tests/special_ellpj_coverage.rs"
+required-features = ["special"]
+
+[[test]]
 name = "statistics"
 path = "tests/statistics.rs"
 required-features = ["complex", "fft", "stats"]
@@ -367,3 +407,18 @@ required-features = ["stats", "special"]
 name = "generic_float"
 path = "tests/generic_float.rs"
 required-features = ["complex", "constants", "differentiate", "fft", "integrate", "interpolate", "special", "stats"]
+
+[[test]]
+name = "special_float"
+path = "tests/special_float.rs"
+required-features = ["special"]
+
+[[test]]
+name = "special_domains"
+path = "tests/special_domains.rs"
+required-features = ["special", "complex"]
+
+[[test]]
+name = "special_native"
+path = "tests/special_native.rs"
+required-features = ["special", "complex"]

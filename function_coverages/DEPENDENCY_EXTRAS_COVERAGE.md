@@ -40,8 +40,10 @@ functions (`cel`, `cel1`, `cel2`, `cel3`, `el1`, `el2`, `el3`), the additional
 Legendre integrals, `ellippiinc_bulirsch`, Jacobi zeta, and Heuman lambda.
 `ellipf` also has SciPy's `ellipkinc` alias; `ellipkm1` uses the Carlson identity.
 There are no missing stable Ellip numerical names. Unstable precision-control
-and unchecked backend APIs, test assertions, backend types, singularities,
-infinite inputs, and principal-value branches are excluded from this facade.
+and unchecked backend APIs, test assertions and backend types stay private.
+Finite-input/result restrictions and singularities are documented separately;
+supported real principal-value branches are available through the Ellip-style
+facade.
 
 The other dependencies provide existing SciPy operations or specialized backend
 interfaces: special/XSF special functions, RustFFT/RealFFT/RustDCT transforms,

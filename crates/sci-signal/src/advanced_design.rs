@@ -28,10 +28,19 @@ fn fact(n: usize) -> f64 {
 // exp(z) K_(n+1/2)(z), whose zeros are those of theta_n(z), avoiding
 // cancellation in high-order polynomial evaluation (as in SciPy besselap).
 fn refine_bessel_pole(n: usize, mut z: Complex64) -> Result<Complex64> {
+    if !z.re.is_finite() || !z.im.is_finite() || z == Complex64::new(0., 0.) {
+        return Err(Error::NonFiniteEvaluation);
+    }
+    let scaled_k = |order, argument| {
+        complex_bessel::besselk_scaled(order, argument)
+            .map_err(|_| Error::NumericalFailure("scaled Bessel K evaluation failed"))
+    };
     for _ in 0..16 {
-        let value = xsf::bessel_ke(n as f64 + 0.5, z);
-        let derivative =
-            value - 0.5 * (xsf::bessel_ke(n as f64 - 0.5, z) + xsf::bessel_ke(n as f64 + 1.5, z));
+        let order = n as f64 + 0.5;
+        let value = scaled_k(order, z)?;
+        // K_(nu+1) = K_(nu-1) + 2*nu*K_nu/z. The same recurrence
+        // holds for exp(z)*K, saving one complex Bessel evaluation.
+        let derivative = value * (1. - order / z) - scaled_k(order - 1., z)?;
         let step = value / derivative;
         if !step.re.is_finite() || !step.im.is_finite() {
             return Err(Error::NonFiniteEvaluation);

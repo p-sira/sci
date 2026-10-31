@@ -76,7 +76,7 @@ fn evaluate<T: fft::FftFloat + e::BulirschFloat>(
             "ellipe" => real([e::ellipe(x[0]).unwrap()]),
             "ellippi" => real([e::ellippi(x[0], x[1]).unwrap()]),
             "ellipd" => real([e::ellipd(x[0]).unwrap()]),
-            "ellipkinc" => real([e::ellipkinc(x[0], x[1]).unwrap()]),
+            "ellipf" => real([e::ellipf(x[0], x[1]).unwrap()]),
             "ellipeinc" => real([e::ellipeinc(x[0], x[1]).unwrap()]),
             "ellippiinc" => real([e::ellippiinc(x[0], x[1], x[2]).unwrap()]),
             "ellipdinc" => real([e::ellipdinc(x[0], x[1]).unwrap()]),
