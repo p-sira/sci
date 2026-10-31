@@ -85,3 +85,37 @@ fn lambertw_reports_singularities_and_invalid_inputs() {
         .is_err()
     );
 }
+
+#[test]
+fn branch_one_below_negative_cut_uses_puiseux_near_double_root() {
+    // Mac ARM and Windows MSVC exposed a nonconvergent Halley path for this
+    // exact float32 input. SciPy 1.18.1 evaluates the k=1 lower-cut value as
+    // -1.000109403208048 + 0.0002484450061818578i.
+    let z = Complex {
+        re: -0.36787945_f32,
+        im: -1e-8_f32,
+    };
+    let actual = lambertw(z, 1).unwrap();
+    assert!((f64::from(actual.re) + 1.000109403208048).abs() < 2e-6);
+    assert!((f64::from(actual.im) - 0.0002484450061818578).abs() < 5e-8);
+
+    let z = Complex {
+        re: -0.36787944117144233_f64,
+        im: -1e-12_f64,
+    };
+    let actual = lambertw(z, 1).unwrap();
+    assert!((actual.re + 1.00000164871204).abs() < 2e-9);
+    assert!((actual.im - 1.648732309854558e-6).abs() < 3e-9);
+
+    // The branch discontinuity matters: k=1 above the negative cut is not
+    // the same near-real solution; it remains on the next logarithmic sheet.
+    let above = lambertw(
+        Complex {
+            re: -0.36787945_f32,
+            im: 1e-8_f32,
+        },
+        1,
+    )
+    .unwrap();
+    assert!(above.im > 5.0);
+}

@@ -39,7 +39,9 @@ fn initial(z: Complex64, k: i32) -> Complex64 {
         } else {
             asymptotic(z, k)
         }
-    } else if k == -1 && z.im >= 0.0 && (z - NEG_INV_E).norm() < 0.3 {
+    } else if ((k == -1 && z.im >= 0.0) || (k == 1 && z.im < 0.0)) && (z - NEG_INV_E).norm() < 0.3 {
+        // The k=1 sheet approaching the negative cut from below shares the
+        // -1/e square-root point with k=-1 approaching it from above.
         branch_point(z, -1.0)
     } else if k == -1 && z.im == 0.0 && z.re < 0.0 && z.norm() <= -NEG_INV_E {
         Complex64::new((-z.re).ln(), 0.0)
@@ -83,7 +85,7 @@ pub(crate) fn lambertw(z: Complex64, k: i32) -> Result<Complex64, StrErr> {
         if k == 0 {
             return Ok(branch_point(z, 1.0));
         }
-        if k == -1 && z.im >= 0.0 {
+        if (k == -1 && z.im >= 0.0) || (k == 1 && z.im < 0.0) {
             return Ok(branch_point(z, -1.0));
         }
     }
