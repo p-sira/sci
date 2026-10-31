@@ -375,11 +375,11 @@ pub fn gammainc<T: sci_core::Float>(a: T, x: T) -> T {
 ///
 /// ## Numerical behavior
 ///
-/// Uses `lambert_w` 2.0.8's piecewise rational approximations and near-zero
-/// Taylor expansion. Evaluation uses binary64 and converts back to `T`.
-/// Within `1e-6` above the rounded `−1/e`, Sci retains a fifth-degree Puiseux
-/// expansion with a correction for the rounded branch point; upstream still
-/// loses accuracy there. No Sci-specific near-zero Taylor correction is needed.
+/// Uses `lambert_w` 2.1.2's piecewise rational approximations and near-zero
+/// Taylor expansion. Evaluation uses binary64 and converts back to `T`. The
+/// dependency corrects the rounded `−1/e` offset near the branch point; Sci
+/// maps that rounded endpoint to exactly `−1` to preserve the real-domain
+/// endpoint convention. No Sci-specific near-zero Taylor correction is needed.
 /// The backend targets approximately 50 bits of accuracy; conditioning worsens
 /// near `−1/e`, where small input changes cause large changes in the result.
 /// There is no configurable tolerance or iteration budget.
@@ -416,13 +416,13 @@ pub fn lambertw<T: sci_core::Float>(x: T) -> T {
 ///
 /// ## Numerical behavior
 ///
-/// Uses `lambert_w` 2.0.8 in binary64 and converts back to `T`. The backend
-/// targets approximately 50 bits of accuracy. The inverse is ill-conditioned
-/// near `−1/e`; relative accuracy is also limited by the representation of tiny
-/// negative inputs. Within `1e-6` above the rounded `−1/e`, Sci retains a
-/// fifth-degree Puiseux expansion with a correction for the rounded branch point;
-/// independent 90-digit inverse references verify this region. There is no
-/// configurable tolerance or iteration control.
+/// Uses `lambert_w` 2.1.2 in binary64 and converts back to `T`. The backend
+/// targets approximately 50 bits of accuracy and corrects the rounded `−1/e`
+/// offset near the branch point. Sci maps that rounded endpoint to exactly
+/// `−1` to preserve the real-domain endpoint convention. The inverse is
+/// ill-conditioned near `−1/e`; relative accuracy is also limited by the
+/// representation of tiny negative inputs. There is no configurable tolerance
+/// or iteration control.
 ///
 /// ## Examples
 ///
@@ -435,7 +435,7 @@ pub fn lambertw<T: sci_core::Float>(x: T) -> T {
 /// ## References
 ///
 /// - [NIST DLMF, Lambert W](https://dlmf.nist.gov/4.13).
-/// - [lambert_w 2.0.8](https://docs.rs/lambert_w/2.0.8/lambert_w/).
+/// - [lambert_w 2.1.2](https://docs.rs/lambert_w/2.1.2/lambert_w/).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn lambertwm1<T: sci_core::Float>(x: T) -> T {
     crate::backend::lambertwm1(x).unwrap_or(T::nan())

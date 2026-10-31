@@ -82,6 +82,26 @@ fn lambert_real_branches_preserve_domains_and_inverse_identity() {
     let branch_point = -1.0 / std::f64::consts::E;
     assert_eq!(s::lambertw(branch_point), -1.0);
     assert_eq!(s::lambertwm1(branch_point), -1.0);
+    // lambert_w 2.1 corrects the rounded branch-point offset internally.
+    // The first representable input above -1/e must produce distinct roots
+    // on either side of -1 rather than losing the square-root separation.
+    let nearest_interior = f64::from_bits(branch_point.to_bits() - 1);
+    let upper = s::lambertw(nearest_interior);
+    let lower = s::lambertwm1(nearest_interior);
+    assert!(upper > -1.0);
+    assert!(lower < -1.0);
+    finite_close(
+        upper * upper.exp(),
+        nearest_interior,
+        0.0,
+        8.0 * f64::EPSILON,
+    );
+    finite_close(
+        lower * lower.exp(),
+        nearest_interior,
+        0.0,
+        8.0 * f64::EPSILON,
+    );
     for x in [f64::NAN, f64::NEG_INFINITY, -0.5] {
         assert!(s::lambertw(x).is_nan());
         assert!(s::lambertwm1(x).is_nan());

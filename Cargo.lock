@@ -805,9 +805,9 @@ checksum = "f868feceed4703c842925c14232667c5f29c8059d0354154b2d06ec3bf9daf82"
 
 [[package]]
 name = "lambert_w"
-version = "2.0.8"
+version = "2.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8262c3da0c8ad38444504924a15e445bd4ff732ece376db3327cb20a3f0bbe15"
+checksum = "0c3d8eb0d8b3b4934407a94014343a132754d02655ec43165569e69bb87d5af9"
 dependencies = [
  "num-complex",
  "num-traits",
