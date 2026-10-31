@@ -79,7 +79,7 @@ methods are not counted as numerical function coverage.
 ## Verification
 
 The pinned SciPy 1.18.1 / NumPy 2.5.4 generator reads input-only
-`tests/scipy/cluster_cases.json` and writes separate checked-in input and
+`tests/scipy/cluster_cases.jsonl` and writes separate checked-in input and
 expected CSVs. Rust tests exercise every supported public name, check output
 shapes and ordering, and compare f64 values with `3e-12` absolute plus `3e-12`
 relative tolerance. Integer outputs are exact; flat labels are checked up to

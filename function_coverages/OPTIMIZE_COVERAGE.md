@@ -40,7 +40,7 @@ includes forward-difference truncation and cancellation error.
 
 ## Verification
 
-Input-only `tests/scipy/optimize_cases.json` drives the pinned SciPy 1.18.1 /
+Input-only `tests/scipy/optimize_cases.jsonl` drives the pinned SciPy 1.18.1 /
 NumPy 2.5.4 generator. Separate checked-in CSVs support ordinary Rust tests.
 Analytical comparisons use 3e-12 absolute plus relative tolerance; forward
 differences use 3e-9 because subtraction amplifies last-bit evaluation

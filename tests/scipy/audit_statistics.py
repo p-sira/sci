@@ -8,9 +8,9 @@ Masked-array-only behavior is not counted as implemented.
 from api_disposition import ALIASES, EXCLUDED
 
 import csv
-import json
 import re
 from pathlib import Path
+from case_catalog import read_cases
 
 ROOT = Path(__file__).resolve().parents[2]
 NATIVE_DISTRIBUTIONS = {
@@ -73,7 +73,7 @@ def audit():
         for name in re.findall(r"^pub fn (\w+)(?:<[^\n]*>)?\(", path.read_text(), re.MULTILINE):
             exported.setdefault(namespace, set()).add(name)
     exported["scipy.stats"].add("chi2_contingency")  # shared public alias
-    cases = json.loads((ROOT / "tests/scipy/statistics_cases.json").read_text())
+    cases = read_cases(ROOT / "tests/scipy/statistics_cases.jsonl")
     tested = {c["api"] for c in cases}
     with (ROOT / "tests/fixtures/statistics.csv").open() as f:
         tested.update(row["function"] for row in csv.DictReader(f))

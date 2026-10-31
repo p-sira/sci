@@ -7,10 +7,10 @@ Run using Python 3.11+, without SciPy.
 """
 from api_disposition import ALIASES, EXCLUDED
 import csv
-import json
 import re
 from collections import Counter
 from pathlib import Path
+from case_catalog import read_cases
 
 ROOT=Path(__file__).resolve().parents[2]
 
@@ -40,7 +40,7 @@ interpolative_source=(ROOT/"crates/sci-linalg/src/interpolative.rs").read_text()
 interpolative=set(re.findall(r"pub fn (\w+)",interpolative_source))
 assert interpolative==inventory(".interpolative")
 qualified=added|{"interpolative."+name for name in interpolative}
-cases=json.loads((ROOT/"tests/scipy/linalg_cases.json").read_text())
+cases=read_cases(ROOT/"tests/scipy/linalg_cases.jsonl")
 counts=Counter(ALIASES["linalg"].get(c["api"], c["api"]) for c in cases)
 assert set(counts)==qualified,(qualified-set(counts),set(counts)-qualified)
 assert all(n>=2 for n in counts.values()),counts

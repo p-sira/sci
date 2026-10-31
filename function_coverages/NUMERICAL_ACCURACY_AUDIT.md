@@ -65,7 +65,7 @@ whole-domain error bound and do not expand any module's supported API surface.
 
 ## Reproduction and regression coverage
 
-`tests/scipy/numerical_accuracy_cases.json` stores inputs separately from
+`tests/scipy/numerical_accuracy_cases.jsonl` stores inputs separately from
 expected values. Regenerate the 188 references with:
 
 ```sh

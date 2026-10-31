@@ -4,7 +4,7 @@
 # ///
 """Independent finite FFTLog references using dense DFTs at 100/160 digits.
 
-Inputs and per-case tolerances live in fft_cases.json. This evaluates Hamilton's
+Inputs and per-case tolerances live in fft_cases.jsonl. This evaluates Hamilton's
 FFTLog multiplier U_mu(q+i*eta) = 2^(q+i*eta) Gamma((mu+1+q+i*eta)/2)
 / Gamma((mu+1-q-i*eta)/2), including the specified grid phases, bias factors,
 and real Nyquist projection. It calls neither Sci nor SciPy's FFTLog backend.
@@ -14,8 +14,8 @@ Reference: https://jila-amo.colorado.edu/~ajsh/FFTLog/index.html
 Run: uv run tests/scipy/generate_fftlog_accuracy.py
 """
 import csv
-import json
 from pathlib import Path
+from case_catalog import read_cases
 
 import mpmath as mp
 import numpy as np
@@ -63,7 +63,7 @@ def reference(case, precision):
 with (ROOT / 'fixtures/fftlog_accuracy.csv').open('w', newline='') as output:
     writer = csv.writer(output, lineterminator='\n')
     writer.writerow(['id', 're', 'atol', 'rtol'])
-    cases = json.loads(Path(__file__).with_name('fft_cases.json').read_text())
+    cases = read_cases(Path(__file__).with_name('fft_cases.jsonl'))
     for case in cases:
         if 'accuracy_tolerance' not in case:
             continue

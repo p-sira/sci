@@ -31,12 +31,9 @@ def format_cases(cases: list) -> str:
 
 if __name__ == "__main__":
     directory = Path(__file__).parent
-    names = (
-        "special_cases.jsonl",
-        "special_native_cases.jsonl",
-        "special_float_cases.jsonl",
-        "hyp1f1_cancellation_cases.jsonl",
-    )
+    names = sorted(path.name for path in directory.glob("*_cases.jsonl"))
+    if not names:
+        raise SystemExit("No JSON Lines case catalogs found")
     for name in names:
         path = directory / name
         if path.read_text(encoding="utf-8") != format_cases(read_cases(path)):

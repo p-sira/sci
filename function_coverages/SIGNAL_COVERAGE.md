@@ -18,7 +18,7 @@ remain private; data uses f64 slices, row-major vectors, and shared Complex.
 
 ## Verification
 
-`tests/scipy/signal_cases.json` contains inputs only. The generator
+`tests/scipy/signal_cases.jsonl` contains inputs only. The generator
 `tests/scipy/generate_signal.py` pins SciPy 1.18.1 and NumPy 2.5.4 and writes
 1411 cases to separate input and expected CSV files. Rust tests check every
 output row and its length, complex interleaving, indices, state ordering, and

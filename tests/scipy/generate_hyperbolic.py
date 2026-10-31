@@ -18,15 +18,15 @@ one minimum subnormal of absolute error; an erroneous zero cannot pass.
 
 """
 import csv
-import json
 from pathlib import Path
+from case_catalog import read_cases
 import numpy as np
 import scipy
 from scipy import linalg
 
 assert (np.__version__, scipy.__version__) == ("2.5.4", "1.18.1")
 ROOT = Path(__file__).resolve().parents[1]
-cases = json.loads((Path(__file__).with_name("hyperbolic_cases.json")).read_text())
+cases = read_cases(Path(__file__).with_name("hyperbolic_cases.jsonl"))
 
 def encode(a):
     return ":".join(";".join(str(float(x)) for x in row) for row in a)
