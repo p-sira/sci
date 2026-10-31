@@ -99,6 +99,7 @@ class ScopeTests(unittest.TestCase):
         self.assertIn("sci-linalg", scope["packages"])
         self.assertIn("linalg-ndarray", scope["features"])
 
+    @patch.dict("os.environ", {"GITHUB_ACTIONS": "false"})
     @patch("ci_scope.subprocess.run")
     def test_scoped_commands(self, run):
         scope = self.select("tests/interpolation.rs")
