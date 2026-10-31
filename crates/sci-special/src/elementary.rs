@@ -452,6 +452,7 @@ pub fn spherical_kn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
 /// ## References
 ///
 /// - [SciPy eval_chebyc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_chebyc.html).
+#[inline]
 pub fn eval_chebyc(n: i32, x: f64) -> f64 {
     2.0 * super::eval_chebyt(n, x / 2.0)
 }
@@ -495,6 +496,7 @@ pub fn eval_chebys(n: i32, x: f64) -> f64 {
 /// ## References
 ///
 /// - [SciPy eval_sh_chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_sh_chebyt.html).
+#[inline]
 pub fn eval_sh_chebyt(n: i32, x: f64) -> f64 {
     super::eval_chebyt(n, 2.0 * x - 1.0)
 }
