@@ -27,35 +27,35 @@ fn expint_argument<T: Float>(z: Complex<T>) -> Result<Complex64, StrErr> {
     Ok(z)
 }
 
+/// Shared sum Σ w^k/(k*k!), used by Ei(z) with w=z and E1(z) with w=-z.
+/// Retain a single recurrence and convergence criterion for both functions.
+fn expint_taylor_sum(w: Complex64) -> Option<Complex64> {
+    let mut term = w;
+    let mut sum = term;
+    for k in 2..=EXPINT_TERMS {
+        let k = k as f64;
+        term *= w * ((k - 1.0) / (k * k));
+        sum += term;
+        if term.norm() <= 2.0 * f64::EPSILON * sum.norm() {
+            return Some(sum);
+        }
+    }
+    None
+}
+
 /// Ei(z) = gamma + log(z) + sum(z^k/(k*k!)). The right half-plane
 /// avoids exponentially large alternating terms; near the imaginary axis
 /// the continued fraction is selected before this series loses precision.
 fn ei_series(z: Complex64) -> Result<Complex64, StrErr> {
-    let mut term = z;
-    let mut sum = term;
-    for k in 2..=EXPINT_TERMS {
-        let k = k as f64;
-        term *= z * ((k - 1.0) / (k * k));
-        sum += term;
-        if term.norm() <= 2.0 * f64::EPSILON * sum.norm() {
-            return Ok(z.ln() + EULER + sum);
-        }
-    }
-    Err("complex expint: Ei series failed to converge.")
+    expint_taylor_sum(z)
+        .map(|sum| z.ln() + EULER + sum)
+        .ok_or("complex expint: Ei series failed to converge.")
 }
 
 fn exp1_series(z: Complex64) -> Result<Complex64, StrErr> {
-    let mut term = -z;
-    let mut sum = term;
-    for k in 2..=EXPINT_TERMS {
-        let k = k as f64;
-        term *= -z * ((k - 1.0) / (k * k));
-        sum += term;
-        if term.norm() <= 2.0 * f64::EPSILON * sum.norm() {
-            return Ok(-z.ln() - EULER - sum);
-        }
-    }
-    Err("complex expint: E1 series failed to converge.")
+    expint_taylor_sum(-z)
+        .map(|sum| -z.ln() - EULER - sum)
+        .ok_or("complex expint: E1 series failed to converge.")
 }
 
 /// E1(z) = exp(-z)/(z+1 - 1²/(z+3 - 2²/(z+5 - ...))).

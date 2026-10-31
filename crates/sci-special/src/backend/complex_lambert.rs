@@ -25,24 +25,35 @@ fn branch_point(z: Complex64, side: f64) -> Complex64 {
     -1.0 + p * (1.0 + p * (-1.0 / 3.0 + p * (11.0 / 72.0 - p * (43.0 / 540.0))))
 }
 
+/// The local sheets around -1/e depend on the branch and the side of the cut.
+/// The initializer and the near-double-root result must use the same sign.
+fn branch_point_side(z: Complex64, k: i32) -> Option<f64> {
+    if k == 0 {
+        Some(1.0)
+    } else if (k == -1 && z.im >= 0.0) || (k == 1 && z.im < 0.0) {
+        Some(-1.0)
+    } else {
+        None
+    }
+}
+
 fn asymptotic(z: Complex64, k: i32) -> Complex64 {
     let l = z.ln() + Complex64::new(0.0, 2.0 * PI * f64::from(k));
     l - l.ln()
 }
 
 fn initial(z: Complex64, k: i32) -> Complex64 {
+    if (z - NEG_INV_E).norm() < 0.3
+        && let Some(side) = branch_point_side(z, k)
+    {
+        return branch_point(z, side);
+    }
     if k == 0 {
-        if (z - NEG_INV_E).norm() < 0.3 {
-            branch_point(z, 1.0)
-        } else if z.re > -1.0 && z.re < 1.5 && z.im.abs() < 1.0 && z.re > -2.5 * z.im.abs() - 0.2 {
+        if z.re > -1.0 && z.re < 1.5 && z.im.abs() < 1.0 && z.re > -2.5 * z.im.abs() - 0.2 {
             pade(z)
         } else {
             asymptotic(z, k)
         }
-    } else if ((k == -1 && z.im >= 0.0) || (k == 1 && z.im < 0.0)) && (z - NEG_INV_E).norm() < 0.3 {
-        // The k=1 sheet approaching the negative cut from below shares the
-        // -1/e square-root point with k=-1 approaching it from above.
-        branch_point(z, -1.0)
     } else if k == -1 && z.im == 0.0 && z.re < 0.0 && z.norm() <= -NEG_INV_E {
         Complex64::new((-z.re).ln(), 0.0)
     } else {
@@ -81,13 +92,10 @@ pub(crate) fn lambertw(z: Complex64, k: i32) -> Result<Complex64, StrErr> {
     // At the double root, derivative-based iterations amplify roundoff.
     // Four Puiseux correction orders provide a smaller forward error than
     // a converged Halley step when |z+1/e| is this small.
-    if (z - NEG_INV_E).norm() < 1e-6 {
-        if k == 0 {
-            return Ok(branch_point(z, 1.0));
-        }
-        if (k == -1 && z.im >= 0.0) || (k == 1 && z.im < 0.0) {
-            return Ok(branch_point(z, -1.0));
-        }
+    if (z - NEG_INV_E).norm() < 1e-6
+        && let Some(side) = branch_point_side(z, k)
+    {
+        return Ok(branch_point(z, side));
     }
 
     let mut w = initial(z, k);

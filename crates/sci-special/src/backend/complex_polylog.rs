@@ -92,6 +92,13 @@ fn dilog_bernoulli(t: Complex64) -> Complex64 {
     t - square * 0.25 + t * square * poly
 }
 
+/// Euler reflection: Li₂(1-z) = ζ(2) - log(z)log(1-z) - Li₂(z).
+/// `small` is the argument to the rapidly converging power series; it may
+/// be `z` or `1-z` depending on which side of the reflection is requested.
+fn dilog_reflection(z: Complex64, small: Complex64) -> Result<Complex64, StrErr> {
+    Ok(ZETA_TWO - complex_log(z) * log_one_minus(z) - dilog_power(small)?)
+}
+
 /// Principal Li2 with its cut along [1,+infinity); at the cut, signed zero
 /// in the input imaginary component determines which limiting value is used.
 fn dilog(z: Complex64) -> Result<Complex64, StrErr> {
@@ -108,7 +115,7 @@ fn dilog(z: Complex64) -> Result<Complex64, StrErr> {
     if other.norm() <= 0.5 {
         // Euler reflection. Evaluate the smaller Li2 argument as a power
         // series; the logarithms use principal branches on both banks.
-        return Ok(ZETA_TWO - complex_log(z) * log_one_minus(z) - dilog_power(other)?);
+        return dilog_reflection(z, other);
     }
     if z.norm() > 1.0 {
         // Li2(z) + Li2(1/z) = -pi²/6 - log(-z)²/2.
@@ -136,44 +143,57 @@ pub(crate) fn spence(z: Complex64) -> Result<Complex64, StrErr> {
     let value = if z.norm() <= 0.5 {
         // Preserve the input when 1-z would round to one. Euler reflection:
         // Li2(1-z) = pi²/6 - log(z)*log(1-z) - Li2(z).
-        ZETA_TWO - complex_log(z) * log_one_minus(z) - dilog_power(z)?
+        dilog_reflection(z, z)?
     } else {
         dilog(one_minus(z))?
     };
     finite(value)
 }
 
-/// Computes x log(y) on the principal logarithm branch, with 0 log(y)=0.
-pub(crate) fn xlogy(x: Complex64, y: Complex64) -> Result<Complex64, StrErr> {
+enum LogProduct {
+    Direct,
+    OnePlus,
+}
+
+/// Common finite-input, zero-prefactor, pole and multiplication semantics.
+/// Only the logarithm's argument reduction differs between the two APIs.
+fn logarithmic_product(x: Complex64, y: Complex64, kind: LogProduct) -> Result<Complex64, StrErr> {
     finite(x)?;
     finite(y)?;
     if x == Complex64::new(0.0, 0.0) {
         return Ok(Complex64::new(0.0, 0.0));
     }
-    if y == Complex64::new(0.0, 0.0) {
-        return Err("xlogy: Logarithm has a pole at zero.");
-    }
-    let logarithm = if (y.re - 1.0).abs() <= 0.5 && y.im.abs() <= 0.5 {
-        // Sterbenz-exact subtraction near one lets the shared log1p
-        // kernel retain the O(Im(y)^2) real part of log(1+i Im(y)).
-        log_one_minus(one_minus(y))
-    } else {
-        complex_log(y)
+    let logarithm = match kind {
+        LogProduct::Direct => {
+            if y == Complex64::new(0.0, 0.0) {
+                return Err("xlogy: Logarithm has a pole at zero.");
+            }
+            if (y.re - 1.0).abs() <= 0.5 && y.im.abs() <= 0.5 {
+                // Sterbenz-exact subtraction near one retains the tiny real
+                // part of log(1+i Im(y)) without rounding the increment away.
+                log_one_minus(one_minus(y))
+            } else {
+                complex_log(y)
+            }
+        }
+        LogProduct::OnePlus => {
+            if y == Complex64::new(-1.0, 0.0) {
+                return Err("xlog1py: Logarithm has a pole at minus one.");
+            }
+            log_one_minus(-y)
+        }
     };
     finite(x * logarithm)
 }
 
+/// Computes x log(y) on the principal logarithm branch, with 0 log(y)=0.
+pub(crate) fn xlogy(x: Complex64, y: Complex64) -> Result<Complex64, StrErr> {
+    logarithmic_product(x, y, LogProduct::Direct)
+}
+
 /// Computes x log(1+y), using log1p to retain sub-ulp complex increments.
 pub(crate) fn xlog1py(x: Complex64, y: Complex64) -> Result<Complex64, StrErr> {
-    finite(x)?;
-    finite(y)?;
-    if x == Complex64::new(0.0, 0.0) {
-        return Ok(Complex64::new(0.0, 0.0));
-    }
-    if y == Complex64::new(-1.0, 0.0) {
-        return Err("xlog1py: Logarithm has a pole at minus one.");
-    }
-    finite(x * log_one_minus(-y))
+    logarithmic_product(x, y, LogProduct::OnePlus)
 }
 
 #[cfg(test)]
