@@ -70,7 +70,7 @@ unbounded recurrences in the translated families:
 | Family | Supported work and remaining limits |
 | --- | --- |
 | Real `iv` / `ive` | Cephes Temme series and continued fractions for `abs(v) <= 50` (999 iterations each), eleven-term uniform asymptotics for larger orders, and a 100-term large-argument expansion. Internal exponential scaling and recurrence rescaling preserve finite overflow-adjacent and subnormal results; negative noninteger orders use reflection. Complex APIs retain AMOS. |
-| Mathieu | Order at most 128 and `abs(q) <= 100`; Fourier recurrences at most 251 terms; Sturm eigenvalue bisection at most 128 steps and four tridiagonal inverse iterations. Angular inputs are degrees and returned derivatives are with respect to radians, following SciPy. |
+| Mathieu | Order at most 128 and `abs(q) <= 100`; Fourier recurrences at most 251 terms, with adaptive coefficient tails. Isolated bands use a bounded scalar Schur-complement solve; other bands retain at most 128 Sturm bisections. Fourier coefficients use two tridiagonal inverse iterations. Angular inputs are degrees and returned derivatives are with respect to radians, following SciPy. |
 | Spheroidal | `0 <= m <= n <= 128`, finite `abs(c) <= 64`; fixed private recurrence storage; eigenvalue bisection at most 128 iterations per value. Parameter sign is reduced by the defining `c²` convention. |
 | Parabolic cylinder | D/V require finite inputs and `abs(v) <= 4096`; W requires `abs(a), abs(x) <= 5`. Values and first derivatives are returned in that order. |
 | Hypergeometric | 1F1 requires `abs(a) <= 100000`; 2F1 bounds `abs(a), abs(b), abs(c)` and U bounds `abs(a), abs(b)` by 100,000. All inputs must be finite. Series/asymptotic and continuation accuracy is parameter dependent; severe cancellation can return NaN or lose relative accuracy. |
@@ -180,10 +180,10 @@ The stricter comparisons exposed and corrected these failures:
   subnormal near `1.01693e-313`. A 100-digit Decimal defining series with exact
   integer factorials supplies independent references where AMOS flushes results.
 - The K₀ tail from `it2i0k0(19.9)` had about `2e-6` relative error, previously
-  hidden by an absolute tolerance. For `x>=4`, a cached 32-point Gaussian rule
-  integrates the shifted scaled kernel over `[0,48]`; the omitted tail is below
-  `1e-20` relatively. Boundary and derivative tests check the transition and
-  defining integrand.
+  hidden by an absolute tolerance. For `4<=x<6`, a cached Gaussian rule integrates
+  the shifted scaled kernel over `[0,48]`; the omitted tail is below `1e-20`
+  relatively. Shorter Gauss-Laguerre rules evaluate the same tail for `x>=6`.
+  Boundary and derivative tests check the transitions and defining integrand.
 
 New cases use relative comparisons with a `1e-300` absolute floor, reduced to
 `1e-323` for explicit subnormal Bessel regressions. Small beta shapes amplify

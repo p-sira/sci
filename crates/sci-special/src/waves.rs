@@ -279,10 +279,11 @@ pub fn eval_laguerre<T: sci_core::Float>(n: i32, x: T) -> T {
 ///
 /// ## Numerical behavior
 ///
-/// Uses a binary64 recurrence with work proportional to the degree and bounded by
-/// 4096 steps. Conversion to `T` does not add precision. Relative accuracy can
-/// worsen near roots and for large degrees or parameters. Integer-degree evaluation
-/// is supported; noninteger polynomial degrees are not part of this API.
+/// Uses binary64 arithmetic: a factorized degree-ten polynomial, a short
+/// recurrence for other small degrees, and binary doubling inside (-1,1)
+/// for degrees at least 64. Work is bounded by 4096 steps. Conversion to
+/// `T` does not add precision. Relative accuracy can worsen near roots and
+/// for large degrees or parameters. Only integer degrees are supported.
 ///
 /// ## Mathematical reference
 ///
@@ -298,6 +299,7 @@ pub fn eval_laguerre<T: sci_core::Float>(n: i32, x: T) -> T {
 /// ## References
 ///
 /// - [SciPy eval_chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_chebyt.html).
+#[inline]
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn eval_chebyt<T: sci_core::Float>(n: i32, x: T) -> T {
     if !(0..=4096).contains(&n) {
@@ -330,10 +332,11 @@ pub fn eval_chebyt<T: sci_core::Float>(n: i32, x: T) -> T {
 ///
 /// ## Numerical behavior
 ///
-/// Uses a binary64 recurrence with work proportional to the degree and bounded by
-/// 4096 steps. Conversion to `T` does not add precision. Relative accuracy can
-/// worsen near roots and for large degrees or parameters. Integer-degree evaluation
-/// is supported; noninteger polynomial degrees are not part of this API.
+/// Uses binary64 arithmetic: a factorized degree-ten polynomial, a short
+/// recurrence for other small degrees, and binary doubling inside (-1,1)
+/// for degrees at least 64. Work is bounded by 4096 steps. Conversion to
+/// `T` does not add precision. Relative accuracy can worsen near roots and
+/// for large degrees or parameters. Only integer degrees are supported.
 ///
 /// ## Mathematical reference
 ///
@@ -349,6 +352,7 @@ pub fn eval_chebyt<T: sci_core::Float>(n: i32, x: T) -> T {
 /// ## References
 ///
 /// - [SciPy eval_chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_chebyu.html).
+#[inline]
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn eval_chebyu<T: sci_core::Float>(n: i32, x: T) -> T {
     if !(0..=4096).contains(&n) {

@@ -1068,10 +1068,13 @@ pub fn riccati_yn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// ## Numerical behavior
 ///
-/// Where well-conditioned high-precision series anchors are available for
-/// `x <= 50`, a double-double backward recurrence computes the sequence before
-/// rounding each result to binary64. Other inputs use individually evaluated
-/// hypergeometric values and the existing stable portion of that recurrence.
+/// For well-conditioned `x <= 50` cases with exactly representable anchor
+/// orders, a paired, compensated binary64 series evaluates two adjacent orders
+/// and a backward recurrence computes the sequence. A conservative bound on
+/// series and recurrence roundoff rejects cases where absolute error could
+/// exceed about `4e-12 * max(1, |value|)`. Other `x <= 50` inputs retain the
+/// double-double series anchors and backward recurrence; larger arguments use
+/// individually evaluated hypergeometric values and stable recurrences.
 /// Work is bounded by the order limit and the private series' 4,096-term cap.
 ///
 /// ## Examples

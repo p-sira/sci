@@ -74,14 +74,27 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
         size
     };
     let vector = |eigenvalue: f64| match vector_margin {
-        Some(margin) => mathieu_vector(
-            kd,
-            q,
-            rank,
-            eigenvalue,
-            (extent + margin).min(251),
-            diagonal_at,
-        ),
+        Some(margin) => {
+            // The Fourier tail is recessive beyond the diagonal's upper
+            // eigenvalue bound. Stop once its product bound is below 1e-28;
+            // four more rows make the artificial end negligible. A fixed
+            // margin remains the worst-case work limit.
+            let fixed = (extent + margin).min(251);
+            let upper_bound = diagonal_zero.max(diagonal_at(rank)) + radius;
+            let mut decay = 1.0;
+            let mut vector_size = fixed;
+            for j in rank + 1..fixed {
+                let excess = diagonal_at(j) - upper_bound;
+                if excess > 2.0 * q.abs() {
+                    decay *= q.abs() / (excess - q.abs());
+                    if decay < 1e-28 {
+                        vector_size = (j + 4).min(fixed);
+                        break;
+                    }
+                }
+            }
+            mathieu_vector(kd, q, rank, eigenvalue, vector_size, diagonal_at)
+        }
         None => (eigenvalue, Vec::new()),
     };
     if q == 0.0 {
@@ -240,6 +253,107 @@ fn mathieu_spectrum(kd: i32, m: i32, q: f64, vector_margin: Option<usize>) -> (f
     // if rounding defeats that bracket. The first pass starts from the DLMF
     // small- or large-q expansion instead of the bracket midpoint; a guess
     // outside the bracket is ignored.
+    // If the unperturbed diagonal's adjacent eigenvalue bands cannot
+    // overlap under the off-diagonal perturbation (Weyl's bound), the
+    // requested harmonic has a unique eigenvalue near its diagonal entry.
+    // Eliminating the rows on either side yields a scalar Schur complement;
+    // its Newton steps avoid full Sturm derivative recurrences.
+    let center = sorted(rank);
+    let gap_below = if rank == 0 {
+        f64::INFINITY
+    } else {
+        center - sorted(rank - 1)
+    };
+    let gap_above = if rank + 1 == size {
+        f64::INFINITY
+    } else {
+        sorted(rank + 1) - center
+    };
+    if radius < 0.48 * gap_below.min(gap_above) {
+        let mut estimate = mathieu_guess(kd, m, q)
+            .filter(|v| v.is_finite() && (*v - center).abs() <= radius)
+            .unwrap_or(center);
+        for _ in 0..8 {
+            let mut residual = diagonal_at(rank) - estimate;
+            let mut derivative = -1.0;
+            if rank > 0 {
+                let mut p = diagonal_zero - estimate;
+                let mut dp = -1.0;
+                for j in 1..rank {
+                    let edge = if j == 1 { b2_first } else { b2 };
+                    let inv = 1.0 / p;
+                    dp = -1.0 + edge * dp * inv * inv;
+                    p = diagonal_at(j) - estimate - edge * inv;
+                }
+                let edge = if rank == 1 { b2_first } else { b2 };
+                let inv = 1.0 / p;
+                residual -= edge * inv;
+                derivative += edge * dp * inv * inv;
+            }
+            if rank + 1 < size {
+                let mut p = diagonal_at(size - 1) - estimate;
+                let mut dp = -1.0;
+                for j in (rank + 1..size - 1).rev() {
+                    let inv = 1.0 / p;
+                    dp = -1.0 + b2 * dp * inv * inv;
+                    p = diagonal_at(j) - estimate - b2 * inv;
+                }
+                let edge = if rank == 0 { b2_first } else { b2 };
+                let inv = 1.0 / p;
+                residual -= edge * inv;
+                derivative += edge * dp * inv * inv;
+            }
+            let correction = residual / derivative;
+            let next = estimate - correction;
+            if !next.is_finite() || (next - center).abs() > radius {
+                break;
+            }
+            estimate = next;
+            if correction.abs() <= f64::EPSILON * next.abs().max(1.0) {
+                return vector(next);
+            }
+        }
+    }
+    // For low orders, the characteristic polynomial of the truncated
+    // tridiagonal Fourier matrix and its derivative fit safely in binary64.
+    // Evaluating both by the determinant recurrence avoids the divisions,
+    // second derivatives and square roots of a Laguerre/Sturm search.
+    // A Newton root is accepted only when Sturm counts certify that it is
+    // the eigenvalue of the requested rank; every other case retains the
+    // safeguarded search below. Vector-producing callers use that search
+    // to keep their eigenvalues and Fourier coefficients consistent.
+    if vector_margin.is_none() && m <= 5 && q.abs() <= 10.0 {
+        let lower = center - radius;
+        let upper = center + radius;
+        let mut estimate = mathieu_guess(kd, m, q)
+            .filter(|guess| guess.is_finite() && *guess >= lower && *guess <= upper)
+            .unwrap_or(center);
+        for _ in 0..9 {
+            let (mut previous, mut current) = (1.0, diagonal_zero - estimate);
+            let (mut previous_derivative, mut derivative) = (0.0, -1.0);
+            for j in 1..size {
+                let offset = diagonal_at(j) - estimate;
+                let edge = if j == 1 { b2_first } else { b2 };
+                let next = offset * current - edge * previous;
+                let next_derivative = -current + offset * derivative - edge * previous_derivative;
+                (previous, current) = (current, next);
+                (previous_derivative, derivative) = (derivative, next_derivative);
+            }
+            let correction = current / derivative;
+            let next = estimate - correction;
+            if !next.is_finite() || next < lower || next > upper {
+                break;
+            }
+            estimate = next;
+            if correction.abs() <= 2.0 * f64::EPSILON * next.abs().max(1.0) {
+                let delta = 4.0 * f64::EPSILON * next.abs().max(q.abs()).max(1.0);
+                if count_below(next - delta) <= rank && count_below(next + delta) > rank {
+                    return (next, Vec::new());
+                }
+                break;
+            }
+        }
+    }
     let start = mathieu_guess(kd, m, q);
     let eigenvalue = search(sorted(rank) - radius, sorted(rank) + radius, start)
         .or_else(|_| search(sorted(0) - radius, sorted(size - 1) + radius, None))
@@ -380,8 +494,13 @@ fn mathieu_vector(
             pivots[j] = 1e-300;
         }
     }
-    let mut coefficients = vec![1.0; size];
-    for _ in 0..4 {
+    // A basis vector at the requested harmonic has an appreciable overlap
+    // with its eigenmode. With a shift within roundoff of the eigenvalue,
+    // one inverse solve suppresses all other modes by the shift/gap ratio;
+    // the second removes the remaining error in weakly excited harmonics.
+    let mut coefficients = vec![0.0; size];
+    coefficients[rank] = 1.0;
+    for _ in 0..2 {
         for j in 1..size {
             coefficients[j] -= factors[j] * coefficients[j - 1];
         }
@@ -984,6 +1103,45 @@ pub(crate) fn airy_integrals(x: f64) -> [f64; 4] {
     if !x.is_finite() {
         return [f64::NAN; 4];
     }
+    if x.abs() <= 4.0 {
+        // Here the integrated Airy series has modest cancellation. Binary64
+        // accumulation agrees with high-precision quadrature to about 4e-15;
+        // avoid double-double arithmetic until the larger-argument regime.
+        let cube = x * x * x;
+        let (mut tf, mut tg) = (x, 0.5 * x * x);
+        let (mut f_even, mut f_odd) = (tf, 0.0);
+        let (mut g_even, mut g_odd) = (tg, 0.0);
+        for n in 1..128 {
+            let k = n as f64;
+            tf *= cube * (3.0 * k - 2.0) / ((3.0 * k + 1.0) * (3.0 * k) * (3.0 * k - 1.0));
+            tg *= cube * (3.0 * k - 1.0) / ((3.0 * k + 2.0) * (3.0 * k) * (3.0 * k + 1.0));
+            if n % 2 == 0 {
+                f_even += tf;
+                g_even += tg;
+            } else {
+                f_odd += tf;
+                g_odd += tg;
+            }
+            if 2.0 * cube.abs() < (3.0 * k + 3.0) * (3.0 * k + 2.0)
+                && tf.abs().max(tg.abs())
+                    <= 1e-17
+                        * (f_even + f_odd)
+                            .abs()
+                            .max((g_even + g_odd).abs())
+                            .min((f_odd - f_even).abs().max((g_even - g_odd).abs()))
+            {
+                break;
+            }
+        }
+        let integral = |f: f64, g: f64| {
+            let ai = 0.3550280538878172 * f - 0.2588194037928068 * g;
+            let bi = 1.7320508075688772 * (0.3550280538878172 * f + 0.2588194037928068 * g);
+            (ai, bi)
+        };
+        let positive = integral(f_even + f_odd, g_even + g_odd);
+        let negative = integral(f_odd - f_even, g_even - g_odd);
+        return [positive.0, positive.1, -negative.0, -negative.1];
+    }
     if x.abs() <= 10.0 {
         // Integrate y''=x*y's two power-series solutions. Double-double
         // summation retains oscillatory cancellation without quadrature.
@@ -1051,12 +1209,31 @@ pub(crate) fn airy_integrals(x: f64) -> [f64; 4] {
         return [positive.0, positive.1, -negative.0, -negative.1];
     }
     if x.abs() <= 16.0 {
-        return [
-            quadrature(0.0, x, |t| airy(t)[0]),
-            quadrature(0.0, x, |t| airy(t)[2]),
-            quadrature(0.0, x, |t| airy(-t)[0]),
-            quadrature(0.0, x, |t| airy(-t)[2]),
-        ];
+        // Each Airy evaluation returns Ai and Bi together. Integrating the
+        // four components in one traversal halves the costly kernel calls.
+        let limit = x.abs();
+        let pieces = (limit / 4.0).ceil() as usize;
+        let width = limit / pieces as f64;
+        let mut integrals = [0.0; 4];
+        for piece in 0..pieces {
+            let midpoint = (piece as f64 + 0.5) * width;
+            for &(z, weight) in &GAUSS_32 {
+                let scale = weight * width * 0.5;
+                for t in [midpoint - z * width * 0.5, midpoint + z * width * 0.5] {
+                    let positive = airy(t);
+                    let negative = airy(-t);
+                    integrals[0] += scale * positive[0];
+                    integrals[1] += scale * positive[2];
+                    integrals[2] += scale * negative[0];
+                    integrals[3] += scale * negative[2];
+                }
+            }
+        }
+        return if x < 0.0 {
+            [-integrals[2], -integrals[3], -integrals[0], -integrals[1]]
+        } else {
+            integrals
+        };
     }
     let (mut a, mut b, mut c, mut d) = ([0.0], [0.0], [0.0], [0.0]);
     s::itairy_asymptotic(x.abs(), &mut a, &mut b, &mut c, &mut d);
@@ -1186,8 +1363,9 @@ pub(crate) fn it2i0k0(x: f64) -> (f64, f64) {
         // Shift the defining K tail: exp(-x) ∫ exp(-u) K0e(x+u)/(x+u) du.
         // The old eight-term asymptotic loses ~2e-6 relatively at x=19.9;
         // the small-x series also cancels before its x=12 transition.
-        // A single 32-point Gaussian rule resolves the smooth shifted
-        // integrand on [0,48]; the omitted tail is below 1e-20 relatively.
+        // A 32-point Gaussian rule resolves the smooth shifted integrand on
+        // [0,48] near x=4. At larger x the remaining factor varies slowly
+        // enough for shorter Gauss-Laguerre rules (with exp(-u) in the weights).
         // The nodes and their exp(-u) weights do not depend on x, so they
         // are tabulated as (u, 24 w exp(-u)), sorted by u. The six nodes beyond
         // u = 44 have weights below 1e-19 and K0e(x+u)/(x+u) only decreases,
@@ -1221,8 +1399,45 @@ pub(crate) fn it2i0k0(x: f64) -> (f64, f64) {
             (41.572370849766955, 1.3929403727552428e-18),
             (43.06761110323062, 2.784234374611805e-19),
         ];
+        // For x >= 6 the 16-point rule differs from the defining integral
+        // by < 3e-13 relatively; for x >= 20 eight points suffice to 5e-14.
+        const LAGUERRE_16: [(f64, f64); 16] = [
+            (0.087649410478927756, 0.2061517149578049),
+            (0.46269632891508039, 0.33105785495087831),
+            (1.1410577748312265, 0.26579577764421441),
+            (2.1292836450983805, 0.13629693429637874),
+            (3.4370866338932067, 0.047328928694125631),
+            (5.0780186145497677, 0.011299900080339598),
+            (7.0703385350482337, 0.0018490709435263271),
+            (9.4383143363919384, 0.00020427191530828089),
+            (12.214223368866159, 1.4844586873981502e-05),
+            (15.441527368781617, 6.8283193308713307e-07),
+            (19.180156856753136, 1.8810248410797222e-08),
+            (23.515905693991908, 2.8623502429738969e-10),
+            (28.578729742882139, 2.1270790332241214e-12),
+            (34.583398702286622, 6.2979670025178797e-15),
+            (41.940452647688332, 5.0504737000356082e-18),
+            (51.701160339543321, 4.161462370372851e-22),
+        ];
+        const LAGUERRE_8: [(f64, f64); 8] = [
+            (0.17027963230510093, 0.36918858934163495),
+            (0.90370177679938002, 0.41878678081434467),
+            (2.2510866298661312, 0.17579498663717255),
+            (4.2667001702876588, 0.033343492261215794),
+            (7.0459054023934655, 0.0027945362352256834),
+            (10.758516010180996, 9.0765087733581389e-05),
+            (15.740678641278004, 8.4857467162725705e-07),
+            (22.863131736889265, 1.0480011748715153e-09),
+        ];
+        let nodes: &[(f64, f64)] = if x >= 20.0 {
+            &LAGUERRE_8
+        } else if x >= 6.0 {
+            &LAGUERRE_16
+        } else {
+            &NODES
+        };
         second = 0.0;
-        for &(u, weight) in &NODES {
+        for &(u, weight) in nodes {
             second += weight * c::k0e(x + u) / (x + u);
         }
         second *= (-x).exp();
@@ -1244,6 +1459,20 @@ fn bessel_integrals(x: f64, kernel: fn(f64, &mut [f64], &mut [f64]), odd: bool) 
 pub(crate) fn itstruve0(x: f64) -> f64 {
     if !x.is_finite() {
         f64::NAN
+    } else if x.abs() <= 10.0 {
+        // Up to ten the alternating integrated Struve series is well
+        // conditioned in binary64; use double-double only beyond this range.
+        let square = x * x;
+        let (mut term, mut sum) = (1.0, 1.0);
+        for n in 1..128 {
+            let k = n as f64;
+            term *= -square * k / ((k + 1.0) * (2.0 * k + 1.0).powi(2));
+            sum += term;
+            if square < (k + 2.0) * (2.0 * k + 3.0) && term.abs() <= 1e-16 * sum.abs() {
+                break;
+            }
+        }
+        square * sum / PI
     } else if x.abs() <= 24.0 {
         // Integrate H_0's defining power series term by term. Double-double
         // arithmetic preserves the cancellation near the transition without
@@ -1345,6 +1574,87 @@ pub(crate) fn jahnke_emden_lambda(v: f64, x: f64) -> (Vec<f64>, Vec<f64>) {
     use super::double_double::Dd;
     let anchor = Dd::sum(base, (size + 1) as f64);
     let next_anchor = anchor.add_f64(1.0);
+    // For well-conditioned series, two binary64 anchors suffice. The terms
+    // for successive orders differ by b/(b+k), so both series can be summed
+    // together. Conservative accumulated roundoff bounds also cover the
+    // subsequent downward recurrence; cancellation or a tiny final value
+    // switches back to the full-precision calculation below.
+    if x <= 50.0 && (x <= 16.0 || anchor.hi >= x) && anchor.lo == 0.0 && next_anchor.lo == 0.0 {
+        let quick = || -> Option<(Vec<f64>, Vec<f64>)> {
+            let b = anchor.hi;
+            let (mut term, mut sum, mut upper_sum) = (1.0, 1.0, 1.0);
+            let (mut correction, mut upper_correction) = (0.0, 0.0);
+            let (mut magnitude, mut upper_magnitude) = (1.0, 1.0);
+            let mut anchor_errors = None;
+            for k in 1..=128 {
+                let order = k as f64;
+                term *= z / ((b + order - 1.0) * order);
+                let upper_term = term * (b / (b + order));
+                // Compensated summation avoids rounding away the small
+                // alternating terms before assessing cancellation.
+                let adjusted = term - correction;
+                let next = sum + adjusted;
+                correction = (next - sum) - adjusted;
+                sum = next;
+                let adjusted_upper = upper_term - upper_correction;
+                let next_upper = upper_sum + adjusted_upper;
+                upper_correction = (next_upper - upper_sum) - adjusted_upper;
+                upper_sum = next_upper;
+                magnitude += term.abs();
+                upper_magnitude += upper_term.abs();
+                if !sum.is_finite() || !upper_sum.is_finite() {
+                    return None;
+                }
+                let ratio = z.abs() / ((b + order) * (order + 1.0));
+                if ratio <= 0.5
+                    && term.abs() <= 1e-17 * sum.abs()
+                    && upper_term.abs() <= 1e-17 * upper_sum.abs()
+                {
+                    // Bounds include term recurrence, compensated addition,
+                    // and the remaining geometric tail.
+                    let bound = (4.0 * order + 8.0) * f64::EPSILON;
+                    anchor_errors = Some((
+                        bound * magnitude + 2.0 * term.abs(),
+                        bound * upper_magnitude + 2.0 * upper_term.abs(),
+                    ));
+                    break;
+                }
+            }
+            let (mut error, mut upper_error) = anchor_errors?;
+            let mut values = vec![0.0; size + 2];
+            values[size] = sum;
+            values[size + 1] = upper_sum;
+            for i in (0..size).rev() {
+                let order = base + (i + 1) as f64;
+                let factor = z / (order * (order + 1.0));
+                let term = factor * upper_sum;
+                let next = sum + term;
+                let next_error = error
+                    + factor.abs() * upper_error
+                    + 8.0 * f64::EPSILON * (sum.abs() + term.abs());
+                if !next.is_finite() || next_error > 4e-12 * next.abs().max(1.0) {
+                    return None;
+                }
+                upper_sum = sum;
+                sum = next;
+                upper_error = error;
+                error = next_error;
+                values[i] = next;
+            }
+            if error > 4e-12 * sum.abs().max(1.0) || upper_error > 4e-12 * upper_sum.abs().max(1.0)
+            {
+                return None;
+            }
+            let derivatives = (0..=size)
+                .map(|i| -x / (2.0 * (base + i as f64 + 1.0)) * values[i + 1])
+                .collect();
+            values.pop();
+            Some((values, derivatives))
+        };
+        if let Some(result) = quick() {
+            return result;
+        }
+    }
     let anchors = if x <= 50.0 && anchor.lo == 0.0 && next_anchor.lo == 0.0 {
         super::hypergeometric::series_real::<true>(anchor.hi, z).zip(
             super::hypergeometric::series_real::<true>(next_anchor.hi, z),
@@ -1528,6 +1838,12 @@ pub(crate) fn owens_t(h: f64, a: f64) -> f64 {
     if h == 0.0 {
         return sign * a.atan() / (2.0 * PI);
     }
+    if a == 1.0 {
+        // Owen's identity T(h,1) = Phi(-|h|) (1-Phi(-|h|)) / 2.
+        // This replaces Gaussian quadrature by one complementary error function.
+        let p = 0.5 * super::erfc(h / SQRT_2).unwrap_or(f64::NAN);
+        return sign * 0.5 * p * (1.0 - p);
+    }
     if a > 1.0 {
         let ph = 0.5 * super::erfc(h / std::f64::consts::SQRT_2).unwrap_or(f64::NAN);
         let pa = 0.5 * super::erfc(a * h / std::f64::consts::SQRT_2).unwrap_or(f64::NAN);
@@ -1540,11 +1856,29 @@ pub(crate) fn owens_t(h: f64, a: f64) -> f64 {
     // The Gaussian's width is about 1/h; the 32-point rule matches the
     // 64-point rule to rounding level for h <= 12 (checked against
     // independent Owen's T values), halving the exponential evaluations.
-    // With t = a(1+z)/2 the Gaussian factor is exp(-(ha)²(1+z)²/8); for
-    // ha <= 4 it and the poles at ±i (Bernstein ellipse radius above 4.6
-    // for a <= 1) are resolved by the 16-point rule beyond binary64
-    // precision, again halving the exponentials.
-    let rule: &[(f64, f64)] = if h * a <= 4.0 {
+    // With t = a(1+z)/2 the Gaussian factor is exp(-(ha)²(1+z)²/8).
+    // Smaller a and ha permit cheaper 8- and 12-point rules. Their
+    // relative quadrature errors are below about 1e-13 in these domains.
+    const GAUSS_8: [(f64, f64); 4] = [
+        (0.96028985649753618, 0.10122853629037706),
+        (0.79666647741362673, 0.22238103445337443),
+        (0.52553240991632899, 0.31370664587788688),
+        (0.18343464249564978, 0.36268378337836166),
+    ];
+    const GAUSS_12: [(f64, f64); 6] = [
+        (0.98156063424671924, 0.047175336386511411),
+        (0.9041172563704748, 0.10693932599531907),
+        (0.76990267419430469, 0.16007832854334642),
+        (0.58731795428661748, 0.20316742672306573),
+        (0.36783149899818018, 0.23349253653835461),
+        (0.12523340851146891, 0.24914704581340269),
+    ];
+    let ha = h * a;
+    let rule: &[(f64, f64)] = if a <= 0.35 && ha <= 1.0 {
+        &GAUSS_8
+    } else if ha <= 2.0 {
+        &GAUSS_12
+    } else if ha <= 4.0 {
         &GAUSS_16
     } else if h <= 12.0 {
         &GAUSS_32
@@ -1762,9 +2096,104 @@ mod tests {
                     .map(|&(u, weight)| weight * c::k0e(x + u) / (x + u))
                     .sum()
             };
-            assert_eq!(it2i0k0(x).1, sum(&kept) * (-x).exp());
             let full = sum(&nodes) * (-x).exp();
-            assert!((it2i0k0(x).1 - full).abs() <= 1e-18 * full);
+            let shortened = it2i0k0(x).1;
+            assert!(
+                ((shortened - full) / full).abs() < 5e-13,
+                "x={x}: shortened={shortened:e}, reference={full:e}"
+            );
+            if x < 6.0 {
+                assert_eq!(shortened, sum(&kept) * (-x).exp());
+            }
+        }
+    }
+
+    #[test]
+    fn integral_fast_paths_match_independent_quadrature() {
+        // 60-digit mpmath quadrature of the defining integrals, including the
+        // binary64 / double-double and quadrature transitions.
+        let airy_cases: &[(f64, [f64; 4])] = &[
+            (
+                4.0,
+                [
+                    0.33289264538612213,
+                    48.21947526380343,
+                    0.4780074964292617,
+                    -0.05076005849528754,
+                ],
+            ),
+            (
+                4.0001,
+                [
+                    0.3328927405327147,
+                    48.227860780633575,
+                    0.4780004738291565,
+                    -0.05072083444162559,
+                ],
+            ),
+            (
+                10.0001,
+                [
+                    0.33333333329918006,
+                    147855374.36970156,
+                    0.7657024222766693,
+                    0.015008956226629616,
+                ],
+            ),
+        ];
+        for &(x, reference) in airy_cases {
+            for (actual, expected) in airy_integrals(x).into_iter().zip(reference) {
+                assert!(
+                    (actual - expected).abs() <= 2e-13 * expected.abs().max(1.0),
+                    "Airy x={x}: actual={actual:e}, reference={expected:e}"
+                );
+            }
+            let reflected = airy_integrals(-x);
+            let positive = airy_integrals(x);
+            assert_eq!(
+                reflected,
+                [-positive[2], -positive[3], -positive[0], -positive[1]]
+            );
+        }
+        for (x, reference) in [
+            (10.0, 2.5189576695087033),
+            (10.0001, 2.5189695426010035),
+            (24.0, 2.8918032068700988),
+        ] {
+            let actual = itstruve0(x);
+            assert!(
+                (actual - reference).abs() < 3e-12 * reference,
+                "Struve x={x}: actual={actual:e}, reference={reference:e}"
+            );
+            assert_eq!(actual, itstruve0(-x));
+        }
+        for (x, reference) in [
+            (4.0, 0.002120422366782144),
+            (6.0, 0.00016996642667271107),
+            (10.0, 1.5629281430764054e-6),
+            (20.0, 2.6790491719403897e-11),
+        ] {
+            let actual = it2i0k0(x).1;
+            assert!(
+                (actual / reference - 1.0).abs() < 2e-12,
+                "Bessel tail x={x}: actual={actual:e}, reference={reference:e}"
+            );
+        }
+        for (h, a, reference) in [
+            (0.5, 0.35, 0.04705434925202117),
+            (0.5, 0.36, 0.04828218926612005),
+            (2.0, 0.35, 0.006717037127945251),
+            (2.0, 0.8, 0.010631958144605746),
+            (1.0, 1.0, 0.06674188216570097),
+            (0.5, 2.0, 0.1415806036539784),
+            (6.0, 0.5, 4.922418609131739e-10),
+        ] {
+            let actual = owens_t(h, a);
+            assert!(
+                (actual / reference - 1.0).abs() < 2e-12,
+                "Owen h={h}, a={a}: actual={actual:e}, reference={reference:e}"
+            );
+            assert_eq!(-actual, owens_t(-h, -a));
         }
     }
 }

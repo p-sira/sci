@@ -53,6 +53,7 @@ fn hermite(n: i32, x: f64, scale: f64) -> f64 {
     scale * x * current - scale * previous
 }
 
+#[inline]
 fn chebyshev(n: i32, x: f64, second: bool) -> f64 {
     let (n, sign) = if n < 0 && second {
         if n == -1 {
@@ -74,6 +75,45 @@ fn chebyshev(n: i32, x: f64, second: bool) -> f64 {
     }
     let parity = if x < 0.0 && n % 2 != 0 { -1.0 } else { 1.0 };
     let x = x.abs();
+    if n == 10 && x < 1.0 {
+        // Factor through degree five instead of taking nine dependent
+        // recurrence steps. T_10 = 2*T_5² - 1 and U_10 = 2*T_5*U_5 - 1.
+        // The factorization avoids the large coefficient cancellation of a
+        // degree-ten Horner polynomial near the endpoints and roots.
+        let y = x * x;
+        let t5 = x * ((16.0 * y - 20.0) * y + 5.0);
+        let partner = if second {
+            x * ((32.0 * y - 32.0) * y + 6.0)
+        } else {
+            t5
+        };
+        return sign * (2.0 * t5 * partner - 1.0);
+    }
+    if n >= 64 && x < 1.0 {
+        // Binary doubling computes (T_k(x), U_{k-1}(x)) in O(log n).
+        // Keeping both polynomials avoids division by 1-x² near endpoints.
+        // The short recurrence below retains its low overhead for small n.
+        let target = if second { n + 1 } else { n } as u32;
+        let mut t = 1.0;
+        let mut u = 0.0;
+        let mut bit = 1 << (31 - target.leading_zeros());
+        let delta = (x - 1.0) * (x + 1.0);
+        while bit != 0 {
+            // (T_{2k}, U_{2k-1}) from (T_k, U_{k-1}).
+            let doubled_t = 2.0 * t * t - 1.0;
+            let doubled_u = 2.0 * t * u;
+            if target & bit != 0 {
+                // T_{k+1}=x T_k+(x²-1) U_{k-1}; U_k=T_k+x U_{k-1}.
+                t = x * doubled_t + delta * doubled_u;
+                u = doubled_t + x * doubled_u;
+            } else {
+                t = doubled_t;
+                u = doubled_u;
+            }
+            bit >>= 1;
+        }
+        return sign * parity * if second { u } else { t };
+    }
     let (mut previous, mut current) = (1.0, if second { 2.0 * x } else { x });
     let twice = 2.0 * x;
     if x < 1.0 {
@@ -103,10 +143,12 @@ polynomial! {
 }
 polynomial! {
     /// Chebyshev polynomial T_n(x), with T_{-n} = T_n.
+    #[inline]
     eval_chebyt(n, x) { chebyshev(n, x, false) }
 }
 polynomial! {
     /// Chebyshev polynomial U_n(x), with U_{-1} = 0 and U_{-n-2} = -U_n.
+    #[inline]
     eval_chebyu(n, x) { chebyshev(n, x, true) }
 }
 
@@ -339,4 +381,110 @@ polynomial! {
 polynomial! {
     /// Jacobi polynomial P_n^(alpha,beta)(x), for n >= 0 and finite alpha,beta > -1.
     eval_jacobi(n, alpha, beta, x) { jacobi(n, alpha, beta, x) }
+}
+
+#[cfg(test)]
+mod chebyshev_fast_tests {
+    use super::chebyshev;
+
+    fn recurrence(n: i32, x: f64, second: bool) -> f64 {
+        let (mut previous, mut value) = (1.0, if second { 2.0 * x } else { x });
+        for _ in 1..n {
+            (previous, value) = (value, 2.0 * x * value - previous);
+        }
+        value
+    }
+
+    #[test]
+    fn degree_ten_factorization_matches_recurrence_and_public_wrappers() {
+        // Include nearby roots, exact endpoints, their adjacent floating-point
+        // numbers, and arguments outside the polynomial's orthogonality range.
+        let mut values = vec![
+            -2.0,
+            -1.0,
+            -1.0 + f64::EPSILON,
+            -0.999999999999,
+            -0.95,
+            -0.5,
+            -0.0,
+            0.0,
+            0.5,
+            0.95,
+            0.999999999999,
+            1.0 - f64::EPSILON,
+            1.0,
+            2.0,
+        ];
+        for k in 1..=10 {
+            let root = (k as f64 * std::f64::consts::PI / 11.0).cos();
+            values.extend([root, root - 1e-12, root + 1e-12]);
+        }
+        for k in 0..10 {
+            let root = ((k as f64 + 0.5) * std::f64::consts::PI / 10.0).cos();
+            values.extend([root, root - 1e-12, root + 1e-12]);
+        }
+        for i in 0..=1000 {
+            values.push(i as f64 / 500.0 - 1.0);
+        }
+        for x in values {
+            for second in [false, true] {
+                let expected = recurrence(10, x, second);
+                let value = chebyshev(10, x, second);
+                let tolerance = 2e-14 * (1.0 + expected.abs());
+                assert!(
+                    (value - expected).abs() <= tolerance,
+                    "x={x:?}, second={second}: value={value}, expected={expected}"
+                );
+                // Private kernel extends negative degrees; public wrappers
+                // retain their documented restriction to nonnegative degrees.
+                let reflected = chebyshev(if second { -12 } else { -10 }, x, second);
+                let reflection = if second { -value } else { value };
+                assert!((reflected - reflection).abs() <= tolerance);
+                let wrapper = if second {
+                    crate::eval_chebyu(10, x)
+                } else {
+                    crate::eval_chebyt(10, x)
+                };
+                assert!((wrapper - expected).abs() <= tolerance);
+                let shifted = if second {
+                    crate::eval_sh_chebyu(10, (x + 1.0) / 2.0)
+                } else {
+                    crate::eval_sh_chebyt(10, (x + 1.0) / 2.0)
+                };
+                assert!((shifted - expected).abs() <= 5e-13 * (1.0 + expected.abs()));
+                let scaled = if second {
+                    crate::eval_chebys(10, 2.0 * x)
+                } else {
+                    crate::eval_chebyc(10, 2.0 * x) * 0.5
+                };
+                assert!((scaled - expected).abs() <= tolerance);
+            }
+        }
+        assert!(crate::eval_chebyt(-10, 0.5_f64).is_nan());
+        assert!(crate::eval_chebyu(-12, 0.5_f32).is_nan());
+        let typed = crate::eval_chebyt(10, 0.3_f32);
+        let reference = recurrence(10, f64::from(0.3_f32), false) as f32;
+        assert!((typed - reference).abs() <= 8.0 * f32::EPSILON);
+        assert_eq!(chebyshev(-1, 0.5, true), 0.0);
+    }
+
+    #[test]
+    fn doubling_matches_independent_three_term_recurrence() {
+        for x in [-0.999999, -0.9, -0.3, 0.0, 0.3, 0.9, 0.999999] {
+            for second in [false, true] {
+                let (mut previous, mut current) = (1.0_f64, if second { 2.0 * x } else { x });
+                for n in 1..=4096 {
+                    if n >= 64 && (n == 64 || n == 65 || n == 127 || n == 1024 || n == 4096) {
+                        let actual = chebyshev(n, x, second);
+                        let tolerance = 2e-8 * (1.0 + current.abs());
+                        assert!(
+                            (actual - current).abs() <= tolerance,
+                            "n={n}, x={x}, second={second}, actual={actual}, reference={current}"
+                        );
+                    }
+                    (previous, current) = (current, 2.0 * x * current - previous);
+                }
+            }
+        }
+    }
 }

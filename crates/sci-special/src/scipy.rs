@@ -126,8 +126,10 @@ pub fn airye(x: f64) -> [f64; 4] {
 ///
 /// ## Numerical behavior and work limits
 ///
-/// An integrated Airy power series with double-double accumulation is used for
-/// `abs(x) <= 10`; cached 32-point Gaussian rules cover `10 < abs(x) <= 16`.
+/// An integrated Airy power series uses binary64 accumulation for `abs(x) <= 4`
+/// and double-double accumulation for `4 < abs(x) <= 10`. For
+/// `10 < abs(x) <= 16`, composite 32-point Gaussian quadrature evaluates Ai
+/// and Bi together at each node to share the Airy kernel evaluations.
 /// Translated asymptotic expansions apply for larger magnitudes. Negative inputs
 /// use reflection and orientation identities. Large oscillatory arguments remain
 /// limited by argument reduction and asymptotic truncation. This corrects the
@@ -1378,10 +1380,12 @@ pub fn iti0k0(x: f64) -> (f64, f64) {
 ///
 /// ## Numerical behavior
 ///
-/// For `x >= 4`, the K₀ tail uses a shifted, exponentially scaled integrand
-/// with a cached 32-point Gaussian rule over `[0,48]`. The omitted tail is
-/// below `1e-20` relatively; floating-point quadrature error also remains.
-/// Smaller arguments use a series. True underflow returns zero.
+/// For `4 <= x < 6`, the K₀ tail uses a shifted, exponentially scaled
+/// integrand with a tabulated Gaussian rule on `[0,48]`; its omitted tail is
+/// below `1e-20` relatively. For `6 <= x < 20` and `x >= 20`, shorter 16-
+/// and 8-node Gauss-Laguerre rules integrate the same scaled tail, respectively.
+/// Smaller arguments use a series. Quadrature error remains, and true
+/// underflow returns zero.
 pub fn it2i0k0(x: f64) -> (f64, f64) {
     crate::backend::legacy::it2i0k0(x)
 }
@@ -1454,19 +1458,21 @@ pub fn modstruve<T: sci_core::Float>(v: T, x: T) -> T {
 ///
 /// ## Parameters and domain
 ///
-/// Nonnegative x.
+/// Finite real `x`; the integral is even in `x`.
 ///
 /// ## Returns
 ///
-/// Returns IEEE values: NaN outside the real domain, infinity at divergent poles or overflow, and zero on underflow. NaN inputs propagate unless a limiting case specifies otherwise.
+/// Returns the real integral for finite inputs and NaN for nonfinite inputs.
+/// Overflow may produce infinity, and underflow may produce zero.
 ///
 /// ## Numerical behavior and work limits
 ///
-/// Uses the integrated defining series with double-double accumulation and at
-/// most 127 updates for `abs(x) <= 24`, composite 32-point Gaussian quadrature
-/// on intervals at most four units wide for `24 < abs(x) <= 128`, and the
-/// translated asymptotic expansion beyond 128. The integral is even in `x`.
-/// Nonfinite inputs return NaN. Large-argument asymptotic accuracy is limited.
+/// Uses the integrated defining series with binary64 accumulation for
+/// `abs(x) <= 10` and double-double accumulation for `10 < abs(x) <= 24`,
+/// with at most 127 updates. Composite 32-point Gaussian quadrature applies
+/// on intervals at most four units wide for `24 < abs(x) <= 128`, followed by
+/// the translated asymptotic expansion beyond 128. Large-argument accuracy
+/// is limited by asymptotic truncation.
 ///
 /// ## Examples
 ///
@@ -1479,11 +1485,6 @@ pub fn modstruve<T: sci_core::Float>(v: T, x: T) -> T {
 ///
 /// - [SciPy itstruve0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.itstruve0.html).
 ///
-/// ## Numerical behavior and work limits
-///
-/// For `abs(x) <= 128`, bounded Gaussian quadrature evaluates the defining integral using
-/// the Struve kernel. Larger arguments use the translated asymptotic expansion. The result
-/// follows the defining integral where SciPy's large-argument implementation disagrees.
 pub fn itstruve0(x: f64) -> f64 {
     crate::backend::legacy::itstruve0(x)
 }
@@ -3205,9 +3206,10 @@ pub fn pbwa(a: f64, x: f64) -> (f64, f64) {
 /// ## Definition and numerical behavior
 ///
 /// Solves `y″ + [a − 2q cos(2z)]y = 0`. The characteristic value selects the periodic
-/// even solution. A tridiagonal Fourier recurrence uses at most 251 terms,
-/// 128 Sturm bisections, and four inverse iterations. Work limits do not
-/// guarantee uniform accuracy near degeneracies.
+/// even solution. A tridiagonal Fourier recurrence uses at most 251 terms;
+/// isolated eigenvalue bands use a bounded scalar Schur-complement solve,
+/// with at most 128 Sturm bisections as fallback. Fourier coefficients use
+/// two inverse iterations. Accuracy can degrade near degeneracies.
 ///
 /// [NIST DLMF, Mathieu functions](https://dlmf.nist.gov/28).
 ///
@@ -3245,9 +3247,10 @@ pub fn mathieu_a(m: u32, q: f64) -> f64 {
 /// ## Definition and numerical behavior
 ///
 /// Solves `y″ + [a − 2q cos(2z)]y = 0`. The characteristic value selects the periodic
-/// odd solution. A tridiagonal Fourier recurrence uses at most 251 terms,
-/// 128 Sturm bisections, and four inverse iterations. Work limits do not
-/// guarantee uniform accuracy near degeneracies.
+/// odd solution. A tridiagonal Fourier recurrence uses at most 251 terms;
+/// isolated eigenvalue bands use a bounded scalar Schur-complement solve,
+/// with at most 128 Sturm bisections as fallback. Fourier coefficients use
+/// two inverse iterations. Accuracy can degrade near degeneracies.
 ///
 /// [NIST DLMF, Mathieu functions](https://dlmf.nist.gov/28).
 ///
