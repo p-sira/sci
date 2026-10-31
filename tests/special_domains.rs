@@ -466,6 +466,203 @@ fn parameter_inverses_round_trip_after_bracketed_brent_search() {
     assert!(s::chndtrinc(2.5, 3.0, 0.9).is_nan());
 }
 
+// Independent Bonnet recurrence, deliberately not using the backend's
+// precomputed coefficient ratios or its near-endpoint difference recurrence.
+fn legendre_reference(n: usize, x: f64) -> Vec<f64> {
+    let mut values = Vec::with_capacity(n + 1);
+    values.push(1.0);
+    if n > 0 {
+        values.push(x);
+    }
+    for degree in 2..=n {
+        let k = (degree - 1) as f64;
+        values
+            .push(((2.0 * k + 1.0) * x * values[degree - 1] - k * values[degree - 2]) / (k + 1.0));
+    }
+    values
+}
+
+#[test]
+fn legendre_public_table_crosses_coefficient_boundary_without_changing_values() {
+    // n=64 uses the coefficient table entirely; n=65/66 cross its final
+    // coefficient, and n=128 tests the long tail. Negative x checks parity,
+    // and x=0.95 takes the separate near-endpoint recurrence.
+    for (n, x) in [
+        (0, 0.3_f64),
+        (1, -0.0),
+        (64, 0.3),
+        (65, -0.3),
+        (66, 0.3),
+        (128, 0.95),
+        (128, -0.95),
+    ] {
+        let table = s::legendre_p_all(n, x).unwrap();
+        let reference = legendre_reference(n, x);
+        assert_eq!(table.len(), n + 1);
+        for degree in 0..=n {
+            let scalar = s::eval_legendre(degree as i32, x);
+            assert_eq!(
+                table[degree].to_bits(),
+                scalar.to_bits(),
+                "table/scalar P_{degree}({x})"
+            );
+            let error = (table[degree] - reference[degree]).abs();
+            assert!(
+                error <= 3e-12 * (1.0 + reference[degree].abs()),
+                "independent P_{degree}({x}): got {}, expected {}",
+                table[degree],
+                reference[degree]
+            );
+        }
+    }
+    assert!(s::legendre_p_all(129, 0.3).is_err());
+}
+
+#[test]
+fn legendre_public_small_argument_and_large_degree_paths() {
+    // The power-series path switches at |x|=1e-5. Verify both sides with an
+    // independent recurrence, including degrees beyond the 64-ratio table.
+    let cutoff = 1e-5_f64;
+    for x in [
+        -cutoff,
+        -f64::from_bits(cutoff.to_bits() - 1),
+        -0.0,
+        0.0,
+        f64::from_bits(cutoff.to_bits() - 1),
+        cutoff,
+    ] {
+        let reference = legendre_reference(128, x);
+        for degree in [2, 3, 64, 65, 66, 128] {
+            let value = s::eval_legendre(degree as i32, x);
+            assert!(
+                (value - reference[degree]).abs() <= 3e-12 * (1.0 + reference[degree].abs()),
+                "P_{degree}({x})={value}, reference={}",
+                reference[degree]
+            );
+        }
+    }
+    assert_eq!(
+        s::eval_legendre(1, -0.0_f64).to_bits(),
+        (-0.0_f64).to_bits()
+    );
+    assert_eq!(
+        s::legendre_p_all(1, -0.0).unwrap()[1].to_bits(),
+        (-0.0_f64).to_bits()
+    );
+
+    // P_{2k}(0) = (-1)^k (2k choose k)/4^k; odd orders vanish.
+    let mut even = 1.0;
+    for k in 1..=64 {
+        even *= -((2 * k - 1) as f64) / (2 * k) as f64;
+        if matches!(k, 1 | 32 | 33 | 64) {
+            let actual = s::eval_legendre((2 * k) as i32, 0.0_f64);
+            assert!((actual - even).abs() <= 2e-13 * (1.0 + even.abs()));
+            assert_eq!(s::eval_legendre((2 * k - 1) as i32, 0.0_f64), 0.0);
+        }
+    }
+
+    // The public scalar API supports more degrees than the 128-entry table.
+    for n in [65, 66, 128, 4096] {
+        let x = 0.3_f64;
+        let reference = legendre_reference(n as usize, x);
+        let independent = reference[n as usize];
+        let p = s::eval_legendre(n, x);
+        let prior = s::eval_legendre(n - 1, x);
+        let previous = s::eval_legendre(n - 2, x);
+        assert!((prior - reference[n as usize - 1]).abs() <= 2e-12 * (1.0 + prior.abs()));
+        assert!((previous - reference[n as usize - 2]).abs() <= 2e-12 * (1.0 + previous.abs()));
+        let k = (n - 1) as f64;
+        let expected = ((2.0 * k + 1.0) * x * prior - k * previous) / (k + 1.0);
+        assert!((p - expected).abs() <= 2e-12 * (1.0 + expected.abs()));
+        assert!((p - independent).abs() <= 2e-12 * (1.0 + independent.abs()));
+        let alias = s::legendre_p(n, x);
+        assert!((alias - independent).abs() <= 2e-12 * (1.0 + independent.abs()));
+        let x32 = 0.3_f32;
+        let independent32 = legendre_reference(n as usize, f64::from(x32))[n as usize];
+        let value32 = s::eval_legendre(n, x32);
+        let promoted = s::eval_legendre(n, f64::from(x32));
+        assert!(
+            (f64::from(value32) - independent32).abs()
+                <= 4.0 * f64::from(f32::EPSILON) * (1.0 + independent32.abs()),
+            "f32 P_{n}({x32})={value32}, reference={independent32}"
+        );
+        assert!((promoted - independent32).abs() <= 2e-12 * (1.0 + independent32.abs()));
+        assert_eq!(value32.to_bits(), (promoted as f32).to_bits());
+    }
+}
+
+#[test]
+fn legendre_public_endpoints_and_nonfinite_inputs() {
+    for n in [0, 1, 2, 3, 64, 65, 128, 4096] {
+        assert_eq!(s::eval_legendre(n, 1.0_f64), 1.0);
+        assert_eq!(
+            s::eval_legendre(n, -1.0_f64),
+            if n % 2 == 0 { 1.0 } else { -1.0 }
+        );
+        assert!(s::eval_legendre(n, f64::NAN).is_nan());
+        if n == 0 {
+            assert_eq!(s::eval_legendre(n, f64::INFINITY), 1.0);
+            assert_eq!(s::eval_legendre(n, f64::NEG_INFINITY), 1.0);
+        } else {
+            assert_eq!(s::eval_legendre(n, f64::INFINITY), f64::INFINITY);
+            assert_eq!(
+                s::eval_legendre(n, f64::NEG_INFINITY),
+                if n % 2 == 0 {
+                    f64::INFINITY
+                } else {
+                    f64::NEG_INFINITY
+                }
+            );
+        }
+    }
+    for x in [-1.0_f64, 1.0] {
+        let table = s::legendre_p_all(128, x).unwrap();
+        assert_eq!(table.len(), 129);
+        for (degree, &value) in table.iter().enumerate() {
+            assert_eq!(
+                value,
+                if x < 0.0 && degree % 2 != 0 {
+                    -1.0
+                } else {
+                    1.0
+                }
+            );
+        }
+    }
+    for x in [f64::INFINITY, f64::NEG_INFINITY, f64::NAN] {
+        let table = s::legendre_p_all(3, x).unwrap();
+        assert_eq!(table.len(), 4);
+        for (n, &value) in table.iter().enumerate() {
+            let scalar = s::eval_legendre(n as i32, x);
+            if scalar.is_nan() {
+                assert!(value.is_nan());
+            } else {
+                assert_eq!(value.to_bits(), scalar.to_bits());
+            }
+        }
+    }
+    // Retain the near-endpoint difference recurrence and shifted public wrapper.
+    for n in [65, 128, 4096] {
+        let near_one = 1.0 - f64::EPSILON;
+        let value = s::eval_legendre(n, near_one);
+        let first_order = 1.0 - (n as f64 * (n + 1) as f64 / 2.0) * f64::EPSILON;
+        assert!((value - first_order).abs() < 2e-11);
+    }
+    for n in [65, 128] {
+        let shifted = 0.65_f64;
+        let x = 2.0 * shifted - 1.0;
+        let independent = legendre_reference(n as usize, x)[n as usize];
+        let value = s::eval_sh_legendre(n, shifted);
+        assert!(
+            (value - independent).abs() <= 3e-12 * (1.0 + independent.abs()),
+            "shifted P_{n}({shifted})={value}, reference={independent}"
+        );
+        let scalar = s::eval_legendre(n, x);
+        assert!((scalar - independent).abs() <= 3e-12 * (1.0 + independent.abs()));
+        assert_eq!(value.to_bits(), scalar.to_bits());
+    }
+}
+
 #[test]
 fn mathieu_characteristic_values_match_references_across_starting_guesses() {
     // References: 50-digit Sturm bisection of the DLMF 28.4 Fourier

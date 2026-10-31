@@ -731,6 +731,242 @@ fn modified_mathieu_pairs_preserve_wronskians_and_first_kind_parity() {
 }
 
 #[test]
+fn mathieu_zero_coupling_scalar_and_fourier_paths_agree() {
+    // q=0 bypasses the eigenvalue search, but still constructs the public
+    // coefficient vector (and the shorter vector used for angular functions).
+    // The ce_0 convention is cos(0*x)/sqrt(2), unlike the unit coefficients
+    // for all positive orders.
+    for m in [0_u32, 1, 2, 3, 8, 32, 128] {
+        for odd in [false, true] {
+            if odd && m == 0 {
+                continue;
+            }
+            let lambda = if odd {
+                s::mathieu_b(m, 0.0)
+            } else {
+                s::mathieu_a(m, 0.0)
+            };
+            assert_eq!(lambda, f64::from(m).powi(2), "order={m}, odd={odd}");
+
+            let coefficients = if odd {
+                s::mathieu_odd_coef(m, 0.0).unwrap()
+            } else {
+                s::mathieu_even_coef(m, 0.0).unwrap()
+            };
+            let harmonic = if odd && m % 2 == 0 {
+                (m / 2 - 1) as usize
+            } else {
+                (m / 2) as usize
+            };
+            assert!(coefficients.len() > harmonic);
+            let amplitude = if !odd && m == 0 {
+                std::f64::consts::FRAC_1_SQRT_2
+            } else {
+                1.0
+            };
+            for (j, &coefficient) in coefficients.iter().enumerate() {
+                if j == harmonic && !odd && m == 0 {
+                    // The implementation computes 1/sqrt(2), which may differ
+                    // by one ULP from the independently rounded FRAC_1_SQRT_2.
+                    assert!(
+                        coefficient.is_finite()
+                            && coefficient.to_bits().abs_diff(amplitude.to_bits()) <= 1,
+                        "ce_0 coefficient={coefficient}, expected {amplitude} within one ULP"
+                    );
+                } else {
+                    // Zero Fourier harmonics remain exactly zero; all other
+                    // q=0 basis coefficients are exactly one.
+                    assert_eq!(
+                        coefficient,
+                        if j == harmonic { amplitude } else { 0.0 },
+                        "m={m}, odd={odd}, coefficient={j}"
+                    );
+                }
+            }
+
+            let radians = 23.0_f64.to_radians();
+            let frequency = f64::from(m);
+            let (value, derivative) = if odd {
+                s::mathieu_sem(m, 0.0, 23.0)
+            } else {
+                s::mathieu_cem(m, 0.0, 23.0)
+            };
+            let (expected, expected_derivative) = if odd {
+                (
+                    amplitude * (frequency * radians).sin(),
+                    amplitude * frequency * (frequency * radians).cos(),
+                )
+            } else {
+                (
+                    amplitude * (frequency * radians).cos(),
+                    -amplitude * frequency * (frequency * radians).sin(),
+                )
+            };
+            finite_close(value, expected, 3e-12, 3e-12);
+            finite_close(derivative, expected_derivative, 4e-10, 4e-12);
+        }
+    }
+}
+
+#[test]
+fn mathieu_fourier_coefficients_satisfy_eigenvalue_recurrences_and_norms() {
+    // These are the four tridiagonal Fourier recurrences in DLMF 28.4.
+    // The even-even cosine basis has an exceptional 2*q coupling at row 1;
+    // the odd-harmonic recurrences have opposite +/-q diagonal shifts.
+    // Testing the recurrence ties the vector-producing const specialization
+    // to the independently computed scalar eigenvalue.
+    for (m, q) in [
+        (0, 1e-8),
+        (0, 0.5),
+        (1, 5.0),
+        (2, 0.5),
+        (2, 1.0),
+        (3, 5.0),
+        (3, 1.0001),
+        (4, 20.0),
+        (7, 50.0),
+        (30, 50.0),
+        (128, 100.0),
+    ] {
+        for odd in [false, true] {
+            if odd && m == 0 {
+                continue;
+            }
+            let lambda = if odd {
+                s::mathieu_b(m, q)
+            } else {
+                s::mathieu_a(m, q)
+            };
+            let coefficients = if odd {
+                s::mathieu_odd_coef(m, q).unwrap()
+            } else {
+                s::mathieu_even_coef(m, q).unwrap()
+            };
+            // Finite guards are prerequisites, not the numerical test: below
+            // we also require weighted unit norm and every Fourier row's
+            // eigenvalue residual to be small. In particular, an infinite
+            // eigenvalue must not produce an infinite residual tolerance.
+            assert!(lambda.is_finite());
+            assert!(coefficients.len() > (m / 2) as usize + 2);
+            assert!(coefficients.iter().all(|c| c.is_finite()));
+
+            let even_harmonics = m % 2 == 0;
+            let norm = coefficients
+                .iter()
+                .enumerate()
+                .map(|(j, c)| {
+                    let weight = if !odd && even_harmonics && j == 0 {
+                        2.0
+                    } else {
+                        1.0
+                    };
+                    weight * c * c
+                })
+                .sum::<f64>();
+            finite_close(norm, 1.0, 3e-12, 3e-12);
+
+            // The last row of a published coefficient vector is padded or
+            // truncated, so inspect interior recurrence rows only.
+            let first_harmonic = if even_harmonics {
+                if odd { 2 } else { 0 }
+            } else {
+                1
+            };
+            for j in 0..coefficients.len() - 2 {
+                let frequency = (2 * j + first_harmonic) as f64;
+                let diagonal = frequency * frequency
+                    + if j == 0 && !even_harmonics {
+                        if odd { -q } else { q }
+                    } else {
+                        0.0
+                    };
+                let left = if j == 0 {
+                    0.0
+                } else if j == 1 && !odd && even_harmonics {
+                    2.0 * q * coefficients[j - 1]
+                } else {
+                    q * coefficients[j - 1]
+                };
+                let right = q * coefficients[j + 1];
+                let residual = (lambda - diagonal) * coefficients[j] - left - right;
+                let tolerance = 8e-13 * (1.0 + lambda.abs() + diagonal.abs() + q);
+                assert!(
+                    residual.abs() <= tolerance,
+                    "m={m}, q={q}, odd={odd}, row={j}: residual={residual:e}, tolerance={tolerance:e}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn mathieu_angular_short_vectors_match_full_fourier_coefficients() {
+    // Angular ce/se use vector_margin=16, while the public coefficient APIs
+    // use vector_margin=48. Both must describe the same Fourier solution;
+    // derivatives are with respect to radians, despite degree inputs.
+    for (m, q) in [(0, 0.5), (1, 5.0), (2, 20.0), (5, 0.5), (12, 20.0)] {
+        for odd in [false, true] {
+            if odd && m == 0 {
+                continue;
+            }
+            let coefficients = if odd {
+                s::mathieu_odd_coef(m, q).unwrap()
+            } else {
+                s::mathieu_even_coef(m, q).unwrap()
+            };
+            let first_harmonic = if m % 2 == 1 {
+                1
+            } else if odd {
+                2
+            } else {
+                0
+            };
+            for degrees in [0.0_f64, 17.0, 65.0] {
+                let x = degrees.to_radians();
+                let (mut value, mut derivative) = (0.0, 0.0);
+                for (j, &coefficient) in coefficients.iter().enumerate() {
+                    let frequency = (first_harmonic + 2 * j) as f64;
+                    let (sin, cos) = (frequency * x).sin_cos();
+                    if odd {
+                        value += coefficient * sin;
+                        derivative += coefficient * frequency * cos;
+                    } else {
+                        value += coefficient * cos;
+                        derivative -= coefficient * frequency * sin;
+                    }
+                }
+                let (angular, angular_derivative) = if odd {
+                    s::mathieu_sem(m, q, degrees)
+                } else {
+                    s::mathieu_cem(m, q, degrees)
+                };
+                finite_close(angular, value, 5e-11, 5e-11);
+                finite_close(angular_derivative, derivative, 1e-9, 5e-11);
+            }
+        }
+    }
+}
+
+#[test]
+fn mathieu_characteristic_values_respect_negative_coupling_symmetry() {
+    // Translation by pi/2 changes q into -q. Even-order eigenvalues stay
+    // in their family; odd-order a_m and b_m exchange families. This probes
+    // both signs without sharing the scalar solver's starting estimate.
+    for q in [0.1, 2.9, 9.5, 75.0] {
+        for m in [0_u32, 2, 4, 12] {
+            finite_close(s::mathieu_a(m, -q), s::mathieu_a(m, q), 3e-11, 3e-12);
+            if m > 0 {
+                finite_close(s::mathieu_b(m, -q), s::mathieu_b(m, q), 3e-11, 3e-12);
+            }
+        }
+        for m in [1_u32, 3, 5, 13] {
+            finite_close(s::mathieu_a(m, -q), s::mathieu_b(m, q), 3e-11, 3e-12);
+            finite_close(s::mathieu_b(m, -q), s::mathieu_a(m, q), 3e-11, 3e-12);
+        }
+    }
+}
+
+#[test]
 fn cylinder_sequences_match_hermite_polynomials_and_derivatives() {
     for x in [-5.0, -1.5, 0.0, 0.3, 1.5, 5.0] {
         let (values, slopes) = s::pbdn_seq(32, x).unwrap();

@@ -205,6 +205,36 @@ path = "tests/special_properties.rs"
 required-features = ["linalg", "special"]
 
 [[test]]
+name = "special_associated_legendre_coverage"
+path = "tests/special_associated_legendre_coverage.rs"
+required-features = ["special"]
+
+[[test]]
+name = "special_legacy_integrals_coverage"
+path = "tests/special_legacy_integrals_coverage.rs"
+required-features = ["special"]
+
+[[test]]
+name = "special_bessel_coverage"
+path = "tests/special_bessel_coverage.rs"
+required-features = ["special"]
+
+[[test]]
+name = "special_distribution_coverage"
+path = "tests/special_distribution_coverage.rs"
+required-features = ["special"]
+
+[[test]]
+name = "special_faddeeva_coverage"
+path = "tests/special_faddeeva_coverage.rs"
+required-features = ["special", "complex"]
+
+[[test]]
+name = "special_spheroidal_coverage"
+path = "tests/special_spheroidal_coverage.rs"
+required-features = ["special"]
+
+[[test]]
 name = "statistics"
 path = "tests/statistics.rs"
 required-features = ["complex", "fft", "stats"]
