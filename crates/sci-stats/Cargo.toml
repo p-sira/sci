@@ -20,7 +20,6 @@ sci-core.workspace = true
 sci-special.workspace = true
 nalgebra.workspace = true
 statrs.workspace = true
-basin.workspace = true
 lapjv.workspace = true
 ndarray.workspace = true
 

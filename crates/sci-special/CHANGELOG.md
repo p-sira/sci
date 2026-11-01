@@ -22,6 +22,14 @@
 
 ## 0.3.0
 
+- Replace dense `nalgebra` symmetric eigendecomposition of Jacobi and Lamé
+  tridiagonal matrices with a scaled, shifted implicit QL eigensolver. Retain
+  ordered eigenpairs and Gaussian weight/eigenvector normalization, add
+  high-order residual and moment regression tests, and remove the direct
+  `nalgebra` dependency. For Gaussian weights, accumulate only the first
+  eigenvector row instead of rotating the entire unused eigenbasis; Lamé
+  normalization still uses complete eigenvectors.
+
 - Add complex Lambert W, E₁/Ei, Spence's integral, complex logarithmic products,
   and bounded complex Riemann/Hurwitz zeta with signed-cut conventions, strict
   convergence/error handling and independent numerical references.

@@ -2,6 +2,11 @@
 
 ## 0.3.0
 
+- Replace private `basin` bounded scalar minimization in transform and PPCC
+  parameter searches with a safeguarded Brent implementation. Preserve closed
+  bounds, finite objective validation, and bounded iteration; remove the direct
+  `basin` dependency.
+
 - Make descriptive statistics generic over `Float`, including summaries, quantiles, moments, trimming, and standardized scores.
 
 - Remove the two-sample-only kstest alias; select ks_1samp or ks_2samp explicitly.

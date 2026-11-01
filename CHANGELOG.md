@@ -2,6 +2,20 @@
 
 ## 0.3.0 (unreleased)
 
+- Replace the private bounded Brent optimization backend in `sci-stats`
+  with a safeguarded scalar minimizer. Remove `basin` as a direct dependency
+  of `sci-stats`, retaining interval, convergence, and finite-error behavior.
+- Remove `sci-integrate`'s direct `nalgebra` and `sci-special` dependencies:
+  use a small pivoted solve for nonuniform Newton–Cotes weights and a bounded
+  Gauss–Legendre root generator for fixed-order quadrature. Preserve sampled
+  integration, generic float callbacks, and public quadrature interfaces.
+- Replace `sci-special`'s dense `nalgebra` eigendecomposition for Gaussian
+  quadrature and Lamé polynomials with a bounded, scaled symmetric tridiagonal
+  eigensolver; remove the direct `nalgebra` dependency while preserving the
+  sorted eigenpairs and normalization conventions. Accumulate only the first
+  eigenvector components when computing Gaussian weights; retain the full
+  eigenvectors for Lamé polynomials.
+
 - **Breaking:** Group numerical functions in public mathematical-family modules
   throughout the Sci workspace, following the `sci-special` 0.3.0 API design.
   Keep shared errors and foundational types at crate roots; keep `sci-core`

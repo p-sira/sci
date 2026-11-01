@@ -16,18 +16,14 @@
 //! Gaussian rules use the documented fixed order and map the reference
 //! interval `[-1, 1]` to the integration interval.
 //!
-//! ## Acknowledgments
-//!
-//! We thank `nalgebra` for its numerical linear algebra.
-
 #![forbid(unsafe_code)]
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]
 
 use sci_core as error;
 pub use sci_core::{Error, Result};
-use sci_special as special;
 #[path = "mod.rs"]
 mod implementation;
+mod solver;
 /// Integration of sampled values by composite rules.
 pub mod sampled {
     pub use crate::implementation::{
