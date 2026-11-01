@@ -1,4 +1,5 @@
 use super::*;
+#[cfg(feature = "random")]
 use rand::{Rng, SeedableRng};
 
 pub(crate) fn validate_array(a: &SparseArray) -> Result<()> {
@@ -277,6 +278,7 @@ pub fn csr_indices_i64(a: &SparseMatrix) -> Result<CsrIndices<i64>> {
 /// ```
 /// # References
 /// [SciPy random_array](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.random_array.html).
+#[cfg(feature = "random")]
 pub fn random_array(shape: &[usize], density: f64, seed: u64) -> Result<SparseArray> {
     let mut a = SparseArray {
         shape: shape.to_vec(),
@@ -340,6 +342,7 @@ pub fn random_array(shape: &[usize], density: f64, seed: u64) -> Result<SparseAr
 /// ```
 /// # References
 /// [SciPy random](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.random.html).
+#[cfg(feature = "random")]
 pub fn random(rows: usize, cols: usize, density: f64, seed: u64) -> Result<SparseMatrix> {
     let a = random_array(&[rows, cols], density, seed)?;
     from_coo(

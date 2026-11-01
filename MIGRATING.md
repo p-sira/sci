@@ -126,6 +126,15 @@ Stable special functions such as `exprel`, `xlogy`, and `log_expit` remain.
 
 ## Sparse types and ownership
 
+Direct `sci-sparse` consumers selecting `default-features = false` now receive
+only canonical CSR/COO storage, construction, arithmetic and array operations.
+Add `features = ["solver"]` for `linalg`, `features = ["graph"]` for `csgraph`,
+`features = ["random"]` for `random` and `random_array`, or
+`features = ["npz"]` for `load_npz` and `save_npz`. Use `features = ["full"]`
+to restore all numerical backends without NPZ. Normal `sci-sparse` defaults
+and the facade `sci::sparse` API preserve the preexisting capabilities;
+`sci`'s `sparse-npz` feature continues to enable NPZ support.
+
 `issparse` is removed; use concrete types or traits. `get_index_dtype`,
 `IndexDtype`, and `safely_cast_index_arrays` are replaced by concrete checked
 conversions:

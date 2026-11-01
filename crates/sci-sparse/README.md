@@ -1,6 +1,17 @@
 # Sci-Sparse
 
-The default `npz` feature enables `load_npz` and `save_npz`. Use `default-features = false` to retain sparse numerical operations without ZIP and compression dependencies. The Sci facade selects NPZ with `sparse-npz`.
+By default, `full` enables sparse solvers, graph algorithms, and seeded random
+sampling; `npz` enables `load_npz` and `save_npz`. To use only canonical sparse
+storage, construction, arithmetic, and array transforms, disable defaults:
+
+```toml
+sci-sparse = { version = "0.2", default-features = false }
+```
+
+Enable independent backends with `features = ["solver"]`, `features = ["graph"]`,
+`features = ["random"]`, or `features = ["npz"]`. `full` selects the first three
+and retains the prior numerical API. The Sci facade continues to select `full`
+with `sparse` and NPZ with `sparse-npz`; its default API remains unchanged.
 
 Real sparse arrays, graph algorithms, and linear algebra using shared Sci records
 and private numerical backends. Numerical operations use Rust signatures and

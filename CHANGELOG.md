@@ -2,6 +2,12 @@
 
 ## 0.3.0 (unreleased)
 
+- Isolate `sci-sparse`'s lightweight CSR/COO storage and arithmetic from optional
+  `solver`, `graph`, `random`, and `npz` backends. The `sci::sparse` feature
+  explicitly enables all numerical backends, preserving the existing facade
+  API; `sparse-npz` continues to provide NPZ interchange. Direct users of
+  `sci-sparse` with defaults disabled now select heavier capabilities explicitly.
+
 - Remove the dependency of Matrix Market I/O on sparse solvers by sharing
   canonical CSR construction, validation, and dense conversion in `sci-core`.
   Remove `sci-cluster`'s dependencies on statistics and spatial backends by
