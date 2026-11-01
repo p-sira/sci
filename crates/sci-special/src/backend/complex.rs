@@ -9,7 +9,7 @@ use num_complex::{Complex, Complex64};
 #[allow(unused_imports)]
 use sci_core::Float;
 
-pub use crate::backend::complex_integrals::fresnel;
+pub use crate::backend::complex_integrals::{exp1, expi, fresnel};
 
 pub(crate) fn promote<T: Float>(z: Complex<T>) -> Result<Complex64, StrErr> {
     if z.re.is_nan() || z.im.is_nan() {

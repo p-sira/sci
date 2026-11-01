@@ -55,6 +55,14 @@ order or domain.
 The same path migration applies when using the `sci-special` crate directly:
 replace `sci::special` above with `sci_special`.
 
+For complex arguments, use the newly expanded `special::complex` module. For
+example, `special::complex::lambertw(z, k)` chooses integer Lambert W branch
+`k`; `special::complex::exp1(z)` and `special::complex::expi(z)` use signed
+complex branch cuts. `special::complex::zeta(s)` is Riemann zeta, while
+`special::complex::hurwitz_zeta(s, q)` takes an additional complex shift.
+These fallible, generic complex APIs return `sci::Result`; their documented
+numerical domains are narrower than unrestricted complex analytic continuation.
+
 ## Generic floating-point APIs
 
 Supported numerical functions now use `T: sci::Float` (the `num_traits::Float`

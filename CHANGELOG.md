@@ -2,6 +2,14 @@
 
 ## 0.3.0 (unreleased)
 
+- Extend the pure Rust special-function backend with complex Lambert W branches,
+  exponential integrals E₁/Ei, Spence/dilogarithm, stable `xlogy`/`xlog1py`,
+  and bounded complex Riemann/Hurwitz zeta evaluation. Validate f32/f64
+  behavior against independent SciPy and selected high-precision references,
+  including branch cuts, near-pole cases, and numerical error limits.
+- Correct Jacobi elliptic `ellipj(u, 1)` for large finite `u`, and use AGM
+  evaluation when near-unit modulus perturbation expansions cease to be valid.
+
 - **Breaking:** Move all 362 formerly root-exported `sci::special` numerical
   functions to public mathematical-family modules. Calls such as
   `special::gamma(x)`, `special::jv(v, x)`, and

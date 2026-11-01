@@ -67,6 +67,51 @@ fn jacobi_unit_parameter_reduces_to_hyperbolic_functions() {
 }
 
 #[test]
+fn jacobi_unit_parameter_remains_finite_far_beyond_hyperbolic_overflow() {
+    // The exact m=1 identities hold for all finite u, including magnitudes
+    // where cosh(u)*sinh(u) overflows and exp(u) may overflow/underflow.
+    for u in [
+        -1_000.0_f64,
+        -740.0,
+        -400.0,
+        -356.0,
+        -350.0,
+        350.0,
+        356.0,
+        400.0,
+        740.0,
+        1_000.0,
+    ] {
+        let (sn, cn, dn, am) = elliptic::ellipj(u, 1.0);
+        let t = u.tanh();
+        let e = (-u.abs()).exp();
+        let sech = 2.0 * e / (1.0 + e * e);
+        assert!(sn.is_finite() && cn.is_finite() && dn.is_finite() && am.is_finite());
+        finite_close(sn, t, 1e-14, 1e-14);
+        finite_close(cn, sech, 1e-14, 0.0);
+        finite_close(dn, sech, 1e-14, 0.0);
+        finite_close(am, t.atan2(sech), 1e-14, 1e-14);
+        jacobi_relations((sn, cn, dn, am), 1.0, 2e-14);
+    }
+
+    // As soon as the near-m=1 perturbation ceases to be uniformly small,
+    // evaluate by the AGM so that periodicity and the elliptic identities
+    // are maintained at large u rather than forcing a hyperbolic limit.
+    let m = 1.0 - 1e-11;
+    let k = elliptic::ellipk(m).unwrap();
+    let sample = elliptic::ellipj(0.4, m);
+    for period in [-10_i32, -2, 2, 10] {
+        let u = 0.4 + 2.0 * f64::from(period) * k;
+        let actual = elliptic::ellipj(u, m);
+        let sign = if period % 2 == 0 { 1.0 } else { -1.0 };
+        finite_close(actual.0, sign * sample.0, 1e-9, 1e-9);
+        finite_close(actual.1, sign * sample.1, 1e-9, 1e-9);
+        finite_close(actual.2, sample.2, 1e-9, 1e-9);
+        jacobi_relations(actual, m, 2e-10);
+    }
+}
+
+#[test]
 fn jacobi_amplitude_inverts_an_independent_elliptic_integral() {
     // ellipf comes from the independent Ellip implementation, not Cephes'
     // AGM Jacobi kernel. This checks the unwrapped amplitude quantitatively.

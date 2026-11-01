@@ -10,6 +10,209 @@ use sci_core::Float;
 
 type Pair = (Complex64, Complex64);
 
+const EULER: f64 = 0.577_215_664_901_532_9;
+const EXPINT_TERMS: usize = 512;
+const EXPINT_FRACTION_TERMS: usize = 1500;
+
+fn expint_argument<T: Float>(z: Complex<T>) -> Result<Complex64, StrErr> {
+    let z = finite(promote(z)?)?;
+    if z.re == 0.0 && z.im == 0.0 {
+        return Err("complex expint: Zero is a logarithmic singularity.");
+    }
+    // The continued fraction and the complex exponential are evaluated in
+    // binary64. Very large phases require a different argument reduction.
+    if z.norm() > 1.0e6 {
+        return Err("complex expint: Argument magnitude exceeds 1e6.");
+    }
+    Ok(z)
+}
+
+/// Shared sum Σ w^k/(k*k!), used by Ei(z) with w=z and E1(z) with w=-z.
+/// Retain a single recurrence and convergence criterion for both functions.
+fn expint_taylor_sum(w: Complex64) -> Option<Complex64> {
+    let mut term = w;
+    let mut sum = term;
+    for k in 2..=EXPINT_TERMS {
+        let k = k as f64;
+        term *= w * ((k - 1.0) / (k * k));
+        sum += term;
+        if term.norm() <= 2.0 * f64::EPSILON * sum.norm() {
+            return Some(sum);
+        }
+    }
+    None
+}
+
+/// Ei(z) = gamma + log(z) + sum(z^k/(k*k!)). The right half-plane
+/// avoids exponentially large alternating terms; near the imaginary axis
+/// the continued fraction is selected before this series loses precision.
+fn ei_series(z: Complex64) -> Result<Complex64, StrErr> {
+    expint_taylor_sum(z)
+        .map(|sum| z.ln() + EULER + sum)
+        .ok_or("complex expint: Ei series failed to converge.")
+}
+
+fn exp1_series(z: Complex64) -> Result<Complex64, StrErr> {
+    expint_taylor_sum(-z)
+        .map(|sum| -z.ln() - EULER - sum)
+        .ok_or("complex expint: E1 series failed to converge.")
+}
+
+/// E1(z) = exp(-z)/(z+1 - 1²/(z+3 - 2²/(z+5 - ...))).
+/// Modified Lentz iteration, with explicit convergence and work bounds.
+/// Applied only at arguments sufficiently far from the negative cut.
+fn exp1_fraction(z: Complex64) -> Result<Complex64, StrErr> {
+    let mut f = z + 1.0;
+    let mut c = f;
+    let mut d = Complex64::new(0.0, 0.0);
+    for k in 1..=EXPINT_FRACTION_TERMS {
+        let a = -((k * k) as f64);
+        let b = z + (2 * k + 1) as f64;
+        d = b + a * d;
+        c = b + a / c;
+        if d.norm() < 1e-300 || c.norm() < 1e-300 {
+            return Err("complex expint: Ill-conditioned continued fraction.");
+        }
+        d = Complex64::new(1.0, 0.0) / d;
+        let delta = c * d;
+        f *= delta;
+        if !f.re.is_finite() || !f.im.is_finite() {
+            return Err("complex expint: Continued fraction overflow.");
+        }
+        if (delta - 1.0).norm() < 3e-15 {
+            return Ok((-z).exp() / f);
+        }
+    }
+    Err("complex expint: Continued fraction failed to converge.")
+}
+
+/// Optimally truncated Poincare expansion for |z| >= 36 away from the
+/// logarithmic cut. Here Ei(z) ~ exp(z)/z * sum(k!/z^k).
+fn ei_asymptotic(z: Complex64) -> Result<Complex64, StrErr> {
+    let inv = Complex64::new(1.0, 0.0) / z;
+    let mut sum = Complex64::new(1.0, 0.0);
+    let mut term = sum;
+    for k in 1..=200 {
+        let next = term * (k as f64 * inv);
+        if next.norm() > term.norm() {
+            break;
+        }
+        term = next;
+        sum += term;
+        if term.norm() <= 2.0 * f64::EPSILON * sum.norm() {
+            break;
+        }
+    }
+    // exp(z-log(z)) retains values where exp(Re z) itself overflows but
+    // exp(z)/z is finite. The +/- i*pi term is required near the imaginary axis.
+    let constant = if z.im == 0.0 {
+        Complex64::new(0.0, 0.0)
+    } else {
+        Complex64::new(0.0, PI.copysign(z.im))
+    };
+    let result = (z - z.ln()).exp() * sum + constant;
+    if result.re.is_finite() && result.im.is_finite() {
+        Ok(result)
+    } else {
+        Err("complex expint: Ei overflows binary64.")
+    }
+}
+
+/// Integrate Ei'(x+w)=exp(x+w)/(x+w) along w=i*y. This avoids the
+/// spurious +/- pi residual of an asymptotic expansion close to the
+/// positive real axis, including when |y| is far below machine epsilon.
+fn ei_near_positive_axis(x: f64, y: f64) -> Result<Complex64, StrErr> {
+    let on_axis = if x <= 40.0 {
+        ei_series(Complex64::new(x, 0.0))?.re
+    } else {
+        ei_asymptotic(Complex64::new(x, 0.0))?.re
+    };
+    let factor = (x - x.ln()).exp();
+    if !factor.is_finite() {
+        return Err("complex expint: Ei overflows binary64.");
+    }
+    let w = Complex64::new(0.0, y);
+    let mut power = w;
+    let mut correction = w;
+    let mut coeff = 1.0;
+    let mut inverse_factorial = 1.0;
+    for k in 1..=96 {
+        inverse_factorial /= k as f64;
+        coeff = inverse_factorial - coeff / x;
+        power *= w;
+        let term = power * (coeff / (k + 1) as f64);
+        correction += term;
+        if term.norm() <= f64::EPSILON * correction.norm() {
+            break;
+        }
+    }
+    let result = Complex64::new(on_axis, 0.0) + factor * correction;
+    if result.re.is_finite() && result.im.is_finite() {
+        Ok(result)
+    } else {
+        Err("complex expint: Ei overflows binary64.")
+    }
+}
+
+fn ei_right(z: Complex64) -> Result<Complex64, StrErr> {
+    debug_assert!(z.re >= 0.0);
+    if z.re >= 22.0 && z.im.abs() <= 8.0 {
+        return ei_near_positive_axis(z.re, z.im);
+    }
+    if z.im.abs() >= 2.0 && z.norm() >= 9.0 {
+        let e1 = exp1_fraction(-z)?;
+        return Ok(-e1 + Complex64::new(0.0, PI.copysign(z.im)));
+    }
+    if z.norm() > 36.0 {
+        return ei_asymptotic(z);
+    }
+    ei_series(z)
+}
+
+fn exp1_right(z: Complex64) -> Result<Complex64, StrErr> {
+    debug_assert!(z.re >= 0.0);
+    if z.im == 0.0 {
+        return Ok(Complex64::new(crate::backend::expint::exp1_real(z.re), 0.0));
+    }
+    if z.norm() < 3.0 {
+        exp1_series(z)
+    } else {
+        exp1_fraction(z)
+    }
+}
+
+/// Complex exponential integral E1(z), on the principal branch.
+/// Negative-real signed imaginary zeros select the upper/lower bank.
+/// Zero is a logarithmic pole and returns an error. All loops are bounded.
+pub fn exp1<T: Float>(z: Complex<T>) -> Result<Complex<T>, StrErr> {
+    let z = expint_argument(z)?;
+    let value = if z.re >= 0.0 {
+        exp1_right(z)?
+    } else {
+        let reflected = ei_right(-z)?;
+        -reflected - Complex64::new(0.0, PI.copysign(z.im))
+    };
+    finish(value)
+}
+
+/// Complex exponential integral Ei(z), analytic from the positive real axis.
+/// On the negative real cut the value is real; either open bank differs by
+/// +/- i*pi. Zero is a logarithmic pole and returns an error.
+pub fn expi<T: Float>(z: Complex<T>) -> Result<Complex<T>, StrErr> {
+    let z = expint_argument(z)?;
+    let value = if z.re >= 0.0 {
+        ei_right(z)?
+    } else {
+        let e1 = exp1_right(-z)?;
+        if z.im == 0.0 {
+            Complex64::new(-e1.re, -0.0)
+        } else {
+            -e1 + Complex64::new(0.0, PI.copysign(z.im))
+        }
+    };
+    finish(value)
+}
+
 fn near_real(z: Complex64) -> bool {
     z.im.abs() <= 1e-4 && z.im.abs() <= 1e-4 * z.re.abs()
 }
@@ -98,4 +301,20 @@ pub fn fresnel<T: Float>(z: Complex<T>) -> Result<(Complex<T>, Complex<T>), StrE
         }
     };
     Ok((finish(s)?, finish(c)?))
+}
+
+#[cfg(test)]
+mod expint_kernel_tests {
+    use super::*;
+
+    #[test]
+    fn complex_ei_asymptotic_keeps_analytic_continuation_constant() {
+        // Independent SciPy 1.18.1 reference. The public dispatcher uses a
+        // continued fraction for this region; exercise the asymptotic kernel
+        // directly to check the optimally truncated complex branch.
+        let z = Complex64::new(50.0, 10.0);
+        let result = ei_asymptotic(z).unwrap();
+        let expected = Complex64::new(-9.655_359_163_882_457e19, -3.786_540_621_339_325e19);
+        assert!((result - expected).norm() <= 2e-13 * expected.norm());
+    }
 }
