@@ -482,7 +482,7 @@ pub fn romb<T: Float>(y: &[T], dx: T) -> Result<T> {
 /// Invalid bounds/order, callback overflow, or quadrature backend failure.
 /// ## Numerical behavior
 ///
-/// Uses shared [`sci_special::orthogonal::roots_legendre`] to generate binary64 nodes and
+/// Generates binary64 Legendre nodes and
 /// weights, rounds them to the selected type, and performs exactly `n` evaluations
 /// for nonzero intervals. Finite bounds map to clamped convex combinations,
 /// including when their difference overflows. At most 256 callback values
@@ -512,7 +512,7 @@ pub fn fixed_quad<T: Float>(f: impl Fn(T) -> T, a: T, b: T, n: usize) -> Result<
     if a == b {
         return Ok(0.0);
     }
-    let (nodes, weights) = crate::special::orthogonal::roots_legendre(n)?;
+    let (nodes, weights) = crate::solver::legendre_nodes_weights(n)?;
     let width = b - a;
     let half = 0.5 * b - 0.5 * a;
     let mut values = Vec::with_capacity(n);
@@ -573,7 +573,7 @@ pub fn fixed_quad<T: Float>(f: impl Fn(T) -> T, a: T, b: T, n: usize) -> Result<
 ///
 /// Uniform rules use exact rational tabulations through order 12, rounded to
 /// binary64. Other nodes use a centered Vandermonde system solved by private
-/// nalgebra LU, with a subtracted moment for the error coefficient. Cubic work
+/// partial-pivot Gaussian elimination, with a subtracted moment for the error coefficient. Cubic work
 /// is bounded by 13 nodes. Clustered nodes are ill-conditioned and may lose
 /// accuracy; low orders are recommended. No condition estimate is returned.
 /// # Examples
@@ -672,24 +672,25 @@ pub fn newton_cotes(rn: &[f64]) -> Result<(Vec<f64>, f64)> {
         };
         return Ok((numerators.iter().map(|x| factor * x).collect(), error));
     }
-    let matrix = nalgebra::DMatrix::from_fn(n + 1, n + 1, |i, j| {
-        (2.0 * rn[j] / n as f64 - 1.0).powi(i as i32)
-    });
-    let moments = nalgebra::DVector::from_iterator(
-        n + 1,
-        (0..=n).map(|i| {
+    let mut matrix = vec![vec![0.0; n + 1]; n + 1];
+    for (j, x) in rn.iter().enumerate() {
+        let centered = 2.0 * x / n as f64 - 1.0;
+        let mut power = 1.0;
+        for row in &mut matrix {
+            row[j] = power;
+            power *= centered;
+        }
+    }
+    let moments: Vec<f64> = (0..=n)
+        .map(|i| {
             if i % 2 == 0 {
                 n as f64 / (i + 1) as f64
             } else {
                 0.0
             }
-        }),
-    );
-    let weights = matrix
-        .lu()
-        .solve(&moments)
-        .ok_or(Error::NumericalFailure("singular Newton-Cotes system"))?;
-    let weights: Vec<f64> = weights.iter().copied().collect();
+        })
+        .collect();
+    let weights = crate::solver::solve_pivoted(matrix, moments)?;
     is_finite_slice(&weights)?;
     let power = n + 1;
     let moment: f64 = rn

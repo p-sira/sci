@@ -2,6 +2,11 @@
 
 ## 0.3.0
 
+- Replace direct `sci-special` Gaussian nodes with bounded Gauss–Legendre
+  root iteration and private `nalgebra` LU with a small pivoted Newton–Cotes
+  system solver. Remove both direct dependencies while retaining the supported
+  quadrature orders, finite error behavior, and public API.
+
 - Make sampled integration and fixed quadrature generic over `Float`; round backend-generated Gaussian nodes and weights to the selected precision.
 
 - Update shared Sci dependency requirements to the new minor versions.

@@ -294,6 +294,11 @@ path = "tests/numerical_accuracy.rs"
 required-features = ["integrate", "linalg", "optimize", "special", "stats"]
 
 [[test]]
+name = "solver_regressions"
+path = "tests/solver_regressions.rs"
+required-features = ["integrate", "special"]
+
+[[test]]
 name = "statistics_coverage"
 path = "tests/statistics_coverage.rs"
 required-features = ["stats"]
