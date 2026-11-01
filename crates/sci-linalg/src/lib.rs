@@ -85,7 +85,6 @@ mod complex {
         Complex { re: z.re, im: z.im }
     }
 }
-use sci_special as special;
 #[path = "mod.rs"]
 mod implementation;
 pub use implementation::*;

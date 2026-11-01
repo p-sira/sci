@@ -24,7 +24,6 @@ ndarray = ["dep:ndarray"]
 [dependencies]
 sci-core.workspace = true
 sci-complex.workspace = true
-sci-special.workspace = true
 dyn-stack.workspace = true
 faer.workspace = true
 nalgebra = { workspace = true, optional = true }

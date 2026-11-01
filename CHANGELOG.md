@@ -2,6 +2,9 @@
 
 ## 0.3.0 (unreleased)
 
+- Remove `sci-linalg`'s direct dependency on `sci-special` by storing the
+  16-point Gauss–Legendre quadrature rule for the principal matrix logarithm;
+  retain the existing numerical algorithm, convergence limits, and public API.
 - Remove the dependency of Matrix Market I/O on sparse solvers by sharing
   canonical CSR construction, validation, and dense conversion in `sci-core`.
   Remove `sci-cluster`'s dependencies on statistics and spatial backends by

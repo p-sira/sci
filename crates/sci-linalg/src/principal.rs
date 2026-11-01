@@ -6,6 +6,30 @@ use crate::{
 };
 use faer::{Mat, Scale};
 use num_complex::Complex64 as C;
+
+// The 16-point Gauss-Legendre rule shifted from [-1, 1] to [0, 1].
+// Nodes are ascending and weights sum to one. Values were calculated with
+// numpy.polynomial.legendre.leggauss(16); the rule integrates polynomials of
+// degree <= 31 exactly, up to floating-point rounding.
+const LOGM_QUADRATURE: [(f64, f64); 16] = [
+    (0.005_299_532_504_175_031, 0.013576229705877088),
+    (0.0277124884633837, 0.031126761969323728),
+    (0.06718439880608412, 0.047_579_255_841_246_3),
+    (0.1222977958224985, 0.062314485627767036),
+    (0.1910618777986781, 0.07479799440828835),
+    (0.2709916111713863, 0.08457825969750132),
+    (0.35919822461037054, 0.09130170752246182),
+    (0.4524937450811813, 0.09472530522753432),
+    (0.5475062549188188, 0.09472530522753432),
+    (0.6408017753896295, 0.09130170752246182),
+    (0.7290083888286136, 0.08457825969750132),
+    (0.8089381222013219, 0.07479799440828835),
+    (0.8777022041775016, 0.062314485627767036),
+    (0.9328156011939159, 0.047_579_255_841_246_3),
+    (0.9722875115366163, 0.031126761969323728),
+    (0.994700467495825, 0.013576229705877088),
+];
+
 pub(super) fn complex_rows(a: &Mat<C>) -> Result<ComplexMatrix> {
     if a.iter().any(|z| !z.re.is_finite() || !z.im.is_finite()) {
         return Err(Error::NonFiniteEvaluation);
@@ -90,14 +114,11 @@ fn logarithm(a: Mat<C>) -> Result<Mat<C>> {
         t = triangular_root(&t)?;
         count += 1;
     }
-    // log(I+E) = integral_0^1 (I+xE)^-1 E dx. Reuse the shared
-    // Gauss-Legendre rule already used by the integration module.
-    let (nodes, weights) = crate::special::orthogonal::roots_legendre(16)?;
+    // log(I+E) = integral_0^1 (I+xE)^-1 E dx. Use the fixed 16-point
+    // Gauss-Legendre rule; inverse scaling keeps ||E||F <= 0.25.
     let e = t - &identity;
     let mut value = Mat::<C>::zeros(n, n);
-    for (node, weight) in nodes.into_iter().zip(weights) {
-        let x = (node + 1.) / 2.;
-        let w = weight / 2.;
+    for (x, w) in LOGM_QUADRATURE {
         let integrand = (&identity + &e * Scale(C::new(x, 0.)))
             .solve_checked(&e)
             .ok_or(Error::NumericalFailure(
@@ -514,4 +535,38 @@ fn matrix_power(mut a: Mat<C>, mut exponent: u64) -> Mat<C> {
         }
     }
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::LOGM_QUADRATURE;
+
+    #[test]
+    fn fixed_gauss_legendre_16_integrates_polynomials_through_degree_31() {
+        for degree in 0..=31 {
+            let integral: f64 = LOGM_QUADRATURE
+                .iter()
+                .map(|&(x, weight)| weight * x.powi(degree))
+                .sum();
+            let exact = 1.0 / f64::from(degree + 1);
+            assert!(
+                (integral - exact).abs() < 3e-15,
+                "degree {degree}: got {integral}, expected {exact}"
+            );
+        }
+    }
+
+    #[test]
+    fn fixed_gauss_legendre_16_resolves_logarithm_integrand() {
+        // For |e| <= 0.25, integral_0^1 e/(1 + e*x) dx = ln(1 + e).
+        // Check both signs and the largest scalar perturbations after scaling.
+        for e in [-0.25_f64, -0.125, 0.125, 0.25] {
+            let integral: f64 = LOGM_QUADRATURE
+                .iter()
+                .map(|&(x, weight)| weight * e / (1. + x * e))
+                .sum();
+            let expected = e.ln_1p();
+            assert!((integral - expected).abs() < 3e-15);
+        }
+    }
 }
