@@ -56,9 +56,12 @@ the workspace disables domain defaults on shared dependencies to prevent
 signal processing or Matrix Market from enabling Hankel or NPZ transitively.
 Cargo still combines features requested elsewhere in a consumer's graph.
 
-`tests/check_features.py` checks each facade feature in isolation and asserts
-that reduced builds omit the expected backends. The FFT extended reference
-suite and benchmark require `fft-hankel`; sparse parity requires `sparse-npz`;
+`tests/check_features.py` compiles each facade feature and isolated sparse
+configuration, checking selected architectural dependency boundaries without
+freezing backend implementations. Documentation is tested separately by the
+regular CI documentation job, not regenerated for every feature combination.
+The FFT extended reference suite and benchmark require `fft-hankel`; sparse
+parity requires `sparse-npz`;
 the I/O integration suite requires all three format features. Numerical
 APIs retain their existing conventions. FFTLog now uses private Rust translations
 of SciPy/XSF's complex log-gamma and Cephes gamma-ratio algorithms, with the
