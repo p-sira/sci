@@ -2,6 +2,11 @@
 members = ["crates/*"]
 resolver = "3"
 
+# Keep source locations and readable backtraces in tests without generating
+# full debug information for every test binary and dependency.
+[profile.test]
+debug = "line-tables-only"
+
 [workspace.package]
 edition = "2024"
 authors = ["Sira Pornsiriprasert <code@psira.me>"]

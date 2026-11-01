@@ -58,7 +58,7 @@ jobs:
         with:
           python-version: '3.13'
       - uses: ./.github/actions/setup-native
-      - name: Check isolated modules and adapters
+      - name: Check feature compilation and dependency isolation
         run: python .github/scripts/ci_scope.py features
 
   test:
