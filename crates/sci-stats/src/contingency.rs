@@ -173,7 +173,7 @@ pub fn expected_freq(table: &[f64], rows: usize, columns: usize) -> Result<Vec<f
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::chi2_contingency(&[2., 2., 2., 2.], 2, 2, true)?.pvalue, 1.);
+/// assert_eq!(sci_stats::contingency::chi2_contingency(&[2., 2., 2., 2.], 2, 2, true)?.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

@@ -42,7 +42,8 @@ pub struct Envelope {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::utilities::*;
+/// use sci_signal::Mode;
 /// let _=oaconvolve(&[1.,2.,3.],&[1.,-1.],Mode::Full)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -125,7 +126,7 @@ pub fn oaconvolve(x: &[f64], h: &[f64], mode: Mode) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::utilities::*;
 /// let _=closest_stft_dual_window(&[1.;8],4,&[1.;8],true)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -218,7 +219,7 @@ pub fn closest_stft_dual_window(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::utilities::*;
 /// let _=envelope(&[1.,0.,-1.,0.],(1,2),4,false,true)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -314,7 +315,7 @@ pub fn envelope(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::utilities::*;
 /// let _=max_len_seq(3,&[1,1,1],7,None)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -439,7 +440,7 @@ fn maxima(row: &[f64]) -> Vec<usize> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::utilities::*;
 /// let _=find_peaks_cwt(&[0.,0.,1.,0.,0.,0.,2.,0.,0.],&[1.,2.,3.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

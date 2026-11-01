@@ -55,7 +55,7 @@ pub struct PairwiseTest {
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::tukey_hsd(&[&[1.,2.,3.], &[4.,5.,6.]])?;
+/// let r = sci_stats::inference::tukey_hsd(&[&[1.,2.,3.], &[4.,5.,6.]])?;
 /// assert_eq!(r.statistic[0][1], -3.);
 /// assert_eq!(r.pvalue[0][1], r.pvalue[1][0]);
 /// # Ok::<(), sci_core::Error>(())

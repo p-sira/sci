@@ -28,8 +28,8 @@ fn quadratic_gradient(x: &[f64]) -> Vec<f64> {
 }
 
 /// Capped iteration budget keeping each minimization short.
-fn options(max_iterations: u64, learning_rate: f64) -> optimize::Options {
-    optimize::Options {
+fn options(max_iterations: u64, learning_rate: f64) -> optimize::minimize::Options {
+    optimize::minimize::Options {
         max_iterations,
         tolerance: 1e-8,
         learning_rate,
@@ -43,8 +43,8 @@ mod minimize_benches {
     fn minimize(bencher: Bencher) {
         let start = [-1.2, 1.0];
         bencher.bench(|| {
-            optimize::minimize(
-                |x| optimize::rosen(x).unwrap(),
+            optimize::minimize::minimize(
+                |x| optimize::derivatives::rosen(x).unwrap(),
                 black_box(&start),
                 options(200, 0.1),
             )
@@ -56,8 +56,12 @@ mod minimize_benches {
     fn try_minimize(bencher: Bencher) {
         let start = [0.0, 0.0, 0.0, 0.0];
         bencher.bench(|| {
-            optimize::try_minimize(|x| Ok(quadratic(x)), black_box(&start), options(200, 0.1))
-                .unwrap()
+            optimize::minimize::try_minimize(
+                |x| Ok(quadratic(x)),
+                black_box(&start),
+                options(200, 0.1),
+            )
+            .unwrap()
         });
     }
 
@@ -65,7 +69,7 @@ mod minimize_benches {
     fn minimize_with_gradient(bencher: Bencher) {
         let start = [0.0, 0.0, 0.0, 0.0];
         bencher.bench(|| {
-            optimize::minimize_with_gradient(
+            optimize::minimize::minimize_with_gradient(
                 quadratic,
                 quadratic_gradient,
                 black_box(&start),
@@ -79,9 +83,9 @@ mod minimize_benches {
     fn try_minimize_with_gradient(bencher: Bencher) {
         let start = [-1.2, 1.0];
         bencher.bench(|| {
-            optimize::try_minimize_with_gradient(
-                optimize::rosen,
-                optimize::rosen_der,
+            optimize::minimize::try_minimize_with_gradient(
+                optimize::derivatives::rosen,
+                optimize::derivatives::rosen_der,
                 black_box(&start),
                 options(200, 1e-3),
             )
@@ -96,26 +100,28 @@ mod derivative_benches {
     #[divan::bench]
     fn rosen(bencher: Bencher) {
         let x = values(1000, 1);
-        bencher.bench(|| optimize::rosen(black_box(&x)).unwrap());
+        bencher.bench(|| optimize::derivatives::rosen(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn rosen_der(bencher: Bencher) {
         let x = values(1000, 1);
-        bencher.bench(|| optimize::rosen_der(black_box(&x)).unwrap());
+        bencher.bench(|| optimize::derivatives::rosen_der(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn rosen_hess(bencher: Bencher) {
         let x = values(100, 1);
-        bencher.bench(|| optimize::rosen_hess(black_box(&x)).unwrap());
+        bencher.bench(|| optimize::derivatives::rosen_hess(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn rosen_hess_prod(bencher: Bencher) {
         let x = values(1000, 1);
         let p = values(1000, 2);
-        bencher.bench(|| optimize::rosen_hess_prod(black_box(&x), black_box(&p)).unwrap());
+        bencher.bench(|| {
+            optimize::derivatives::rosen_hess_prod(black_box(&x), black_box(&p)).unwrap()
+        });
     }
 
     #[divan::bench]
@@ -123,8 +129,8 @@ mod derivative_benches {
         let x = values(32, 1);
         let epsilon = [1e-7];
         bencher.bench(|| {
-            optimize::approx_fprime(
-                |x| optimize::rosen_der(x).unwrap(),
+            optimize::derivatives::approx_fprime(
+                |x| optimize::derivatives::rosen_der(x).unwrap(),
                 black_box(&x),
                 black_box(&epsilon),
             )
@@ -137,9 +143,9 @@ mod derivative_benches {
         let x = values(64, 1);
         let epsilon = [1e-7];
         bencher.bench(|| {
-            optimize::check_grad(
-                |x| optimize::rosen(x).unwrap(),
-                |x| optimize::rosen_der(x).unwrap(),
+            optimize::derivatives::check_grad(
+                |x| optimize::derivatives::rosen(x).unwrap(),
+                |x| optimize::derivatives::rosen_der(x).unwrap(),
                 black_box(&x),
                 black_box(&epsilon),
             )

@@ -23,7 +23,7 @@ fn multiplier<T: FftFloat>(
     samples(x)?;
     period(period_value)?;
     let n = x.len();
-    let mut bins = crate::rfft(x);
+    let mut bins = crate::real::rfft(x);
     for (k, z) in bins.iter_mut().enumerate() {
         let w = if k == 0 {
             0.0
@@ -44,7 +44,7 @@ fn multiplier<T: FftFloat>(
             _ => Err(Error::NonFiniteEvaluation),
         }?;
     }
-    crate::irfft(&bins, Some(n))
+    crate::real::irfft(&bins, Some(n))
 }
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 fn real<T: FftFloat>(re: T) -> Result<Complex<T>> {
@@ -118,7 +118,7 @@ fn ratio<T: FftFloat>(a: T, b: T, sinh_a: bool, sinh_b: bool) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::diff(&[1.0,2.0],0,std::f64::consts::TAU)?;
+/// let x=sci_fft::utilities::diff(&[1.0,2.0],0,std::f64::consts::TAU)?;
 /// assert_eq!(x,vec![1.0,2.0]);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -172,7 +172,7 @@ pub fn diff<T: FftFloat>(input: &[T], order: i32, period_value: T) -> Result<Vec
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_fft::hilbert(&[1.0,1.0])?,vec![0.0,0.0]);
+/// assert_eq!(sci_fft::utilities::hilbert(&[1.0,1.0])?,vec![0.0,0.0]);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 /// # References
@@ -209,7 +209,7 @@ pub fn hilbert<T: FftFloat>(input: &[T]) -> Result<Vec<T>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_fft::ihilbert(&[1.0,1.0])?,vec![0.0,0.0]);
+/// assert_eq!(sci_fft::utilities::ihilbert(&[1.0,1.0])?,vec![0.0,0.0]);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 /// # References
@@ -246,7 +246,7 @@ pub fn ihilbert<T: FftFloat>(input: &[T]) -> Result<Vec<T>> {
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::tilbert(&[1.0,1.0],1.0,std::f64::consts::TAU)?;
+/// let x=sci_fft::utilities::tilbert(&[1.0,1.0],1.0,std::f64::consts::TAU)?;
 /// assert_eq!(x,vec![0.0,0.0]);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -294,7 +294,7 @@ pub fn tilbert<T: FftFloat>(input: &[T], h: T, period_value: T) -> Result<Vec<T>
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::itilbert(&[1.0,1.0],1.0,std::f64::consts::TAU)?;
+/// let x=sci_fft::utilities::itilbert(&[1.0,1.0],1.0,std::f64::consts::TAU)?;
 /// assert_eq!(x,vec![0.0,0.0]);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -339,7 +339,7 @@ pub fn itilbert<T: FftFloat>(input: &[T], h: T, period_value: T) -> Result<Vec<T
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_fft::shift(&[1.0,2.0],0.0,2.0)?,vec![1.0,2.0]);
+/// assert_eq!(sci_fft::utilities::shift(&[1.0,2.0],0.0,2.0)?,vec![1.0,2.0]);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 /// # References
@@ -381,7 +381,7 @@ pub fn shift<T: FftFloat>(input: &[T], a: T, period_value: T) -> Result<Vec<T>> 
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::cc_diff(&[1.0,1.0],1.0,1.0,std::f64::consts::TAU)?;
+/// let x=sci_fft::utilities::cc_diff(&[1.0,1.0],1.0,1.0,std::f64::consts::TAU)?;
 /// assert_eq!(x,vec![1.0;2]);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -431,7 +431,7 @@ pub fn cc_diff<T: FftFloat>(input: &[T], a: T, b: T, period_value: T) -> Result<
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::cs_diff(&[1.0,1.0],1.0,1.0,std::f64::consts::TAU)?;
+/// let x=sci_fft::utilities::cs_diff(&[1.0,1.0],1.0,1.0,std::f64::consts::TAU)?;
 /// assert_eq!(x,vec![0.0;2]);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -489,7 +489,7 @@ pub fn cs_diff<T: FftFloat>(input: &[T], a: T, b: T, period_value: T) -> Result<
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::sc_diff(&[1.0,1.0],1.0,1.0,std::f64::consts::TAU)?;
+/// let x=sci_fft::utilities::sc_diff(&[1.0,1.0],1.0,1.0,std::f64::consts::TAU)?;
 /// assert_eq!(x,vec![0.0;2]);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -542,7 +542,7 @@ pub fn sc_diff<T: FftFloat>(input: &[T], a: T, b: T, period_value: T) -> Result<
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::ss_diff(&[1.0,1.0],1.0,1.0,std::f64::consts::TAU)?;
+/// let x=sci_fft::utilities::ss_diff(&[1.0,1.0],1.0,1.0,std::f64::consts::TAU)?;
 /// assert_eq!(x,vec![1.0;2]);
 /// # Ok::<(),sci_core::Error>(())
 /// ```

@@ -21,7 +21,7 @@ fn smooth(x: &[f64]) -> Vec<f64> {
 fn cubic_spline(n: usize) -> sci::Spline {
     let x = linspace(0.0, 10.0, n);
     let y = smooth(&x);
-    interpolate::make_interp_spline(&x, &y, 3).unwrap()
+    interpolate::fitting::make_interp_spline(&x, &y, 3).unwrap()
 }
 
 mod polynomial_benches {
@@ -33,8 +33,12 @@ mod polynomial_benches {
         let yi = smooth(&xi);
         let x = linspace(-0.99, 0.99, 200);
         bencher.bench(|| {
-            interpolate::barycentric_interpolate(black_box(&xi), black_box(&yi), black_box(&x))
-                .unwrap()
+            interpolate::polynomial::barycentric_interpolate(
+                black_box(&xi),
+                black_box(&yi),
+                black_box(&x),
+            )
+            .unwrap()
         });
     }
 
@@ -44,7 +48,12 @@ mod polynomial_benches {
         let yi = smooth(&xi);
         let x = linspace(-0.99, 0.99, 200);
         bencher.bench(|| {
-            interpolate::krogh_interpolate(black_box(&xi), black_box(&yi), black_box(&x)).unwrap()
+            interpolate::polynomial::krogh_interpolate(
+                black_box(&xi),
+                black_box(&yi),
+                black_box(&x),
+            )
+            .unwrap()
         });
     }
 
@@ -52,7 +61,7 @@ mod polynomial_benches {
     fn lagrange(bencher: Bencher) {
         let x = linspace(-1.0, 1.0, 16);
         let y = smooth(&x);
-        bencher.bench(|| interpolate::lagrange(black_box(&x), black_box(&y)).unwrap());
+        bencher.bench(|| interpolate::polynomial::lagrange(black_box(&x), black_box(&y)).unwrap());
     }
 
     #[divan::bench]
@@ -61,7 +70,12 @@ mod polynomial_benches {
         let yi = smooth(&xi);
         let x = linspace(0.01, 9.99, 500);
         bencher.bench(|| {
-            interpolate::pchip_interpolate(black_box(&xi), black_box(&yi), black_box(&x)).unwrap()
+            interpolate::polynomial::pchip_interpolate(
+                black_box(&xi),
+                black_box(&yi),
+                black_box(&x),
+            )
+            .unwrap()
         });
     }
 
@@ -73,14 +87,14 @@ mod polynomial_benches {
             an[k] = an[k - 1] / k as f64;
         }
         warm(bencher, || {
-            interpolate::pade(black_box(&an), black_box(5), black_box(None)).unwrap()
+            interpolate::polynomial::pade(black_box(&an), black_box(5), black_box(None)).unwrap()
         });
     }
 
     #[divan::bench]
     fn approximate_taylor_polynomial(bencher: Bencher) {
         bencher.bench(|| {
-            interpolate::approximate_taylor_polynomial(
+            interpolate::polynomial::approximate_taylor_polynomial(
                 |x| x.sin() * x.exp(),
                 black_box(0.5),
                 black_box(6),
@@ -100,11 +114,11 @@ mod spline_eval_benches {
         let spline = cubic_spline(64);
         let x = linspace(0.0, 10.0, 500);
         bencher.bench(|| {
-            interpolate::splev(
+            interpolate::spline::splev(
                 black_box(&x),
                 black_box(&spline),
                 0,
-                interpolate::SplineExtension::Extrapolate,
+                interpolate::spline::SplineExtension::Extrapolate,
             )
             .unwrap()
         });
@@ -113,27 +127,28 @@ mod spline_eval_benches {
     #[divan::bench]
     fn splder(bencher: Bencher) {
         let spline = cubic_spline(64);
-        bencher.bench(|| interpolate::splder(black_box(&spline), black_box(1)).unwrap());
+        bencher.bench(|| interpolate::spline::splder(black_box(&spline), black_box(1)).unwrap());
     }
 
     #[divan::bench]
     fn splantider(bencher: Bencher) {
         let spline = cubic_spline(64);
-        bencher.bench(|| interpolate::splantider(black_box(&spline), black_box(1)).unwrap());
+        bencher
+            .bench(|| interpolate::spline::splantider(black_box(&spline), black_box(1)).unwrap());
     }
 
     #[divan::bench]
     fn spalde(bencher: Bencher) {
         let spline = cubic_spline(64);
         let x = linspace(0.05, 9.95, 100);
-        bencher.bench(|| interpolate::spalde(black_box(&x), black_box(&spline)).unwrap());
+        bencher.bench(|| interpolate::spline::spalde(black_box(&x), black_box(&spline)).unwrap());
     }
 
     #[divan::bench]
     fn splint(bencher: Bencher) {
         let spline = cubic_spline(64);
         bencher.bench(|| {
-            interpolate::splint(black_box(1.0), black_box(9.0), black_box(&spline)).unwrap()
+            interpolate::spline::splint(black_box(1.0), black_box(9.0), black_box(&spline)).unwrap()
         });
     }
 
@@ -141,14 +156,16 @@ mod spline_eval_benches {
     fn insert(bencher: Bencher) {
         let spline = cubic_spline(64);
         bencher.bench(|| {
-            interpolate::insert(black_box(5.05), black_box(&spline), black_box(2)).unwrap()
+            interpolate::spline::insert(black_box(5.05), black_box(&spline), black_box(2)).unwrap()
         });
     }
 
     #[divan::bench]
     fn sproot(bencher: Bencher) {
         let spline = cubic_spline(32);
-        warm(bencher, || interpolate::sproot(black_box(&spline)).unwrap());
+        warm(bencher, || {
+            interpolate::spline::sproot(black_box(&spline)).unwrap()
+        });
     }
 }
 
@@ -160,7 +177,7 @@ mod spline_fit_benches {
         let x = linspace(0.0, 10.0, 32);
         let y = smooth(&x);
         warm(bencher, || {
-            interpolate::make_interp_spline(black_box(&x), black_box(&y), 3).unwrap()
+            interpolate::fitting::make_interp_spline(black_box(&x), black_box(&y), 3).unwrap()
         });
     }
 
@@ -177,8 +194,14 @@ mod spline_fit_benches {
         knots.extend(linspace(0.0, 10.0, 12));
         knots.extend([10.0; 3]);
         warm(bencher, || {
-            interpolate::make_lsq_spline(black_box(&x), black_box(&y), black_box(&knots), 3, None)
-                .unwrap()
+            interpolate::fitting::make_lsq_spline(
+                black_box(&x),
+                black_box(&y),
+                black_box(&knots),
+                3,
+                None,
+            )
+            .unwrap()
         });
     }
 
@@ -192,7 +215,8 @@ mod spline_fit_benches {
             .map(|(v, e)| v + 0.05 * e)
             .collect();
         bencher.bench(|| {
-            interpolate::make_splrep(black_box(&x), black_box(&y), 3, black_box(0.2), None).unwrap()
+            interpolate::fitting::make_splrep(black_box(&x), black_box(&y), 3, black_box(0.2), None)
+                .unwrap()
         });
     }
 
@@ -211,7 +235,8 @@ mod spline_fit_benches {
             })
             .collect();
         bencher.bench(|| {
-            interpolate::make_splprep(black_box(&pts), None, 3, black_box(0.05), None).unwrap()
+            interpolate::fitting::make_splprep(black_box(&pts), None, 3, black_box(0.05), None)
+                .unwrap()
         });
     }
 
@@ -225,8 +250,14 @@ mod spline_fit_benches {
             .map(|(v, e)| v + 0.05 * e)
             .collect();
         warm(bencher, || {
-            interpolate::generate_knots(black_box(&x), black_box(&y), 3, black_box(0.5), None)
-                .unwrap()
+            interpolate::fitting::generate_knots(
+                black_box(&x),
+                black_box(&y),
+                3,
+                black_box(0.5),
+                None,
+            )
+            .unwrap()
         });
     }
 
@@ -240,8 +271,13 @@ mod spline_fit_benches {
             .map(|(v, e)| v + 0.05 * e)
             .collect();
         warm(bencher, || {
-            interpolate::make_smoothing_spline(black_box(&x), black_box(&y), None, black_box(0.1))
-                .unwrap()
+            interpolate::fitting::make_smoothing_spline(
+                black_box(&x),
+                black_box(&y),
+                None,
+                black_box(0.1),
+            )
+            .unwrap()
         });
     }
 }
@@ -267,7 +303,7 @@ mod surface_benches {
     fn bisplrep(bencher: Bencher) {
         let (x, y, z, knots) = surface_data();
         warm(bencher, || {
-            interpolate::bisplrep(
+            interpolate::fitting::bisplrep(
                 black_box(&x),
                 black_box(&y),
                 black_box(&z),
@@ -284,11 +320,19 @@ mod surface_benches {
     #[divan::bench]
     fn bisplev(bencher: Bencher) {
         let (x, y, z, knots) = surface_data();
-        let spline = interpolate::bisplrep(&x, &y, &z, &knots, &knots, 3, 3, None).unwrap();
+        let spline =
+            interpolate::fitting::bisplrep(&x, &y, &z, &knots, &knots, 3, 3, None).unwrap();
         let qx = linspace(0.0, 1.0, 20);
         let qy = linspace(0.0, 1.0, 20);
         bencher.bench(|| {
-            interpolate::bisplev(black_box(&qx), black_box(&qy), black_box(&spline), 0, 0).unwrap()
+            interpolate::multidimensional::bisplev(
+                black_box(&qx),
+                black_box(&qy),
+                black_box(&spline),
+                0,
+                0,
+            )
+            .unwrap()
         });
     }
 }
@@ -308,11 +352,11 @@ mod multidimensional_benches {
             .map(|p| p.iter().map(|v| 0.5 * (v + 1.0)).collect())
             .collect();
         bencher.bench(|| {
-            interpolate::interpn(
+            interpolate::multidimensional::interpn(
                 black_box(&axes),
                 black_box(&grid),
                 black_box(&queries),
-                interpolate::GridMethod::Linear,
+                interpolate::multidimensional::GridMethod::Linear,
                 true,
                 None,
             )
@@ -329,11 +373,11 @@ mod multidimensional_benches {
             .map(|p| p.iter().map(|v| 0.8 * v).collect())
             .collect();
         bencher.bench(|| {
-            interpolate::griddata(
+            interpolate::multidimensional::griddata(
                 black_box(&pts),
                 black_box(&vals),
                 black_box(&queries),
-                interpolate::ScatteredMethod::Linear,
+                interpolate::multidimensional::ScatteredMethod::Linear,
                 f64::NAN,
                 false,
             )

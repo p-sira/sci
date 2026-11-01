@@ -25,7 +25,7 @@ use std::f64::consts::{PI, TAU};
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::waveforms::*;
 /// let _result = sawtooth(0.,0.5);
 /// ```
 ///
@@ -66,7 +66,7 @@ pub fn sawtooth(t: f64, width: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::waveforms::*;
 /// let _result = square(0.,0.5);
 /// ```
 ///
@@ -124,7 +124,7 @@ pub enum ChirpMethod {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::waveforms::*;
 /// let _result = chirp(0.,1.,1.,2.,ChirpMethod::Linear,0.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -201,7 +201,7 @@ pub fn chirp(t: f64, f0: f64, t1: f64, f1: f64, method: ChirpMethod, phase: f64)
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::waveforms::*;
 /// let _result = sweep_poly(0.,&[1.,2.],0.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -253,7 +253,7 @@ pub fn sweep_poly(t: f64, coefficients: &[f64], phase: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::waveforms::*;
 /// let _result = gausspulse(0.,5.,0.5,-6.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -305,7 +305,7 @@ pub fn gausspulse(t: f64, fc: f64, bandwidth: f64, reference_db: f64) -> Result<
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::waveforms::*;
 /// let _result = gauss_spline(0.,3);
 /// ```
 ///
@@ -344,7 +344,7 @@ pub fn gauss_spline(x: f64, order: usize) -> f64 {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::waveforms::*;
 /// let _result = unit_impulse(3,1)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -389,7 +389,7 @@ pub fn unit_impulse(length: usize, index: usize) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::waveforms::*;
 /// let _result = vectorstrength(&[0.,1.],2.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -434,7 +434,7 @@ pub fn vectorstrength(events: &[f64], period: f64) -> Result<(f64, f64)> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::waveforms::*;
 /// let _result = detrend(&[1.,2.,3.],true)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

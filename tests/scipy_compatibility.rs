@@ -91,7 +91,7 @@ fn fft_matches_scipy() {
         })
         .collect::<Vec<_>>();
     let inputs = data.iter().map(|(input, _)| *input).collect::<Vec<_>>();
-    let actual = fft::fft(&inputs);
+    let actual = fft::fourier::fft(&inputs);
 
     for (value, (_, expected)) in actual.iter().zip(&data) {
         assert_close(value.re, expected.re, 1e-13, 1e-13);
@@ -107,9 +107,9 @@ fn statistics_match_scipy() {
         let x = number(row[3]);
         let expected = number(row[4]);
         let actual = match row[0] {
-            "normal_pdf" => stats::normal_pdf(x, mean, std_dev).unwrap(),
-            "normal_cdf" => stats::normal_cdf(x, mean, std_dev).unwrap(),
-            "normal_ppf" => stats::normal_ppf(x, mean, std_dev).unwrap(),
+            "normal_pdf" => stats::distributions::normal_pdf(x, mean, std_dev).unwrap(),
+            "normal_cdf" => stats::distributions::normal_cdf(x, mean, std_dev).unwrap(),
+            "normal_ppf" => stats::distributions::normal_ppf(x, mean, std_dev).unwrap(),
             function => panic!("unknown fixture function {function}"),
         };
         // Statrs uses an approximate erf for its normal CDF.
@@ -130,7 +130,7 @@ fn jacobian_and_linear_algebra_match_scipy() {
     )
     .unwrap();
     let direction = [number(data[0][6]), number(data[0][7])];
-    let product = sci::linalg::matvec(&jacobian, &direction).unwrap();
+    let product = sci::linalg::basic::matvec(&jacobian, &direction).unwrap();
     for (index, row) in data.iter().enumerate() {
         assert_close(jacobian[index][0], number(row[4]), 1e-10, 1e-10);
         assert_close(jacobian[index][1], number(row[5]), 1e-10, 1e-10);
@@ -141,8 +141,8 @@ fn jacobian_and_linear_algebra_match_scipy() {
         .iter()
         .map(|row| vec![number(row[1]), number(row[2])])
         .collect::<Vec<_>>();
-    let transpose = sci::linalg::transpose(&matrix).unwrap();
-    let gram = sci::linalg::matmul(&matrix, &transpose).unwrap();
+    let transpose = sci::linalg::basic::transpose(&matrix).unwrap();
+    let gram = sci::linalg::basic::matmul(&matrix, &transpose).unwrap();
     for (index, row) in data.iter().enumerate() {
         assert_close(gram[index][0], number(row[3]), 1e-14, 1e-14);
         assert_close(gram[index][1], number(row[4]), 1e-14, 1e-14);
@@ -152,7 +152,7 @@ fn jacobian_and_linear_algebra_match_scipy() {
 #[test]
 fn fft_complex_and_statistics_interoperate() {
     let expected = rows(include_str!("fixtures/spectrum_statistics.csv")).collect::<Vec<_>>();
-    let spectrum = fft::rfft(&[1.0, 2.0, 3.0, 4.0]);
+    let spectrum = fft::real::rfft(&[1.0, 2.0, 3.0, 4.0]);
     let amplitudes = spectrum
         .into_iter()
         .map(sci::complex::abs)
@@ -162,13 +162,13 @@ fn fft_complex_and_statistics_interoperate() {
         assert_close(*actual, number(row[1]), 1e-13, 1e-13);
     }
     assert_close(
-        stats::mean(&amplitudes).unwrap(),
+        stats::descriptive::mean(&amplitudes).unwrap(),
         number(expected[0][2]),
         1e-13,
         1e-13,
     );
     assert_close(
-        stats::variance(&amplitudes, 1).unwrap(),
+        stats::descriptive::variance(&amplitudes, 1).unwrap(),
         number(expected[0][3]),
         1e-13,
         1e-13,
@@ -182,16 +182,16 @@ fn optimization_matches_scipy() {
         let start = vec![number(row[1]), number(row[2])];
         let expected = [number(row[3]), number(row[4])];
         let expected_cost = number(row[5]);
-        let result = optimize::minimize(
-            |x| sci::linalg::dot(x, x).unwrap(),
+        let result = optimize::minimize::minimize(
+            |x| sci::linalg::basic::dot(x, x).unwrap(),
             &start,
-            optimize::Options {
+            optimize::minimize::Options {
                 tolerance: 1e-10,
                 ..Default::default()
             },
         )
         .unwrap();
-        assert_eq!(result.status, optimize::Status::Converged);
+        assert_eq!(result.status, optimize::minimize::Status::Converged);
 
         for (actual, expected) in result.point.iter().zip(expected) {
             assert_close(*actual, expected, 0.0, 1e-6);

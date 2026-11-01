@@ -61,10 +61,16 @@
 //! let jacobian = sci_differentiate::jacobian(
 //!     |x| vec![x[0] * x[1], x[0] + x[1]], &[2.0, 3.0], 1e-5,
 //! )?;
-//! let direction = linalg::matvec(&jacobian, &[1.0, 0.0])?;
+//! let direction = linalg::basic::matvec(&jacobian, &[1.0, 0.0])?;
 //! assert!((direction[0] - 3.0).abs() < 1e-8);
 //! # Ok::<(), sci_core::Error>(())
 //! ```
+//!
+//! Numerical routines are organized by mathematical family: [`basic`],
+//! [`decompositions`], [`solvers`], [`eigen`], [`matrix_functions`],
+//! [`structured`], [`subspaces`], and [`interpolative`]. For example,
+//! `sci_linalg::solvers::solve` solves a dense linear system, while
+//! `sci_linalg::decompositions::svd` computes a singular-value decomposition.
 //!
 //! ## Acknowledgments
 //!
@@ -75,7 +81,7 @@
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]
 
 use sci_core as error;
-pub use sci_core::{Error, Result};
+pub use sci_core::{Error, Matrix, Result};
 mod complex {
     pub use sci_complex::*;
     pub(crate) fn native(z: Complex) -> num_complex::Complex64 {
@@ -87,4 +93,7 @@ mod complex {
 }
 #[path = "mod.rs"]
 mod implementation;
-pub use implementation::*;
+pub use implementation::{
+    MatrixInput, VectorInput, basic, decompositions, eigen, interpolative, matrix_functions,
+    solvers, structured, subspaces,
+};

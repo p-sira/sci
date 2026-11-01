@@ -94,7 +94,7 @@ pub enum FdrMethod {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{rankdata, RankMethod};
+/// use sci_stats::{ranking::rankdata, ranking::RankMethod};
 /// assert_eq!(rankdata(&[3., 1., 1.], RankMethod::Average)?, vec![3., 1.5, 1.5]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -156,7 +156,7 @@ pub fn rankdata(values: &[f64], method: RankMethod) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::tiecorrect(&[1.5, 1.5])?, 0.);
+/// assert_eq!(sci_stats::ranking::tiecorrect(&[1.5, 1.5])?, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -212,7 +212,7 @@ pub fn tiecorrect(ranks: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{percentileofscore, PercentileKind};
+/// use sci_stats::{ranking::percentileofscore, ranking::PercentileKind};
 /// assert_eq!(percentileofscore(&[1., 2., 3.], 2., PercentileKind::Weak)?, 200./3.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -263,7 +263,7 @@ pub fn percentileofscore(values: &[f64], score: f64, kind: PercentileKind) -> Re
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{false_discovery_control, FdrMethod};
+/// use sci_stats::{inference::false_discovery_control, inference::FdrMethod};
 /// assert_eq!(false_discovery_control(&[0.01], FdrMethod::BenjaminiHochberg)?, vec![0.01]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -319,7 +319,7 @@ pub fn false_discovery_control(pvalues: &[f64], method: FdrMethod) -> Result<Vec
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::ecdf(&[2., 1., 2.])?.probabilities, vec![1./3., 1.]);
+/// assert_eq!(sci_stats::ranking::ecdf(&[2., 1., 2.])?.probabilities, vec![1./3., 1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -419,7 +419,7 @@ pub enum EstimatedCdfMethod {
 /// ## Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::estimated_cdf(&[0.,2.,4.],1.,sci_stats::EstimatedCdfMethod::Linear)?, 0.25);
+/// assert_eq!(sci_stats::ranking::estimated_cdf(&[0.,2.,4.],1.,sci_stats::ranking::EstimatedCdfMethod::Linear)?, 0.25);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

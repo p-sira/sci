@@ -29,9 +29,9 @@ use std::borrow::Cow;
 /// use sci_linalg::{self as linalg, MatrixInput};
 /// let a = ndarray::arr2(&[[2.0, 1.0], [0.0, 3.0]]);
 /// let b = nalgebra::DMatrix::identity(2, 2);
-/// let product = linalg::matmul(&a.view(), &b)?;
+/// let product = linalg::basic::matmul(&a.view(), &b)?;
 /// let faer_matrix = product.to_faer()?;
-/// assert_eq!(linalg::solve(&faer_matrix, &[5.0, 6.0])?, vec![1.5, 2.0]);
+/// assert_eq!(linalg::solvers::solve(&faer_matrix, &[5.0, 6.0])?, vec![1.5, 2.0]);
 /// # }
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -375,7 +375,7 @@ impl<M: MatrixInput + ?Sized> MatrixInput for &M {
 /// use sci_linalg::{self as linalg, VectorInput};
 /// let x = ndarray::arr1(&[1.0, 2.0, 3.0]);
 /// let y = nalgebra::Vector3::new(3.0, 2.0, 1.0);
-/// assert_eq!(linalg::dot(&x, &y)?, 10.0);
+/// assert_eq!(linalg::basic::dot(&x, &y)?, 10.0);
 /// assert_eq!(x.to_faer_col()?.nrows(), 3);
 /// # }
 /// # Ok::<(), sci_core::Error>(())

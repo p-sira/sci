@@ -177,7 +177,7 @@ fn output<S: basin::State<Param = Vec<f64>, Float = f64>>(
 /// # Examples
 ///
 /// ```
-/// use sci_optimize::{minimize, Options};
+/// use sci_optimize::{minimize::minimize, Options};
 /// let result = minimize(|x| x[0].powi(2), &[2.0], Options::default())?;
 /// assert!(result.cost < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
@@ -203,8 +203,8 @@ where
 /// # Examples
 ///
 /// ```
-/// let result = sci_optimize::try_minimize(
-///     |x| sci_linalg::dot(x, x), &[1.0, 2.0],
+/// let result = sci_optimize::minimize::try_minimize(
+///     |x| sci_linalg::basic::dot(x, x), &[1.0, 2.0],
 ///     sci_optimize::Options::default(),
 /// )?;
 /// assert!(result.cost < 1e-12);
@@ -274,7 +274,7 @@ where
 /// # Examples
 ///
 /// ```
-/// use sci_optimize::{minimize_with_gradient, Options};
+/// use sci_optimize::{minimize::minimize_with_gradient, Options};
 /// let result = minimize_with_gradient(
 ///     |x| x[0].powi(2), |x| vec![2.0 * x[0]], &[3.0], Options::default(),
 /// )?;
@@ -309,9 +309,9 @@ where
 ///
 /// ```
 /// use sci_differentiate as differentiate; use sci_linalg as linalg; use sci_optimize as optimize;
-/// let cost = |x: &[f64]| linalg::dot(x, x).unwrap();
-/// let result = optimize::try_minimize_with_gradient(
-///     |x| linalg::dot(x, x),
+/// let cost = |x: &[f64]| linalg::basic::dot(x, x).unwrap();
+/// let result = optimize::minimize::try_minimize_with_gradient(
+///     |x| linalg::basic::dot(x, x),
 ///     |x| differentiate::gradient(cost, x, 1e-5),
 ///     &[1.0, -2.0], optimize::Options::default(),
 /// )?;

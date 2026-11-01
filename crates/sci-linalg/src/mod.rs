@@ -11,7 +11,8 @@ mod principal;
 mod qr;
 mod riccati;
 mod structure;
-mod structured;
+#[path = "structured.rs"]
+mod structured_impl;
 
 pub use advanced::*;
 pub use cs::*;
@@ -24,7 +25,71 @@ pub use principal::*;
 pub use qr::*;
 pub use riccati::*;
 pub use structure::*;
-pub use structured::*;
+pub use structured_impl::*;
+
+/// Basic matrix and vector operations, matrix inverses, norms and properties.
+///
+/// For example, [`matmul`] computes a matrix product and [`norm`] evaluates
+/// the requested matrix norm. Matrix and vector inputs use the shared
+/// [`crate::MatrixInput`] and [`crate::VectorInput`] adapters.
+pub mod basic {
+    pub use super::{
+        MatrixNorm, bandwidth, det, dot, inv, ishermitian, issymmetric, khatri_rao, matmul, matvec,
+        norm, pinv, pinvh, transpose,
+    };
+}
+
+/// Factorizations of dense, structured and banded matrices.
+///
+/// Result types accompany their associated decomposition functions.
+pub mod decompositions {
+    pub use super::{
+        CholeskyFactor, CsResult, LdlResult, LuFactor, LuResult, QrResult, SvdResult, cho_factor,
+        cholesky, cholesky_banded, cossin, hessenberg, ldl, lu, lu_factor, matrix_balance, polar,
+        qr, qr_delete, qr_insert, qr_multiply, qr_update, rq, rsf2csf, schur, svd, svdvals,
+    };
+}
+
+/// Linear systems, least squares, and matrix equations.
+pub mod solvers {
+    pub use super::{
+        LeastSquaresResult, cho_solve, cho_solve_banded, lstsq, lu_solve, solve, solve_banded,
+        solve_circulant, solve_continuous_are, solve_continuous_lyapunov, solve_discrete_are,
+        solve_discrete_lyapunov, solve_sylvester, solve_toeplitz, solve_triangular, solveh_banded,
+    };
+}
+
+/// Standard and generalized eigenvalue problems.
+pub mod eigen {
+    pub use super::{
+        ComplexMatrix, EigenResult, GeneralEigenResult, QzResult, cdf2rdf, eig, eig_banded, eigh,
+        eigh_tridiagonal, eigvals, eigvals_banded, eigvalsh, eigvalsh_tridiagonal, ordqz, qz,
+    };
+}
+
+/// Matrix-valued functions and their numerical derivatives and condition estimates.
+pub mod matrix_functions {
+    pub use super::{
+        coshm, cosm, expm, expm_cond, expm_frechet, fractional_matrix_power, funm, logm, signm,
+        sinhm, sinm, sqrtm, tanhm, tanm,
+    };
+}
+
+/// Structured matrix constructors and their specialized products.
+pub mod structured {
+    pub use super::{
+        DftScale, PascalKind, block_diag, circulant, companion, convolution_matrix, dft, diagsvd,
+        fiedler, fiedler_companion, hadamard, hankel, helmert, hilbert, invhilbert, invpascal,
+        leslie, matmul_toeplitz, pascal, toeplitz,
+    };
+}
+
+/// Orthogonal subspaces, geometric comparisons, and sketching.
+pub mod subspaces {
+    pub use super::{
+        clarkson_woodruff_transform, null_space, orth, orthogonal_procrustes, subspace_angles,
+    };
+}
 
 use crate::{Error, Result};
 
@@ -44,7 +109,7 @@ use crate::{Error, Result};
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::dot(&[1.0, 2.0], &[3.0, 4.0])?, 11.0);
+/// assert_eq!(sci_linalg::basic::dot(&[1.0, 2.0], &[3.0, 4.0])?, 11.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 pub fn dot(x: &(impl VectorInput + ?Sized), y: &(impl VectorInput + ?Sized)) -> Result<f64> {
@@ -76,7 +141,7 @@ pub fn dot(x: &(impl VectorInput + ?Sized), y: &(impl VectorInput + ?Sized)) -> 
 ///
 /// ```
 /// let a = vec![vec![1.0, 2.0], vec![3.0, 4.0]];
-/// assert_eq!(sci_linalg::matvec(&a, &[2.0, 1.0])?, vec![4.0, 10.0]);
+/// assert_eq!(sci_linalg::basic::matvec(&a, &[2.0, 1.0])?, vec![4.0, 10.0]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 pub fn matvec(
@@ -135,7 +200,7 @@ pub fn matvec(
 /// ```
 /// let a = vec![vec![1.0, 2.0]];
 /// let b = vec![vec![3.0], vec![4.0]];
-/// assert_eq!(sci_linalg::matmul(&a, &b)?, vec![vec![11.0]]);
+/// assert_eq!(sci_linalg::basic::matmul(&a, &b)?, vec![vec![11.0]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 pub fn matmul(
@@ -189,7 +254,7 @@ pub fn matmul(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::transpose(&[vec![1.0, 2.0]])?,
+/// assert_eq!(sci_linalg::basic::transpose(&[vec![1.0, 2.0]])?,
 ///            vec![vec![1.0], vec![2.0]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

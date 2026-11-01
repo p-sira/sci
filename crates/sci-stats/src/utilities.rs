@@ -38,7 +38,7 @@ pub struct DirectionalStats {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{binomtest, Alternative};
+/// use sci_stats::{inference::binomtest, inference::Alternative};
 /// assert_eq!(binomtest(5, 10, 0.5, Alternative::TwoSided)?.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -112,7 +112,7 @@ pub fn binomtest(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::directional_stats(&[vec![1., 0.], vec![1., 0.]], true)?.mean_resultant_length, 1.);
+/// assert_eq!(sci_stats::descriptive::directional_stats(&[vec![1., 0.], vec![1., 0.]], true)?.mean_resultant_length, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -191,7 +191,7 @@ pub fn directional_stats(observations: &[Vec<f64>], normalize: bool) -> Result<D
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::differential_entropy(&[1., 2., 3., 4., 5.], 1, None)?.is_finite());
+/// assert!(sci_stats::descriptive::differential_entropy(&[1., 2., 3., 4., 5.], 1, None)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -254,7 +254,7 @@ pub fn differential_entropy(values: &[f64], window: usize, base: Option<f64>) ->
 /// # Examples
 ///
 /// ```
-/// assert!((sci_stats::lmoment(&[1., 2., 3., 4.], 1, false)? - 2.5).abs() < 1e-14);
+/// assert!((sci_stats::descriptive::lmoment(&[1., 2., 3., 4.], 1, false)? - 2.5).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

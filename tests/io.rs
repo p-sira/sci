@@ -71,7 +71,7 @@ fn scipy_matrix_market_references_and_writes() {
     let expected = records(include_str!("fixtures/io_market_expected.csv"));
     for (id, e) in &expected {
         let b = source(id);
-        let h = io::mminfo(b.as_slice()).unwrap();
+        let h = io::matrix_market::mminfo(b.as_slice()).unwrap();
         assert_eq!(
             (h.rows, h.cols, h.entries),
             (
@@ -82,10 +82,10 @@ fn scipy_matrix_market_references_and_writes() {
             "{id}"
         );
         assert_eq!((h.format, h.field, h.symmetry), (e[4], e[5], e[6]), "{id}");
-        let a = io::mmread(b.as_slice()).unwrap();
-        let check = |a: &io::MarketMatrix| {
+        let a = io::matrix_market::mmread(b.as_slice()).unwrap();
+        let check = |a: &io::matrix_market::MarketMatrix| {
             match a {
-                io::MarketMatrix::Dense { rows, cols, data } => {
+                io::matrix_market::MarketMatrix::Dense { rows, cols, data } => {
                     assert_eq!((*rows, *cols), (h.rows, h.cols));
                     let mut reference = floats(e[7]);
                     // SciPy's text parser discards the sign of textual zero; Sci preserves it.
@@ -94,11 +94,11 @@ fn scipy_matrix_market_references_and_writes() {
                     }
                     equal(data, &reference, id);
                 }
-                io::MarketMatrix::Sparse(s) => {
-                    sci::sparse::validate(s).unwrap();
+                io::matrix_market::MarketMatrix::Sparse(s) => {
+                    sci::sparse::operations::validate(s).unwrap();
                     assert_eq!((s.rows, s.cols), (h.rows, h.cols));
                     equal(
-                        &sci::sparse::to_dense(s)
+                        &sci::sparse::construct::to_dense(s)
                             .unwrap()
                             .into_iter()
                             .flatten()
@@ -123,8 +123,8 @@ fn scipy_matrix_market_references_and_writes() {
         };
         check(&a);
         let mut b = Vec::new();
-        io::mmwrite(&mut b, &a).unwrap();
-        check(&io::mmread(b.as_slice()).unwrap());
+        io::matrix_market::mmwrite(&mut b, &a).unwrap();
+        check(&io::matrix_market::mmread(b.as_slice()).unwrap());
         output(id, "mtx", &b);
     }
     assert_eq!(expected.len(), 11);
@@ -159,7 +159,7 @@ fn scipy_wav_references_signal_interop_and_writes() {
                 id,
             );
             if !x.is_empty() && x.iter().all(|v| v.is_finite()) {
-                let y = sci::signal::convolve(&x, &[1.0], sci::Mode::Full).unwrap();
+                let y = sci::signal::convolution::convolve(&x, &[1.0], sci::Mode::Full).unwrap();
                 // Arithmetic may turn negative zero into positive zero.
                 assert_eq!(y, x);
             }
@@ -183,7 +183,7 @@ fn scipy_matlab_references_metadata_endianness_and_writes() {
     for (id, e) in &expected {
         let b = source(id);
         assert_eq!(mat::matfile_version(b.as_slice()).unwrap(), (1, 0));
-        let info = io::whosmat(b.as_slice()).unwrap();
+        let info = io::matlab::whosmat(b.as_slice()).unwrap();
         assert_eq!(info.len(), 1);
         assert_eq!(
             info[0],
@@ -194,7 +194,7 @@ fn scipy_matlab_references_metadata_endianness_and_writes() {
                 complex: e[7] == "1"
             }
         );
-        let f = io::loadmat(b.as_slice()).unwrap_or_else(|err| panic!("{id}: {err}"));
+        let f = io::matlab::loadmat(b.as_slice()).unwrap_or_else(|err| panic!("{id}: {err}"));
         assert_eq!(f.len(), 1);
         let a = &f[e[1]];
         let check = |a: &mat::MatArray| {
@@ -225,9 +225,9 @@ fn scipy_matlab_references_metadata_endianness_and_writes() {
         check(a);
         for compressed in [false, true] {
             let mut b = Vec::new();
-            io::savemat(&mut b, &f, compressed).unwrap();
-            check(&io::loadmat(b.as_slice()).unwrap()[e[1]]);
-            assert_eq!(io::whosmat(b.as_slice()).unwrap(), info);
+            io::matlab::savemat(&mut b, &f, compressed).unwrap();
+            check(&io::matlab::loadmat(b.as_slice()).unwrap()[e[1]]);
+            assert_eq!(io::matlab::whosmat(b.as_slice()).unwrap(), info);
             output(&format!("{id}_{}", usize::from(compressed)), "mat", &b);
         }
     }
@@ -264,14 +264,14 @@ fn matlab_multiple_variables_preserve_types_and_metadata_order() {
     ]);
     for compressed in [false, true] {
         let mut bytes = Vec::new();
-        io::savemat(&mut bytes, &variables, compressed).unwrap();
-        let loaded = io::loadmat(bytes.as_slice()).unwrap();
+        io::matlab::savemat(&mut bytes, &variables, compressed).unwrap();
+        let loaded = io::matlab::loadmat(bytes.as_slice()).unwrap();
         assert_eq!(loaded, variables);
         let D::F32(values) = &loaded["b"].real else {
             panic!("expected f32");
         };
         assert_eq!(values[0].to_bits(), (-0.0f32).to_bits());
-        let info = io::whosmat(bytes.as_slice()).unwrap();
+        let info = io::matlab::whosmat(bytes.as_slice()).unwrap();
         assert_eq!(
             info.iter().map(|v| v.name.as_str()).collect::<Vec<_>>(),
             ["a", "b", "c"]
@@ -297,9 +297,12 @@ fn matlab_multiple_variables_preserve_types_and_metadata_order() {
                 &bytes[second_end..],
             ]
             .concat();
-            assert_eq!(io::loadmat(reordered.as_slice()).unwrap(), variables);
             assert_eq!(
-                io::whosmat(reordered.as_slice())
+                io::matlab::loadmat(reordered.as_slice()).unwrap(),
+                variables
+            );
+            assert_eq!(
+                io::matlab::whosmat(reordered.as_slice())
                     .unwrap()
                     .iter()
                     .map(|v| v.name.as_str())
@@ -334,13 +337,13 @@ fn matrix_market_invalid_domains_and_limits() {
         "%%MatrixMarket matrix array real general\n1 1\n",
     ];
     for c in cases {
-        assert!(io::mmread(c.as_bytes()).is_err(), "{c}");
+        assert!(io::matrix_market::mmread(c.as_bytes()).is_err(), "{c}");
     }
     let mut b = Vec::new();
     assert!(
-        io::mmwrite(
+        io::matrix_market::mmwrite(
             &mut b,
-            &io::MarketMatrix::Dense {
+            &io::matrix_market::MarketMatrix::Dense {
                 rows: 1,
                 cols: 2,
                 data: vec![1.0]
@@ -349,12 +352,14 @@ fn matrix_market_invalid_domains_and_limits() {
         .is_err()
     );
     assert!(b.is_empty());
-    let mut s = sci::sparse::identity(2).unwrap();
+    let mut s = sci::sparse::construct::identity(2).unwrap();
     s.indptr.clear();
-    assert!(io::mmwrite(&mut b, &io::MarketMatrix::Sparse(s)).is_err());
+    assert!(
+        io::matrix_market::mmwrite(&mut b, &io::matrix_market::MarketMatrix::Sparse(s)).is_err()
+    );
     assert!(b.is_empty());
     assert!(
-        io::MarketMatrix::Dense {
+        io::matrix_market::MarketMatrix::Dense {
             rows: 2,
             cols: 2,
             data: vec![1.0]
@@ -435,7 +440,7 @@ fn wav_invalid_domains_and_truncation() {
 
 fn saved(a: mat::MatArray) -> io::Result<Vec<u8>> {
     let mut b = Vec::new();
-    io::savemat(&mut b, &mat::MatFile::from([("x".into(), a)]), false)?;
+    io::matlab::savemat(&mut b, &mat::MatFile::from([("x".into(), a)]), false)?;
     Ok(b)
 }
 fn array() -> mat::MatArray {
@@ -498,7 +503,10 @@ fn matlab_invalid_domains_truncation_and_limits() {
     }
     for name in ["", "_x", "1x", "é", "a-b", &"x".repeat(64)] {
         let mut b = Vec::new();
-        assert!(io::savemat(&mut b, &mat::MatFile::from([(name.into(), array())]), false).is_err());
+        assert!(
+            io::matlab::savemat(&mut b, &mat::MatFile::from([(name.into(), array())]), false)
+                .is_err()
+        );
         assert!(b.is_empty());
     }
     let mut b = Vec::new();
@@ -514,13 +522,13 @@ fn matlab_invalid_domains_truncation_and_limits() {
             )
         })
         .collect();
-    assert!(io::savemat(&mut b, &f, false).is_err());
+    assert!(io::matlab::savemat(&mut b, &f, false).is_err());
     assert!(b.is_empty());
     for id in ["double_plain", "double_big", "double_compressed"] {
         let b = source(id);
         for n in [0, 1, 127, 129, b.len() - 1] {
-            assert!(io::loadmat(&b[..n]).is_err(), "{id}: {n}");
-            assert!(io::whosmat(&b[..n]).is_err());
+            assert!(io::matlab::loadmat(&b[..n]).is_err(), "{id}: {n}");
+            assert!(io::matlab::whosmat(&b[..n]).is_err());
         }
     }
     let b = source("double_plain");
@@ -539,30 +547,30 @@ fn matlab_invalid_domains_truncation_and_limits() {
     ] {
         let mut c = b.clone();
         c[index] = value;
-        assert!(io::loadmat(c.as_slice()).is_err(), "offset {index}");
-        assert!(io::whosmat(c.as_slice()).is_err());
+        assert!(io::matlab::loadmat(c.as_slice()).is_err(), "offset {index}");
+        assert!(io::matlab::whosmat(c.as_slice()).is_err());
     }
     let mut c = b.clone();
     c[124..126].copy_from_slice(&0x200u16.to_le_bytes());
     assert!(mat::matfile_version(c.as_slice()).is_err());
     let mut c = b.clone();
     c[116] = 1;
-    assert!(io::loadmat(c.as_slice()).is_err());
+    assert!(io::matlab::loadmat(c.as_slice()).is_err());
     // Duplicate names are rejected before decoding.
     let mut c = b.clone();
     c.extend_from_slice(&b[128..]);
-    assert!(io::loadmat(c.as_slice()).is_err());
+    assert!(io::matlab::loadmat(c.as_slice()).is_err());
     // Valid header-only empty files and multi-variable ordering.
     for compressed in [false, true] {
         let mut b = Vec::new();
-        io::savemat(&mut b, &Default::default(), compressed).unwrap();
-        assert!(io::loadmat(b.as_slice()).unwrap().is_empty());
+        io::matlab::savemat(&mut b, &Default::default(), compressed).unwrap();
+        assert!(io::matlab::loadmat(b.as_slice()).unwrap().is_empty());
         let f = mat::MatFile::from([("z".into(), array()), ("a".into(), array())]);
         b.clear();
-        io::savemat(&mut b, &f, compressed).unwrap();
-        assert_eq!(io::loadmat(b.as_slice()).unwrap(), f);
+        io::matlab::savemat(&mut b, &f, compressed).unwrap();
+        assert_eq!(io::matlab::loadmat(b.as_slice()).unwrap(), f);
         assert_eq!(
-            io::whosmat(b.as_slice())
+            io::matlab::whosmat(b.as_slice())
                 .unwrap()
                 .iter()
                 .map(|v| v.name.as_str())
@@ -595,16 +603,16 @@ impl std::io::Seek for Broken {
 fn stream_errors_keep_their_source() {
     use std::error::Error as _;
     for err in [
-        io::mmread(Broken).unwrap_err(),
-        io::mminfo(Broken).unwrap_err(),
-        io::loadmat(Broken).unwrap_err(),
-        io::whosmat(Broken).unwrap_err(),
+        io::matrix_market::mmread(Broken).unwrap_err(),
+        io::matrix_market::mminfo(Broken).unwrap_err(),
+        io::matlab::loadmat(Broken).unwrap_err(),
+        io::matlab::whosmat(Broken).unwrap_err(),
         mat::matfile_version(Broken).unwrap_err(),
         wav::read(Broken).unwrap_err(),
-        io::savemat(Broken, &Default::default(), false).unwrap_err(),
-        io::mmwrite(
+        io::matlab::savemat(Broken, &Default::default(), false).unwrap_err(),
+        io::matrix_market::mmwrite(
             Broken,
-            &io::MarketMatrix::Dense {
+            &io::matrix_market::MarketMatrix::Dense {
                 rows: 0,
                 cols: 0,
                 data: vec![],
@@ -634,8 +642,8 @@ fn malformed_compression_and_unsupported_file_features() {
     for (id, r) in inputs() {
         if r[1] == "invalid_matlab" {
             let b = hex(r[2]);
-            assert!(io::loadmat(b.as_slice()).is_err(), "{id}");
-            assert!(io::whosmat(b.as_slice()).is_err(), "{id}");
+            assert!(io::matlab::loadmat(b.as_slice()).is_err(), "{id}");
+            assert!(io::matlab::whosmat(b.as_slice()).is_err(), "{id}");
             checked += 1;
         } else if r[1] == "invalid_wav" {
             assert!(wav::read(hex(r[2]).as_slice()).is_err(), "{id}");
@@ -651,9 +659,9 @@ fn byte_limits_and_public_numeric_conversions() {
     for format in ["market", "wav", "matlab"] {
         let bytes = std::io::repeat(0).take(64 * 1024 * 1024 + 1);
         let error = match format {
-            "market" => io::mmread(bytes).unwrap_err(),
+            "market" => io::matrix_market::mmread(bytes).unwrap_err(),
             "wav" => wav::read(bytes).unwrap_err(),
-            _ => io::loadmat(bytes).unwrap_err(),
+            _ => io::matlab::loadmat(bytes).unwrap_err(),
         };
         assert_eq!(error.to_string(), "input exceeds 64 MiB");
     }
@@ -685,10 +693,13 @@ fn shared_sparse_interoperability_and_matrix_properties() {
                         .map(move |c| (r, c, (r * cols + c) as f64 - 3.0))
                 })
                 .collect();
-            let a = sci::sparse::from_coo(rows, cols, &entries).unwrap();
+            let a = sci::sparse::construct::from_coo(rows, cols, &entries).unwrap();
             let mut b = Vec::new();
-            io::mmwrite(&mut b, &io::MarketMatrix::Sparse(a.clone())).unwrap();
-            let io::MarketMatrix::Sparse(loaded) = io::mmread(b.as_slice()).unwrap() else {
+            io::matrix_market::mmwrite(&mut b, &io::matrix_market::MarketMatrix::Sparse(a.clone()))
+                .unwrap();
+            let io::matrix_market::MarketMatrix::Sparse(loaded) =
+                io::matrix_market::mmread(b.as_slice()).unwrap()
+            else {
                 panic!("expected CSR");
             };
             assert_eq!(loaded, a);
@@ -696,15 +707,18 @@ fn shared_sparse_interoperability_and_matrix_properties() {
             let expected: Vec<_> = (0..rows)
                 .map(|r| entries.iter().filter(|e| e.0 == r).map(|e| e.2 * 2.0).sum())
                 .collect();
-            assert_eq!(sci::sparse::matvec(&loaded, &x).unwrap(), expected);
+            assert_eq!(
+                sci::sparse::operations::matvec(&loaded, &x).unwrap(),
+                expected
+            );
         }
     }
-    let a = io::loadmat(source("double_plain").as_slice()).unwrap()["x"]
+    let a = io::matlab::loadmat(source("double_plain").as_slice()).unwrap()["x"]
         .to_matrix()
         .unwrap();
-    let a = sci::sparse::from_dense(&a).unwrap();
+    let a = sci::sparse::construct::from_dense(&a).unwrap();
     assert_eq!(
-        sci::sparse::matvec(&a, &[1.0, 2.0, 3.0]).unwrap(),
+        sci::sparse::operations::matvec(&a, &[1.0, 2.0, 3.0]).unwrap(),
         [22.0, 28.0]
     );
 }
@@ -722,11 +736,14 @@ fn matrix_market_rejects_malformed_headers_and_expanded_storage() {
         "%%MatrixMarket matrix array real general\n1 1\nx\n",
         "%%MatrixMarket matrix coordinate real general\n1 1 1\n1 1\n",
     ] {
-        assert!(io::mmread(text.as_bytes()).is_err(), "{text}");
+        assert!(
+            io::matrix_market::mmread(text.as_bytes()).is_err(),
+            "{text}"
+        );
     }
     for read in [
-        io::mminfo(&b"\xff"[..]).map(|_| ()),
-        io::mmread(&b"\xff"[..]).map(|_| ()),
+        io::matrix_market::mminfo(&b"\xff"[..]).map(|_| ()),
+        io::matrix_market::mmread(&b"\xff"[..]).map(|_| ()),
     ] {
         assert!(matches!(read, Err(io::Error::InvalidData(_))));
     }
@@ -735,7 +752,9 @@ fn matrix_market_rejects_malformed_headers_and_expanded_storage() {
         text.push_str("2 1 1\n");
     }
     assert_eq!(
-        io::mmread(text.as_bytes()).unwrap_err().to_string(),
+        io::matrix_market::mmread(text.as_bytes())
+            .unwrap_err()
+            .to_string(),
         "expanded sparse storage exceeds 1,000,000"
     );
 }
@@ -760,19 +779,25 @@ fn matlab_rejects_malformed_metadata_and_aggregate_limits() {
     ] {
         let mut bytes = original.clone();
         bytes[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
-        assert!(io::loadmat(bytes.as_slice()).is_err(), "offset {offset}");
-        assert!(io::whosmat(bytes.as_slice()).is_err(), "offset {offset}");
+        assert!(
+            io::matlab::loadmat(bytes.as_slice()).is_err(),
+            "offset {offset}"
+        );
+        assert!(
+            io::matlab::whosmat(bytes.as_slice()).is_err(),
+            "offset {offset}"
+        );
     }
     // Small data tags cannot contain more than four bytes.
     let mut bytes = original.clone();
     bytes[168..172].copy_from_slice(&0x50001u32.to_le_bytes());
-    assert!(io::whosmat(bytes.as_slice()).is_err());
+    assert!(io::matlab::whosmat(bytes.as_slice()).is_err());
     // The outer element includes an unexpected trailing inner element.
     let mut bytes = original.clone();
     bytes.extend_from_slice(&[0; 8]);
     let size = (bytes.len() - 136) as u32;
     bytes[132..136].copy_from_slice(&size.to_le_bytes());
-    assert!(io::whosmat(bytes.as_slice()).is_err());
+    assert!(io::matlab::whosmat(bytes.as_slice()).is_err());
 
     let a = mat::MatArray {
         shape: vec![1, 500001],
@@ -782,7 +807,7 @@ fn matlab_rejects_malformed_metadata_and_aggregate_limits() {
     let file = mat::MatFile::from([("a".into(), a.clone()), ("b".into(), a.clone())]);
     let mut bytes = Vec::new();
     assert_eq!(
-        io::savemat(&mut bytes, &file, false)
+        io::matlab::savemat(&mut bytes, &file, false)
             .unwrap_err()
             .to_string(),
         "MATLAB file exceeds 1,000,000 scalar values"
@@ -795,7 +820,9 @@ fn matlab_rejects_malformed_metadata_and_aggregate_limits() {
     let mut joined = first;
     joined.extend_from_slice(&second[128..]);
     assert_eq!(
-        io::whosmat(joined.as_slice()).unwrap_err().to_string(),
+        io::matlab::whosmat(joined.as_slice())
+            .unwrap_err()
+            .to_string(),
         "MATLAB file exceeds 1,000,000 scalar values"
     );
 
@@ -803,14 +830,16 @@ fn matlab_rejects_malformed_metadata_and_aggregate_limits() {
     for i in 0..1025 {
         let mut variable = Vec::new();
         let file = mat::MatFile::from([(format!("x{i}"), array())]);
-        io::savemat(&mut variable, &file, false).unwrap();
+        io::matlab::savemat(&mut variable, &file, false).unwrap();
         if i == 0 {
             bytes.extend_from_slice(&variable[..128]);
         }
         bytes.extend_from_slice(&variable[128..]);
     }
     assert_eq!(
-        io::whosmat(bytes.as_slice()).unwrap_err().to_string(),
+        io::matlab::whosmat(bytes.as_slice())
+            .unwrap_err()
+            .to_string(),
         "MATLAB file exceeds 1,024 variables"
     );
 }
@@ -915,17 +944,19 @@ fn writers_propagate_failures_during_payload_and_finalization() {
                 failed: false,
             };
             let result = match id {
-                "dense" => io::mmwrite(
+                "dense" => io::matrix_market::mmwrite(
                     &mut destination,
-                    &io::MarketMatrix::Dense {
+                    &io::matrix_market::MarketMatrix::Dense {
                         rows: 1,
                         cols: 2,
                         data: vec![1., 2.],
                     },
                 ),
-                "sparse" => io::mmwrite(
+                "sparse" => io::matrix_market::mmwrite(
                     &mut destination,
-                    &io::MarketMatrix::Sparse(sci::sparse::identity(2).unwrap()),
+                    &io::matrix_market::MarketMatrix::Sparse(
+                        sci::sparse::construct::identity(2).unwrap(),
+                    ),
                 ),
                 _ => wav::write(&mut destination, &wav::read(source(id).as_slice()).unwrap()),
             };
@@ -937,7 +968,7 @@ fn writers_propagate_failures_during_payload_and_finalization() {
             } else {
                 result.unwrap();
                 if matches!(id, "dense" | "sparse") {
-                    io::mmread(destination.inner.get_ref().as_slice()).unwrap();
+                    io::matrix_market::mmread(destination.inner.get_ref().as_slice()).unwrap();
                 } else {
                     wav::read(destination.inner.get_ref().as_slice()).unwrap();
                 }

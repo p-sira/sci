@@ -97,8 +97,9 @@ mod kalman_benches {
         let x = prior();
         let f = transition();
         let q = identity(6, 0.01);
-        bencher
-            .bench(|| filter::kalman_predict(black_box(&x), black_box(&f), black_box(&q)).unwrap());
+        bencher.bench(|| {
+            filter::kalman::kalman_predict(black_box(&x), black_box(&f), black_box(&q)).unwrap()
+        });
     }
 
     #[divan::bench]
@@ -108,8 +109,13 @@ mod kalman_benches {
         let r = identity(3, 0.5);
         let z = [1.1, -0.4, 2.1];
         bencher.bench(|| {
-            filter::kalman_update(black_box(&x), black_box(&z), black_box(&h), black_box(&r))
-                .unwrap()
+            filter::kalman::kalman_update(
+                black_box(&x),
+                black_box(&z),
+                black_box(&h),
+                black_box(&r),
+            )
+            .unwrap()
         });
     }
 
@@ -118,8 +124,13 @@ mod kalman_benches {
         let x = prior();
         let q = identity(6, 0.01);
         bencher.bench(|| {
-            filter::extended_kalman_predict(black_box(&x), black_box(&q), process, process_jacobian)
-                .unwrap()
+            filter::kalman::extended_kalman_predict(
+                black_box(&x),
+                black_box(&q),
+                process,
+                process_jacobian,
+            )
+            .unwrap()
         });
     }
 
@@ -129,7 +140,7 @@ mod kalman_benches {
         let r = identity(3, 0.5);
         let z = [2.4, -0.4, 2.1];
         bencher.bench(|| {
-            filter::extended_kalman_update(
+            filter::kalman::extended_kalman_update(
                 black_box(&x),
                 black_box(&z),
                 black_box(&r),
@@ -147,7 +158,7 @@ mod kalman_benches {
         let r = identity(3, 0.5);
         let z = [2.4, -0.4, 2.1];
         bencher.bench(|| {
-            filter::unscented_kalman_step(
+            filter::kalman::unscented_kalman_step(
                 black_box(&x),
                 black_box(&q),
                 black_box(&z),
@@ -179,7 +190,7 @@ mod particle_benches {
         let noise = values(2 * PARTICLES, 53);
         bencher.bench(|| {
             let mut i = 0;
-            filter::particle_predict(black_box(&p), |x| {
+            filter::particle::particle_predict(black_box(&p), |x| {
                 let y = vec![
                     x[0] + DT * x[1] + 0.01 * noise[i],
                     0.99 * x[1] - DT * x[0].sin() + 0.01 * noise[i + 1],
@@ -196,7 +207,7 @@ mod particle_benches {
         let p = particles();
         let z = [0.2, -0.1];
         bencher.bench(|| {
-            filter::particle_update(black_box(&p), |x| {
+            filter::particle::particle_update(black_box(&p), |x| {
                 let dx = x[0] - z[0];
                 let dy = x[1] - z[1];
                 Ok(-0.5 * (dx * dx + dy * dy) / 0.25)
@@ -208,18 +219,20 @@ mod particle_benches {
     #[divan::bench]
     fn particle_estimate(bencher: Bencher) {
         let p = particles();
-        bencher.bench(|| filter::particle_estimate(black_box(&p)).unwrap());
+        bencher.bench(|| filter::particle::particle_estimate(black_box(&p)).unwrap());
     }
 
     #[divan::bench]
     fn effective_sample_size(bencher: Bencher) {
         let p = particles();
-        bencher.bench(|| filter::effective_sample_size(black_box(&p)).unwrap());
+        bencher.bench(|| filter::particle::effective_sample_size(black_box(&p)).unwrap());
     }
 
     #[divan::bench]
     fn systematic_resample(bencher: Bencher) {
         let p = particles();
-        bencher.bench(|| filter::systematic_resample(black_box(&p), black_box(0.37)).unwrap());
+        bencher.bench(|| {
+            filter::particle::systematic_resample(black_box(&p), black_box(0.37)).unwrap()
+        });
     }
 }

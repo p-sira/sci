@@ -30,7 +30,7 @@ use super::*;
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::spearmanrho(&[1.,2.,3.], &[3.,2.,1.], sci_stats::Alternative::TwoSided)?;
+/// let r = sci_stats::association::spearmanrho(&[1.,2.,3.], &[3.,2.,1.], sci_stats::inference::Alternative::TwoSided)?;
 /// assert!((r.statistic+1.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -145,7 +145,7 @@ fn weighted_correlation(x: &[f64], y: &[f64], ranks: &[usize], additive: bool) -
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{weightedtau, WeightedRank};
+/// use sci_stats::{association::weightedtau, association::WeightedRank};
 /// assert_eq!(weightedtau(&[1.,2.,3.], &[3.,2.,1.], WeightedRank::Symmetric, true)?.statistic, -1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -228,7 +228,7 @@ pub fn weightedtau(
 /// ## Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::somersd(&[1.,2.,3.], &[1.,2.,3.], sci_stats::Alternative::TwoSided)?.statistic, 1.);
+/// assert_eq!(sci_stats::association::somersd(&[1.,2.,3.], &[1.,2.,3.], sci_stats::inference::Alternative::TwoSided)?.statistic, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -316,7 +316,7 @@ pub fn somersd(x: &[f64], y: &[f64], alternative: Alternative) -> Result<TestRes
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::chatterjeexi(&[1.,2.,3.,4.], &[1.,2.,3.,4.], true)?;
+/// let r = sci_stats::association::chatterjeexi(&[1.,2.,3.,4.], &[1.,2.,3.,4.], true)?;
 /// assert!((r.statistic - 0.4).abs() < 1e-15);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

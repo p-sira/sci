@@ -1,36 +1,44 @@
-mod advanced_design;
-mod convolution;
-mod design;
-mod filtering;
-mod fir;
-mod multidimensional;
-mod peaks;
-mod representations;
-mod spectral;
-mod splines;
-mod systems;
-mod utilities;
-mod waveforms;
+/// Advanced IIR prototypes and filter design utilities.
+pub mod advanced_design;
+/// Convolution, correlation, deconvolution, and sample-rate conversion.
+pub mod convolution;
+/// Classical IIR filter design and transfer-function transformations.
+pub mod design;
+/// Time-domain digital filtering and frequency-response functions.
+pub mod filtering;
+/// FIR least-squares, window, and equiripple filter design.
+pub mod fir;
+/// Two-dimensional filtering, convolution, and Hilbert transforms.
+pub mod multidimensional;
+/// Peak and relative-extremum detection and characterization.
+pub mod peaks;
+/// Filter representations, partial fractions, and second-order sections.
+pub mod representations;
+/// Fourier analysis, spectra, spectrograms, and short-time transforms.
+pub mod spectral;
+/// Spline interpolation, smoothing, and spline-based filters.
+pub mod splines;
+/// State-space models, simulation, and discretization.
+pub mod systems;
+/// Signal envelopes, overlap-add convolution, and auxiliary utilities.
+pub mod utilities;
+/// Signal waveforms, chirps, trends, and pulse generators.
+pub mod waveforms;
 /// Symmetric and periodic taper windows.
 pub mod windows;
 
-pub use advanced_design::*;
-pub use convolution::*;
-pub use design::*;
-pub use filtering::*;
-pub use fir::*;
-pub use multidimensional::*;
-pub use peaks::*;
-pub use representations::*;
-pub use sci_fft::{fft, ifft, rfft};
-pub use spectral::*;
-pub use splines::*;
-pub use systems::*;
-pub use utilities::*;
-pub use waveforms::*;
-pub use windows::get_window;
+// Shared sibling-module dependencies stay private to the implementation.
+use advanced_design::{BesselNorm, bessel, ellip};
+use convolution::convolve;
+use design::{
+    BandType, IirFamily, Zpk, buttord, cheb1ord, cheb2ord, iirfilter, normalize, tf2zpk, zpk2tf,
+};
+use filtering::{TransferFunction, firwin, freqs, freqz, freqz_sos};
+use multidimensional::sepfir2d;
+use spectral::{fft, ifft, resample, rfft};
+use windows::get_window;
 
-use crate::{Error, Result};
+use crate::{Error, Mode, Result};
 
 // Limits apply before allocation and expensive numerical work.
 const MAX_SAMPLES: usize = 1_048_576;

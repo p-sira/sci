@@ -164,7 +164,7 @@ fn reshape<T: Clone>(x: &[T], columns: usize) -> Vec<Vec<T>> {
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::irfft(&sci_fft::rfft(&[1.0_f64,2.0,3.0]),Some(3))?;
+/// let x=sci_fft::real::irfft(&sci_fft::real::rfft(&[1.0_f64,2.0,3.0]),Some(3))?;
 /// assert!((x[1]-2.0).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -215,7 +215,7 @@ pub fn irfft<T: FftFloat>(input: &[Complex<T>], n: Option<usize>) -> Result<Vec<
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::hfft(&[sci_complex::Complex{re:2.0,im:0.0}],Some(1))?;
+/// let x=sci_fft::real::hfft(&[sci_complex::Complex{re:2.0,im:0.0}],Some(1))?;
 /// assert_eq!(x,vec![2.0]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -260,7 +260,7 @@ pub fn hfft<T: FftFloat>(input: &[Complex<T>], n: Option<usize>) -> Result<Vec<T
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::ihfft(&[2.0],None)?;
+/// let x=sci_fft::real::ihfft(&[2.0],None)?;
 /// assert_eq!(x[0].re,2.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -316,7 +316,7 @@ pub fn ihfft<T: FftFloat>(input: &[T], n: Option<usize>) -> Result<Vec<Complex<T
 ///
 /// ```
 /// let x=[sci_complex::Complex{re:1.0,im:0.0}];
-/// assert_eq!(sci_fft::fftn(&x,&[1,1],&[0,1])?,x);
+/// assert_eq!(sci_fft::fourier::fftn(&x,&[1,1],&[0,1])?,x);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -351,7 +351,7 @@ pub fn fftn<T: FftFloat>(
 ///
 /// ```
 /// let x=[sci_complex::Complex{re:1.0,im:0.0}];
-/// assert_eq!(sci_fft::ifftn(&x,&[1,1],&[0,1])?,x);
+/// assert_eq!(sci_fft::fourier::ifftn(&x,&[1,1],&[0,1])?,x);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -385,7 +385,7 @@ pub fn ifftn<T: FftFloat>(
 /// # Examples
 ///
 /// ```
-/// let (x,shape)=sci_fft::rfftn(&[1.0,2.0],&[1,2],&[0,1])?;
+/// let (x,shape)=sci_fft::real::rfftn(&[1.0,2.0],&[1,2],&[0,1])?;
 /// assert_eq!(shape,vec![1,2]);assert_eq!(x[0].re,3.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -435,8 +435,8 @@ pub fn rfftn<T: FftFloat>(
 /// # Examples
 ///
 /// ```
-/// let (s,_)=sci_fft::rfftn(&[1.0_f64,2.0,3.0],&[1,3],&[0,1])?;
-/// let x=sci_fft::irfftn(&s,&[1,3],&[0,1])?;
+/// let (s,_)=sci_fft::real::rfftn(&[1.0_f64,2.0,3.0],&[1,3],&[0,1])?;
+/// let x=sci_fft::real::irfftn(&s,&[1,3],&[0,1])?;
 /// assert!((x[1]-2.0).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -508,8 +508,8 @@ pub fn irfftn<T: FftFloat>(
 /// # Examples
 ///
 /// ```
-/// let (s,_)=sci_fft::ihfftn(&[2.0],&[1,1],&[0,1])?;
-/// assert_eq!(sci_fft::hfftn(&s,&[1,1],&[0,1])?,vec![2.0]);
+/// let (s,_)=sci_fft::real::ihfftn(&[2.0],&[1,1],&[0,1])?;
+/// assert_eq!(sci_fft::real::hfftn(&s,&[1,1],&[0,1])?,vec![2.0]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -557,8 +557,8 @@ pub fn hfftn<T: FftFloat>(input: &[Complex<T>], shape: &[usize], axes: &[usize])
 /// # Examples
 ///
 /// ```
-/// let (s,_)=sci_fft::ihfftn(&[2.0],&[1,1],&[0,1])?;
-/// assert_eq!(sci_fft::hfftn(&s,&[1,1],&[0,1])?,vec![2.0]);
+/// let (s,_)=sci_fft::real::ihfftn(&[2.0],&[1,1],&[0,1])?;
+/// assert_eq!(sci_fft::real::hfftn(&s,&[1,1],&[0,1])?,vec![2.0]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -607,7 +607,7 @@ pub fn ihfftn<T: FftFloat>(
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::fft2(&[vec![sci_complex::Complex{re:2.0,im:0.0}]])?;
+/// let x=sci_fft::fourier::fft2(&[vec![sci_complex::Complex{re:2.0,im:0.0}]])?;
 /// assert_eq!(x[0][0].re,2.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -640,7 +640,7 @@ pub fn fft2<T: FftFloat>(input: &[Vec<Complex<T>>]) -> Result<Vec<Vec<Complex<T>
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::ifft2(&[vec![sci_complex::Complex{re:2.0,im:0.0}]])?;
+/// let x=sci_fft::fourier::ifft2(&[vec![sci_complex::Complex{re:2.0,im:0.0}]])?;
 /// assert_eq!(x[0][0].re,2.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -673,7 +673,7 @@ pub fn ifft2<T: FftFloat>(input: &[Vec<Complex<T>>]) -> Result<Vec<Vec<Complex<T
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::rfft2(&[vec![2.0]])?;
+/// let x=sci_fft::real::rfft2(&[vec![2.0]])?;
 /// assert_eq!(x[0][0].re,2.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -706,7 +706,7 @@ pub fn rfft2<T: FftFloat>(input: &[Vec<T>]) -> Result<Vec<Vec<Complex<T>>>> {
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::irfft2(&[vec![sci_complex::Complex{re:2.0,im:0.0}]],1)?;
+/// let x=sci_fft::real::irfft2(&[vec![sci_complex::Complex{re:2.0,im:0.0}]],1)?;
 /// assert_eq!(x,vec![vec![2.0]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -740,7 +740,7 @@ pub fn irfft2<T: FftFloat>(input: &[Vec<Complex<T>>], n: usize) -> Result<Vec<Ve
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::hfft2(&[vec![sci_complex::Complex{re:2.0,im:0.0}]],1)?;
+/// let x=sci_fft::real::hfft2(&[vec![sci_complex::Complex{re:2.0,im:0.0}]],1)?;
 /// assert_eq!(x,vec![vec![2.0]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -774,7 +774,7 @@ pub fn hfft2<T: FftFloat>(input: &[Vec<Complex<T>>], n: usize) -> Result<Vec<Vec
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::ihfft2(&[vec![2.0]])?;
+/// let x=sci_fft::real::ihfft2(&[vec![2.0]])?;
 /// assert_eq!(x[0][0].re,2.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -807,7 +807,7 @@ pub fn ihfft2<T: FftFloat>(input: &[Vec<T>]) -> Result<Vec<Vec<Complex<T>>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_fft::fftfreq(2,1.0)?,vec![0.0,-0.5]);
+/// assert_eq!(sci_fft::utilities::fftfreq(2,1.0)?,vec![0.0,-0.5]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -860,7 +860,7 @@ pub fn fftfreq<T: Float>(n: usize, d: T) -> Result<Vec<T>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_fft::rfftfreq(2,1.0)?,vec![0.0,0.5]);
+/// assert_eq!(sci_fft::utilities::rfftfreq(2,1.0)?,vec![0.0,0.5]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -907,7 +907,7 @@ pub fn rfftfreq<T: Float>(n: usize, d: T) -> Result<Vec<T>> {
 ///
 /// ```
 /// let x=[sci_complex::Complex{re:2.0,im:0.0}];
-/// assert_eq!(sci_fft::fftshift(&x)?,x);
+/// assert_eq!(sci_fft::utilities::fftshift(&x)?,x);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -942,7 +942,7 @@ pub fn fftshift<T: Float>(input: &[Complex<T>]) -> Result<Vec<Complex<T>>> {
 ///
 /// ```
 /// let x=[sci_complex::Complex{re:2.0,im:0.0}];
-/// assert_eq!(sci_fft::ifftshift(&x)?,x);
+/// assert_eq!(sci_fft::utilities::ifftshift(&x)?,x);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -986,7 +986,7 @@ fn smooth(mut n: usize) -> bool {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_fft::next_fast_len(17)?,18);
+/// assert_eq!(sci_fft::utilities::next_fast_len(17)?,18);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -1025,7 +1025,7 @@ pub fn next_fast_len(target: usize) -> Result<usize> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_fft::prev_fast_len(17)?,16);
+/// assert_eq!(sci_fft::utilities::prev_fast_len(17)?,16);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -1165,7 +1165,7 @@ fn real_nd<T: FftFloat>(
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::dct(&[1.0,2.0],sci_fft::RealTransformType::II)?;
+/// let x=sci_fft::real::dct(&[1.0,2.0],sci_fft::RealTransformType::II)?;
 /// assert_eq!(x.len(),2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1196,7 +1196,7 @@ pub fn dct<T: FftFloat>(input: &[T], kind: RealTransformType) -> Result<Vec<T>> 
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::idct(&[1.0,2.0],sci_fft::RealTransformType::II)?;
+/// let x=sci_fft::real::idct(&[1.0,2.0],sci_fft::RealTransformType::II)?;
 /// assert_eq!(x.len(),2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1227,7 +1227,7 @@ pub fn idct<T: FftFloat>(input: &[T], kind: RealTransformType) -> Result<Vec<T>>
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::dst(&[1.0,2.0],sci_fft::RealTransformType::II)?;
+/// let x=sci_fft::real::dst(&[1.0,2.0],sci_fft::RealTransformType::II)?;
 /// assert_eq!(x.len(),2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1258,7 +1258,7 @@ pub fn dst<T: FftFloat>(input: &[T], kind: RealTransformType) -> Result<Vec<T>> 
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::idst(&[1.0,2.0],sci_fft::RealTransformType::II)?;
+/// let x=sci_fft::real::idst(&[1.0,2.0],sci_fft::RealTransformType::II)?;
 /// assert_eq!(x.len(),2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1289,7 +1289,7 @@ pub fn idst<T: FftFloat>(input: &[T], kind: RealTransformType) -> Result<Vec<T>>
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::dctn(&[1.0,2.0],&[2],&[0],sci_fft::RealTransformType::II)?;
+/// let x=sci_fft::real::dctn(&[1.0,2.0],&[2],&[0],sci_fft::RealTransformType::II)?;
 /// assert_eq!(x.len(),2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1325,7 +1325,7 @@ pub fn dctn<T: FftFloat>(
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::idctn(&[1.0,2.0],&[2],&[0],sci_fft::RealTransformType::II)?;
+/// let x=sci_fft::real::idctn(&[1.0,2.0],&[2],&[0],sci_fft::RealTransformType::II)?;
 /// assert_eq!(x.len(),2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1361,7 +1361,7 @@ pub fn idctn<T: FftFloat>(
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::dstn(&[1.0,2.0],&[2],&[0],sci_fft::RealTransformType::II)?;
+/// let x=sci_fft::real::dstn(&[1.0,2.0],&[2],&[0],sci_fft::RealTransformType::II)?;
 /// assert_eq!(x.len(),2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1397,7 +1397,7 @@ pub fn dstn<T: FftFloat>(
 /// # Examples
 ///
 /// ```
-/// let x=sci_fft::idstn(&[1.0,2.0],&[2],&[0],sci_fft::RealTransformType::II)?;
+/// let x=sci_fft::real::idstn(&[1.0,2.0],&[2],&[0],sci_fft::RealTransformType::II)?;
 /// assert_eq!(x.len(),2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

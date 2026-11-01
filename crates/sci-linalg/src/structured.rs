@@ -53,7 +53,7 @@ fn binomial(n: usize, k: usize) -> f64 {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::toeplitz(&[1.,2.], Some(&[9.,3.]))?, vec![vec![1.,3.],vec![2.,1.]]);
+/// assert_eq!(sci_linalg::structured::toeplitz(&[1.,2.], Some(&[9.,3.]))?, vec![vec![1.,3.],vec![2.,1.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -103,7 +103,7 @@ pub fn toeplitz(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::hankel(&[1.,2.],None)?,vec![vec![1.,2.],vec![2.,0.]]);
+/// assert_eq!(sci_linalg::structured::hankel(&[1.,2.],None)?,vec![vec![1.,2.],vec![2.,0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -158,7 +158,7 @@ pub fn hankel(c: &(impl super::VectorInput + ?Sized), r: Option<&[f64]>) -> Resu
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::circulant(&[1.,2.])?,vec![vec![1.,2.],vec![2.,1.]]);
+/// assert_eq!(sci_linalg::structured::circulant(&[1.,2.])?,vec![vec![1.,2.],vec![2.,1.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -204,7 +204,7 @@ pub fn circulant(c: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::hilbert(1)?,vec![vec![1.]]);
+/// assert_eq!(sci_linalg::structured::hilbert(1)?,vec![vec![1.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -242,7 +242,7 @@ pub fn hilbert(n: usize) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::invhilbert(2)?,vec![vec![4.,-6.],vec![-6.,12.]]);
+/// assert_eq!(sci_linalg::structured::invhilbert(2)?,vec![vec![4.,-6.],vec![-6.,12.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -294,7 +294,7 @@ pub fn invhilbert(n: usize) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::pascal(2,sci_linalg::PascalKind::Lower)?,vec![vec![1.,0.],vec![1.,1.]]);
+/// assert_eq!(sci_linalg::structured::pascal(2,sci_linalg::structured::PascalKind::Lower)?,vec![vec![1.,0.],vec![1.,1.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -356,7 +356,7 @@ pub fn pascal(n: usize, kind: PascalKind) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::invpascal(2,sci_linalg::PascalKind::Symmetric)?,vec![vec![2.,-1.],vec![-1.,1.]]);
+/// assert_eq!(sci_linalg::structured::invpascal(2,sci_linalg::structured::PascalKind::Symmetric)?,vec![vec![2.,-1.],vec![-1.,1.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -417,7 +417,7 @@ pub fn invpascal(n: usize, kind: PascalKind) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::hadamard(2)?,vec![vec![1.,1.],vec![1.,-1.]]);
+/// assert_eq!(sci_linalg::structured::hadamard(2)?,vec![vec![1.,1.],vec![1.,-1.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -470,7 +470,7 @@ pub fn hadamard(n: usize) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::helmert(1,true)?,vec![vec![1.]]);
+/// assert_eq!(sci_linalg::structured::helmert(1,true)?,vec![vec![1.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -528,7 +528,7 @@ pub fn helmert(n: usize, full: bool) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::fiedler(&[2.,5.])?,vec![vec![0.,3.],vec![3.,0.]]);
+/// assert_eq!(sci_linalg::structured::fiedler(&[2.,5.])?,vec![vec![0.,3.],vec![3.,0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -571,7 +571,7 @@ pub fn fiedler(a: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>> 
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::companion(&[1.,-3.,2.])?,vec![vec![3.,-2.],vec![1.,0.]]);
+/// assert_eq!(sci_linalg::structured::companion(&[1.,-3.,2.])?,vec![vec![3.,-2.],vec![1.,0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -623,7 +623,7 @@ pub fn companion(a: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::fiedler_companion(&[1.,-3.,2.])?,vec![vec![3.,-2.],vec![1.,0.]]);
+/// assert_eq!(sci_linalg::structured::fiedler_companion(&[1.,-3.,2.])?,vec![vec![3.,-2.],vec![1.,0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -690,7 +690,7 @@ pub fn fiedler_companion(a: &(impl super::VectorInput + ?Sized)) -> Result<Vec<V
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::leslie(&[2.,3.],&[0.5])?,vec![vec![2.,3.],vec![0.5,0.]]);
+/// assert_eq!(sci_linalg::structured::leslie(&[2.,3.],&[0.5])?,vec![vec![2.,3.],vec![0.5,0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -747,7 +747,7 @@ pub fn leslie(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::block_diag(&[vec![vec![2.]],vec![vec![3.]]])?,vec![vec![2.,0.],vec![0.,3.]]);
+/// assert_eq!(sci_linalg::structured::block_diag(&[vec![vec![2.]],vec![vec![3.]]])?,vec![vec![2.,0.],vec![0.,3.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -817,7 +817,7 @@ pub fn block_diag(blocks: &[impl super::MatrixInput]) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// let c=sci_linalg::convolution_matrix(&[1.,2.],2,sci_signal::Mode::Full)?;
+/// let c=sci_linalg::structured::convolution_matrix(&[1.,2.],2,sci_signal::Mode::Full)?;
 /// assert_eq!(c,vec![vec![1.,0.],vec![2.,1.],vec![0.,2.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -884,7 +884,7 @@ pub fn convolution_matrix(
 /// # Examples
 ///
 /// ```
-/// let f=sci_linalg::dft(2,sci_linalg::DftScale::None)?;
+/// let f=sci_linalg::structured::dft(2,sci_linalg::structured::DftScale::None)?;
 /// assert!((f[1][1].re+1.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -941,7 +941,7 @@ pub fn dft(n: usize, scale: DftScale) -> Result<Vec<Vec<Complex>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::diagsvd(&[2.,1.],2,3)?,vec![vec![2.,0.,0.],vec![0.,1.,0.]]);
+/// assert_eq!(sci_linalg::structured::diagsvd(&[2.,1.],2,3)?,vec![vec![2.,0.,0.],vec![0.,1.,0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

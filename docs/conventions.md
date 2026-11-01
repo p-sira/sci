@@ -31,9 +31,9 @@ use sci::linalg::{self, MatrixInput};
 
 let a = ndarray::arr2(&[[2.0, 1.0], [0.0, 3.0]]);
 let b = nalgebra::DMatrix::identity(2, 2);
-let product = linalg::matmul(&a.view(), &b)?;
+let product = linalg::basic::matmul(&a.view(), &b)?;
 let matrix = product.to_faer()?;
-assert_eq!(linalg::solve(&matrix, &[5.0, 6.0])?, vec![1.5, 2.0]);
+assert_eq!(linalg::solvers::solve(&matrix, &[5.0, 6.0])?, vec![1.5, 2.0]);
 # Ok::<(), sci::Error>(())
 ```
 
@@ -49,8 +49,8 @@ Sparse matrices use `sci::SparseMatrix`, an owned CSR type shared with
 `sci-core` and `sci-sparse`. Row pointers and column indices are zero-based;
 columns are sorted and unique per row. Explicit zeros are retained. Sparse
 operations validate public storage before use and reject nonfinite inputs and
-results. `sparse::from_coo`, `from_csr`, and `from_csc` canonicalize storage;
-`from_dense` and `to_dense` connect sparse data with shared row matrices and
+results. `sparse::construct::{from_coo, from_csr, from_csc}` canonicalize storage;
+`sparse::construct::{from_dense, to_dense}` connect sparse data with shared row matrices and
 existing linear algebra adapters. `sci::SparseArray` supplies rank-1..32 COO
 coordinates for sparse axis operations. Graphs distinguish unstored non-edges
 from explicitly stored zero-weight edges; unreachable graph distances and

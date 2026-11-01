@@ -58,7 +58,7 @@ fn coefficients(b: &[f64], a: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = lfilter(&[0.5,0.5],&[1.],&[1.,2.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -98,7 +98,7 @@ pub fn lfilter(b: &[f64], a: &[f64], x: &[f64]) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = lfilter_with_state(&[0.5,0.5],&[1.],&[1.,2.],&[0.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -161,7 +161,7 @@ fn filter_state(b: &[f64], a: &[f64], x: &[f64], initial: &[f64]) -> Result<(Vec
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = lfilter_zi(&[0.5,0.5],&[1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -222,7 +222,7 @@ pub fn lfilter_zi(b: &[f64], a: &[f64]) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = lfiltic(&[0.5,0.5],&[1.],&[1.],&[2.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -272,7 +272,7 @@ pub fn lfiltic(b: &[f64], a: &[f64], past_y: &[f64], past_x: &[f64]) -> Result<V
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = filtfilt(&[0.5,0.5],&[1.],&[1.,2.,3.,4.],1)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -350,7 +350,7 @@ fn validate_sos(sos: &[[f64; 6]]) -> Result<()> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = sosfilt(&[[1.,0.,0.,1.,0.,0.]],&[1.,2.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -392,7 +392,7 @@ pub fn sosfilt(sos: &[[f64; 6]], x: &[f64]) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = sosfilt_zi(&[[1.,0.,0.,1.,0.,0.]])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -442,7 +442,7 @@ pub fn sosfilt_zi(sos: &[[f64; 6]]) -> Result<Vec<[f64; 2]>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = sosfiltfilt(&[[1.,0.,0.,1.,0.,0.]],&[1.,2.,3.],1)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -515,7 +515,7 @@ pub fn sosfiltfilt(sos: &[[f64; 6]], x: &[f64], padlen: usize) -> Result<Vec<f64
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = sos2tf(&[[1.,0.,0.,1.,0.,0.]])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -591,7 +591,7 @@ fn response(b: &[f64], a: &[f64], frequencies: &[f64], digital: bool) -> Result<
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = freqz(&[1.],&[1.],&[0.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -629,7 +629,7 @@ pub fn freqz(b: &[f64], a: &[f64], frequencies: &[f64]) -> Result<Vec<Complex>> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = freqs(&[1.],&[1.,1.],&[0.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -667,7 +667,7 @@ pub fn freqs(b: &[f64], a: &[f64], frequencies: &[f64]) -> Result<Vec<Complex>> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = freqz_sos(&[[1.,0.,0.,1.,0.,0.]],&[0.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -718,7 +718,7 @@ pub fn freqz_sos(sos: &[[f64; 6]], frequencies: &[f64]) -> Result<Vec<Complex>> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = group_delay(&[1.],&[1.],&[0.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -805,7 +805,7 @@ fn notch_peak(frequency: f64, q: f64, fs: f64, peak: bool) -> Result<TransferFun
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = iirnotch(10.,30.,100.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -843,7 +843,7 @@ pub fn iirnotch(frequency: f64, q: f64, fs: f64) -> Result<TransferFunction> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = iirpeak(10.,30.,100.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -878,7 +878,7 @@ pub fn iirpeak(frequency: f64, q: f64, fs: f64) -> Result<TransferFunction> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = kaiser_beta(60.);
 /// ```
 ///
@@ -922,7 +922,7 @@ pub fn kaiser_beta(attenuation: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = kaiser_atten(31,0.1)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -967,7 +967,7 @@ pub fn kaiser_atten(numtaps: usize, width: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = kaiserord(60.,0.1)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1016,7 +1016,8 @@ pub fn kaiserord(ripple: f64, width: f64) -> Result<(usize, f64)> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
+/// use sci_signal::windows;
 /// let _result = firwin(5,&[0.2],true,&windows::Window::Hamming,true,2.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1122,7 +1123,7 @@ pub fn firwin(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = medfilt(&[1.,4.,2.],3)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1160,7 +1161,7 @@ pub fn medfilt(x: &[f64], kernel: usize) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = order_filter(&[1.,4.,2.],3,1)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1221,7 +1222,7 @@ pub fn order_filter(x: &[f64], kernel: usize, rank: usize) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = wiener(&[1.,4.,2.],3,None)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1304,7 +1305,7 @@ pub fn wiener(x: &[f64], kernel: usize, noise: Option<f64>) -> Result<Vec<f64>> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = savgol_coeffs(5,2,0,1.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1411,7 +1412,7 @@ fn polynomial_edge(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = savgol_filter(&[1.,2.,3.,4.,5.],3,1,0,1.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

@@ -40,7 +40,7 @@ use nalgebra::{DMatrix, DVector};
 ///
 /// ```
 /// let x = [1.,2.,3.,4.,5.];
-/// let r = sci_stats::epps_singleton_2samp(&x, &x, &[0.4,0.8])?;
+/// let r = sci_stats::inference::epps_singleton_2samp(&x, &x, &[0.4,0.8])?;
 /// assert_eq!(r.statistic, 0.);
 /// assert_eq!(r.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())

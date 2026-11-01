@@ -26,7 +26,7 @@ use crate::{Error, Result};
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::bandwidth(&[vec![1.,2.],vec![0.,3.]])?,(0,1));
+/// assert_eq!(sci_linalg::basic::bandwidth(&[vec![1.,2.],vec![0.,3.]])?,(0,1));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -75,7 +75,7 @@ pub fn bandwidth(a: &(impl super::MatrixInput + ?Sized)) -> Result<(usize, usize
 /// # Examples
 ///
 /// ```
-/// assert!(sci_linalg::issymmetric(&[vec![1.,2.],vec![2.,3.]],None,None)?);
+/// assert!(sci_linalg::basic::issymmetric(&[vec![1.,2.],vec![2.,3.]],None,None)?);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

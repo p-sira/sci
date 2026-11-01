@@ -146,7 +146,7 @@ fn dunnett_probability(
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::dunnett(&[1.,2.,3.],&[&[4.,5.,6.]],sci_stats::Alternative::TwoSided)?;
+/// let r = sci_stats::inference::dunnett(&[1.,2.,3.],&[&[4.,5.,6.]],sci_stats::inference::Alternative::TwoSided)?;
 /// assert!(r.pvalue[0] < 0.05);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

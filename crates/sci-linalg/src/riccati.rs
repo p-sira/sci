@@ -175,7 +175,7 @@ fn riccati(
 /// # Examples
 ///
 /// ```
-/// let x = sci_linalg::solve_continuous_are(&[vec![1.]], &[vec![1.]],
+/// let x = sci_linalg::solvers::solve_continuous_are(&[vec![1.]], &[vec![1.]],
 ///     &[vec![1.]], &[vec![1.]])?;
 /// assert!(x[0][0]>0.);
 /// # Ok::<(), sci_core::Error>(())
@@ -227,7 +227,7 @@ pub fn solve_continuous_are(
 /// # Examples
 ///
 /// ```
-/// let x = sci_linalg::solve_discrete_are(&[vec![1.]], &[vec![1.]],
+/// let x = sci_linalg::solvers::solve_discrete_are(&[vec![1.]], &[vec![1.]],
 ///     &[vec![1.]], &[vec![1.]])?;
 /// assert!(x[0][0]>0.);
 /// # Ok::<(), sci_core::Error>(())

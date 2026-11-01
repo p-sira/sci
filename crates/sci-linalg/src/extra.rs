@@ -105,8 +105,8 @@ fn triangular_band(
 /// # Examples
 ///
 /// ```
-/// let f=sci_linalg::lu_factor(&[vec![2.]])?;
-/// assert_eq!(sci_linalg::lu_solve(&f,&[6.],false)?,vec![3.]);
+/// let f=sci_linalg::decompositions::lu_factor(&[vec![2.]])?;
+/// assert_eq!(sci_linalg::solvers::lu_solve(&f,&[6.],false)?,vec![3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -149,8 +149,8 @@ pub fn lu_factor(a: &(impl super::MatrixInput + ?Sized)) -> Result<LuFactor> {
 /// # Examples
 ///
 /// ```
-/// let f=sci_linalg::lu_factor(&[vec![2.]])?;
-/// assert_eq!(sci_linalg::lu_solve(&f,&[6.],true)?,vec![3.]);
+/// let f=sci_linalg::decompositions::lu_factor(&[vec![2.]])?;
+/// assert_eq!(sci_linalg::solvers::lu_solve(&f,&[6.],true)?,vec![3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -232,7 +232,7 @@ pub fn lu_solve(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::solve_banded(0,0,&[vec![2.,4.]],&[6.,8.])?,vec![3.,2.]);
+/// assert_eq!(sci_linalg::solvers::solve_banded(0,0,&[vec![2.,4.]],&[6.,8.])?,vec![3.,2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -274,7 +274,7 @@ pub fn solve_banded(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::solveh_banded(&[vec![4.,9.]],&[8.,18.],true)?,vec![2.,2.]);
+/// assert_eq!(sci_linalg::solvers::solveh_banded(&[vec![4.,9.]],&[8.,18.],true)?,vec![2.,2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -315,7 +315,7 @@ pub fn solveh_banded(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::cholesky_banded(&[vec![4.,9.]],true)?,vec![vec![2.,3.]]);
+/// assert_eq!(sci_linalg::decompositions::cholesky_banded(&[vec![4.,9.]],true)?,vec![vec![2.,3.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -367,7 +367,7 @@ pub fn cholesky_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> 
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::cho_solve_banded(&[vec![2.,3.]],&[8.,18.],true)?,vec![2.,2.]);
+/// assert_eq!(sci_linalg::solvers::cho_solve_banded(&[vec![2.,3.]],&[8.,18.],true)?,vec![2.,2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -406,7 +406,7 @@ pub fn cho_solve_banded(
 /// # Examples
 ///
 /// ```
-/// let e=sci_linalg::eig_banded(&[vec![2.,3.]],true)?;
+/// let e=sci_linalg::eigen::eig_banded(&[vec![2.,3.]],true)?;
 /// assert!(e.eigenvalues.iter().zip([2.,3.]).all(|(a,b)| (a-b).abs()<1e-14));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -445,7 +445,7 @@ pub fn eig_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> Resul
 /// # Examples
 ///
 /// ```
-/// let values=sci_linalg::eigvals_banded(&[vec![2.,3.]],true)?;
+/// let values=sci_linalg::eigen::eigvals_banded(&[vec![2.,3.]],true)?;
 /// assert!(values.iter().zip([2.,3.]).all(|(a,b)| (a-b).abs()<1e-14));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -481,7 +481,7 @@ pub fn eigvals_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> R
 /// # Examples
 ///
 /// ```
-/// let angles=sci_linalg::subspace_angles(&[vec![1.],vec![0.]],&[vec![0.],vec![1.]])?;
+/// let angles=sci_linalg::subspaces::subspace_angles(&[vec![1.],vec![0.]],&[vec![0.],vec![1.]])?;
 /// assert!((angles[0]-std::f64::consts::FRAC_PI_2).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -549,7 +549,7 @@ pub fn subspace_angles(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::solve_sylvester(&[vec![2.]],&[vec![3.]],&[vec![10.]])?,vec![vec![2.]]);
+/// assert_eq!(sci_linalg::solvers::solve_sylvester(&[vec![2.]],&[vec![3.]],&[vec![10.]])?,vec![vec![2.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -610,7 +610,7 @@ pub fn solve_sylvester(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::solve_continuous_lyapunov(&[vec![-2.]],&[vec![8.]])?,vec![vec![-2.]]);
+/// assert_eq!(sci_linalg::solvers::solve_continuous_lyapunov(&[vec![-2.]],&[vec![8.]])?,vec![vec![-2.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -649,7 +649,7 @@ pub fn solve_continuous_lyapunov(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::solve_discrete_lyapunov(&[vec![0.5]],&[vec![3.]])?,vec![vec![4.]]);
+/// assert_eq!(sci_linalg::solvers::solve_discrete_lyapunov(&[vec![0.5]],&[vec![3.]])?,vec![vec![4.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

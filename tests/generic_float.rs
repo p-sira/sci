@@ -125,14 +125,16 @@ fn evaluate<T: fft::FftFloat + e::BulirschFloat>(
             _ => panic!("unknown differentiation function {name}"),
         },
         "integrate" => match name {
-            "trapezoid" => real([q::trapezoid(x, None, p).unwrap()]),
-            "simpson" => real([q::simpson(x, None, p).unwrap()]),
+            "trapezoid" => real([q::sampled::trapezoid(x, None, p).unwrap()]),
+            "simpson" => real([q::sampled::simpson(x, None, p).unwrap()]),
             "cumulative_trapezoid" => {
-                real(q::cumulative_trapezoid(x, None, p, Some(zero)).unwrap())
+                real(q::sampled::cumulative_trapezoid(x, None, p, Some(zero)).unwrap())
             }
-            "cumulative_simpson" => real(q::cumulative_simpson(x, None, p, Some(zero)).unwrap()),
-            "romb" => real([q::romb(x, p).unwrap()]),
-            "fixed_quad" => real([q::fixed_quad(|x| x * x, zero, one, 4).unwrap()]),
+            "cumulative_simpson" => {
+                real(q::sampled::cumulative_simpson(x, None, p, Some(zero)).unwrap())
+            }
+            "romb" => real([q::sampled::romb(x, p).unwrap()]),
+            "fixed_quad" => real([q::quadrature::fixed_quad(|x| x * x, zero, one, 4).unwrap()]),
             _ => panic!("unknown integration function {name}"),
         },
         "interpolate" => {
@@ -140,44 +142,53 @@ fn evaluate<T: fft::FftFloat + e::BulirschFloat>(
             let query = [cast(-0.5), zero, cast(0.5), cast(1.5), cast(3.), cast(3.5)];
             match name {
                 "barycentric_interpolate" => {
-                    real(i::barycentric_interpolate(&nodes, x, &query).unwrap())
+                    real(i::polynomial::barycentric_interpolate(&nodes, x, &query).unwrap())
                 }
-                "krogh_interpolate" => real(i::krogh_interpolate(&nodes, x, &query).unwrap()),
-                "pchip_interpolate" => real(i::pchip_interpolate(&nodes, x, &query).unwrap()),
-                "lagrange" => real(i::lagrange(&nodes, x).unwrap()),
+                "krogh_interpolate" => {
+                    real(i::polynomial::krogh_interpolate(&nodes, x, &query).unwrap())
+                }
+                "pchip_interpolate" => {
+                    real(i::polynomial::pchip_interpolate(&nodes, x, &query).unwrap())
+                }
+                "lagrange" => real(i::polynomial::lagrange(&nodes, x).unwrap()),
                 _ => panic!("unknown interpolation function {name}"),
             }
         }
         "stats" => match name {
-            "mean" => real([stats::mean(x).unwrap()]),
-            "median" => real([stats::median(x).unwrap()]),
-            "iqr" => real([stats::iqr(x).unwrap()]),
-            "gmean" => real([stats::gmean(x).unwrap()]),
-            "hmean" => real([stats::hmean(x).unwrap()]),
-            "variance" => real([stats::variance(x, 1).unwrap()]),
-            "std" => real([stats::std(x, 1).unwrap()]),
-            "sem" => real([stats::sem(x, 1).unwrap()]),
-            "variation" => real([stats::variation(x, 1).unwrap()]),
-            "gstd" => real([stats::gstd(x, 1).unwrap()]),
-            "zscore" => real(stats::zscore(x, 1).unwrap()),
-            "gzscore" => real(stats::gzscore(x, 1).unwrap()),
-            "quantile" => real([stats::quantile(x, cast(0.3)).unwrap()]),
-            "scoreatpercentile" => real([stats::scoreatpercentile(x, cast(30.)).unwrap()]),
-            "median_abs_deviation" => real([stats::median_abs_deviation(x, cast(2.)).unwrap()]),
-            "moment" => real([stats::moment(x, 3).unwrap()]),
-            "skew" => real([stats::skew(x, false).unwrap()]),
-            "kurtosis" => real([stats::kurtosis(x, true, false).unwrap()]),
-            "zmap" => {
-                real(stats::zmap(&x.iter().map(|&v| v + one).collect::<Vec<_>>(), x, 1).unwrap())
+            "mean" => real([stats::descriptive::mean(x).unwrap()]),
+            "median" => real([stats::descriptive::median(x).unwrap()]),
+            "iqr" => real([stats::descriptive::iqr(x).unwrap()]),
+            "gmean" => real([stats::descriptive::gmean(x).unwrap()]),
+            "hmean" => real([stats::descriptive::hmean(x).unwrap()]),
+            "variance" => real([stats::descriptive::variance(x, 1).unwrap()]),
+            "std" => real([stats::descriptive::std(x, 1).unwrap()]),
+            "sem" => real([stats::descriptive::sem(x, 1).unwrap()]),
+            "variation" => real([stats::descriptive::variation(x, 1).unwrap()]),
+            "gstd" => real([stats::descriptive::gstd(x, 1).unwrap()]),
+            "zscore" => real(stats::descriptive::zscore(x, 1).unwrap()),
+            "gzscore" => real(stats::descriptive::gzscore(x, 1).unwrap()),
+            "quantile" => real([stats::descriptive::quantile(x, cast(0.3)).unwrap()]),
+            "scoreatpercentile" => {
+                real([stats::descriptive::scoreatpercentile(x, cast(30.)).unwrap()])
             }
-            "trimboth" => real(stats::trimboth(x, cast(0.125)).unwrap()),
-            "trim_mean" => real([stats::trim_mean(x, cast(0.125)).unwrap()]),
+            "median_abs_deviation" => {
+                real([stats::descriptive::median_abs_deviation(x, cast(2.)).unwrap()])
+            }
+            "moment" => real([stats::descriptive::moment(x, 3).unwrap()]),
+            "skew" => real([stats::descriptive::skew(x, false).unwrap()]),
+            "kurtosis" => real([stats::descriptive::kurtosis(x, true, false).unwrap()]),
+            "zmap" => real(
+                stats::descriptive::zmap(&x.iter().map(|&v| v + one).collect::<Vec<_>>(), x, 1)
+                    .unwrap(),
+            ),
+            "trimboth" => real(stats::descriptive::trimboth(x, cast(0.125)).unwrap()),
+            "trim_mean" => real([stats::descriptive::trim_mean(x, cast(0.125)).unwrap()]),
             "mode" => {
-                let (v, n) = stats::mode(x).unwrap();
+                let (v, n) = stats::descriptive::mode(x).unwrap();
                 vec![v.to_f64().unwrap(), n as f64]
             }
             "describe" => {
-                let a = stats::describe(x, 1, false).unwrap();
+                let a = stats::descriptive::describe(x, 1, false).unwrap();
                 real([
                     cast(a.count as f64),
                     a.min,
@@ -214,61 +225,69 @@ fn evaluate<T: fft::FftFloat + e::BulirschFloat>(
             let shape = [2, 2];
             let axes = [0, 1];
             let kind = match p.to_usize().unwrap() {
-                1 => fft::RealTransformType::I,
-                3 => fft::RealTransformType::III,
-                4 => fft::RealTransformType::IV,
-                _ => fft::RealTransformType::II,
+                1 => fft::real::RealTransformType::I,
+                3 => fft::real::RealTransformType::III,
+                4 => fft::real::RealTransformType::IV,
+                _ => fft::real::RealTransformType::II,
             };
             let period = cast(std::f64::consts::TAU);
             match name {
-                "fft" => complex(fft::fft(&z)),
-                "ifft" => complex(fft::ifft(&z)),
-                "fftshift" => complex(fft::fftshift(&z).unwrap()),
-                "ifftshift" => complex(fft::ifftshift(&z).unwrap()),
-                "rfft" => complex(fft::rfft(x)),
-                "ihfft" => complex(fft::ihfft(x, None).unwrap()),
-                "irfft" => real(fft::irfft(&z[..3], Some(4)).unwrap()),
-                "hfft" => real(fft::hfft(&z[..3], Some(4)).unwrap()),
-                "fftn" => complex(fft::fftn(&z, &shape, &axes).unwrap()),
-                "ifftn" => complex(fft::ifftn(&z, &shape, &axes).unwrap()),
+                "fft" => complex(fft::fourier::fft(&z)),
+                "ifft" => complex(fft::fourier::ifft(&z)),
+                "fftshift" => complex(fft::utilities::fftshift(&z).unwrap()),
+                "ifftshift" => complex(fft::utilities::ifftshift(&z).unwrap()),
+                "rfft" => complex(fft::real::rfft(x)),
+                "ihfft" => complex(fft::real::ihfft(x, None).unwrap()),
+                "irfft" => real(fft::real::irfft(&z[..3], Some(4)).unwrap()),
+                "hfft" => real(fft::real::hfft(&z[..3], Some(4)).unwrap()),
+                "fftn" => complex(fft::fourier::fftn(&z, &shape, &axes).unwrap()),
+                "ifftn" => complex(fft::fourier::ifftn(&z, &shape, &axes).unwrap()),
                 "rfftn" => {
-                    let (v, s) = fft::rfftn(x, &shape, &axes).unwrap();
+                    let (v, s) = fft::real::rfftn(x, &shape, &axes).unwrap();
                     assert_eq!(s, vec![2, 2]);
                     complex(v)
                 }
                 "ihfftn" => {
-                    let (v, s) = fft::ihfftn(x, &shape, &axes).unwrap();
+                    let (v, s) = fft::real::ihfftn(x, &shape, &axes).unwrap();
                     assert_eq!(s, vec![2, 2]);
                     complex(v)
                 }
-                "irfftn" => real(fft::irfftn(&z, &shape, &axes).unwrap()),
-                "hfftn" => real(fft::hfftn(&z, &shape, &axes).unwrap()),
-                "fft2" => complex(fft::fft2(&matrix).unwrap().into_iter().flatten()),
-                "ifft2" => complex(fft::ifft2(&matrix).unwrap().into_iter().flatten()),
-                "rfft2" => complex(fft::rfft2(&rows).unwrap().into_iter().flatten()),
-                "ihfft2" => complex(fft::ihfft2(&rows).unwrap().into_iter().flatten()),
-                "irfft2" => real(fft::irfft2(&matrix, 2).unwrap().into_iter().flatten()),
-                "hfft2" => real(fft::hfft2(&matrix, 2).unwrap().into_iter().flatten()),
-                "fftfreq" => real(fft::fftfreq(4, cast::<T>(0.5)).unwrap()),
-                "rfftfreq" => real(fft::rfftfreq(4, cast::<T>(0.5)).unwrap()),
-                "dct" => real(fft::dct(x, kind).unwrap()),
-                "idct" => real(fft::idct(x, kind).unwrap()),
-                "dst" => real(fft::dst(x, kind).unwrap()),
-                "idst" => real(fft::idst(x, kind).unwrap()),
-                "dctn" => real(fft::dctn(x, &shape, &axes, kind).unwrap()),
-                "idctn" => real(fft::idctn(x, &shape, &axes, kind).unwrap()),
-                "dstn" => real(fft::dstn(x, &shape, &axes, kind).unwrap()),
-                "idstn" => real(fft::idstn(x, &shape, &axes, kind).unwrap()),
-                "hilbert" => real(fft::hilbert(x).unwrap()),
-                "ihilbert" => real(fft::ihilbert(x).unwrap()),
-                "diff" => real(fft::diff(x, 1, period).unwrap()),
-                "shift" => real(fft::shift(x, cast(0.25), period).unwrap()),
-                "tilbert" => real(fft::tilbert(x, cast(0.5), period).unwrap()),
-                "itilbert" => real(fft::itilbert(x, cast(0.5), period).unwrap()),
-                "cc_diff" => real(fft::cc_diff(x, cast(0.25), cast(0.5), period).unwrap()),
-                "cs_diff" => real(fft::cs_diff(x, cast(0.25), cast(0.5), period).unwrap()),
-                "sc_diff" => real(fft::sc_diff(x, cast(0.25), cast(0.5), period).unwrap()),
-                "ss_diff" => real(fft::ss_diff(x, cast(0.25), cast(0.5), period).unwrap()),
+                "irfftn" => real(fft::real::irfftn(&z, &shape, &axes).unwrap()),
+                "hfftn" => real(fft::real::hfftn(&z, &shape, &axes).unwrap()),
+                "fft2" => complex(fft::fourier::fft2(&matrix).unwrap().into_iter().flatten()),
+                "ifft2" => complex(fft::fourier::ifft2(&matrix).unwrap().into_iter().flatten()),
+                "rfft2" => complex(fft::real::rfft2(&rows).unwrap().into_iter().flatten()),
+                "ihfft2" => complex(fft::real::ihfft2(&rows).unwrap().into_iter().flatten()),
+                "irfft2" => real(fft::real::irfft2(&matrix, 2).unwrap().into_iter().flatten()),
+                "hfft2" => real(fft::real::hfft2(&matrix, 2).unwrap().into_iter().flatten()),
+                "fftfreq" => real(fft::utilities::fftfreq(4, cast::<T>(0.5)).unwrap()),
+                "rfftfreq" => real(fft::utilities::rfftfreq(4, cast::<T>(0.5)).unwrap()),
+                "dct" => real(fft::real::dct(x, kind).unwrap()),
+                "idct" => real(fft::real::idct(x, kind).unwrap()),
+                "dst" => real(fft::real::dst(x, kind).unwrap()),
+                "idst" => real(fft::real::idst(x, kind).unwrap()),
+                "dctn" => real(fft::real::dctn(x, &shape, &axes, kind).unwrap()),
+                "idctn" => real(fft::real::idctn(x, &shape, &axes, kind).unwrap()),
+                "dstn" => real(fft::real::dstn(x, &shape, &axes, kind).unwrap()),
+                "idstn" => real(fft::real::idstn(x, &shape, &axes, kind).unwrap()),
+                "hilbert" => real(fft::utilities::hilbert(x).unwrap()),
+                "ihilbert" => real(fft::utilities::ihilbert(x).unwrap()),
+                "diff" => real(fft::utilities::diff(x, 1, period).unwrap()),
+                "shift" => real(fft::utilities::shift(x, cast(0.25), period).unwrap()),
+                "tilbert" => real(fft::utilities::tilbert(x, cast(0.5), period).unwrap()),
+                "itilbert" => real(fft::utilities::itilbert(x, cast(0.5), period).unwrap()),
+                "cc_diff" => {
+                    real(fft::utilities::cc_diff(x, cast(0.25), cast(0.5), period).unwrap())
+                }
+                "cs_diff" => {
+                    real(fft::utilities::cs_diff(x, cast(0.25), cast(0.5), period).unwrap())
+                }
+                "sc_diff" => {
+                    real(fft::utilities::sc_diff(x, cast(0.25), cast(0.5), period).unwrap())
+                }
+                "ss_diff" => {
+                    real(fft::utilities::ss_diff(x, cast(0.25), cast(0.5), period).unwrap())
+                }
                 _ => panic!("unknown FFT function {name}"),
             }
         }
@@ -352,31 +371,40 @@ fn boundary_properties<T: fft::FftFloat + e::BulirschFloat>() {
     assert!(d::hessian(|_| inf, &[one], one).is_err());
     assert_eq!(d::derivative(|x| x, zero, max).unwrap(), one);
     assert_eq!(d::derivative(|x| x, zero, tiny).unwrap(), one);
-    assert_eq!(stats::mean(&[max, max]).unwrap(), max);
-    assert_eq!(stats::mean(&[-max, max]).unwrap(), zero);
-    assert_eq!(stats::std(&[-max, max], 0).unwrap(), max);
-    assert_eq!(stats::variance(&[max, max], 0).unwrap(), zero);
-    assert_eq!(q::trapezoid(&[tiny, tiny], None, one).unwrap(), tiny);
+    assert_eq!(stats::descriptive::mean(&[max, max]).unwrap(), max);
+    assert_eq!(stats::descriptive::mean(&[-max, max]).unwrap(), zero);
+    assert_eq!(stats::descriptive::std(&[-max, max], 0).unwrap(), max);
+    assert_eq!(stats::descriptive::variance(&[max, max], 0).unwrap(), zero);
     assert_eq!(
-        q::simpson(&[tiny, tiny, tiny], None, one).unwrap(),
+        q::sampled::trapezoid(&[tiny, tiny], None, one).unwrap(),
+        tiny
+    );
+    assert_eq!(
+        q::sampled::simpson(&[tiny, tiny, tiny], None, one).unwrap(),
         two * tiny
     );
-    assert_eq!(q::romb(&[tiny, tiny, tiny], one).unwrap(), two * tiny);
-    assert_eq!(q::fixed_quad(|_| tiny, zero, one, 3).unwrap(), tiny);
-    assert!(q::fixed_quad(|_| nan, zero, one, 3).is_err());
-    assert!(q::fixed_quad(|x| x, zero, one, 257).is_err());
-    assert!(q::trapezoid::<T>(&[], None, one).is_err());
-    assert!(q::simpson(&[one, nan], None, one).is_err());
-    assert!(q::cumulative_trapezoid(&[one], None, one, Some(inf)).is_err());
-    assert!(q::cumulative_simpson(&[one, one], Some(&[one, zero]), one, None).is_err());
-    assert!(q::romb(&[one, one, one, one], one).is_err());
-    assert!(fft::fftn::<T>(&[], &[2], &[0]).is_err());
-    assert!(fft::rfftn(&[nan], &[1], &[0]).is_err());
-    assert!(fft::dct(&[one], fft::RealTransformType::I).is_err());
-    assert!(fft::diff(&[one], 1, zero).is_err());
-    assert!(fft::fftfreq(4, zero).is_err());
-    assert!(fft::rfftfreq(0, one).is_err());
-    assert!(fft::rfft::<T>(&[]).is_empty());
+    assert_eq!(
+        q::sampled::romb(&[tiny, tiny, tiny], one).unwrap(),
+        two * tiny
+    );
+    assert_eq!(
+        q::quadrature::fixed_quad(|_| tiny, zero, one, 3).unwrap(),
+        tiny
+    );
+    assert!(q::quadrature::fixed_quad(|_| nan, zero, one, 3).is_err());
+    assert!(q::quadrature::fixed_quad(|x| x, zero, one, 257).is_err());
+    assert!(q::sampled::trapezoid::<T>(&[], None, one).is_err());
+    assert!(q::sampled::simpson(&[one, nan], None, one).is_err());
+    assert!(q::sampled::cumulative_trapezoid(&[one], None, one, Some(inf)).is_err());
+    assert!(q::sampled::cumulative_simpson(&[one, one], Some(&[one, zero]), one, None).is_err());
+    assert!(q::sampled::romb(&[one, one, one, one], one).is_err());
+    assert!(fft::fourier::fftn::<T>(&[], &[2], &[0]).is_err());
+    assert!(fft::real::rfftn(&[nan], &[1], &[0]).is_err());
+    assert!(fft::real::dct(&[one], fft::real::RealTransformType::I).is_err());
+    assert!(fft::utilities::diff(&[one], 1, zero).is_err());
+    assert!(fft::utilities::fftfreq(4, zero).is_err());
+    assert!(fft::utilities::rfftfreq(0, one).is_err());
+    assert!(fft::real::rfft::<T>(&[]).is_empty());
     for n in [1, 2, 3, 4, 7, 16, 3] {
         let input: Vec<_> = (0..n)
             .map(|i| c::Complex {
@@ -384,7 +412,7 @@ fn boundary_properties<T: fft::FftFloat + e::BulirschFloat>() {
                 im: -one,
             })
             .collect();
-        let restored = fft::ifft(&fft::fft(&input));
+        let restored = fft::fourier::ifft(&fft::fourier::fft(&input));
         for (a, b) in restored.iter().zip(&input) {
             assert!((a.re - b.re).abs() <= cast::<T>(100.) * T::epsilon());
             assert!((a.im - b.im).abs() <= cast::<T>(100.) * T::epsilon());
@@ -392,8 +420,8 @@ fn boundary_properties<T: fft::FftFloat + e::BulirschFloat>() {
     }
     // Interoperate across precision-generic public modules.
     let gradient = d::gradient(|x| x[0] * x[0] + x[1] * x[1], &[one, two], cast(0.125)).unwrap();
-    assert_eq!(stats::mean(&gradient).unwrap(), cast(3.));
-    let spectrum = fft::rfft(&gradient);
+    assert_eq!(stats::descriptive::mean(&gradient).unwrap(), cast(3.));
+    let spectrum = fft::real::rfft(&gradient);
     assert_eq!(c::real(spectrum[0]), cast(6.));
     let product = c::multiply(
         c::Complex { re: max, im: max },
@@ -468,14 +496,16 @@ fn boundary_properties<T: fft::FftFloat + e::BulirschFloat>() {
         assert!(e::heuman_lambda(bad, cast(0.5)).is_err());
         assert!(e::ellippiinc_bulirsch(bad, zero, zero).is_err());
         assert!(e::ellipkm1(bad).is_err());
-        assert!(stats::mean(&[bad]).is_err());
-        assert!(stats::variance(&[bad], 0).is_err());
-        assert!(stats::median(&[bad]).is_err());
-        assert!(stats::zscore(&[bad], 0).is_err());
-        assert!(i::barycentric_interpolate(&[zero, one], &[zero, one], &[bad]).is_err());
-        assert!(i::krogh_interpolate(&[zero, one], &[zero, one], &[bad]).is_err());
-        assert!(i::lagrange(&[zero, bad], &[zero, one]).is_err());
-        assert!(i::pchip_interpolate(&[zero, one], &[zero, one], &[bad]).is_err());
+        assert!(stats::descriptive::mean(&[bad]).is_err());
+        assert!(stats::descriptive::variance(&[bad], 0).is_err());
+        assert!(stats::descriptive::median(&[bad]).is_err());
+        assert!(stats::descriptive::zscore(&[bad], 0).is_err());
+        assert!(
+            i::polynomial::barycentric_interpolate(&[zero, one], &[zero, one], &[bad]).is_err()
+        );
+        assert!(i::polynomial::krogh_interpolate(&[zero, one], &[zero, one], &[bad]).is_err());
+        assert!(i::polynomial::lagrange(&[zero, bad], &[zero, one]).is_err());
+        assert!(i::polynomial::pchip_interpolate(&[zero, one], &[zero, one], &[bad]).is_err());
     }
 }
 
@@ -543,5 +573,6 @@ fn shared_storage_defaults_and_generic_variants() {
         data: vec![1.],
     };
     let _: c::Complex = c::Complex { re: 1_f64, im: 0. };
-    let _: stats::Description<f32> = stats::describe(&[1_f32, 2., 3., 4.], 1, false).unwrap();
+    let _: stats::descriptive::Description<f32> =
+        stats::descriptive::describe(&[1_f32, 2., 3., 4.], 1, false).unwrap();
 }

@@ -28,7 +28,7 @@ use nalgebra::{DMatrix, DVector};
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::minkowski_distance(&[0.0], &[2.0], 2.0)?, 2.0);
+/// assert_eq!(sci_spatial::distance::minkowski_distance(&[0.0], &[2.0], 2.0)?, 2.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -63,7 +63,7 @@ pub fn minkowski_distance(x: &[f64], y: &[f64], p: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::minkowski_distance_p(&[0.0], &[2.0], 2.0)?, 4.0);
+/// assert_eq!(sci_spatial::distance::minkowski_distance_p(&[0.0], &[2.0], 2.0)?, 4.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -115,7 +115,7 @@ pub fn minkowski_distance_p(x: &[f64], y: &[f64], p: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::distance_matrix(&[vec![0.0]], &[vec![2.0]], 2.0)?, vec![vec![2.0]]);
+/// assert_eq!(sci_spatial::distance::distance_matrix(&[vec![0.0]], &[vec![2.0]], 2.0)?, vec![vec![2.0]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -158,7 +158,7 @@ pub fn distance_matrix(x: &[Vec<f64>], y: &[Vec<f64>], p: f64) -> Result<Vec<Vec
 /// # Examples
 ///
 /// ```
-/// let p = sci_spatial::geometric_slerp(&[1.0,0.0], &[0.0,1.0], &[0.5], 1e-7)?;
+/// let p = sci_spatial::transform::geometric_slerp(&[1.0,0.0], &[0.0,1.0], &[0.5], 1e-7)?;
 /// assert!((p[0][0]-0.5_f64.sqrt()).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -272,7 +272,7 @@ pub struct ProcrustesResult {
 /// ```
 /// let a = vec![vec![0.0,0.0],vec![1.0,0.0],vec![0.0,1.0]];
 /// let b = vec![vec![2.0,3.0],vec![2.0,5.0],vec![4.0,3.0]];
-/// assert!(sci_spatial::procrustes(&a,&b)?.disparity < 1e-25);
+/// assert!(sci_spatial::transform::procrustes(&a,&b)?.disparity < 1e-25);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -380,7 +380,7 @@ pub fn procrustes(data1: &[Vec<f64>], data2: &[Vec<f64>]) -> Result<ProcrustesRe
 ///
 /// ```
 /// let v = vec![vec![0.0,0.0],vec![1.0,0.0],vec![0.0,1.0]];
-/// assert_eq!(sci_spatial::tsearch(&v,&[vec![0,1,2]],&[vec![0.2,0.2]],1e-12)?,vec![Some(0)]);
+/// assert_eq!(sci_spatial::transform::tsearch(&v,&[vec![0,1,2]],&[vec![0.2,0.2]],1e-12)?,vec![Some(0)]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References

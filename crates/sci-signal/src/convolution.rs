@@ -45,7 +45,7 @@ fn range(n: usize, m: usize, mode: Mode) -> (usize, usize) {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::convolution::*;
 /// let _result = convolve(&[1.,2.], &[1.,-1.], Mode::Full)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -100,7 +100,7 @@ pub fn convolve(x: &[f64], h: &[f64], mode: Mode) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::convolution::*;
 /// let _result = correlate(&[1.,2.], &[1.], Mode::Full)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -141,7 +141,7 @@ pub fn correlate(x: &[f64], y: &[f64], mode: Mode) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::convolution::*;
 /// let _result = correlation_lags(3,2,Mode::Full)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -196,7 +196,7 @@ pub fn correlation_lags(n: usize, m: usize, mode: Mode) -> Result<Vec<isize>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::convolution::*;
 /// let _result = fftconvolve(&[1.,2.], &[1.,-1.], Mode::Full)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -256,7 +256,7 @@ pub fn fftconvolve(x: &[f64], h: &[f64], mode: Mode) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::convolution::*;
 /// let _result = deconvolve(&[1.,3.,2.], &[1.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -315,7 +315,7 @@ pub fn deconvolve(x: &[f64], h: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::convolution::*;
 /// let _result = upfirdn(&[1.,1.], &[1.,2.], 2,1)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -382,7 +382,7 @@ pub fn upfirdn(h: &[f64], x: &[f64], up: usize, down: usize) -> Result<Vec<f64>>
 /// # Examples
 ///
 /// ```
-/// let x=sci_signal::resample_poly(&[1.,2.,3.],2,1,None)?;
+/// let x=sci_signal::convolution::resample_poly(&[1.,2.,3.],2,1,None)?;
 /// assert_eq!(x.len(),6);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -487,7 +487,7 @@ pub fn resample_poly(
 /// # Examples
 ///
 /// ```
-/// let x=sci_signal::decimate(&[1.,2.,3.,4.],2,8,true)?;
+/// let x=sci_signal::convolution::decimate(&[1.,2.,3.,4.],2,8,true)?;
 /// assert_eq!(x.len(),2);
 /// # Ok::<(),sci_core::Error>(())
 /// ```

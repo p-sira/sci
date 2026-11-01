@@ -83,7 +83,7 @@ fn bin(x: f64, edges: &[f64]) -> usize {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{binned_statistic_dd, BinStatistic};
+/// use sci_stats::{binning::binned_statistic_dd, binning::BinStatistic};
 /// assert_eq!(binned_statistic_dd(&[vec![0.5, 0.5]], &[3.], &[vec![0.,1.],vec![0.,1.]], BinStatistic::Sum)?.statistic, vec![3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -208,7 +208,7 @@ pub fn binned_statistic_dd(
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{binned_statistic, BinStatistic};
+/// use sci_stats::{binning::binned_statistic, binning::BinStatistic};
 /// assert_eq!(binned_statistic(&[0.5, 1.5], &[2., 4.], &[0., 1., 2.], BinStatistic::Mean)?.statistic, vec![2., 4.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -254,7 +254,7 @@ pub fn binned_statistic(
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{binned_statistic_2d, BinStatistic};
+/// use sci_stats::{binning::binned_statistic_2d, binning::BinStatistic};
 /// assert_eq!(binned_statistic_2d(&[0.5], &[0.5], &[3.], &[0.,1.], &[0.,1.], BinStatistic::Sum)?.shape, vec![1,1]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -315,7 +315,7 @@ pub fn binned_statistic_2d(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::cumfreq(&[0., 1., 2.], 2, 0., 2.)?.extra_points, 0);
+/// assert_eq!(sci_stats::binning::cumfreq(&[0., 1., 2.], 2, 0., 2.)?.extra_points, 0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -392,7 +392,7 @@ pub fn cumfreq(values: &[f64], bins: usize, lower: f64, upper: f64) -> Result<Fr
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::relfreq(&[0., 1., 2.], 2, 0., 2.)?.extra_points, 0);
+/// assert_eq!(sci_stats::binning::relfreq(&[0., 1., 2.], 2, 0., 2.)?.extra_points, 0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

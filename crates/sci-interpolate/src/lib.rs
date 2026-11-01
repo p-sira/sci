@@ -30,11 +30,24 @@ use sci_core as error;
 pub use sci_core::{Error, ParametricSpline, Result, Spline, SurfaceSpline};
 #[path = "mod.rs"]
 mod implementation;
-pub use implementation::*;
+/// Polynomial interpolation and rational approximation.
+pub mod polynomial {
+    pub use crate::fitting_impl::approximate_taylor_polynomial;
+    pub use crate::implementation::{
+        barycentric_interpolate, krogh_interpolate, lagrange, pade, pchip_interpolate,
+    };
+}
 mod backend;
-mod fitting;
-mod multidimensional;
-mod spline;
-pub use fitting::*;
-pub use multidimensional::*;
-pub use spline::*;
+#[path = "fitting.rs"]
+mod fitting_impl;
+/// Spline construction, fitting, and smoothing.
+pub mod fitting {
+    pub use crate::fitting_impl::{
+        bisplrep, generate_knots, make_interp_spline, make_lsq_spline, make_smoothing_spline,
+        make_splprep, make_splrep,
+    };
+}
+/// Interpolation on regular grids, scattered points, and surfaces.
+pub mod multidimensional;
+/// Spline evaluation, differentiation, and integration.
+pub mod spline;

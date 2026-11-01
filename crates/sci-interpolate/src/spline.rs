@@ -40,8 +40,8 @@ pub enum SplineExtension {
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
-/// assert_eq!(sci_interpolate::splev(&[0.5],&s,0,sci_interpolate::SplineExtension::Error)?,vec![1.]);
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
+/// assert_eq!(sci_interpolate::spline::splev(&[0.5],&s,0,sci_interpolate::spline::SplineExtension::Error)?,vec![1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -107,8 +107,8 @@ pub fn splev(
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
-/// let d=sci_interpolate::splder(&s,1)?;
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
+/// let d=sci_interpolate::spline::splder(&s,1)?;
 /// assert_eq!(d.degree,0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -175,8 +175,8 @@ pub fn splder(spline: &Spline, order: usize) -> Result<Spline> {
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.], &[2.,2.],1)?;
-/// let a=sci_interpolate::splantider(&s,1)?;
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.], &[2.,2.],1)?;
+/// let a=sci_interpolate::spline::splantider(&s,1)?;
 /// assert_eq!(a.degree,2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -245,8 +245,8 @@ pub fn splantider(spline: &Spline, order: usize) -> Result<Spline> {
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
-/// assert_eq!(sci_interpolate::spalde(&[0.5],&s)?,vec![vec![1.,2.]]);
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
+/// assert_eq!(sci_interpolate::spline::spalde(&[0.5],&s)?,vec![vec![1.,2.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -293,8 +293,8 @@ pub fn spalde(x: &[f64], spline: &Spline) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
-/// assert!((sci_interpolate::splint(0.,1.,&s)?-1.).abs()<1e-12);
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
+/// assert!((sci_interpolate::spline::splint(0.,1.,&s)?-1.).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -339,8 +339,8 @@ pub fn splint(a: f64, b: f64, spline: &Spline) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
-/// assert_eq!(sci_interpolate::insert(0.5,&s,1)?.knots.len(),s.knots.len()+1);
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
+/// assert_eq!(sci_interpolate::spline::insert(0.5,&s,1)?.knots.len(),s.knots.len()+1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -413,8 +413,8 @@ pub fn insert(x: f64, spline: &Spline, multiplicity: usize) -> Result<Spline> {
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.,2.,3.], &[-1.,0.,1.,2.],3)?;
-/// let roots=sci_interpolate::sproot(&s)?;
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.,2.,3.], &[-1.,0.,1.,2.],3)?;
+/// let roots=sci_interpolate::spline::sproot(&s)?;
 /// assert!(roots.iter().any(|r|(*r-1.).abs()<1e-10));
 /// # Ok::<(), sci_core::Error>(())
 /// ```

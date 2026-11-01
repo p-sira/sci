@@ -2,6 +2,12 @@
 
 ## 0.3.0 (unreleased)
 
+- **Breaking:** Group numerical functions in public mathematical-family modules
+  throughout the Sci workspace, following the `sci-special` 0.3.0 API design.
+  Keep shared errors and foundational types at crate roots; keep `sci-core`
+  flat. Move existing call sites, examples, and benchmarks to the named modules
+  without changing algorithms or introducing new feature gates. See MIGRATING.md.
+
 - Isolate `sci-sparse`'s lightweight CSR/COO storage and arithmetic from optional
   `solver`, `graph`, `random`, and `npz` backends. The `sci::sparse` feature
   explicitly enables all numerical backends, preserving the existing facade

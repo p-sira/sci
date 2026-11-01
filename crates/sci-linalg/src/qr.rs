@@ -43,7 +43,7 @@ fn reconstructed(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::khatri_rao(&[vec![1.,2.]],&[vec![3.,4.],vec![5.,6.]])?,vec![vec![3.,8.],vec![5.,12.]]);
+/// assert_eq!(sci_linalg::basic::khatri_rao(&[vec![1.,2.]],&[vec![3.,4.],vec![5.,6.]])?,vec![vec![3.,8.],vec![5.,12.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -92,7 +92,7 @@ pub fn khatri_rao(
 /// # Examples
 ///
 /// ```
-/// let (r,q)=sci_linalg::rq(&[vec![2.]])?;
+/// let (r,q)=sci_linalg::decompositions::rq(&[vec![2.]])?;
 /// assert!((r[0][0]*q[0][0]-2.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -138,7 +138,7 @@ pub fn rq(a: &(impl super::MatrixInput + ?Sized)) -> Result<(Matrix, Matrix)> {
 /// # Examples
 ///
 /// ```
-/// let (product,r)=sci_linalg::qr_multiply(&[vec![2.]],&[vec![3.]],true)?;
+/// let (product,r)=sci_linalg::decompositions::qr_multiply(&[vec![2.]],&[vec![3.]],true)?;
 /// assert!((product[0][0]*r[0][0]-6.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -192,7 +192,7 @@ pub fn qr_multiply(
 /// # Examples
 ///
 /// ```
-/// let f=sci_linalg::qr_update(&[vec![1.]],&[vec![2.]],&[3.],&[4.])?;
+/// let f=sci_linalg::decompositions::qr_update(&[vec![1.]],&[vec![2.]],&[3.],&[4.])?;
 /// assert!((f.q[0][0]*f.r[0][0]-14.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -248,7 +248,7 @@ pub fn qr_update(
 /// # Examples
 ///
 /// ```
-/// let f=sci_linalg::qr_insert(&[vec![1.]],&[vec![2.]],&[vec![3.]],1,true)?;
+/// let f=sci_linalg::decompositions::qr_insert(&[vec![1.]],&[vec![2.]],&[vec![3.]],1,true)?;
 /// assert_eq!((f.q.len(),f.r[0].len()),(2,1));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -324,7 +324,7 @@ pub fn qr_insert(
 /// # Examples
 ///
 /// ```
-/// let f=sci_linalg::qr_delete(&[vec![1.,0.],vec![0.,1.]],&[vec![2.],vec![3.]],0,1,true)?;
+/// let f=sci_linalg::decompositions::qr_delete(&[vec![1.,0.],vec![0.,1.]],&[vec![2.],vec![3.]],0,1,true)?;
 /// assert!((f.q[0][0]*f.r[0][0]-3.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

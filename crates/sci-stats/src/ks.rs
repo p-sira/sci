@@ -57,7 +57,7 @@ fn select(plus: (f64, f64), minus: (f64, f64), alternative: Alternative) -> (f64
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{ks_1samp, Distribution, Alternative};
+/// use sci_stats::{goodness::ks_1samp, distributions::Distribution, inference::Alternative};
 /// assert!(ks_1samp(&[-1., 0., 1.], Distribution::Normal {mean:0.,std_dev:1.}, Alternative::TwoSided)?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -135,7 +135,7 @@ pub fn ks_1samp(
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{ks_2samp, Alternative};
+/// use sci_stats::{goodness::ks_2samp, inference::Alternative};
 /// assert_eq!(ks_2samp(&[1.,2.], &[1.,2.], Alternative::TwoSided)?.statistic, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -220,7 +220,7 @@ pub fn ks_2samp(first: &[f64], second: &[f64], alternative: Alternative) -> Resu
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{probplot, Distribution};
+/// use sci_stats::{diagnostics::probplot, distributions::Distribution};
 /// assert_eq!(probplot(&[2.,1.], Distribution::Normal {mean:0.,std_dev:1.})?.ordered, vec![1.,2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

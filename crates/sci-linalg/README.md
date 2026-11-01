@@ -27,6 +27,26 @@ and `linalg-ndarray`; its defaults enable all three.
 The original dot/product helpers propagate IEEE values; added numerical
 algorithms validate finite inputs and report shared errors.
 
+## API layout
+
+Shared `Matrix`, `MatrixInput`, `VectorInput`, `Error`, and `Result` types are
+available at the crate root. Numerical functions are organized by family:
+
+| Namespace | Contents |
+| --- | --- |
+| `basic` | Products, transpose, inverses, determinants, norms, matrix properties |
+| `decompositions` | Cholesky, LU, QR, SVD, Schur, and related factorizations |
+| `solvers` | Linear systems, least squares, Lyapunov, Sylvester, and Riccati equations |
+| `eigen` | Eigenvalues, eigenvectors, generalized eigenvalue problems |
+| `matrix_functions` | Matrix exponential, logarithm, roots, powers, and trigonometric functions |
+| `structured` | Toeplitz, Hankel, circulant, and other matrix constructors |
+| `subspaces` | Orthonormal bases, null spaces, Procrustes alignment, and sketching |
+| `interpolative` | Interpolative decomposition and rank estimation |
+
+For example, use `sci_linalg::decompositions::svd` for SVD and
+`sci_linalg::solvers::solve` for a linear system. This organization replaces
+flat numerical function exports in Sci 0.3.
+
 ## Input conventions
 
 Numerical calls adapt storage directly to faer without intermediate shared
@@ -62,7 +82,7 @@ fn main() -> Result<(), sci_core::Error> {
     let jacobian = sci_differentiate::jacobian(
         |x| vec![x[0] * x[1], x[0] + x[1]], &[2.0, 3.0], 1e-5,
     )?;
-    let direction = linalg::matvec(&jacobian, &[1.0, 0.0])?;
+    let direction = linalg::basic::matvec(&jacobian, &[1.0, 0.0])?;
     assert!((direction[0] - 3.0).abs() < 1e-8);
     Ok(())
 }

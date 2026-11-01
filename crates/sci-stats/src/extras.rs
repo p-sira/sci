@@ -86,7 +86,7 @@ fn limited(
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::tmean(&[1., 2., 100.], Some((0., 3.)), (true,true))?.is_finite());
+/// assert!(sci_stats::descriptive::tmean(&[1., 2., 100.], Some((0., 3.)), (true,true))?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -126,7 +126,7 @@ pub fn tmean(values: &[f64], limits: Option<(f64, f64)>, inclusive: (bool, bool)
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::tvar(&[1., 2., 100.], Some((0., 3.)), (true,true), 1)?.is_finite());
+/// assert!(sci_stats::descriptive::tvar(&[1., 2., 100.], Some((0., 3.)), (true,true), 1)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -171,7 +171,7 @@ pub fn tvar(
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::tstd(&[1., 2., 100.], Some((0., 3.)), (true,true), 1)?.is_finite());
+/// assert!(sci_stats::descriptive::tstd(&[1., 2., 100.], Some((0., 3.)), (true,true), 1)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -216,7 +216,7 @@ pub fn tstd(
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::tsem(&[1., 2., 100.], Some((0., 3.)), (true,true), 1)?.is_finite());
+/// assert!(sci_stats::descriptive::tsem(&[1., 2., 100.], Some((0., 3.)), (true,true), 1)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -260,7 +260,7 @@ pub fn tsem(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::tmin(&[1., 2., 3.], Some(2.), true)?, 2.);
+/// assert_eq!(sci_stats::descriptive::tmin(&[1., 2., 3.], Some(2.), true)?, 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -300,7 +300,7 @@ pub fn tmin(values: &[f64], limit: Option<f64>, inclusive: bool) -> Result<f64> 
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::tmax(&[1., 2., 3.], Some(2.), true)?, 2.);
+/// assert_eq!(sci_stats::descriptive::tmax(&[1., 2., 3.], Some(2.), true)?, 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -340,7 +340,7 @@ pub fn tmax(values: &[f64], limit: Option<f64>, inclusive: bool) -> Result<f64> 
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{trim1, Tail};
+/// use sci_stats::{descriptive::trim1, descriptive::Tail};
 /// assert_eq!(trim1(&[1., 2., 3., 4.], 0.25, Tail::Upper)?, vec![1., 2., 3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -393,7 +393,7 @@ pub fn trim1(values: &[f64], proportion: f64, tail: Tail) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::kstat(&[1., 2., 3.], 2)?, 1.);
+/// assert_eq!(sci_stats::descriptive::kstat(&[1., 2., 3.], 2)?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -447,7 +447,7 @@ pub fn kstat(values: &[f64], order: usize) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::kstatvar(&[1., 2., 3., 5.], 2)?.is_finite());
+/// assert!(sci_stats::descriptive::kstatvar(&[1., 2., 3., 5.], 2)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -501,7 +501,7 @@ pub fn kstatvar(values: &[f64], order: usize) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{combine_pvalues, CombineMethod};
+/// use sci_stats::{inference::combine_pvalues, inference::CombineMethod};
 /// assert!(combine_pvalues(&[0.1, 0.02], CombineMethod::Fisher, None)?.pvalue < 0.05);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -616,7 +616,7 @@ pub fn combine_pvalues(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::sigmaclip(&[1., 1., 1.], 3., 3.)?.values, vec![1.;3]);
+/// assert_eq!(sci_stats::descriptive::sigmaclip(&[1., 1., 1.], 3., 3.)?.values, vec![1.;3]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

@@ -292,7 +292,7 @@ fn whiten_matches_shared_population_std_at_extreme_scales() {
         let scales: Vec<_> = (0..columns)
             .map(|j| {
                 let column: Vec<_> = obs.iter().map(|row| row[j]).collect();
-                sci::stats::std(&column, 0)
+                sci::stats::descriptive::std(&column, 0)
             })
             .collect::<Result<_, _>>()
             .unwrap();
@@ -356,7 +356,7 @@ fn whiten_rejects_a_nonfinite_population_scale() {
         .collect();
     let column: Vec<_> = observations.iter().map(|row| row[0]).collect();
     assert_eq!(
-        sci::stats::std(&column, 0),
+        sci::stats::descriptive::std(&column, 0),
         Err(sci::Error::NonFiniteEvaluation)
     );
     assert_eq!(
@@ -368,7 +368,7 @@ fn whiten_rejects_a_nonfinite_population_scale() {
 #[cfg(feature = "spatial")]
 #[test]
 fn hierarchy_euclidean_matches_spatial_condensed_order_and_errors() {
-    use sci::spatial::{Metric, pdist};
+    use sci::spatial::distance::{Metric, pdist};
 
     let observations = [
         vec![vec![0.0], vec![2.0], vec![5.0], vec![9.0]],
@@ -414,7 +414,7 @@ fn hierarchy_euclidean_matches_spatial_condensed_order_and_errors() {
     let z = vec![vec![0.0, 1.0, 2.0, 2.0]];
     for length in [0, 1, 2, 3, 4, 6, 7, 10] {
         let y = vec![1.0; length];
-        let expected = sci::spatial::num_obs_y(&y).map(|n| n == 2);
+        let expected = sci::spatial::distance::num_obs_y(&y).map(|n| n == 2);
         assert_eq!(h::correspond(&z, &y), expected, "length {length}");
     }
     assert_eq!(

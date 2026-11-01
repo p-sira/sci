@@ -2,6 +2,9 @@
 
 Euclidean geometry, spatial queries, and pairwise distances.
 
+Distance metrics and pairwise operations live under `sci_spatial::distance`;
+geometric transforms and point location live under `sci_spatial::transform`.
+
 Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 
 Points are rows of `Vec<Vec<f64>>`, interoperable with `sci_linalg`.

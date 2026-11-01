@@ -2,6 +2,10 @@
 
 Scalar polynomial, B-spline, surface, and multidimensional interpolation.
 
+The public namespaces are `polynomial`, `spline`, `multidimensional`, and
+`fitting`. Shared `Spline`, `ParametricSpline`, and `SurfaceSpline` types remain
+available from the crate root.
+
 Polynomial and PCHIP interpolation accept `T: sci_core::Float`; spline and fitting algorithms use `f64`.
 
 Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.

@@ -28,7 +28,7 @@ pub trait LinearMap {
     /// # Examples
     /// ```
     /// use sci_sparse::linalg::LinearMap;
-    /// assert_eq!(sci_sparse::identity(1)?.apply(&[2.])?,[2.]);
+    /// assert_eq!(sci_sparse::construct::identity(1)?.apply(&[2.])?,[2.]);
     /// # Ok::<(), sci_core::Error>(())
     /// ```
     /// # References
@@ -50,7 +50,7 @@ pub trait LinearMap {
     /// # Examples
     /// ```
     /// use sci_sparse::linalg::LinearMap;
-    /// assert_eq!(sci_sparse::identity(1)?.transpose_apply(&[2.])?,[2.]);
+    /// assert_eq!(sci_sparse::construct::identity(1)?.transpose_apply(&[2.])?,[2.]);
     /// # Ok::<(), sci_core::Error>(())
     /// ```
     /// # References
@@ -186,7 +186,7 @@ impl LinearMap for LinearOperator {
 /// # Examples
 /// ```
 /// use sci_sparse::linalg::{LinearMap, LinearOperator};
-/// let op = LinearOperator::try_from(&sci_sparse::identity(2)?)?;
+/// let op = LinearOperator::try_from(&sci_sparse::construct::identity(2)?)?;
 /// assert_eq!(op.apply(&[3., 4.])?, [3., 4.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -881,7 +881,7 @@ fn projected(
                     let hj: Matrix = (0..j + 2).map(|i| h[i][..=j].to_vec()).collect();
                     let mut target = vec![0.; j + 2];
                     target[0] = beta;
-                    sci_linalg::lstsq(&hj, &target, None)?.solution
+                    sci_linalg::solvers::lstsq(&hj, &target, None)?.solution
                 } else {
                     let mut y = rhs[..=j].to_vec();
                     for i in (0..=j).rev() {
@@ -1213,7 +1213,7 @@ fn lsmr_inner(a: &dyn LinearMap, b: &[f64], o: &LeastSquaresOptions) -> Result<L
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::cg(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1248,7 +1248,7 @@ pub fn cg(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<Iter
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::bicg(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1284,7 +1284,7 @@ pub fn bicg(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<It
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::bicgstab(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1319,7 +1319,7 @@ pub fn bicgstab(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Resul
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::cgs(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1354,7 +1354,7 @@ pub fn cgs(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<Ite
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::qmr(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1389,7 +1389,7 @@ pub fn qmr(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<Ite
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::tfqmr(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1426,7 +1426,7 @@ pub fn tfqmr(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<I
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::gmres(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1463,7 +1463,7 @@ pub fn gmres(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<I
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::lgmres(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1500,7 +1500,7 @@ pub fn lgmres(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::gcrotmk(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1537,7 +1537,7 @@ pub fn gcrotmk(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::minres(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1568,7 +1568,7 @@ pub fn minres(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<
 /// conditioning can reduce accuracy. No conlim, variance or logging options.
 /// # Examples
 /// ```
-/// let r=sci_sparse::linalg::lsqr(&sci_sparse::identity(2)?,&[2.,3.],&Default::default())?;
+/// let r=sci_sparse::linalg::lsqr(&sci_sparse::construct::identity(2)?,&[2.,3.],&Default::default())?;
 /// assert!(r.converged);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1602,7 +1602,7 @@ pub fn lsqr(
 /// conditioning can reduce accuracy. No conlim, variance or logging options.
 /// # Examples
 /// ```
-/// let r=sci_sparse::linalg::lsmr(&sci_sparse::identity(2)?,&[2.,3.],&Default::default())?;
+/// let r=sci_sparse::linalg::lsmr(&sci_sparse::construct::identity(2)?,&[2.,3.],&Default::default())?;
 /// assert!(r.converged);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

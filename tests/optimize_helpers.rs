@@ -10,7 +10,7 @@ fn objective(kind: &str, x: &[f64]) -> Vec<f64> {
             x[0] * x[1],
             x[0].sin() + x[1].cos(),
         ],
-        "rosen" => vec![o::rosen(x).unwrap()],
+        "rosen" => vec![o::derivatives::rosen(x).unwrap()],
         _ => panic!("unknown objective"),
     }
 }
@@ -30,19 +30,21 @@ fn public_helpers_match_scipy() {
         let epsilon = vector(c[4]);
         let bias: f64 = c[6].parse().unwrap();
         let got = match c[1] {
-            "rosen" => vec![vec![o::rosen(&x).unwrap()]],
-            "rosen_der" => vec![o::rosen_der(&x).unwrap()],
-            "rosen_hess" => o::rosen_hess(&x).unwrap(),
-            "rosen_hess_prod" => vec![o::rosen_hess_prod(&x, &p).unwrap()],
-            "approx_fprime" => o::approx_fprime(|x| objective(c[5], x), &x, &epsilon).unwrap(),
+            "rosen" => vec![vec![o::derivatives::rosen(&x).unwrap()]],
+            "rosen_der" => vec![o::derivatives::rosen_der(&x).unwrap()],
+            "rosen_hess" => o::derivatives::rosen_hess(&x).unwrap(),
+            "rosen_hess_prod" => vec![o::derivatives::rosen_hess_prod(&x, &p).unwrap()],
+            "approx_fprime" => {
+                o::derivatives::approx_fprime(|x| objective(c[5], x), &x, &epsilon).unwrap()
+            }
             "check_grad" => vec![vec![
-                o::check_grad(
+                o::derivatives::check_grad(
                     |x| objective(c[5], x)[0],
                     |x| {
                         let g = if c[5] == "quadratic" {
                             vec![2.0 * x[0] + x[1], 6.0 * x[1] + x[0]]
                         } else {
-                            o::rosen_der(x).unwrap()
+                            o::derivatives::rosen_der(x).unwrap()
                         };
                         g.into_iter().map(|v| v + bias).collect()
                     },
@@ -79,9 +81,9 @@ fn public_helpers_match_scipy() {
 fn analytical_identities_and_interoperability() {
     for x in [vec![-1.2, 1.0], vec![0.1, 0.2, 0.3, 0.4], vec![1.0; 8]] {
         let p: Vec<_> = (0..x.len()).map(|i| i as f64 - 2.0).collect();
-        let h = o::rosen_hess(&x).unwrap();
-        let hp = o::rosen_hess_prod(&x, &p).unwrap();
-        let dense = linalg::matvec(&h, &p).unwrap();
+        let h = o::derivatives::rosen_hess(&x).unwrap();
+        let hp = o::derivatives::rosen_hess_prod(&x, &p).unwrap();
+        let dense = linalg::basic::matvec(&h, &p).unwrap();
         for (a, b) in hp.iter().zip(&dense) {
             assert!(approx::abs_diff_eq!(
                 a,
@@ -89,12 +91,14 @@ fn analytical_identities_and_interoperability() {
                 epsilon = 1e-12 * (1.0 + b.abs())
             ));
         }
-        let g = o::rosen_der(&x).unwrap();
-        let numeric = differentiate::gradient(|x| o::rosen(x).unwrap(), &x, 1e-5).unwrap();
+        let g = o::derivatives::rosen_der(&x).unwrap();
+        let numeric =
+            differentiate::gradient(|x| o::derivatives::rosen(x).unwrap(), &x, 1e-5).unwrap();
         for (a, b) in g.iter().zip(&numeric) {
             assert!(approx::abs_diff_eq!(a, b, epsilon = 2e-6 * (1.0 + b.abs())));
         }
-        let nh = differentiate::jacobian(|x| o::rosen_der(x).unwrap(), &x, 1e-5).unwrap();
+        let nh =
+            differentiate::jacobian(|x| o::derivatives::rosen_der(x).unwrap(), &x, 1e-5).unwrap();
         for (i, row) in h.iter().enumerate() {
             for (j, v) in row.iter().enumerate() {
                 assert_eq!(*v, h[j][i]);
@@ -102,11 +106,11 @@ fn analytical_identities_and_interoperability() {
             }
         }
     }
-    let result = o::minimize_with_gradient(
-        |x| o::rosen(x).unwrap(),
-        |x| o::rosen_der(x).unwrap(),
+    let result = o::minimize::minimize_with_gradient(
+        |x| o::derivatives::rosen(x).unwrap(),
+        |x| o::derivatives::rosen_der(x).unwrap(),
         &[0.9, 0.8],
-        o::Options {
+        o::minimize::Options {
             max_iterations: 20000,
             learning_rate: 0.001,
             tolerance: 1e-6,
@@ -115,7 +119,7 @@ fn analytical_identities_and_interoperability() {
     .unwrap();
     assert!(result.cost < 1e-6);
     let mut calls = 0;
-    let jac = o::approx_fprime(
+    let jac = o::derivatives::approx_fprime(
         |x| {
             calls += 1;
             vec![x.iter().sum()]
@@ -128,7 +132,7 @@ fn analytical_identities_and_interoperability() {
     assert_eq!(jac, vec![vec![1.0; 3]]);
     let mut bad_calls = 0;
     assert!(
-        o::approx_fprime(
+        o::derivatives::approx_fprime(
             |_| {
                 bad_calls += 1;
                 vec![0.0]
@@ -148,19 +152,19 @@ fn invalid_domains_and_overflow() {
         vec![f64::MAX, 1.0],
         vec![1.0; 1_000_001],
     ] {
-        assert!(o::rosen(&x).is_err());
-        assert!(o::rosen_der(&x).is_err());
-        assert!(o::rosen_hess(&x).is_err());
-        assert!(o::rosen_hess_prod(&x, &x).is_err());
+        assert!(o::derivatives::rosen(&x).is_err());
+        assert!(o::derivatives::rosen_der(&x).is_err());
+        assert!(o::derivatives::rosen_hess(&x).is_err());
+        assert!(o::derivatives::rosen_hess_prod(&x, &x).is_err());
     }
     for x in [vec![], vec![1.0]] {
-        assert!(o::rosen_der(&x).is_err());
-        assert!(o::rosen_hess(&x).is_err());
-        assert!(o::rosen_hess_prod(&x, &x).is_err());
+        assert!(o::derivatives::rosen_der(&x).is_err());
+        assert!(o::derivatives::rosen_hess(&x).is_err());
+        assert!(o::derivatives::rosen_hess_prod(&x, &x).is_err());
     }
-    assert!(o::rosen_hess(&[1.0; 257]).is_err());
-    assert!(o::rosen_hess_prod(&[1.0, 1.0], &[1.0]).is_err());
-    assert!(o::rosen_hess_prod(&[1.0, 1.0], &[f64::NAN, 0.0]).is_err());
+    assert!(o::derivatives::rosen_hess(&[1.0; 257]).is_err());
+    assert!(o::derivatives::rosen_hess_prod(&[1.0, 1.0], &[1.0]).is_err());
+    assert!(o::derivatives::rosen_hess_prod(&[1.0, 1.0], &[f64::NAN, 0.0]).is_err());
     for steps in [
         vec![],
         vec![0.0],
@@ -168,15 +172,15 @@ fn invalid_domains_and_overflow() {
         vec![f64::INFINITY],
         vec![1.0; 3],
     ] {
-        assert!(o::approx_fprime(|_| vec![1.0], &[1.0, 1.0], &steps).is_err());
+        assert!(o::derivatives::approx_fprime(|_| vec![1.0], &[1.0, 1.0], &steps).is_err());
     }
     for x in [vec![], vec![f64::NAN], vec![1.0; 513]] {
-        assert!(o::approx_fprime(|_| vec![1.0], &x, &[1.0]).is_err());
+        assert!(o::derivatives::approx_fprime(|_| vec![1.0], &x, &[1.0]).is_err());
     }
-    assert!(o::approx_fprime(|_| vec![], &[1.0], &[0.1]).is_err());
-    assert!(o::approx_fprime(|_| vec![f64::NAN], &[1.0], &[0.1]).is_err());
+    assert!(o::derivatives::approx_fprime(|_| vec![], &[1.0], &[0.1]).is_err());
+    assert!(o::derivatives::approx_fprime(|_| vec![f64::NAN], &[1.0], &[0.1]).is_err());
     assert!(
-        o::approx_fprime(
+        o::derivatives::approx_fprime(
             |x| if x[0] == 1.0 {
                 vec![1.0]
             } else {
@@ -188,15 +192,15 @@ fn invalid_domains_and_overflow() {
         .is_err()
     );
     assert!(
-        o::approx_fprime(
+        o::derivatives::approx_fprime(
             |x| vec![if x[0] == 1.0 { 0.0 } else { f64::INFINITY }],
             &[1.0],
             &[0.1]
         )
         .is_err()
     );
-    assert!(o::approx_fprime(|_| vec![0.0], &[f64::MAX], &[f64::MAX]).is_err());
-    assert!(o::check_grad(|x| x[0], |_| vec![], &[1.0], &[0.1]).is_err());
-    assert!(o::check_grad(|x| x[0], |_| vec![f64::NAN], &[1.0], &[0.1]).is_err());
-    assert!(o::check_grad(|_| f64::INFINITY, |_| vec![1.0], &[1.0], &[0.1]).is_err());
+    assert!(o::derivatives::approx_fprime(|_| vec![0.0], &[f64::MAX], &[f64::MAX]).is_err());
+    assert!(o::derivatives::check_grad(|x| x[0], |_| vec![], &[1.0], &[0.1]).is_err());
+    assert!(o::derivatives::check_grad(|x| x[0], |_| vec![f64::NAN], &[1.0], &[0.1]).is_err());
+    assert!(o::derivatives::check_grad(|_| f64::INFINITY, |_| vec![1.0], &[1.0], &[0.1]).is_err());
 }

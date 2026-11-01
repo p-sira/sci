@@ -28,7 +28,7 @@ use nalgebra::{DMatrix, DVector};
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
 /// assert_eq!(s.degree,1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -70,7 +70,7 @@ pub fn make_interp_spline(x: &[f64], y: &[f64], degree: usize) -> Result<Spline>
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_lsq_spline(&[0.,1.,2.], &[0.,1.,2.], &[0.,0.,2.,2.],1,None)?;
+/// let s=sci_interpolate::fitting::make_lsq_spline(&[0.,1.,2.], &[0.,1.,2.], &[0.,0.,2.,2.],1,None)?;
 /// assert_eq!(s.coefficients.len(),2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -134,7 +134,7 @@ pub fn make_lsq_spline(
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_splrep(&[0.,1.,2.,3.], &[0.,1.,4.,9.],3,0.,None)?;
+/// let s=sci_interpolate::fitting::make_splrep(&[0.,1.,2.,3.], &[0.,1.,4.,9.],3,0.,None)?;
 /// assert_eq!(s.degree,3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -196,7 +196,7 @@ pub fn make_splrep(
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_splprep(&[vec![0.,0.],vec![1.,2.]],None,1,0.,None)?;
+/// let s=sci_interpolate::fitting::make_splprep(&[vec![0.,0.],vec![1.,2.]],None,1,0.,None)?;
 /// assert_eq!(s.components.len(),2);
 /// assert_eq!(s.parameters,vec![0.,1.]);
 /// # Ok::<(), sci_core::Error>(())
@@ -318,7 +318,7 @@ pub fn make_splprep(
 /// # Examples
 ///
 /// ```
-/// let c=sci_interpolate::approximate_taylor_polynomial(|x|x*x,0.,2,1.,None)?;
+/// let c=sci_interpolate::polynomial::approximate_taylor_polynomial(|x|x*x,0.,2,1.,None)?;
 /// assert!((c[0]-1.).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -372,7 +372,7 @@ pub fn approximate_taylor_polynomial(
             _ => Err(Error::NonFiniteEvaluation),
         })
         .collect::<Result<Vec<_>>>()?;
-    let c = crate::lagrange(&centered, &values)?;
+    let c = crate::polynomial::lagrange(&centered, &values)?;
     Ok(c[c.len() - degree - 1..].to_vec())
 }
 
@@ -401,7 +401,7 @@ pub fn approximate_taylor_polynomial(
 /// # Examples
 ///
 /// ```
-/// let t=sci_interpolate::generate_knots(&[0.,1.,2.,3.], &[0.,1.,4.,9.],3,0.,None)?;
+/// let t=sci_interpolate::fitting::generate_knots(&[0.,1.,2.,3.], &[0.,1.,4.,9.],3,0.,None)?;
 /// assert_eq!(t.len(),1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -509,7 +509,7 @@ pub fn generate_knots(
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_smoothing_spline(&[0.,1.,2.,3.,4.], &[0.,1.,2.,3.,4.],None,1.)?;
+/// let s=sci_interpolate::fitting::make_smoothing_spline(&[0.,1.,2.,3.,4.], &[0.,1.,2.,3.,4.],None,1.)?;
 /// assert_eq!(s.degree,3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -539,7 +539,7 @@ pub fn make_smoothing_spline(
     for j in 0..n {
         let mut c = vec![0.0; n];
         c[j] = 1.0;
-        second.push(crate::splder(
+        second.push(crate::spline::splder(
             &Spline {
                 knots: t.clone(),
                 coefficients: c,
@@ -624,7 +624,7 @@ pub fn make_smoothing_spline(
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::bisplrep(&[0.,0.,1.,1.], &[0.,1.,0.,1.], &[0.,1.,1.,2.], &[0.,0.,1.,1.], &[0.,0.,1.,1.],1,1,None)?;
+/// let s=sci_interpolate::fitting::bisplrep(&[0.,0.,1.,1.], &[0.,1.,0.,1.], &[0.,1.,1.,2.], &[0.,0.,1.,1.], &[0.,0.,1.,1.],1,1,None)?;
 /// assert_eq!(s.coefficients.len(),4);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

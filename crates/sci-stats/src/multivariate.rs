@@ -60,7 +60,7 @@ fn coordinates(x: &[f64], mean: &[f64]) -> Result<()> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::multivariate_normal_pdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]])?.is_finite());
+/// assert!(sci_stats::multivariate::multivariate_normal_pdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -110,7 +110,7 @@ pub fn multivariate_normal_pdf(
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::multivariate_normal_logpdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]])?.is_finite());
+/// assert!(sci_stats::multivariate::multivariate_normal_logpdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -160,7 +160,7 @@ pub fn multivariate_normal_logpdf(
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::multivariate_t_pdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]], 4.)?.is_finite());
+/// assert!(sci_stats::multivariate::multivariate_t_pdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]], 4.)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -215,7 +215,7 @@ pub fn multivariate_t_pdf(
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::multivariate_t_logpdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]], 4.)?.is_finite());
+/// assert!(sci_stats::multivariate::multivariate_t_logpdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]], 4.)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -271,7 +271,7 @@ pub fn multivariate_t_logpdf(
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::dirichlet_pdf(&[0.3, 0.7], &[2., 3.])?.is_finite());
+/// assert!(sci_stats::multivariate::dirichlet_pdf(&[0.3, 0.7], &[2., 3.])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -330,7 +330,7 @@ pub fn dirichlet_pdf(x: &[f64], alpha: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::dirichlet_logpdf(&[0.3, 0.7], &[2., 3.])?.is_finite());
+/// assert!(sci_stats::multivariate::dirichlet_logpdf(&[0.3, 0.7], &[2., 3.])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -389,7 +389,7 @@ pub fn dirichlet_logpdf(x: &[f64], alpha: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::multinomial_pmf(&[1., 2.], &[0.5, 0.5])?.is_finite());
+/// assert!(sci_stats::multivariate::multinomial_pmf(&[1., 2.], &[0.5, 0.5])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -429,7 +429,7 @@ pub fn multinomial_pmf(counts: &[f64], probabilities: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::multinomial_logpmf(&[1., 2.], &[0.5, 0.5])?.is_finite());
+/// assert!(sci_stats::multivariate::multinomial_logpmf(&[1., 2.], &[0.5, 0.5])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -507,7 +507,7 @@ pub fn multinomial_logpmf(counts: &[f64], probabilities: &[f64]) -> Result<f64> 
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::categorical_pmf(&[1., 1.], 0.)?, 0.5);
+/// assert_eq!(sci_stats::multivariate::categorical_pmf(&[1., 1.], 0.)?, 0.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -562,7 +562,7 @@ pub fn categorical_pmf(weights: &[f64], category: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::categorical_cdf(&[1., 1.], 0.)?, 0.5);
+/// assert_eq!(sci_stats::multivariate::categorical_cdf(&[1., 1.], 0.)?, 0.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

@@ -120,8 +120,8 @@ pub enum Distribution {
     /// 1e-10, and underflow/rounding near the support boundary can lose accuracy.
     ///
     /// ```
-    /// let d = sci_stats::Distribution::Levy { location: 0., scale: 1. };
-    /// assert!((sci_stats::cdf(d, sci_stats::ppf(d, 0.5)?)? - 0.5).abs() < 2e-10);
+    /// let d = sci_stats::distributions::Distribution::Levy { location: 0., scale: 1. };
+    /// assert!((sci_stats::distributions::cdf(d, sci_stats::distributions::ppf(d, 0.5)?)? - 0.5).abs() < 2e-10);
     /// # Ok::<(), sci_core::Error>(())
     /// ```
     ///
@@ -911,8 +911,8 @@ fn discrete<D: Discrete<u64, f64> + DiscreteCDF<u64, f64>>(
 /// # Examples
 ///
 /// ```
-/// let d = sci_stats::Distribution::Normal { mean: 0., std_dev: 1. };
-/// assert!(sci_stats::pdf(d, 0.)? > 0.);
+/// let d = sci_stats::distributions::Distribution::Normal { mean: 0., std_dev: 1. };
+/// assert!(sci_stats::distributions::pdf(d, 0.)? > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -954,8 +954,8 @@ pub fn pdf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let d = sci_stats::Distribution::Normal { mean: 0., std_dev: 1. };
-/// assert!(sci_stats::logpdf(d, 0.)? < 0.);
+/// let d = sci_stats::distributions::Distribution::Normal { mean: 0., std_dev: 1. };
+/// assert!(sci_stats::distributions::logpdf(d, 0.)? < 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -1001,8 +1001,8 @@ pub fn logpdf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> 
 /// # Examples
 ///
 /// ```
-/// let d = sci_stats::Distribution::Normal { mean: 0., std_dev: 1. };
-/// assert_eq!(sci_stats::cdf(d, 0.)?, 0.5);
+/// let d = sci_stats::distributions::Distribution::Normal { mean: 0., std_dev: 1. };
+/// assert_eq!(sci_stats::distributions::cdf(d, 0.)?, 0.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -1048,8 +1048,8 @@ pub fn cdf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let d = sci_stats::Distribution::Normal { mean: 0., std_dev: 1. };
-/// assert_eq!(sci_stats::sf(d, 0.)?, 0.5);
+/// let d = sci_stats::distributions::Distribution::Normal { mean: 0., std_dev: 1. };
+/// assert_eq!(sci_stats::distributions::sf(d, 0.)?, 0.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -1100,8 +1100,8 @@ pub fn sf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let d = sci_stats::Distribution::Normal { mean: 0., std_dev: 1. };
-/// assert!(sci_stats::ppf(d, 0.5)?.abs() < 1e-12);
+/// let d = sci_stats::distributions::Distribution::Normal { mean: 0., std_dev: 1. };
+/// assert!(sci_stats::distributions::ppf(d, 0.5)?.abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

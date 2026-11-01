@@ -81,7 +81,7 @@ fn curvature(x: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_optimize::rosen(&[1.0,1.0])?,0.0);
+/// assert_eq!(sci_optimize::derivatives::rosen(&[1.0,1.0])?,0.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -118,7 +118,7 @@ pub fn rosen(x: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_optimize::rosen_der(&[1.0,1.0])?,vec![0.0,0.0]);
+/// assert_eq!(sci_optimize::derivatives::rosen_der(&[1.0,1.0])?,vec![0.0,0.0]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -164,7 +164,7 @@ pub fn rosen_der(x: &[f64]) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_optimize::rosen_hess(&[1.0,1.0])?,vec![vec![802.0,-400.0],vec![-400.0,200.0]]);
+/// assert_eq!(sci_optimize::derivatives::rosen_hess(&[1.0,1.0])?,vec![vec![802.0,-400.0],vec![-400.0,200.0]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -204,7 +204,7 @@ pub fn rosen_hess(x: &[f64]) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_optimize::rosen_hess_prod(&[1.0,1.0],&[1.0,0.0])?,vec![802.0,-400.0]);
+/// assert_eq!(sci_optimize::derivatives::rosen_hess_prod(&[1.0,1.0],&[1.0,0.0])?,vec![802.0,-400.0]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -258,7 +258,7 @@ pub fn rosen_hess_prod(x: &[f64], p: &[f64]) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// let jac=sci_optimize::approx_fprime(|x|vec![x[0]*x[0]],&[2.0],&[1e-5])?;
+/// let jac=sci_optimize::derivatives::approx_fprime(|x|vec![x[0]*x[0]],&[2.0],&[1e-5])?;
 /// assert!((jac[0][0]-4.00001).abs()<1e-8);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -341,7 +341,7 @@ pub fn approx_fprime(
 /// # Examples
 ///
 /// ```
-/// let error=sci_optimize::check_grad(|x|x[0]*x[0],|x|vec![2.0*x[0]],&[2.0],&[1e-5])?;
+/// let error=sci_optimize::derivatives::check_grad(|x|x[0]*x[0],|x|vec![2.0*x[0]],&[2.0],&[1e-5])?;
 /// assert!(error<2e-5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

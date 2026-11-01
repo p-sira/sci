@@ -99,7 +99,7 @@ fn transform_plot(
 /// ## Examples
 ///
 /// ```
-/// let plot = sci_stats::boxcox_normplot(&[1.,2.,4.,8.], -1., 1., 3)?;
+/// let plot = sci_stats::diagnostics::boxcox_normplot(&[1.,2.,4.,8.], -1., 1., 3)?;
 /// assert_eq!(plot.lambdas, vec![-1., 0., 1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -154,7 +154,7 @@ pub fn boxcox_normplot(
 /// ## Examples
 ///
 /// ```
-/// let plot = sci_stats::yeojohnson_normplot(&[-2.,0.,1.,4.], 0., 2., 3)?;
+/// let plot = sci_stats::diagnostics::yeojohnson_normplot(&[-2.,0.,1.,4.], 0., 2., 3)?;
 /// assert_eq!(plot.correlations.len(), 3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -294,7 +294,7 @@ fn bounded_minimum(lower: f64, upper: f64, function: impl Fn(f64) -> Result<f64>
 /// ## Examples
 ///
 /// ```
-/// let l = sci_stats::boxcox_normmax(&[1.,2.,4.,8.], -2., 2., sci_stats::BoxCoxMethod::MaximumLikelihood)?;
+/// let l = sci_stats::diagnostics::boxcox_normmax(&[1.,2.,4.,8.], -2., 2., sci_stats::diagnostics::BoxCoxMethod::MaximumLikelihood)?;
 /// assert!(l.abs() < 1e-5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -362,7 +362,7 @@ pub fn boxcox_normmax(values: &[f64], lower: f64, upper: f64, method: BoxCoxMeth
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_stats::yeojohnson_normmax(&[-2.,-1.,0.,1.,2.], -1., 3.)? - 1.).abs() < 1e-5);
+/// assert!((sci_stats::diagnostics::yeojohnson_normmax(&[-2.,-1.,0.,1.,2.], -1., 3.)? - 1.).abs() < 1e-5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -457,7 +457,7 @@ fn ppcc_bounds(lower: f64, upper: f64) -> Result<()> {
 /// ## Examples
 ///
 /// ```
-/// let p = sci_stats::ppcc_plot(&[1.,2.,3.,5.], 1., 3., 3, sci_stats::PpccFamily::Gamma)?;
+/// let p = sci_stats::diagnostics::ppcc_plot(&[1.,2.,3.,5.], 1., 3., 3, sci_stats::diagnostics::PpccFamily::Gamma)?;
 /// assert_eq!(p.shapes, vec![1.,2.,3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -525,7 +525,7 @@ pub fn ppcc_plot(
 /// ## Examples
 ///
 /// ```
-/// let shape = sci_stats::ppcc_max(&[1.,2.,3.,5.], 0.5, 8., sci_stats::PpccFamily::Gamma)?;
+/// let shape = sci_stats::diagnostics::ppcc_max(&[1.,2.,3.,5.], 0.5, 8., sci_stats::diagnostics::PpccFamily::Gamma)?;
 /// assert!((0.5..=8.).contains(&shape));
 /// # Ok::<(), sci_core::Error>(())
 /// ```

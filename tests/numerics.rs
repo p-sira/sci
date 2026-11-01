@@ -80,16 +80,16 @@ fn public_numerical_apis_match_scipy() {
                     }
                 };
                 match api {
-                    "trapezoid" => check_integral(&[i::trapezoid(&a, x, dx).unwrap()]),
-                    "simpson" => check_integral(&[i::simpson(&a, x, dx).unwrap()]),
-                    "cumulative_trapezoid" => {
-                        check_integral(&i::cumulative_trapezoid(&a, x, dx, initial).unwrap())
-                    }
+                    "trapezoid" => check_integral(&[i::sampled::trapezoid(&a, x, dx).unwrap()]),
+                    "simpson" => check_integral(&[i::sampled::simpson(&a, x, dx).unwrap()]),
+                    "cumulative_trapezoid" => check_integral(
+                        &i::sampled::cumulative_trapezoid(&a, x, dx, initial).unwrap(),
+                    ),
                     "cumulative_simpson" => {
-                        check_integral(&i::cumulative_simpson(&a, x, dx, initial).unwrap())
+                        check_integral(&i::sampled::cumulative_simpson(&a, x, dx, initial).unwrap())
                     }
                     "romb" => {
-                        let actual = i::romb(&a, c[4].parse().unwrap()).unwrap();
+                        let actual = i::sampled::romb(&a, c[4].parse().unwrap()).unwrap();
                         let expected: f64 = e[1].parse().unwrap();
                         if c[0].starts_with("romb_") && expected != 0.0 {
                             assert_ne!(actual, 0.0, "{input}");
@@ -103,7 +103,7 @@ fn public_numerical_apis_match_scipy() {
                         }
                     }
                     "newton_cotes" => {
-                        let (w, b) = i::newton_cotes(&a).unwrap();
+                        let (w, b) = i::quadrature::newton_cotes(&a).unwrap();
                         check_vector(&w, e[1]);
                         close(b, e[2].parse().unwrap(), 3e-12, 3e-12);
                     }
@@ -120,7 +120,7 @@ fn public_numerical_apis_match_scipy() {
                             "scaled_square" => |x| (x / 1e308).powi(2) * 1e-308,
                             _ => panic!(),
                         };
-                        let actual = i::fixed_quad(
+                        let actual = i::quadrature::fixed_quad(
                             f,
                             c[4].parse().unwrap(),
                             c[5].parse().unwrap(),
@@ -147,7 +147,7 @@ fn public_numerical_apis_match_scipy() {
             }
             ("interpolate", api) => {
                 if api == "pade" {
-                    let (num, den) = p::pade(
+                    let (num, den) = p::polynomial::pade(
                         &a,
                         c[4].parse().unwrap(),
                         (!c[5].is_empty()).then(|| c[5].parse().unwrap()),
@@ -159,10 +159,12 @@ fn public_numerical_apis_match_scipy() {
                     let b = vector(c[4]);
                     let query = vector(c[5]);
                     let result = match api {
-                        "barycentric_interpolate" => p::barycentric_interpolate(&a, &b, &query),
-                        "krogh_interpolate" => p::krogh_interpolate(&a, &b, &query),
-                        "pchip_interpolate" => p::pchip_interpolate(&a, &b, &query),
-                        "lagrange" => p::lagrange(&a, &b),
+                        "barycentric_interpolate" => {
+                            p::polynomial::barycentric_interpolate(&a, &b, &query)
+                        }
+                        "krogh_interpolate" => p::polynomial::krogh_interpolate(&a, &b, &query),
+                        "pchip_interpolate" => p::polynomial::pchip_interpolate(&a, &b, &query),
+                        "lagrange" => p::polynomial::lagrange(&a, &b),
                         _ => panic!("{api}"),
                     };
                     let result = result.unwrap_or_else(|error| {
@@ -264,32 +266,32 @@ fn constants_match_scipy_and_full_codata_snapshot() {
 fn integration_domains_boundaries_and_properties() {
     use sci::Error;
     assert_eq!(
-        i::trapezoid::<f64>(&[], None, 1.0),
+        i::sampled::trapezoid::<f64>(&[], None, 1.0),
         Err(Error::InvalidInput("sample count must be in 1..=1000001"))
     );
     assert_eq!(
-        i::simpson(&[1.0, 2.0], Some(&[0.0]), 1.0),
+        i::sampled::simpson(&[1.0, 2.0], Some(&[0.0]), 1.0),
         Err(Error::DimensionMismatch)
     );
     for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-        assert!(i::trapezoid(&[bad], None, 1.0).is_err());
-        assert!(i::simpson(&[1.0], None, bad).is_err());
-        assert!(i::fixed_quad(|_| bad, 0.0, 1.0, 2).is_err());
-        assert!(i::fixed_quad(|x| x, bad, 1.0, 2).is_err());
+        assert!(i::sampled::trapezoid(&[bad], None, 1.0).is_err());
+        assert!(i::sampled::simpson(&[1.0], None, bad).is_err());
+        assert!(i::quadrature::fixed_quad(|_| bad, 0.0, 1.0, 2).is_err());
+        assert!(i::quadrature::fixed_quad(|x| x, bad, 1.0, 2).is_err());
     }
-    assert!(i::simpson(&[1.0, 2.0, 3.0], Some(&[0.0, 0.0, 1.0]), 1.0).is_err());
-    assert!(i::simpson(&[1.0, 2.0, 3.0], Some(&[0.0, 1.0, 0.0]), 1.0).is_err());
-    assert!(i::cumulative_simpson(&[1.0, 2.0], Some(&[1.0, 0.0]), 1.0, None).is_err());
-    assert!(i::cumulative_simpson(&[1.0, 2.0, 3.0], None, -1.0, None).is_err());
-    assert!(i::cumulative_simpson(&[1.0], None, 1.0, Some(f64::NAN)).is_err());
-    assert!(i::cumulative_trapezoid(&[1.0], None, 1.0, Some(1.0)).is_err());
-    assert!(i::romb(&[0.0; 4], 1.0).is_err());
-    assert!(i::romb(&[1.0], 1.0).is_err());
+    assert!(i::sampled::simpson(&[1.0, 2.0, 3.0], Some(&[0.0, 0.0, 1.0]), 1.0).is_err());
+    assert!(i::sampled::simpson(&[1.0, 2.0, 3.0], Some(&[0.0, 1.0, 0.0]), 1.0).is_err());
+    assert!(i::sampled::cumulative_simpson(&[1.0, 2.0], Some(&[1.0, 0.0]), 1.0, None).is_err());
+    assert!(i::sampled::cumulative_simpson(&[1.0, 2.0, 3.0], None, -1.0, None).is_err());
+    assert!(i::sampled::cumulative_simpson(&[1.0], None, 1.0, Some(f64::NAN)).is_err());
+    assert!(i::sampled::cumulative_trapezoid(&[1.0], None, 1.0, Some(1.0)).is_err());
+    assert!(i::sampled::romb(&[0.0; 4], 1.0).is_err());
+    assert!(i::sampled::romb(&[1.0], 1.0).is_err());
     for n in [0, 257, usize::MAX] {
-        assert!(i::fixed_quad(|x| x, 0.0, 1.0, n).is_err());
+        assert!(i::quadrature::fixed_quad(|x| x, 0.0, 1.0, n).is_err());
     }
     assert_eq!(
-        i::fixed_quad(|_| panic!("zero-width callback"), 2.0, 2.0, 1).unwrap(),
+        i::quadrature::fixed_quad(|_| panic!("zero-width callback"), 2.0, 2.0, 1).unwrap(),
         0.0
     );
     for nodes in [
@@ -298,18 +300,18 @@ fn integration_domains_boundaries_and_properties() {
         &[1.0, 2.0],
         &[0.0, f64::NAN, 2.0],
     ] {
-        assert!(i::newton_cotes(nodes).is_err());
+        assert!(i::quadrature::newton_cotes(nodes).is_err());
     }
-    assert!(i::newton_cotes(&(0..=13).map(|x| x as f64).collect::<Vec<_>>()).is_err());
+    assert!(i::quadrature::newton_cotes(&(0..=13).map(|x| x as f64).collect::<Vec<_>>()).is_err());
     let x = [0.0, 0.3, 1.0, 1.4, 2.0];
     let y: Vec<_> = x.iter().map(|v| v * v).collect();
     close(
-        i::simpson(&y, Some(&x), 1.0).unwrap(),
+        i::sampled::simpson(&y, Some(&x), 1.0).unwrap(),
         8.0 / 3.0,
         3e-12,
         3e-12,
     );
-    let integral = i::cumulative_simpson(&y, Some(&x), 1.0, Some(0.0)).unwrap();
+    let integral = i::sampled::cumulative_simpson(&y, Some(&x), 1.0, Some(0.0)).unwrap();
     for (&x, value) in x.iter().zip(integral) {
         close(value, x * x * x / 3.0, 3e-12, 3e-12);
     }
@@ -317,19 +319,19 @@ fn integration_domains_boundaries_and_properties() {
         let (nodes, weights) = sci::special::orthogonal::roots_legendre(n).unwrap();
         let samples: Vec<_> = nodes.iter().map(|v| v.powi((2 * n - 2) as i32)).collect();
         close(
-            i::fixed_quad(|v: f64| v.powi((2 * n - 2) as i32), -1.0, 1.0, n).unwrap(),
-            sci::linalg::dot(&weights, &samples).unwrap(),
+            i::quadrature::fixed_quad(|v: f64| v.powi((2 * n - 2) as i32), -1.0, 1.0, n).unwrap(),
+            sci::linalg::basic::dot(&weights, &samples).unwrap(),
             3e-12,
             3e-12,
         );
     }
     for n in 1..=8 {
         let nodes: Vec<_> = (0..=n).map(|v| v as f64).collect();
-        let (w, _) = i::newton_cotes(&nodes).unwrap();
+        let (w, _) = i::quadrature::newton_cotes(&nodes).unwrap();
         for k in 0..=n {
             let y: Vec<_> = nodes.iter().map(|v| v.powi(k)).collect();
             close(
-                sci::linalg::dot(&w, &y).unwrap(),
+                sci::linalg::basic::dot(&w, &y).unwrap(),
                 (n as f64).powi(k + 1) / (k + 1) as f64,
                 3e-12,
                 3e-12,
@@ -342,17 +344,25 @@ fn integration_domains_boundaries_and_properties() {
 fn interpolation_preserves_finite_results_at_extreme_scales() {
     let tiny = f64::from_bits(1);
     let values =
-        p::barycentric_interpolate(&[0.0, 1.0], &[2.0, 3.0], &[tiny, -tiny, 1e-310]).unwrap();
+        p::polynomial::barycentric_interpolate(&[0.0, 1.0], &[2.0, 3.0], &[tiny, -tiny, 1e-310])
+            .unwrap();
     assert_eq!(values, vec![2.0; 3]);
 
     for scale in [1e-310, -1e-310, 1.0, -1.0, 1e308, -1e308] {
         let query = [0.25, 0.5, 0.75, 1.5];
-        let values =
-            p::barycentric_interpolate(&[0.0, 1.0, 2.0], &[scale, scale, scale], &query).unwrap();
+        let values = p::polynomial::barycentric_interpolate(
+            &[0.0, 1.0, 2.0],
+            &[scale, scale, scale],
+            &query,
+        )
+        .unwrap();
         assert_eq!(values, vec![scale; query.len()]);
-        let values =
-            p::pchip_interpolate(&[0.0, 0.5, 1.0], &[0.0, 0.5 * scale, scale], &query[..3])
-                .unwrap();
+        let values = p::polynomial::pchip_interpolate(
+            &[0.0, 0.5, 1.0],
+            &[0.0, 0.5 * scale, scale],
+            &query[..3],
+        )
+        .unwrap();
         for (&t, value) in query.iter().zip(values) {
             // Normalize before comparing so subnormal results receive a useful tolerance.
             close(value / scale, t, 3e-12, 3e-12);
@@ -360,42 +370,46 @@ fn interpolation_preserves_finite_results_at_extreme_scales() {
     }
 
     for zero in [-0.0_f64, 0.0] {
-        let values = p::pchip_interpolate(&[-0.0, 1.0], &[-0.0, 1.0], &[zero]).unwrap();
+        let values = p::polynomial::pchip_interpolate(&[-0.0, 1.0], &[-0.0, 1.0], &[zero]).unwrap();
         assert_eq!(values[0].to_bits(), (-0.0_f64).to_bits());
-        let values = p::barycentric_interpolate(&[-0.0, 1.0], &[-0.0, 1.0], &[zero]).unwrap();
+        let values =
+            p::polynomial::barycentric_interpolate(&[-0.0, 1.0], &[-0.0, 1.0], &[zero]).unwrap();
         assert_eq!(values[0].to_bits(), (-0.0_f64).to_bits());
     }
     let values =
-        p::barycentric_interpolate(&[-1.0, 0.0, 1.0], &[f64::MAX; 3], &[-0.5, 0.5]).unwrap();
+        p::polynomial::barycentric_interpolate(&[-1.0, 0.0, 1.0], &[f64::MAX; 3], &[-0.5, 0.5])
+            .unwrap();
     assert_eq!(values, vec![f64::MAX; 2]);
-    assert!(p::barycentric_interpolate(&[0.0, 1.0], &[0.0, 1e308], &[2.0]).is_err());
-    assert!(p::pchip_interpolate(&[0.0, 1.0], &[0.0, 1e308], &[2.0]).is_err());
+    assert!(p::polynomial::barycentric_interpolate(&[0.0, 1.0], &[0.0, 1e308], &[2.0]).is_err());
+    assert!(p::polynomial::pchip_interpolate(&[0.0, 1.0], &[0.0, 1e308], &[2.0]).is_err());
     // The endpoint derivative is 2e308, beyond f64's representable range.
-    assert!(p::pchip_interpolate(&[0.0, 0.5, 1.0], &[0.0, 5e307, 0.0], &[0.25]).is_err());
+    assert!(
+        p::polynomial::pchip_interpolate(&[0.0, 0.5, 1.0], &[0.0, 5e307, 0.0], &[0.25]).is_err()
+    );
 }
 
 #[test]
 fn interpolation_domains_and_independent_identities() {
-    assert!(p::barycentric_interpolate(&[0.0, 0.0], &[1.0, 2.0], &[]).is_err());
-    assert!(p::krogh_interpolate(&[0.0, 1.0, 0.0], &[1.0, 2.0, 3.0], &[]).is_err());
-    assert!(p::lagrange(&[0.0, 0.0], &[1.0, 2.0]).is_err());
-    assert!(p::pchip_interpolate(&[1.0, 0.0], &[1.0, 2.0], &[]).is_err());
-    assert!(p::pchip_interpolate(&[0.0], &[1.0], &[]).is_err());
-    assert!(p::pade(&[1.0, 1.0], 2, None).is_err());
-    assert!(p::pade(&[1.0, 1.0], 1, Some(1)).is_err());
-    assert!(p::pade(&[0.0, 0.0, 1.0], 1, None).is_err());
+    assert!(p::polynomial::barycentric_interpolate(&[0.0, 0.0], &[1.0, 2.0], &[]).is_err());
+    assert!(p::polynomial::krogh_interpolate(&[0.0, 1.0, 0.0], &[1.0, 2.0, 3.0], &[]).is_err());
+    assert!(p::polynomial::lagrange(&[0.0, 0.0], &[1.0, 2.0]).is_err());
+    assert!(p::polynomial::pchip_interpolate(&[1.0, 0.0], &[1.0, 2.0], &[]).is_err());
+    assert!(p::polynomial::pchip_interpolate(&[0.0], &[1.0], &[]).is_err());
+    assert!(p::polynomial::pade(&[1.0, 1.0], 2, None).is_err());
+    assert!(p::polynomial::pade(&[1.0, 1.0], 1, Some(1)).is_err());
+    assert!(p::polynomial::pade(&[0.0, 0.0, 1.0], 1, None).is_err());
     for bad in [f64::NAN, f64::INFINITY] {
-        assert!(p::barycentric_interpolate(&[0.0], &[bad], &[]).is_err());
-        assert!(p::krogh_interpolate(&[bad], &[0.0], &[]).is_err());
-        assert!(p::pchip_interpolate(&[0.0, 1.0], &[0.0, 1.0], &[bad]).is_err());
-        assert!(p::pade(&[bad], 0, None).is_err());
+        assert!(p::polynomial::barycentric_interpolate(&[0.0], &[bad], &[]).is_err());
+        assert!(p::polynomial::krogh_interpolate(&[bad], &[0.0], &[]).is_err());
+        assert!(p::polynomial::pchip_interpolate(&[0.0, 1.0], &[0.0, 1.0], &[bad]).is_err());
+        assert!(p::polynomial::pade(&[bad], 0, None).is_err());
     }
     let nodes = [-1.0, 0.0, 1.0, 2.0];
     let data: Vec<_> = nodes.iter().map(|x| x * x * x - 2.0 * x + 1.0).collect();
     let query = [-2.0, -0.3, 0.2, 1.2, 3.0];
-    let bary = p::barycentric_interpolate(&nodes, &data, &query).unwrap();
-    let krogh = p::krogh_interpolate(&nodes, &data, &query).unwrap();
-    let coefficients = p::lagrange(&nodes, &data).unwrap();
+    let bary = p::polynomial::barycentric_interpolate(&nodes, &data, &query).unwrap();
+    let krogh = p::polynomial::krogh_interpolate(&nodes, &data, &query).unwrap();
+    let coefficients = p::polynomial::lagrange(&nodes, &data).unwrap();
     for ((&x, b), k) in query.iter().zip(bary).zip(krogh) {
         let expected = x * x * x - 2.0 * x + 1.0;
         close(b, expected, 3e-12, 3e-12);
@@ -408,26 +422,29 @@ fn interpolation_domains_and_independent_identities() {
         );
     }
     let hermite =
-        p::krogh_interpolate(&[0.0, 0.0, 0.0, 0.0], &[1.0, -2.0, 0.0, 6.0], &query).unwrap();
+        p::polynomial::krogh_interpolate(&[0.0, 0.0, 0.0, 0.0], &[1.0, -2.0, 0.0, 6.0], &query)
+            .unwrap();
     for (&x, value) in query.iter().zip(hermite) {
         close(value, x * x * x - 2.0 * x + 1.0, 3e-12, 3e-12);
     }
     // Reciprocal slopes would overflow here. Linear reproduction remains valid.
-    let tiny = p::pchip_interpolate(&[0.0, 1.0, 2.0], &[0.0, 1e-310, 2e-310], &[1.5]).unwrap();
+    let tiny =
+        p::polynomial::pchip_interpolate(&[0.0, 1.0, 2.0], &[0.0, 1e-310, 2e-310], &[1.5]).unwrap();
     close(tiny[0] / 1e-310, 1.5, 3e-12, 3e-12);
-    assert!(p::barycentric_interpolate(&[0.0; 257], &[0.0; 257], &[]).is_err());
-    assert!(p::krogh_interpolate(&[0.0; 33], &[0.0; 33], &[]).is_err());
-    assert!(p::lagrange(&[0.0; 33], &[0.0; 33]).is_err());
-    assert!(p::pade(&[1.0; 66], 0, None).is_err());
+    assert!(p::polynomial::barycentric_interpolate(&[0.0; 257], &[0.0; 257], &[]).is_err());
+    assert!(p::polynomial::krogh_interpolate(&[0.0; 33], &[0.0; 33], &[]).is_err());
+    assert!(p::polynomial::lagrange(&[0.0; 33], &[0.0; 33]).is_err());
+    assert!(p::polynomial::pade(&[1.0; 66], 0, None).is_err());
     let query: Vec<_> = (0..=200).map(|v| v as f64 / 100.0).collect();
     let values =
-        p::pchip_interpolate(&[0.0, 0.2, 1.0, 2.0], &[0.0, 1.0, 1.1, 3.0], &query).unwrap();
+        p::polynomial::pchip_interpolate(&[0.0, 0.2, 1.0, 2.0], &[0.0, 1.0, 1.1, 3.0], &query)
+            .unwrap();
     assert!(values.windows(2).all(|v| v[0] <= v[1]));
     assert_eq!(values[0], 0.0);
     assert_eq!(values[200], 3.0);
     for (m, n) in [(1, 1), (2, 2), (0, 4)] {
         let t = [1.0, 1.0, 0.5, 1.0 / 6.0, 1.0 / 24.0];
-        let (mut num, mut den) = p::pade(&t, m, Some(n)).unwrap();
+        let (mut num, mut den) = p::polynomial::pade(&t, m, Some(n)).unwrap();
         num.reverse();
         den.reverse();
         for k in 0..=m + n {
@@ -461,7 +478,8 @@ fn clustering_validation_ties_and_interoperability() {
     ];
     let whitened = vq::whiten(&obs).unwrap();
     close(
-        sci::stats::std(&whitened.iter().map(|r| r[0]).collect::<Vec<_>>(), 0).unwrap(),
+        sci::stats::descriptive::std(&whitened.iter().map(|r| r[0]).collect::<Vec<_>>(), 0)
+            .unwrap(),
         1.0,
         3e-12,
         3e-12,
@@ -472,7 +490,7 @@ fn clustering_validation_ties_and_interoperability() {
     assert_eq!(labels, vec![0, 0, 1, 1]);
     close(
         distortion,
-        sci::stats::mean(&distances).unwrap(),
+        sci::stats::descriptive::mean(&distances).unwrap(),
         3e-12,
         3e-12,
     );
@@ -534,20 +552,29 @@ fn constants_special_values_round_trips_and_aliases() {
 #[test]
 fn integration_scaling_and_compensation_preserve_independent_identities() {
     let tiny = f64::from_bits(1);
-    assert_eq!(i::trapezoid(&[tiny, tiny], None, 1.0).unwrap(), tiny);
-    assert_eq!(i::trapezoid(&[tiny, 0.0], None, 2.0).unwrap(), tiny);
-    assert_eq!(i::simpson(&[1.0; 3], None, tiny).unwrap(), 2.0 * tiny);
+    assert_eq!(
+        i::sampled::trapezoid(&[tiny, tiny], None, 1.0).unwrap(),
+        tiny
+    );
+    assert_eq!(
+        i::sampled::trapezoid(&[tiny, 0.0], None, 2.0).unwrap(),
+        tiny
+    );
+    assert_eq!(
+        i::sampled::simpson(&[1.0; 3], None, tiny).unwrap(),
+        2.0 * tiny
+    );
     close(
-        i::simpson(&[1e308; 3], None, 1e-300).unwrap(),
+        i::sampled::simpson(&[1e308; 3], None, 1e-300).unwrap(),
         2e8,
         3e-12,
         3e-12,
     );
     let y = [1e16, 1e16, 1.0, 1.0, -1e16, -1e16];
     let x = [0.0, 1.0, 1.0, 2.0, 2.0, 3.0];
-    assert_eq!(i::trapezoid(&y, Some(&x), 1.0).unwrap(), 1.0);
+    assert_eq!(i::sampled::trapezoid(&y, Some(&x), 1.0).unwrap(), 1.0);
     assert_eq!(
-        *i::cumulative_trapezoid(&y, Some(&x), 1.0, Some(0.0))
+        *i::sampled::cumulative_trapezoid(&y, Some(&x), 1.0, Some(0.0))
             .unwrap()
             .last()
             .unwrap(),
@@ -555,24 +582,25 @@ fn integration_scaling_and_compensation_preserve_independent_identities() {
     );
     for amplitude in [1e-300, 1.0, 1e300] {
         let y = [amplitude; 5];
-        let forward = i::simpson(&y, None, 1.0 / amplitude).unwrap();
-        let backward = i::simpson(&y, None, -1.0 / amplitude).unwrap();
+        let forward = i::sampled::simpson(&y, None, 1.0 / amplitude).unwrap();
+        let backward = i::sampled::simpson(&y, None, -1.0 / amplitude).unwrap();
         close(forward, 4.0, 3e-12, 3e-12);
         assert_eq!(backward, -forward);
         assert_eq!(
-            i::cumulative_simpson(&y, None, 1.0 / amplitude, Some(0.0))
+            i::sampled::cumulative_simpson(&y, None, 1.0 / amplitude, Some(0.0))
                 .unwrap()
                 .last(),
             Some(&forward)
         );
     }
     let prefix =
-        i::cumulative_simpson(&[1e308; 3], Some(&[0.0, tiny, 1.0]), 1.0, Some(-0.0)).unwrap();
+        i::sampled::cumulative_simpson(&[1e308; 3], Some(&[0.0, tiny, 1.0]), 1.0, Some(-0.0))
+            .unwrap();
     assert!(prefix[0].is_sign_negative());
     assert!(prefix[1] > 0.0);
     assert!((prefix[1] - tiny * 1e308).abs() <= 3e-14 * prefix[1]);
-    assert!(i::simpson(&[f64::MAX; 3], None, 1.0).is_err());
-    assert!(i::trapezoid(&[f64::MAX; 2], None, 2.0).is_err());
+    assert!(i::sampled::simpson(&[f64::MAX; 3], None, 1.0).is_err());
+    assert!(i::sampled::trapezoid(&[f64::MAX; 2], None, 2.0).is_err());
 }
 
 #[test]
@@ -581,7 +609,7 @@ fn quadrature_extreme_scales_obey_moments_and_callback_contracts() {
     for order in [1, 2, 5] {
         let calls = std::cell::Cell::new(0);
         assert_eq!(
-            i::fixed_quad(
+            i::quadrature::fixed_quad(
                 |x| {
                     assert!((0.0..=tiny).contains(&x));
                     calls.set(calls.get() + 1);
@@ -595,7 +623,7 @@ fn quadrature_extreme_scales_obey_moments_and_callback_contracts() {
             tiny
         );
         assert_eq!(calls.get(), order);
-        let forward = i::fixed_quad(
+        let forward = i::quadrature::fixed_quad(
             |x: f64| {
                 assert!(x.is_finite() && (-1.7e308..=1.7e308).contains(&x));
                 1e-308
@@ -606,34 +634,38 @@ fn quadrature_extreme_scales_obey_moments_and_callback_contracts() {
         )
         .unwrap();
         close(forward, 3.4, 3e-12, 3e-12);
-        let backward = i::fixed_quad(|_| 1e-308, 1.7e308, -1.7e308, order).unwrap();
+        let backward = i::quadrature::fixed_quad(|_| 1e-308, 1.7e308, -1.7e308, order).unwrap();
         close(backward, -forward, 3e-12, 3e-12);
     }
     for n in [2, 3, 5, 9] {
-        assert_eq!(i::romb(&vec![1.0; n], tiny).unwrap(), (n - 1) as f64 * tiny);
+        assert_eq!(
+            i::sampled::romb(&vec![1.0; n], tiny).unwrap(),
+            (n - 1) as f64 * tiny
+        );
         close(
-            i::romb(&vec![1e-308; n], 1e308).unwrap(),
+            i::sampled::romb(&vec![1e-308; n], 1e308).unwrap(),
             (n - 1) as f64,
             3e-12,
             3e-12,
         );
     }
     close(
-        i::romb(&[-5.5e307, 1.55e308, -5.5e307], 1.0).unwrap(),
+        i::sampled::romb(&[-5.5e307, 1.55e308, -5.5e307], 1.0).unwrap(),
         1.7e308,
         3e-12,
         3e-12,
     );
     assert!(
-        i::fixed_quad(|_| 0.0_f64, 1.0, 0.0, 3)
+        i::quadrature::fixed_quad(|_| 0.0_f64, 1.0, 0.0, 3)
             .unwrap()
             .is_sign_negative()
     );
-    assert!(i::fixed_quad(|_| f64::MAX, 0.0, 2.0, 3).is_err());
-    assert!(i::fixed_quad(|_| f64::NAN, 0.0, 1.0, 3).is_err());
-    assert!(i::romb(&[f64::MAX; 3], 1.0).is_err());
+    assert!(i::quadrature::fixed_quad(|_| f64::MAX, 0.0, 2.0, 3).is_err());
+    assert!(i::quadrature::fixed_quad(|_| f64::NAN, 0.0, 1.0, 3).is_err());
+    assert!(i::sampled::romb(&[f64::MAX; 3], 1.0).is_err());
     assert_eq!(
-        i::fixed_quad(|_| panic!("zero-width interval evaluated"), 1.0, 1.0, 3).unwrap(),
+        i::quadrature::fixed_quad(|_| panic!("zero-width interval evaluated"), 1.0, 1.0, 3)
+            .unwrap(),
         0.0
     );
 }

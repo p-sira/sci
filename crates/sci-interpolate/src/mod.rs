@@ -82,7 +82,7 @@ fn newton<T: Float>(x: &[T], y: &[T]) -> Result<Vec<T>> {
 /// # Examples
 ///
 /// ```
-/// let y=sci_interpolate::barycentric_interpolate(&[0.0_f64,1.0,2.0], &[0.0,1.0,4.0], &[1.5])?;
+/// let y=sci_interpolate::polynomial::barycentric_interpolate(&[0.0_f64,1.0,2.0], &[0.0,1.0,4.0], &[1.5])?;
 /// assert!((y[0]-2.25).abs()<1e-14);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -188,7 +188,7 @@ pub fn barycentric_interpolate<T: Float>(xi: &[T], yi: &[T], x: &[T]) -> Result<
 /// # Examples
 ///
 /// ```
-/// let y=sci_interpolate::krogh_interpolate(&[0.0,0.0,1.0], &[0.0,0.0,1.0], &[0.5])?;
+/// let y=sci_interpolate::polynomial::krogh_interpolate(&[0.0,0.0,1.0], &[0.0,0.0,1.0], &[0.5])?;
 /// assert_eq!(y,vec![0.25]);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -240,7 +240,7 @@ pub fn krogh_interpolate<T: Float>(xi: &[T], yi: &[T], x: &[T]) -> Result<Vec<T>
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_interpolate::lagrange(&[0.0,1.0,2.0], &[0.0,1.0,4.0])?,vec![1.0,0.0,0.0]);
+/// assert_eq!(sci_interpolate::polynomial::lagrange(&[0.0,1.0,2.0], &[0.0,1.0,4.0])?,vec![1.0,0.0,0.0]);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 /// # References
@@ -335,7 +335,7 @@ fn endpoint<T: Float>(h0: T, h1: T, d0: T, d1: T) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_interpolate::pchip_interpolate(&[0.0,1.0], &[0.0,2.0], &[0.5])?,vec![1.0]);
+/// assert_eq!(sci_interpolate::polynomial::pchip_interpolate(&[0.0,1.0], &[0.0,2.0], &[0.5])?,vec![1.0]);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 /// # References
@@ -444,7 +444,7 @@ pub fn pchip_interpolate<T: Float>(xi: &[T], yi: &[T], x: &[T]) -> Result<Vec<T>
 /// # Examples
 ///
 /// ```
-/// let (p,q)=sci_interpolate::pade(&[1.0,1.0,0.5],1,None)?;
+/// let (p,q)=sci_interpolate::polynomial::pade(&[1.0,1.0,0.5],1,None)?;
 /// assert_eq!(p,vec![0.5,1.0]);
 /// assert_eq!(q,vec![-0.5,1.0]);
 /// # Ok::<(),sci_core::Error>(())

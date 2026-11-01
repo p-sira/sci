@@ -6,7 +6,7 @@ Scientific file interchange with typed values, explicit shapes, bounded parsing,
 and conversions into Sci's shared matrix and signal types.
 
 ```rust
-use sci_io::{mmread, MarketMatrix};
+use sci_io::matrix_market::{mmread, MarketMatrix};
 
 let bytes = b"%%MatrixMarket matrix coordinate real general\n2 2 2\n1 1 2\n2 2 3\n";
 let MarketMatrix::Sparse(a) = mmread(&bytes[..])? else { unreachable!() };
@@ -19,15 +19,14 @@ assert_eq!(a.data, vec![2.0, 3.0]);
 All three format features are enabled by default. Select individual formats with
 `default-features = false` and `features = ["matrix-market"]`, `["wav"]`, or
 `["matlab"]`. The Sci facade exposes the crate through `sci::io` with feature `io`.
-Format dependencies and backend types remain private. Matrix Market reuses
-Sci sparse and its numerical dependencies, which require a C++17 compiler and
-libclang. Selecting only `wav` and/or `matlab` needs no C++ backend.
+Format dependencies and backend types remain private. Matrix Market uses
+the shared `sci-core` CSR support without depending on `sci-sparse`.
 
 | Feature | APIs | Supported behavior |
 | --- | --- | --- |
-| `matrix-market` | `mminfo`, `mmread`, `mmwrite` | Real/integer/pattern fields, array and coordinate storage, general/symmetric/skew/real-Hermitian input; real/general output |
+| `matrix-market` | `matrix_market::{mminfo, mmread, mmwrite}` | Real/integer/pattern fields, array and coordinate storage, general/symmetric/skew/real-Hermitian input; real/general output |
 | `wav` | `wavfile::{read, write, signal}` | Little-endian RIFF, packed PCM8/16/24/32, IEEE float32/64, channels and sample rate |
-| `matlab` | `loadmat`, `savemat`, `whosmat`, `matlab::matfile_version` | Dense numeric Level-5 containers, both endian orders, f32/f64 and all 8/16/32/64-bit integer types, floating complex data, optional zlib compression |
+| `matlab` | `matlab::{loadmat, savemat, whosmat, matfile_version}` | Dense numeric Level-5 containers, both endian orders, f32/f64 and all 8/16/32/64-bit integer types, floating complex data, optional zlib compression |
 
 Readers consume Rust `Read` streams. WAV writers also require `Seek` and an empty
 destination positioned at byte zero. Callers open files and flush buffers; no
@@ -40,8 +39,8 @@ errors and distinguish malformed data, unsupported features and codec failures.
 `NumericData` retains scalar types. Calling `to_f64` explicitly converts scalar
 values; 64-bit integers beyond ±2^53 can round.
 
-`MarketMatrix` carries row-major dense values with explicit dimensions or shared
-`SparseMatrix` CSR. Coordinate duplicates are summed by Sci sparse. Dense input
+`matrix_market::MarketMatrix` carries row-major dense values with explicit dimensions or shared
+`SparseMatrix` CSR. Coordinate duplicates are summed by shared CSR helpers. Dense input
 preserves signed zero; SciPy's text reader can canonicalize it to positive zero.
 The real/integer CSR interface rejects nonfinite entries; integer Matrix Market
 fields outside ±2^53 are rejected. `to_matrix` returns shared matrix rows.

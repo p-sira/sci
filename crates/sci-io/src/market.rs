@@ -147,7 +147,7 @@ fn value(s: &str, field: &str) -> Result<f64> {
 /// axes or stored entries above 1,000,000. Payload contents are not validated.
 /// # Examples
 /// ```
-/// let h = sci_io::mminfo(&b"%%MatrixMarket matrix array real general\n1 1\n2\n"[..])?;
+/// let h = sci_io::matrix_market::mminfo(&b"%%MatrixMarket matrix array real general\n1 1\n2\n"[..])?;
 /// assert_eq!((h.rows, h.cols, h.entries), (1, 1, 1));
 /// # Ok::<(), sci_io::Error>(())
 /// ```
@@ -181,8 +181,8 @@ pub fn mminfo(reader: impl Read) -> Result<MatrixMarketInfo> {
 /// addition follows [`sci_core::csr::from_coo`]. Comments and blank lines are skipped.
 /// # Examples
 /// ```
-/// let a = sci_io::mmread(&b"%%MatrixMarket matrix coordinate real general\n1 1 1\n1 1 3\n"[..])?;
-/// assert!(matches!(a, sci_io::MarketMatrix::Sparse(_)));
+/// let a = sci_io::matrix_market::mmread(&b"%%MatrixMarket matrix coordinate real general\n1 1 1\n1 1 3\n"[..])?;
+/// assert!(matches!(a, sci_io::matrix_market::MarketMatrix::Sparse(_)));
 /// # Ok::<(), sci_io::Error>(())
 /// ```
 /// # References
@@ -292,10 +292,10 @@ pub fn mmread(reader: impl Read) -> Result<MarketMatrix> {
 /// Shortest round-trip exponential f64 formatting; no arithmetic or densification.
 /// # Examples
 /// ```
-/// let a = sci_io::MarketMatrix::Dense { rows:1, cols:1, data:vec![2.0] };
+/// let a = sci_io::matrix_market::MarketMatrix::Dense { rows:1, cols:1, data:vec![2.0] };
 /// let mut bytes = Vec::new();
-/// sci_io::mmwrite(&mut bytes, &a)?;
-/// assert_eq!(sci_io::mmread(bytes.as_slice())?, a);
+/// sci_io::matrix_market::mmwrite(&mut bytes, &a)?;
+/// assert_eq!(sci_io::matrix_market::mmread(bytes.as_slice())?, a);
 /// # Ok::<(), sci_io::Error>(())
 /// ```
 /// # References
@@ -347,7 +347,7 @@ impl MarketMatrix {
     /// `n > 0`, which shared row storage cannot represent. Sparse input must be finite.
     /// # Examples
     /// ```
-    /// let a = sci_io::MarketMatrix::Dense {rows:1, cols:2, data:vec![1.0,2.0]};
+    /// let a = sci_io::matrix_market::MarketMatrix::Dense {rows:1, cols:2, data:vec![1.0,2.0]};
     /// assert_eq!(a.to_matrix()?, vec![vec![1.0,2.0]]);
     /// # Ok::<(), sci_io::Error>(())
     /// ```

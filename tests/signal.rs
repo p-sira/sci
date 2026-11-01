@@ -8,8 +8,21 @@ use sci::{
     Error,
     complex::Complex,
     signal::{
-        windows::{self, Window},
-        *,
+        Mode,
+        advanced_design::*,
+        convolution::*,
+        design::*,
+        filtering::*,
+        fir::*,
+        multidimensional::*,
+        peaks::*,
+        representations::*,
+        spectral::*,
+        splines::*,
+        systems::*,
+        utilities::*,
+        waveforms::*,
+        windows::{self, Window, get_window},
     },
 };
 
@@ -714,7 +727,7 @@ fn transforms_spectra_and_smoothing_obey_independent_identities() {
     for (i, a) in tapers.iter().enumerate() {
         for (j, b) in tapers.iter().enumerate() {
             near(
-                sci::linalg::dot(a, b).unwrap(),
+                sci::linalg::basic::dot(a, b).unwrap(),
                 if i == j { 1. } else { 0. },
                 1e-12,
                 "DPSS orthonormality",
@@ -806,7 +819,7 @@ fn filter_design_round_trips_and_meets_frequency_constraints() {
         near(u, v, 1e-12, "denominator factoring");
     }
     let x = lfilter(&b, &a, &[1., 0., 0., 0.]).unwrap();
-    assert!(sci::stats::mean(&x).unwrap().is_finite());
+    assert!(sci::stats::descriptive::mean(&x).unwrap().is_finite());
 }
 
 #[test]
@@ -985,7 +998,7 @@ fn multidimensional_and_resampling_validation_and_interoperability() {
         near(*a, *b, 1e-14, "separable product");
     }
     assert!(
-        sci::linalg::matvec(&a, &[1.; 3])
+        sci::linalg::basic::matvec(&a, &[1.; 3])
             .unwrap()
             .iter()
             .all(|v| v.is_finite())
@@ -1488,9 +1501,9 @@ fn cropped_convolutions_match_scipy_for_both_length_orderings() {
             _ => panic!("unknown mode"),
         };
         let function = if row[1] == "convolve" {
-            sci::signal::convolve
+            sci::signal::convolution::convolve
         } else {
-            sci::signal::correlate
+            sci::signal::convolution::correlate
         };
         assert_eq!(
             function(&x, &h, mode).unwrap(),

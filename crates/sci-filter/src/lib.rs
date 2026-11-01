@@ -19,7 +19,7 @@
 //! than converted to a plausible estimate.
 //!
 //! ```
-//! use sci_filter::{Gaussian, kalman_predict, kalman_update};
+//! use sci_filter::{Gaussian, kalman::{kalman_predict, kalman_update}};
 //! let prior = Gaussian { mean: vec![0.], covariance: vec![vec![1.]] };
 //! let predicted = kalman_predict(&prior, &[vec![1.]], &[vec![0.1]])?;
 //! let updated = kalman_update(&predicted, &[2.], &[vec![1.]], &[vec![0.5]])?;
@@ -37,10 +37,11 @@
 use nalgebra::{DMatrix, DVector};
 pub use sci_core::{Error, Matrix, Result};
 
-mod kalman;
-mod particle;
-pub use kalman::*;
-pub use particle::*;
+/// Linear, extended, and unscented Kalman filtering.
+pub mod kalman;
+/// Particle filtering, weighting, estimation, and resampling.
+pub mod particle;
+pub use particle::ParticleSet;
 
 /// A Gaussian state estimate, with covariance in squared coordinate units.
 ///

@@ -103,7 +103,7 @@ fn filter(particles: &ParticleSet) -> Result<smelly::ParticleFilter> {
 ///
 /// # Examples
 /// ```
-/// use sci_filter::{ParticleSet, particle_predict};
+/// use sci_filter::{ParticleSet, particle::particle_predict};
 /// let p = ParticleSet { states: vec![vec![1.],vec![2.]], weights: vec![1.,1.] };
 /// let q = particle_predict(&p, |x| Ok(vec![x[0]+1.]))?;
 /// assert_eq!(q.states, vec![vec![2.],vec![3.]]);
@@ -182,7 +182,7 @@ where
 ///
 /// # Examples
 /// ```
-/// use sci_filter::{ParticleSet, particle_update};
+/// use sci_filter::{ParticleSet, particle::particle_update};
 /// let p = ParticleSet { states: vec![vec![0.],vec![1.]], weights: vec![1.,1.] };
 /// let q = particle_update(&p, |x| Ok(if x[0]==0. { 0. } else { f64::NEG_INFINITY }))?;
 /// assert_eq!(q.weights, vec![1.,0.]);
@@ -262,7 +262,7 @@ where
 ///
 /// # Examples
 /// ```
-/// use sci_filter::{ParticleSet, particle_estimate};
+/// use sci_filter::{ParticleSet, particle::particle_estimate};
 /// let p = ParticleSet { states: vec![vec![-1.],vec![1.]], weights: vec![1.,1.] };
 /// assert_eq!(particle_estimate(&p)?.covariance, vec![vec![1.]]);
 /// # Ok::<(), sci_filter::Error>(())
@@ -303,7 +303,7 @@ pub fn particle_estimate(particles: &ParticleSet) -> Result<Gaussian> {
 ///
 /// # Examples
 /// ```
-/// use sci_filter::{ParticleSet, effective_sample_size};
+/// use sci_filter::{ParticleSet, particle::effective_sample_size};
 /// let p = ParticleSet { states: vec![vec![0.],vec![1.]], weights: vec![1.,1.] };
 /// assert_eq!(effective_sample_size(&p)?, 2.);
 /// # Ok::<(), sci_filter::Error>(())
@@ -342,7 +342,7 @@ pub fn effective_sample_size(particles: &ParticleSet) -> Result<f64> {
 ///
 /// # Examples
 /// ```
-/// use sci_filter::{ParticleSet, systematic_resample};
+/// use sci_filter::{ParticleSet, particle::systematic_resample};
 /// let p = ParticleSet { states: vec![vec![0.],vec![1.]], weights: vec![0.,1.] };
 /// assert_eq!(systematic_resample(&p,0.)?.states, vec![vec![1.],vec![1.]]);
 /// # Ok::<(), sci_filter::Error>(())

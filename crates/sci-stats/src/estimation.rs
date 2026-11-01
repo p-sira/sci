@@ -146,7 +146,7 @@ impl Posterior {
 /// ## Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::mvsdist(&[1.,2.,3.], 0.5)?[0], 2.);
+/// assert_eq!(sci_stats::estimation::mvsdist(&[1.,2.,3.], 0.5)?[0], 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -191,7 +191,7 @@ pub fn mvsdist(values: &[f64], probability: f64) -> Result<[f64; 3]> {
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::bayes_mvs(&[1.,2.,3.,4.], 0.9)?;
+/// let r = sci_stats::estimation::bayes_mvs(&[1.,2.,3.,4.], 0.9)?;
 /// assert_eq!(r.mean.statistic, 2.5);
 /// assert!(r.mean.lower < 2.5 && r.mean.upper > 2.5);
 /// # Ok::<(), sci_core::Error>(())

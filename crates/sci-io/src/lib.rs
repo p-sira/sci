@@ -151,10 +151,10 @@ numeric_data!(
     F64(f64)
 );
 
+/// Matrix Market interchange in coordinate and array storage formats.
 #[cfg(feature = "matrix-market")]
-mod market;
-#[cfg(feature = "matrix-market")]
-pub use market::{MarketMatrix, MatrixMarketInfo, mminfo, mmread, mmwrite};
+#[path = "market.rs"]
+pub mod matrix_market;
 
 /// Typed WAV audio and explicit conversion to signal samples.
 #[cfg(feature = "wav")]
@@ -163,5 +163,3 @@ pub mod wavfile;
 /// Dense numerical MATLAB Level-5 files, including bounded zlib compression.
 #[cfg(feature = "matlab")]
 pub mod matlab;
-#[cfg(feature = "matlab")]
-pub use matlab::{loadmat, savemat, whosmat};

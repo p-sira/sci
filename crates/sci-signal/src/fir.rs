@@ -123,7 +123,7 @@ fn remez_two_taps(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::fir::*;
 /// let _=firls(11,&[0.,0.3,0.5,1.],&[1.,1.,0.,0.],&[1.,1.],2.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -204,7 +204,8 @@ pub fn firls(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::fir::*;
+/// use sci_signal::windows;
 /// let _=firwin2(9,&[0.,0.4,0.6,1.],&[1.,1.,0.,0.],17,&windows::Window::Hamming,false,2.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -319,7 +320,8 @@ pub fn firwin2(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::fir::*;
+/// use sci_signal::windows;
 /// let _=firwin_2d((5,7),&[0.3],true,&windows::Window::Hamming,&windows::Window::Hann,true,2.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -373,7 +375,7 @@ pub fn firwin_2d(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::fir::*;
 /// let _=minimum_phase(&[0.25,0.5,0.25],128,true)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -472,7 +474,7 @@ pub fn minimum_phase(h: &[f64], nfft: usize, half: bool) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::fir::*;
 /// let _=remez(21,&[0.,0.3,0.5,1.],&[1.,0.],&[1.,1.],2.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

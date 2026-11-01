@@ -130,7 +130,8 @@ fn convolution(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::multidimensional::*;
+/// use sci_signal::Mode;
 /// let _result=convolve2d(&[vec![1.,2.]],&[vec![1.,1.]],Mode::Full,Boundary::Fill(0.))?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -171,7 +172,8 @@ pub fn convolve2d(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::multidimensional::*;
+/// use sci_signal::Mode;
 /// let _result=correlate2d(&[vec![1.,2.]],&[vec![1.,1.]],Mode::Same,Boundary::Fill(0.))?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -212,7 +214,7 @@ pub fn correlate2d(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::multidimensional::*;
 /// let _result=sepfir2d(&[vec![1.,2.]],&[0.25,0.5,0.25],&[1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -265,7 +267,7 @@ pub fn sepfir2d(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::multidimensional::*;
 /// let _result=medfilt2d(&[vec![1.,2.,3.]], [1,3])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -333,7 +335,7 @@ pub fn medfilt2d(x: &[Vec<f64>], kernel: [usize; 2]) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::multidimensional::*;
 /// let _result=hilbert2(&[vec![1.,2.],vec![3.,4.]])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

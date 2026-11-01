@@ -48,7 +48,7 @@ pub enum KendallVariant {
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{kendalltau, KendallVariant, Alternative};
+/// use sci_stats::{association::kendalltau, association::KendallVariant, inference::Alternative};
 /// let r = kendalltau(&[1.,2.,3.], &[3.,2.,1.], KendallVariant::B, Alternative::TwoSided)?;
 /// assert_eq!(r.statistic, -1.);
 /// # Ok::<(), sci_core::Error>(())
@@ -165,7 +165,7 @@ pub enum WilcoxonZero {
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{wilcoxon, WilcoxonZero, Alternative};
+/// use sci_stats::{inference::wilcoxon, inference::WilcoxonZero, inference::Alternative};
 /// assert_eq!(wilcoxon(&[1.,2.,3.], WilcoxonZero::Wilcox, Alternative::TwoSided, false)?.statistic, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -275,7 +275,7 @@ pub fn wilcoxon(
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{ansari, Alternative};
+/// use sci_stats::{inference::ansari, inference::Alternative};
 /// assert!(ansari(&[-1.,0.,1.], &[-8.,0.,8.], Alternative::TwoSided)?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -371,7 +371,7 @@ pub struct QuantileTestResult {
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{quantile_test, Alternative, QuantileCount};
+/// use sci_stats::{inference::quantile_test, inference::Alternative, inference::QuantileCount};
 /// let r = quantile_test(&[1.,2.,3.], 2., 0.5, Alternative::Greater)?;
 /// assert_eq!((r.statistic,r.count),(2,QuantileCount::AtOrBelow));
 /// # Ok::<(), sci_core::Error>(())
@@ -454,7 +454,7 @@ pub fn quantile_test(
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::page_trend_test(&[&[1.,2.,3.], &[2.,3.,4.]], &[1,2,3])?;
+/// let r = sci_stats::inference::page_trend_test(&[&[1.,2.,3.], &[2.,3.,4.]], &[1,2,3])?;
 /// assert!(r.pvalue < 0.1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -535,7 +535,7 @@ pub fn page_trend_test(rows: &[&[f64]], predicted_ranks: &[usize]) -> Result<Tes
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{mood, Alternative};
+/// use sci_stats::{inference::mood, inference::Alternative};
 /// assert!(mood(&[-1.,0.,1.], &[-8.,0.,8.], Alternative::Less)?.statistic < 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -623,7 +623,7 @@ pub fn mood(x: &[f64], y: &[f64], alternative: Alternative) -> Result<TestResult
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{mannwhitneyu, Alternative};
+/// use sci_stats::{inference::mannwhitneyu, inference::Alternative};
 /// assert_eq!(mannwhitneyu(&[1.,2.,3.], &[4.,5.,6.], Alternative::Less, true)?.statistic, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -730,7 +730,7 @@ pub struct MedianTestResult {
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{brunnermunzel, Alternative, BrunnerDistribution};
+/// use sci_stats::{inference::brunnermunzel, inference::Alternative, inference::BrunnerDistribution};
 /// let r = brunnermunzel(&[1.,2.,3.,4.], &[2.,3.,4.,5.], Alternative::TwoSided, BrunnerDistribution::StudentT)?;
 /// assert!(r.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
@@ -808,7 +808,7 @@ pub fn brunnermunzel(
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{median_test, MedianTies};
+/// use sci_stats::{inference::median_test, inference::MedianTies};
 /// let r = median_test(&[&[1.,2.,3.], &[4.,5.,6.]], MedianTies::Below, false)?;
 /// assert_eq!(r.table, vec![vec![0.,3.], vec![3.,0.]]);
 /// # Ok::<(), sci_core::Error>(())
@@ -880,7 +880,7 @@ pub fn median_test(
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{fligner, Center};
+/// use sci_stats::{inference::fligner, inference::Center};
 /// assert!(fligner(&[&[1.,2.,3.], &[1.,3.,8.]], Center::Median)?.statistic >= 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

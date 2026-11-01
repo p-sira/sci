@@ -1,5 +1,6 @@
 //! Bounded, pickle-free SciPy NPZ interchange.
 use super::*;
+use crate::construct::from_csc;
 use std::io::{Read, Seek, SeekFrom, Write};
 use zip::{ZipArchive, ZipWriter, write::SimpleFileOptions};
 
@@ -243,9 +244,9 @@ fn write_npy<W: Write + Seek>(
 /// # Examples
 /// ```
 /// let mut bytes=std::io::Cursor::new(Vec::new());
-/// sci_sparse::save_npz(&mut bytes, &sci_sparse::identity(2)?, true)?;
+/// sci_sparse::io::save_npz(&mut bytes, &sci_sparse::construct::identity(2)?, true)?;
 /// bytes.set_position(0);
-/// assert_eq!(sci_sparse::load_npz(bytes)?, sci_sparse::identity(2)?);
+/// assert_eq!(sci_sparse::io::load_npz(bytes)?, sci_sparse::construct::identity(2)?);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -322,9 +323,9 @@ pub fn save_npz<W: Write + Seek>(writer: W, a: &SparseMatrix, compressed: bool) 
 /// # Examples
 /// ```
 /// let mut buf=std::io::Cursor::new(Vec::new());
-/// sci_sparse::save_npz(&mut buf, &sci_sparse::identity(1)?, false)?;
+/// sci_sparse::io::save_npz(&mut buf, &sci_sparse::construct::identity(1)?, false)?;
 /// buf.set_position(0);
-/// assert_eq!(sci_sparse::load_npz(buf)?.data, [1.0]);
+/// assert_eq!(sci_sparse::io::load_npz(buf)?.data, [1.0]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References

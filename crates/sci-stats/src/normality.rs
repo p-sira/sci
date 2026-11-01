@@ -96,7 +96,7 @@ fn kurtosis_statistic(values: &[f64]) -> Result<f64> {
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{skewtest, Alternative};
+/// use sci_stats::{normality::skewtest, inference::Alternative};
 /// assert!(skewtest(&[1.,2.,3.,4.,5.,6.,7.,8000.], Alternative::Greater)?.pvalue < 0.001);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -142,7 +142,7 @@ pub fn skewtest(values: &[f64], alternative: Alternative) -> Result<TestResult> 
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{kurtosistest, Alternative};
+/// use sci_stats::{normality::kurtosistest, inference::Alternative};
 /// let values: Vec<_> = (0..30).map(|i| i as f64).collect();
 /// assert!(kurtosistest(&values, Alternative::TwoSided)?.pvalue < 0.1);
 /// # Ok::<(), sci_core::Error>(())
@@ -185,7 +185,7 @@ pub fn kurtosistest(values: &[f64], alternative: Alternative) -> Result<TestResu
 ///
 /// ```
 /// let values: Vec<_> = (0..30).map(|i| i as f64).collect();
-/// assert!(sci_stats::normaltest(&values)?.statistic >= 0.);
+/// assert!(sci_stats::normality::normaltest(&values)?.statistic >= 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -236,8 +236,8 @@ pub fn normaltest(values: &[f64]) -> Result<TestResult> {
 /// ## Examples
 ///
 /// ```
-/// let transformed = sci_stats::obrientransform(&[&[1.,2.,3.]])?;
-/// assert!((sci_stats::mean(&transformed[0])? - 1.).abs() < 1e-14);
+/// let transformed = sci_stats::normality::obrientransform(&[&[1.,2.,3.]])?;
+/// assert!((sci_stats::descriptive::mean(&transformed[0])? - 1.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -308,7 +308,7 @@ pub fn obrientransform(groups: &[&[f64]]) -> Result<Vec<Vec<f64>>> {
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::alexandergovern(&[&[1.,2.,3.], &[3.,5.,8.]])?;
+/// let r = sci_stats::normality::alexandergovern(&[&[1.,2.,3.], &[3.,5.,8.]])?;
 /// assert!(r.statistic >= 0. && (0. ..=1.).contains(&r.pvalue));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -405,7 +405,7 @@ pub fn alexandergovern(groups: &[&[f64]]) -> Result<TestResult> {
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::shapiro(&[-1.,0.,1.])?;
+/// let r = sci_stats::normality::shapiro(&[-1.,0.,1.])?;
 /// assert!((r.statistic-1.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

@@ -61,7 +61,7 @@ fn standardized_moments<T: Float>(x: &[T]) -> Result<(T, T, T, T)> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::std(&[1., 2., 3.], 1)?, 1.);
+/// assert_eq!(sci_stats::descriptive::std(&[1., 2., 3.], 1)?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -104,7 +104,7 @@ pub fn std<T: Float>(values: &[T], ddof: usize) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::sem(&[1., 2., 3.], 1)? > 0.);
+/// assert!(sci_stats::descriptive::sem(&[1., 2., 3.], 1)? > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -144,7 +144,7 @@ pub fn sem<T: Float>(values: &[T], ddof: usize) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::variation(&[2., 2.], 0)?, 0.);
+/// assert_eq!(sci_stats::descriptive::variation(&[2., 2.], 0)?, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -183,7 +183,7 @@ pub fn variation<T: Float>(values: &[T], ddof: usize) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::quantile(&[1., 3.], 0.5)?, 2.);
+/// assert_eq!(sci_stats::descriptive::quantile(&[1., 3.], 0.5)?, 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -224,7 +224,7 @@ pub fn quantile<T: Float>(values: &[T], probability: T) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::scoreatpercentile(&[1., 3.], 50.)?, 2.);
+/// assert_eq!(sci_stats::descriptive::scoreatpercentile(&[1., 3.], 50.)?, 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -264,7 +264,7 @@ pub fn scoreatpercentile<T: Float>(values: &[T], percentile: T) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::median(&[1., 3., 2.])?, 2.);
+/// assert_eq!(sci_stats::descriptive::median(&[1., 3., 2.])?, 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -304,7 +304,7 @@ pub fn median<T: Float>(values: &[T]) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::iqr(&[1., 2., 3., 4.])?, 1.5);
+/// assert_eq!(sci_stats::descriptive::iqr(&[1., 2., 3., 4.])?, 1.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -348,7 +348,7 @@ pub fn iqr<T: Float>(values: &[T]) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::median_abs_deviation(&[1., 2., 9.], 1.)?, 1.);
+/// assert_eq!(sci_stats::descriptive::median_abs_deviation(&[1., 2., 9.], 1.)?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -396,7 +396,7 @@ pub fn median_abs_deviation<T: Float>(values: &[T], scale: T) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_stats::gmean(&[1.0_f64, 4.])? - 2.).abs() < 1e-14);
+/// assert!((sci_stats::descriptive::gmean(&[1.0_f64, 4.])? - 2.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -449,7 +449,7 @@ pub fn gmean<T: Float>(values: &[T]) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::hmean(&[1., 1.])?, 1.);
+/// assert_eq!(sci_stats::descriptive::hmean(&[1., 1.])?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -508,7 +508,7 @@ pub fn hmean<T: Float>(values: &[T]) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::gstd(&[2., 2.], 1)?, 1.);
+/// assert_eq!(sci_stats::descriptive::gstd(&[2., 2.], 1)?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -559,7 +559,7 @@ pub fn gstd<T: Float>(values: &[T], ddof: usize) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::moment(&[1., 2., 3.], 1)?, 0.);
+/// assert_eq!(sci_stats::descriptive::moment(&[1., 2., 3.], 1)?, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -624,7 +624,7 @@ pub fn moment<T: Float>(values: &[T], order: usize) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::skew(&[1.0_f64, 2., 3.], true)?.abs() < 1e-14);
+/// assert!(sci_stats::descriptive::skew(&[1.0_f64, 2., 3.], true)?.abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -673,7 +673,7 @@ pub fn skew<T: Float>(values: &[T], bias: bool) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_stats::kurtosis(&[1.0_f64, 2., 3.], true, true)? + 1.5).abs() < 1e-14);
+/// assert!((sci_stats::descriptive::kurtosis(&[1.0_f64, 2., 3.], true, true)? + 1.5).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -724,7 +724,7 @@ pub fn kurtosis<T: Float>(values: &[T], fisher: bool, bias: bool) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::zscore(&[1., 2., 3.], 1)?, vec![-1., 0., 1.]);
+/// assert_eq!(sci_stats::descriptive::zscore(&[1., 2., 3.], 1)?, vec![-1., 0., 1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -773,7 +773,7 @@ pub fn zscore<T: Float>(values: &[T], ddof: usize) -> Result<Vec<T>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::zmap(&[2.], &[1., 2., 3.], 1)?, vec![0.]);
+/// assert_eq!(sci_stats::descriptive::zmap(&[2.], &[1., 2., 3.], 1)?, vec![0.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -855,7 +855,7 @@ pub fn zmap<T: Float>(scores: &[T], compare: &[T], ddof: usize) -> Result<Vec<T>
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::gzscore(&[1., 2., 4.], 1)?[1], 0.);
+/// assert_eq!(sci_stats::descriptive::gzscore(&[1., 2., 4.], 1)?[1], 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -901,7 +901,7 @@ pub fn gzscore<T: Float>(values: &[T], ddof: usize) -> Result<Vec<T>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::trimboth(&[4., 2., 1., 3.], 0.25)?, vec![2., 3.]);
+/// assert_eq!(sci_stats::descriptive::trimboth(&[4., 2., 1., 3.], 0.25)?, vec![2., 3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -953,7 +953,7 @@ pub fn trimboth<T: Float>(values: &[T], proportion: T) -> Result<Vec<T>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::trim_mean(&[1., 2., 3., 100.], 0.25)?, 2.5);
+/// assert_eq!(sci_stats::descriptive::trim_mean(&[1., 2., 3., 100.], 0.25)?, 2.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -992,7 +992,7 @@ pub fn trim_mean<T: Float>(values: &[T], proportion: T) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::mode(&[2., 1., 2.])?, (2., 2));
+/// assert_eq!(sci_stats::descriptive::mode(&[2., 1., 2.])?, (2., 2));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -1044,7 +1044,7 @@ pub fn mode<T: Float>(values: &[T]) -> Result<(T, usize)> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::describe(&[1., 2., 3.], 1, true)?.count, 3);
+/// assert_eq!(sci_stats::descriptive::describe(&[1., 2., 3.], 1, true)?.count, 3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
