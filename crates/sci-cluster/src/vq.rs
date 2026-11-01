@@ -24,9 +24,10 @@ fn shape(data: &[Vec<f64>]) -> Result<usize> {
 }
 
 // Keep the sign-balanced compensated mean used by the shared statistics
-// implementation. Centering scaled deviations, rather than the observations,
-// avoids overflow and preserves differences at large common offsets.
-fn centered_mean(values: &[f64]) -> Result<f64> {
+// implementation. Only normalized deviations with magnitude <= 1 reach this
+// helper, and there are at most 1,000,000 of them, so the partial sums cannot
+// overflow. Centering after scaling preserves differences at large offsets.
+fn centered_mean(values: &[f64]) -> f64 {
     let mut positive = values.iter().copied().filter(|x| *x >= 0.0);
     let mut negative = values.iter().copied().filter(|x| *x < 0.0);
     let (mut sum, mut correction) = (0_f64, 0_f64);
@@ -37,35 +38,8 @@ fn centered_mean(values: &[f64]) -> Result<f64> {
             positive.next().or_else(|| negative.next())
         };
         let Some(term) = term else {
-            let total = sum + correction;
-            return match if total.is_finite() {
-                total / values.len() as f64
-            } else {
-                sum / values.len() as f64 + correction / values.len() as f64
-            } {
-                value if value.is_finite() => Ok(value),
-                _ => Err(Error::NonFiniteEvaluation),
-            };
+            return (sum + correction) / values.len() as f64;
         };
-        let next = sum + term;
-        if !next.is_finite() {
-            break;
-        }
-        correction += if sum.abs() >= term.abs() {
-            (sum - next) + term
-        } else {
-            (term - next) + sum
-        };
-        sum = next;
-    }
-    let scale = values.iter().fold(0_f64, |m, x| m.max(x.abs()));
-    if scale == 0.0 {
-        return Ok(0.0);
-    }
-    let n = values.len() as f64;
-    let (mut sum, mut correction) = (0_f64, 0_f64);
-    for &x in values {
-        let term = (x / scale) / n;
         let next = sum + term;
         correction += if sum.abs() >= term.abs() {
             (sum - next) + term
@@ -73,10 +47,6 @@ fn centered_mean(values: &[f64]) -> Result<f64> {
             (term - next) + sum
         };
         sum = next;
-    }
-    match (sum + correction).clamp(-1.0, 1.0) * scale {
-        value if value.is_finite() => Ok(value),
-        _ => Err(Error::NonFiniteEvaluation),
     }
 }
 
@@ -99,7 +69,7 @@ fn population_std(values: &[f64], deviations: &mut Vec<f64>) -> Result<f64> {
             *y /= scale;
         }
     }
-    let center = centered_mean(deviations)?;
+    let center = centered_mean(deviations);
     for y in deviations.iter_mut() {
         *y -= center;
     }

@@ -391,76 +391,92 @@ mod tests {
         // Reading coordinate input must preserve original duplicate order
         // after stable sorting; 1e16 + (-1e16) + 1 differs from other orders.
         let input = b"%%MatrixMarket matrix coordinate real general\n2 3 7\n2 3 -0\n1 2 10000000000000000\n1 3 5e-324\n1 2 -10000000000000000\n1 2 1\n2 1 -2\n2 1 2\n";
-        let MarketMatrix::Sparse(a) = mmread(input.as_slice()).unwrap() else {
-            panic!("expected sparse matrix");
-        };
-        assert_eq!((a.rows, a.cols), (2, 3));
-        assert_eq!(a.indptr, [0, 2, 4]);
-        assert_eq!(a.indices, [1, 2, 0, 2]);
-        assert_eq!(a.data, [1.0, f64::from_bits(1), 0.0, -0.0]);
-        assert_eq!(a.data[3].to_bits(), (-0.0f64).to_bits());
-        assert_eq!(a.data[1].to_bits(), 1);
-
-        let market = MarketMatrix::Sparse(a.clone());
+        let market = mmread(input.as_slice()).unwrap();
+        assert_eq!(
+            market,
+            MarketMatrix::Sparse(SparseMatrix {
+                rows: 2,
+                cols: 3,
+                indptr: vec![0, 2, 4],
+                indices: vec![1, 2, 0, 2],
+                data: vec![1.0, f64::from_bits(1), 0.0, -0.0],
+            })
+        );
         let rows = market.to_matrix().unwrap();
         assert_eq!(rows, [vec![0., 1., f64::from_bits(1)], vec![0., 0., -0.]]);
         assert_eq!(rows[1][2].to_bits(), (-0.0f64).to_bits());
         assert_eq!(rows[0][0].to_bits(), 0.0f64.to_bits());
         let mut written = Vec::new();
         mmwrite(&mut written, &market).unwrap();
-        let MarketMatrix::Sparse(reloaded) = mmread(written.as_slice()).unwrap() else {
-            panic!("expected sparse matrix");
-        };
-        assert_eq!(reloaded, a);
-        assert_eq!(
-            reloaded
-                .data
-                .iter()
-                .map(|v| v.to_bits())
-                .collect::<Vec<_>>(),
-            a.data.iter().map(|v| v.to_bits()).collect::<Vec<_>>()
-        );
+        let reloaded = mmread(written.as_slice()).unwrap();
+        assert_eq!(reloaded, market);
+        let round_trip_rows = reloaded.to_matrix().unwrap();
+        assert_eq!(round_trip_rows[0][2].to_bits(), 1);
+        assert_eq!(round_trip_rows[1][2].to_bits(), (-0.0f64).to_bits());
     }
 
     #[test]
     fn matrix_market_symmetry_and_dense_special_values() {
         let skew = b"%%MatrixMarket matrix coordinate real skew-symmetric\n2 2 1\n2 1 -0\n";
-        let MarketMatrix::Sparse(a) = mmread(skew.as_slice()).unwrap() else {
-            panic!("expected sparse matrix");
-        };
-        assert_eq!(a.indptr, [0, 1, 2]);
-        assert_eq!(a.indices, [1, 0]);
-        assert_eq!(a.data[0].to_bits(), 0.0f64.to_bits());
-        assert_eq!(a.data[1].to_bits(), (-0.0f64).to_bits());
+        let skew = mmread(skew.as_slice()).unwrap();
+        assert_eq!(
+            skew,
+            MarketMatrix::Sparse(SparseMatrix {
+                rows: 2,
+                cols: 2,
+                indptr: vec![0, 1, 2],
+                indices: vec![1, 0],
+                data: vec![0.0, -0.0],
+            })
+        );
+        let skew_rows = skew.to_matrix().unwrap();
+        assert_eq!(skew_rows[0][1].to_bits(), 0.0f64.to_bits());
+        assert_eq!(skew_rows[1][0].to_bits(), (-0.0f64).to_bits());
 
         let symmetric =
             b"%%MatrixMarket matrix coordinate integer symmetric\n2 2 1\n2 1 9007199254740992\n";
-        let MarketMatrix::Sparse(a) = mmread(symmetric.as_slice()).unwrap() else {
-            panic!("expected sparse matrix");
-        };
-        assert_eq!(a.data, [9_007_199_254_740_992.0; 2]);
+        assert_eq!(
+            mmread(symmetric.as_slice()).unwrap(),
+            MarketMatrix::Sparse(SparseMatrix {
+                rows: 2,
+                cols: 2,
+                indptr: vec![0, 1, 2],
+                indices: vec![1, 0],
+                data: vec![9_007_199_254_740_992.0; 2],
+            })
+        );
 
         let dense = b"%%MatrixMarket matrix array real general\n2 2\nnan\n-inf\n-0\ninf\n";
-        let MarketMatrix::Dense { rows, cols, data } = mmread(dense.as_slice()).unwrap() else {
-            panic!("expected dense matrix");
-        };
-        assert_eq!((rows, cols), (2, 2));
-        assert!(data[0].is_nan());
-        assert_eq!(data[1].to_bits(), (-0.0f64).to_bits());
-        assert_eq!(data[2], f64::NEG_INFINITY);
-        assert_eq!(data[3], f64::INFINITY);
+        let dense = mmread(dense.as_slice()).unwrap();
+        assert!(matches!(
+            &dense,
+            MarketMatrix::Dense {
+                rows: 2,
+                cols: 2,
+                ..
+            }
+        ));
+        let data = dense.to_matrix().unwrap();
+        assert!(data[0][0].is_nan());
+        assert_eq!(data[0][1].to_bits(), (-0.0f64).to_bits());
+        assert_eq!(data[1][0], f64::NEG_INFINITY);
+        assert_eq!(data[1][1], f64::INFINITY);
         let mut written = Vec::new();
-        mmwrite(&mut written, &MarketMatrix::Dense { rows, cols, data }).unwrap();
-        let MarketMatrix::Dense {
-            data: round_trip, ..
-        } = mmread(written.as_slice()).unwrap()
-        else {
-            panic!("expected dense matrix");
-        };
-        assert!(round_trip[0].is_nan());
-        assert_eq!(round_trip[1].to_bits(), (-0.0f64).to_bits());
-        assert_eq!(round_trip[2], f64::NEG_INFINITY);
-        assert_eq!(round_trip[3], f64::INFINITY);
+        mmwrite(&mut written, &dense).unwrap();
+        let round_trip = mmread(written.as_slice()).unwrap();
+        assert!(matches!(
+            &round_trip,
+            MarketMatrix::Dense {
+                rows: 2,
+                cols: 2,
+                ..
+            }
+        ));
+        let round_trip = round_trip.to_matrix().unwrap();
+        assert!(round_trip[0][0].is_nan());
+        assert_eq!(round_trip[0][1].to_bits(), (-0.0f64).to_bits());
+        assert_eq!(round_trip[1][0], f64::NEG_INFINITY);
+        assert_eq!(round_trip[1][1], f64::INFINITY);
     }
 
     #[test]

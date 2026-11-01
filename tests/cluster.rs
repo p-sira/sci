@@ -251,8 +251,35 @@ fn whiten_matches_shared_population_std_at_extreme_scales() {
     let cases = [
         vec![vec![1.0], vec![3.0]],
         vec![vec![1.0, -0.0], vec![1.0, 0.0]],
+        // The first observation is between later values, so the normalized
+        // deviations alternate in sign and exercise both compensated sums.
+        vec![
+            vec![0.0],
+            vec![1.0],
+            vec![-1.0],
+            vec![f64::EPSILON],
+            vec![-f64::EPSILON],
+            vec![0.25],
+            vec![-0.125],
+        ],
+        vec![
+            vec![0.0],
+            vec![-1.0],
+            vec![1.0],
+            vec![-0.25],
+            vec![0.125],
+            vec![f64::EPSILON / 2.0],
+        ],
         vec![vec![1e-300], vec![-1e-300], vec![0.0]],
+        vec![vec![f64::MIN_POSITIVE], vec![0.0], vec![f64::from_bits(1)]],
         vec![vec![f64::MAX], vec![-f64::MAX]],
+        // Mix overflow-safe subtraction, ordinary scaling, and a constant
+        // column to check scratch-buffer reuse across successive features.
+        vec![
+            vec![f64::MAX, 1.0, 7.0],
+            vec![-f64::MAX, -1.0, 7.0],
+            vec![0.0, 0.5, 7.0],
+        ],
         vec![vec![1e12 + 0.125], vec![1e12 + 0.25], vec![1e12 + 0.5]],
         vec![
             vec![1e200, -1e200, 7.0],
@@ -283,6 +310,59 @@ fn whiten_matches_shared_population_std_at_extreme_scales() {
             }
         }
     }
+}
+
+#[test]
+fn whiten_validates_boundaries_and_preserves_constant_columns() {
+    use sci::cluster::vq;
+
+    assert_eq!(
+        vq::whiten(&[vec![f64::INFINITY]]),
+        Err(sci::Error::InvalidInput("coordinates must be finite")),
+    );
+    assert_eq!(
+        vq::whiten(&[vec![1.0], vec![]]),
+        Err(sci::Error::DimensionMismatch),
+    );
+    assert_eq!(
+        vq::whiten(&[vec![]]),
+        Err(sci::Error::InvalidInput(
+            "observations must be nonempty and contain at most 1000000 entries"
+        )),
+    );
+
+    // The exact one-million-element limit must succeed, including a full
+    // pass over every column. One additional element must fail validation.
+    let boundary = vec![vec![2.0; 1_000]; 1_000];
+    assert_eq!(vq::whiten(&boundary).unwrap(), boundary);
+    let oversized = vec![vec![2.0; 1_001]; 1_000];
+    assert_eq!(
+        vq::whiten(&oversized),
+        Err(sci::Error::InvalidInput(
+            "observations must be nonempty and contain at most 1000000 entries"
+        )),
+    );
+}
+
+#[test]
+fn whiten_rejects_a_nonfinite_population_scale() {
+    use sci::cluster::vq;
+
+    // Forty balanced, extremal observations make the sequential sum of
+    // 1/40 contributions round slightly above one. Multiplying its square
+    // root by f64::MAX must report overflow, as the shared std kernel does.
+    let observations: Vec<Vec<f64>> = (0..40)
+        .map(|i| vec![if i % 2 == 0 { f64::MAX } else { -f64::MAX }])
+        .collect();
+    let column: Vec<_> = observations.iter().map(|row| row[0]).collect();
+    assert_eq!(
+        sci::stats::std(&column, 0),
+        Err(sci::Error::NonFiniteEvaluation)
+    );
+    assert_eq!(
+        vq::whiten(&observations),
+        Err(sci::Error::NonFiniteEvaluation)
+    );
 }
 
 #[cfg(feature = "spatial")]
