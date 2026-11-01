@@ -1,5 +1,11 @@
 # Development and verification
 
+See the [design principles](design-principles.md) for the rationale behind
+the full-featured umbrella, focused domain crates, and upstream integrations.
+The [numerical quality standard](numerical-quality-standard.md) describes
+proposed evidence requirements, and the [sci-testing modernization plan](sci-testing-roadmap.md)
+explains the external comparison suite's relationship to checked-in fixtures.
+
 ## Implementation approach
 
 Prefer established Rust crates maintained by domain experts for complex

@@ -81,3 +81,6 @@ Sparse operations use shared CSR/COO storage, with graph algorithms, direct and 
 - For individual module documentations, please follow the link in [Modules](#modules).
 - [Data types and numerical conventions](docs/conventions.md).
 - [Development, reference fixtures, and validation](docs/development.md).
+- [Design principles and crate boundaries](docs/design-principles.md).
+- [Numerical quality standard (proposed)](docs/numerical-quality-standard.md).
+- [Roadmap for updating `sci-testing` to Sci 0.3](docs/sci-testing-roadmap.md).
