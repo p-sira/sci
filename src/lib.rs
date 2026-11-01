@@ -20,8 +20,9 @@
 //! dependencies compile without exposing additional modules through this facade.
 //! With defaults disabled, `fft-hankel`, `sparse-npz`, `io-matrix-market`,
 //! `io-wav`, and `io-matlab` select extra transforms and file formats, enabling
-//! their parent modules. All FFT transforms avoid XSF, `sparse` avoids ZIP/compression,
-//! and `io` supplies shared I/O types without format backends. All capabilities
+//! their parent modules. All FFT transforms avoid XSF; `sparse` enables solvers,
+//! graphs, and random sampling without ZIP/compression, and `io` supplies shared
+//! I/O types without format backends. All capabilities
 //! remain enabled in the default feature set.
 //!
 //! ```

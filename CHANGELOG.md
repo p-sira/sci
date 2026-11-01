@@ -2,6 +2,12 @@
 
 ## 0.3.0 (unreleased)
 
+- Isolate `sci-sparse`'s lightweight CSR/COO storage and arithmetic from optional
+  `solver`, `graph`, `random`, and `npz` backends. The `sci::sparse` feature
+  explicitly enables all numerical backends, preserving the existing facade
+  API; `sparse-npz` continues to provide NPZ interchange. Direct users of
+  `sci-sparse` with defaults disabled now select heavier capabilities explicitly.
+
 - Remove `sci-linalg`'s direct dependency on `sci-special` by storing the
   16-point Gauss–Legendre quadrature rule for the principal matrix logarithm;
   retain the existing numerical algorithm, convergence limits, and public API.

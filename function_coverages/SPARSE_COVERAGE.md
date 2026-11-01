@@ -1,6 +1,6 @@
 # Sparse coverage and numerical conventions
 
-The Rust API omits runtime type/dtype utilities and redundant aliases; see the disposition table below. With facade defaults disabled, NPZ requires `sparse-npz`; direct `sci-sparse` users select the default-enabled `npz` feature. Other sparse operations compile without ZIP or compression. NPZ uses the same flate2 Rust/miniz backend as MATLAB; numerical behavior and reference fixtures are unchanged.
+The Rust API omits runtime type/dtype utilities and redundant aliases; see the disposition table below. The facade `sparse` feature retains all numerical APIs (solvers, graphs and seeded sampling), and `sparse-npz` enables NPZ. With direct `sci-sparse` defaults disabled, canonical CSR/COO construction, arithmetic and array transforms require only `sci-core`; `solver`, `graph`, `random` and `npz` opt into their respective backends. The direct crate defaults enable `full` (solver, graph and random) and `npz`. NPZ uses the same flate2 Rust/miniz backend as MATLAB; numerical behavior and reference fixtures are unchanged.
 
 `sci-sparse` is exposed as `sci::sparse` through the default-enabled `sparse`
 feature. The original modern inventory has **83 names**. Retained function-name coverage

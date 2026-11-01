@@ -15,19 +15,25 @@ readme = false
 include = ["/src/**", "/LICENSE", "/SCIPY_LICENSE.txt"]
 
 [features]
-default = ["npz"]
+default = ["full", "npz"]
+# Default-compatible API. With defaults disabled, CSR/COO storage and arithmetic
+# require only sci-core; opt into expensive backends independently.
+full = ["solver", "graph", "random"]
+solver = ["dep:faer", "dep:sci-linalg", "dep:sci-complex", "dep:dyn-stack"]
+graph = ["dep:petgraph", "dep:lapjv", "dep:ndarray"]
+random = ["dep:rand"]
 # Select the same flate2 backend as MATLAB, including NPZ-only builds.
 npz = ["dep:zip", "dep:flate2"]
 
 [dependencies]
 sci-core.workspace = true
-faer.workspace = true
-sci-linalg.workspace = true
-sci-complex.workspace = true
-petgraph.workspace = true
+faer = { workspace = true, optional = true }
+sci-linalg = { workspace = true, optional = true }
+sci-complex = { workspace = true, optional = true }
+petgraph = { workspace = true, optional = true }
 zip = { workspace = true, optional = true }
 flate2 = { workspace = true, optional = true }
-rand.workspace = true
-lapjv.workspace = true
-ndarray.workspace = true
-dyn-stack.workspace = true
+rand = { workspace = true, optional = true }
+lapjv = { workspace = true, optional = true }
+ndarray = { workspace = true, optional = true }
+dyn-stack = { workspace = true, optional = true }

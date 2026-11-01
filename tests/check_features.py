@@ -2,8 +2,9 @@
 
 Run with Python 3.11 or newer from any directory. Numerical reference tests
 remain in the Rust suite; this checks Cargo feature wiring and documentation.
-Optional arguments select features to check; use `core` for the core-only facade
-and `default` for all default capabilities.
+Optional arguments select features to check; use `core` for the core-only facade,
+`default` for all default capabilities, or `crate-sparse-*` to check isolated
+`sci-sparse` backends directly.
 """
 
 import os
@@ -17,14 +18,21 @@ ROOT = Path(__file__).resolve().parents[1]
 manifest = tomllib.loads((ROOT / "Cargo.toml").read_text())
 features = manifest["features"]
 modules = sorted(
-    name for name, values in features.items() if values == [f"dep:sci-{name}"]
+    name.removeprefix("sci-")
+    for name in manifest["dependencies"]
+    if name.startswith("sci-") and name != "sci-core"
 )
 adapters = sorted(set(features) - {"default", *modules})
 assert sorted(features["default"]) == sorted([*modules, *adapters])
 assert set(manifest["dependencies"]) == {"sci-core", *(f"sci-{m}" for m in modules)}
 for module in modules:
     dependency = f"sci-{module}"
-    assert features[module] == [f"dep:{dependency}"]
+    # The sparse facade continues exposing solvers and graphs for consumers
+    # selecting `sparse` alone. Only direct sci-sparse no-default builds are lean.
+    expected = [f"dep:{dependency}"]
+    if module == "sparse":
+        expected.append("sci-sparse/full")
+    assert features[module] == expected
     assert manifest["dependencies"][dependency]["optional"]
 
 for adapter in adapters:
@@ -57,6 +65,24 @@ for crate, expected in lean_direct_dependencies.items():
         assert domain["dependencies"]["hound"]["optional"]
         assert domain["dependencies"]["flate2"]["optional"]
 
+sparse_domain = tomllib.loads((ROOT / "crates/sci-sparse/Cargo.toml").read_text())
+assert sparse_domain["features"]["default"] == ["full", "npz"]
+assert sparse_domain["features"]["full"] == ["solver", "graph", "random"]
+assert sparse_domain["features"]["solver"] == [
+    "dep:faer", "dep:sci-linalg", "dep:sci-complex", "dep:dyn-stack"
+]
+assert sparse_domain["features"]["graph"] == [
+    "dep:petgraph", "dep:lapjv", "dep:ndarray"
+]
+assert sparse_domain["features"]["random"] == ["dep:rand"]
+assert sparse_domain["features"]["npz"] == ["dep:zip", "dep:flate2"]
+assert set(sparse_domain["dependencies"]) == {
+    "sci-core", "faer", "sci-linalg", "sci-complex", "dyn-stack",
+    "petgraph", "lapjv", "ndarray", "rand", "zip", "flate2",
+}
+for name in set(sparse_domain["dependencies"]) - {"sci-core"}:
+    assert sparse_domain["dependencies"][name]["optional"], name
+
 # Check the resolved build graph: compiling successfully alone does not prove
 # that a reduced feature avoids its optional or transitive backends.
 backend_rules = {
@@ -71,8 +97,11 @@ backend_rules = {
     ),
     "fft": ({"rustfft"}, {"xsf", "bindgen", "clang-sys"}),
     "fft-hankel": ({"special"}, {"xsf", "bindgen", "clang-sys", "ellip", "lambert_w"}),
-    "sparse": ({"sci-sparse"}, {"zip", "flate2", "zlib-rs", "getrandom"}),
-    "sparse-npz": ({"zip", "flate2", "miniz_oxide"}, {"zlib-rs"}),
+    "sparse": (
+        {"sci-sparse", "faer", "sci-linalg", "petgraph", "lapjv", "rand"},
+        {"zip", "flate2", "zlib-rs", "getrandom"},
+    ),
+    "sparse-npz": ({"zip", "flate2", "miniz_oxide", "faer", "petgraph"}, {"zlib-rs"}),
     "io": ({"sci-io"}, {"sci-sparse", "hound", "matrw", "zip", "flate2"}),
     "io-matrix-market": (
         {"sci-io", "sci-core"},
@@ -86,12 +115,65 @@ backend_rules = {
     "io-matlab": ({"flate2", "miniz_oxide"}, {"sci-sparse", "hound", "zip", "zlib-rs", "xsf", "matrw"}),
 }
 
-selected = sys.argv[1:] or ["default", "core", *modules, *adapters]
-unknown = set(selected) - {"default", "core", *modules, *adapters}
+backend_deps = {
+    "faer", "sci-linalg", "sci-complex", "dyn-stack",
+    "petgraph", "lapjv", "ndarray", "rand", "zip", "flate2",
+}
+sparse_crate_rules = {
+    "crate-sparse-core": ({"sci-sparse", "sci-core"}, backend_deps),
+    "crate-sparse-solver": (
+        {"sci-sparse", "sci-core", "faer", "sci-linalg", "sci-complex", "dyn-stack"},
+        {"petgraph", "lapjv", "rand", "zip", "flate2"},
+    ),
+    "crate-sparse-graph": (
+        {"sci-sparse", "sci-core", "petgraph", "lapjv", "ndarray"},
+        {"faer", "sci-linalg", "sci-complex", "dyn-stack", "rand", "zip", "flate2"},
+    ),
+    "crate-sparse-random": (
+        {"sci-sparse", "sci-core", "rand"},
+        {"faer", "sci-linalg", "sci-complex", "dyn-stack", "petgraph", "lapjv", "ndarray", "zip", "flate2"},
+    ),
+    "crate-sparse-npz": (
+        {"sci-sparse", "sci-core", "zip", "flate2", "miniz_oxide"},
+        {"faer", "sci-linalg", "sci-complex", "dyn-stack", "petgraph", "lapjv", "rand"},
+    ),
+}
+sparse_crate_features = {
+    "crate-sparse-core": None,
+    "crate-sparse-solver": "solver",
+    "crate-sparse-graph": "graph",
+    "crate-sparse-random": "random",
+    "crate-sparse-npz": "npz",
+}
+
+selected = sys.argv[1:] or ["default", "core", *modules, *adapters, *sparse_crate_rules]
+unknown = set(selected) - {"default", "core", *modules, *adapters, *sparse_crate_rules}
 if unknown:
     raise SystemExit(f"Unknown features: {', '.join(sorted(unknown))}")
 
 for feature in selected:
+    if feature in sparse_crate_rules:
+        args = ["-p", "sci-sparse", "--no-default-features", "--locked"]
+        if crate_feature := sparse_crate_features[feature]:
+            args += ["--features", crate_feature]
+        print(f"Checking {feature}", flush=True)
+        tree = subprocess.check_output(
+            ["cargo", "tree", *args, "-e", "normal,build", "--prefix", "none", "--format", "{p}"],
+            cwd=ROOT,
+            text=True,
+        )
+        packages = {line.split()[0] for line in tree.splitlines()}
+        required, forbidden = sparse_crate_rules[feature]
+        assert required <= packages, (feature, "missing", required - packages)
+        assert not forbidden & packages, (feature, "unexpected", forbidden & packages)
+        subprocess.run(["cargo", "check", "--lib", *args], cwd=ROOT, check=True)
+        subprocess.run(
+            ["cargo", "doc", "--no-deps", *args],
+            cwd=ROOT,
+            env={**os.environ, "RUSTDOCFLAGS": "-D warnings"},
+            check=True,
+        )
+        continue
     module = None if feature == "core" else feature
     args = ["-p", "sci", "--no-default-features", "--locked"]
     if module:

@@ -9,22 +9,22 @@
 //! 20,000,000 total input rows. Empty axes are supported.
 //!
 //! Shared [`SparseArray`] COO storage supports rank 1..32 and axis operations.
-//! Graph algorithms, iterative solves, spectral decompositions, matrix functions,
-//! random sampling, and NPZ interchange cover the modern SciPy function inventory
-//! through documented Rust adaptations. Spectral and iterative axes are bounded
+//! Optional graph algorithms, iterative solves, spectral decompositions, matrix
+//! functions, random sampling, and NPZ interchange cover the modern SciPy function
+//! inventory through documented Rust adaptations. Spectral and iterative axes are bounded
 //! at 256; spectral routines use dense fallbacks. Python mutable storage classes,
 //! deprecated compatibility namespaces and legacy solver controls are excluded.
 //! Private faer, petgraph, lapjv, RNG and ZIP backends do not appear in the API.
 //! See the repository's sparse coverage report for signature and work limits.
-//! NPZ reading and writing require the default-enabled `npz` feature
-//! (`sparse-npz` through the Sci facade). Disable default features to omit ZIP
-//! and compression dependencies while retaining sparse numerical operations.
+//! Defaults enable `full` (the `solver`, `graph`, and `random` backends) and `npz`.
+//! Disable defaults for lightweight CSR/COO construction and arithmetic with only
+//! `sci-core`; opt into each backend independently. The Sci facade's `sparse`
+//! feature retains the full API, and `sparse-npz` additionally enables NPZ I/O.
 //!
 //! ```
-//! use sci_sparse::{from_coo, matvec, linalg::spsolve};
+//! use sci_sparse::{from_coo, matvec};
 //! let a = from_coo(2, 2, &[(0, 0, 2.0), (1, 1, 4.0)])?;
 //! assert_eq!(matvec(&a, &[3.0, 2.0])?, vec![6.0, 8.0]);
-//! assert_eq!(spsolve(&a, &[6.0, 8.0])?, vec![3.0, 2.0]);
 //! # Ok::<(), sci_sparse::Error>(())
 //! ```
 
@@ -35,10 +35,12 @@ pub use sci_core::{Error, Matrix, Result, SparseArray, SparseMatrix};
 use std::collections::BTreeMap;
 
 mod array;
+#[cfg(feature = "graph")]
 /// Algorithms for weighted graphs represented by CSR matrices.
 pub mod csgraph;
 #[cfg(feature = "npz")]
 mod io;
+#[cfg(feature = "solver")]
 /// Sparse linear algebra using finite real matrices.
 pub mod linalg;
 pub use array::*;
