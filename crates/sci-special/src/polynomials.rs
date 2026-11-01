@@ -3,10 +3,33 @@
 use crate::{Error, Result};
 
 // Implicit symmetric tridiagonal QL with Wilkinson shifts (EISPACK IMTQL2).
-// Only the eigenvector accumulator is dense. Scaling avoids overflow in the
-// shifts and Givens rotations, and each eigenvalue has a fixed iteration limit.
-// Columns of the accumulated orthogonal matrix are returned as sorted vectors.
+// Quadrature needs only the first component of each eigenvector (Golub-Welsch),
+// while Lamé polynomials need the complete eigensystem. Keep the same shifted
+// iteration for both, but accumulate a single row for the quadrature case.
+// Scaling avoids overflow in shifts and Givens rotations; work is bounded.
 pub(super) fn eigensystem(diagonal: &[f64], off: &[f64]) -> Result<(Vec<f64>, Vec<Vec<f64>>)> {
+    let (values, rows) = tridiagonal_eigensystem(diagonal, off, true)?;
+    Ok((
+        values,
+        (0..diagonal.len())
+            .map(|i| rows.iter().map(|row| row[i]).collect())
+            .collect(),
+    ))
+}
+
+fn first_eigenvector_components(diagonal: &[f64], off: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
+    let (values, mut rows) = tridiagonal_eigensystem(diagonal, off, false)?;
+    Ok((values, rows.pop().unwrap()))
+}
+
+// Accumulate eigenvector rows, sorted consistently with the eigenvalues.
+// With all_vectors=false, only row zero is retained, avoiding unnecessary
+// O(n^3) eigenvector rotations and O(n^2) eigenvector storage.
+fn tridiagonal_eigensystem(
+    diagonal: &[f64],
+    off: &[f64],
+    all_vectors: bool,
+) -> Result<(Vec<f64>, Vec<Vec<f64>>)> {
     let n = diagonal.len();
     if n == 0 || n > 256 {
         return Err(Error::InvalidInput("tridiagonal order must be in 1..=256"));
@@ -22,6 +45,11 @@ pub(super) fn eigensystem(diagonal: &[f64], off: &[f64]) -> Result<(Vec<f64>, Ve
         .chain(off)
         .fold(0.0_f64, |value, &x| value.max(x.abs()));
     if scale == 0.0 {
+        let mut first = vec![0.0; n];
+        first[0] = 1.0;
+        if !all_vectors {
+            return Ok((vec![0.0; n], vec![first]));
+        }
         let vectors = (0..n)
             .map(|j| (0..n).map(|i| f64::from(i == j)).collect())
             .collect();
@@ -30,7 +58,7 @@ pub(super) fn eigensystem(diagonal: &[f64], off: &[f64]) -> Result<(Vec<f64>, Ve
     let mut d: Vec<_> = diagonal.iter().map(|&x| x / scale).collect();
     let mut e: Vec<_> = off.iter().map(|&x| x / scale).collect();
     e.push(0.0);
-    let mut vectors = vec![vec![0.0; n]; n];
+    let mut vectors = vec![vec![0.0; n]; if all_vectors { n } else { 1 }];
     for (i, row) in vectors.iter_mut().enumerate() {
         row[i] = 1.0;
     }
@@ -104,9 +132,9 @@ pub(super) fn eigensystem(diagonal: &[f64], off: &[f64]) -> Result<(Vec<f64>, Ve
     indices.sort_by(|&a, &b| d[a].total_cmp(&d[b]));
     Ok((
         indices.iter().map(|&i| d[i]).collect(),
-        indices
+        vectors
             .iter()
-            .map(|&i| vectors.iter().map(|row| row[i]).collect())
+            .map(|row| indices.iter().map(|&i| row[i]).collect())
             .collect(),
     ))
 }
@@ -232,10 +260,10 @@ fn quadrature(
             });
         }
     }
-    let (nodes, vectors) = eigensystem(&diagonal, &off)?;
-    let weights: Vec<_> = vectors
+    let (nodes, first_components) = first_eigenvector_components(&diagonal, &off)?;
+    let weights: Vec<_> = first_components
         .iter()
-        .map(|v| v[0] * v[0] * mass * weight_scale)
+        .map(|v| v * v * mass * weight_scale)
         .collect();
     if weights.iter().any(|x| !x.is_finite()) {
         return Err(Error::NonFiniteEvaluation);
@@ -1174,6 +1202,26 @@ pub fn roots_sh_jacobi(n: usize, p: f64, q: f64) -> Result<(Vec<f64>, Vec<f64>)>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn quadrature_first_components_match_full_eigensystem() {
+        // Both paths use identical shifts and sorting; the optimization skips
+        // unused eigenvector rows rather than changing eigenvalue algorithms.
+        for n in [1, 2, 3, 16, 64, 128, 256] {
+            let diagonal: Vec<_> = (0..n).map(|i| 0.15 * (i as f64).sin()).collect();
+            let off: Vec<_> = (0..n - 1).map(|i| 0.25 + 0.01 * ((i % 7) as f64)).collect();
+            let (full_values, full_vectors) = eigensystem(&diagonal, &off).unwrap();
+            let (first_values, first_components) =
+                first_eigenvector_components(&diagonal, &off).unwrap();
+            assert_eq!(first_values, full_values, "n={n}");
+            for (i, &component) in first_components.iter().enumerate() {
+                assert_eq!(component, full_vectors[i][0], "n={n}, i={i}");
+            }
+        }
+        let (values, first) = first_eigenvector_components(&[0.0; 3], &[0.0; 2]).unwrap();
+        assert_eq!(values, vec![0.0; 3]);
+        assert_eq!(first, vec![1.0, 0.0, 0.0]);
+    }
 
     #[test]
     fn shifted_tridiagonal_eigenpairs_have_small_residuals_and_are_orthogonal() {

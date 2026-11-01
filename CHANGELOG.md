@@ -12,7 +12,9 @@
 - Replace `sci-special`'s dense `nalgebra` eigendecomposition for Gaussian
   quadrature and Lamé polynomials with a bounded, scaled symmetric tridiagonal
   eigensolver; remove the direct `nalgebra` dependency while preserving the
-  sorted eigenpairs and normalization conventions.
+  sorted eigenpairs and normalization conventions. Accumulate only the first
+  eigenvector components when computing Gaussian weights; retain the full
+  eigenvectors for Lamé polynomials.
 
 - **Breaking:** Group numerical functions in public mathematical-family modules
   throughout the Sci workspace, following the `sci-special` 0.3.0 API design.
