@@ -26,6 +26,16 @@ python tests/check_features.py
 
 Documentation-only changes do not require fixture regeneration.
 
+The workspace's test profile uses `debug = "line-tables-only"`: test failures
+retain source locations and backtraces, but GDB/LLDB cannot reliably inspect
+local variables or Rust type layouts. The ordinary development profile is
+unchanged. To reproduce a failing test with full debug information, override
+the test profile for that invocation (this may trigger recompilation):
+
+```sh
+CARGO_PROFILE_TEST_DEBUG=full cargo test -p sci --no-default-features --test core
+```
+
 ## Benchmarks
 
 Benchmarks for representative functions of each module live in
