@@ -2,6 +2,9 @@
 
 ## 0.3.0
 
+- Remove the direct `sci-special` dependency by embedding the validated fixed
+  16-point Gauss–Legendre rule used by the principal matrix logarithm. Preserve
+  the inverse-scaling limit, quadrature order, public results, and error behavior.
 - Remove find_best_blas_type, get_blas_funcs, get_lapack_funcs and their metadata/handle types. Call numerical functions directly. Remove solve_lyapunov in favor of solve_continuous_lyapunov.
 - Move the mutable SVD factor into pseudoinverse construction instead of cloning it, reuse Leslie-matrix row storage, and remove a duplicate matrix copy before interpolative QR.
 - Adapt numerical matrix inputs directly to faer, removing intermediate shared-row allocations while preserving interoperability and shared result types.

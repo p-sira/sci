@@ -1596,7 +1596,6 @@ dependencies = [
  "sci-core",
  "sci-differentiate",
  "sci-signal",
- "sci-special",
 ]
 
 [[package]]
