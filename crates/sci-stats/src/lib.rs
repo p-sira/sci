@@ -28,7 +28,7 @@
 //!
 //! ```
 //! use sci_complex as complex; use sci_fft as fft; use sci_stats as stats;
-//! let amplitudes: Vec<f64> = fft::rfft(&[1.0, 2.0, 3.0, 4.0])
+//! let amplitudes: Vec<f64> = fft::real::rfft(&[1.0, 2.0, 3.0, 4.0])
 //!     .into_iter().map(complex::abs).collect();
 //! assert!(stats::descriptive::mean(&amplitudes)? > 0.0);
 //! # Ok::<(), sci_core::Error>(())
