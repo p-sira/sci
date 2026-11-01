@@ -3,10 +3,77 @@
 //! Linkages use shared row matrices: row `i` is `[left, right, height, count]`,
 //! creates node `n+i`, and refers only to earlier nodes. Leaves are `0..n`.
 //! All functions reject nonfinite linkages and bound trees to 512 leaves.
+use crate::error::is_finite_slice;
 use crate::{Error, Result, linalg::Matrix};
 use std::collections::HashMap;
 
 const MAX_LEAVES: usize = 512;
+
+// Recognize condensed upper-triangle lengths with exact integer arithmetic.
+// Keep the spatial distance API's validation and error precedence for callers
+// of `linkage` and `correspond`.
+fn num_obs_y(y: &[f64]) -> Result<usize> {
+    if y.is_empty() || y.len() > 1_000_000 {
+        return Err(Error::InvalidInput("invalid or ambiguous condensed length"));
+    }
+    let k = y.len();
+    let (mut lo, mut hi) = (1usize, k + 2);
+    while lo < hi {
+        let mid = lo + (hi - lo) / 2;
+        match mid.checked_mul(mid - 1).map(|x| x / 2) {
+            Some(t) if t < k => lo = mid + 1,
+            _ => hi = mid,
+        }
+    }
+    match lo.checked_mul(lo - 1).map(|x| x / 2) {
+        Some(t) if t == k => Ok(lo),
+        _ => Err(Error::InvalidInput("invalid or ambiguous condensed length")),
+    }
+}
+
+// The Euclidean-only pdist path used by fclusterdata. Preserve the spatial
+// API's rectangular/finite checks, condensed pair order, and work limits,
+// while skipping generic metric dispatch and per-pair allocations.
+fn euclidean_distances(x: &[Vec<f64>]) -> Result<Vec<f64>> {
+    let dimension = x.first().map_or(0, Vec::len);
+    let bound = |size: Option<usize>, limit: usize| {
+        if size.is_none_or(|n| n > limit) {
+            Err(Error::InvalidInput("geometry work limit exceeded"))
+        } else {
+            Ok(())
+        }
+    };
+    bound(x.len().checked_mul(dimension.max(1)), 1_000_000)?;
+    for row in x {
+        if row.len() != dimension {
+            return Err(Error::DimensionMismatch);
+        }
+        is_finite_slice(row)?;
+    }
+    let count = x
+        .len()
+        .checked_mul(x.len().saturating_sub(1))
+        .map(|n| n / 2);
+    bound(count, 1_000_000)?;
+    bound(
+        count.and_then(|n| n.checked_mul(dimension.max(1))),
+        10_000_000,
+    )?;
+    let mut distances = Vec::with_capacity(count.unwrap());
+    for (i, a) in x.iter().enumerate() {
+        for b in x.iter().skip(i + 1) {
+            let mut distance = 0.0_f64;
+            for (&u, &v) in a.iter().zip(b) {
+                distance = distance.hypot((u - v).abs());
+            }
+            if distance.is_infinite() {
+                return Err(Error::NonFiniteEvaluation);
+            }
+            distances.push(distance);
+        }
+    }
+    Ok(distances)
+}
 
 fn validate(z: &[Vec<f64>]) -> Result<usize> {
     let n = z.len() + 1;
@@ -93,7 +160,7 @@ pub enum Method {
 ///
 /// ## Parameters
 ///
-/// `y` is upper-triangle condensed distance order, matching `spatial::distance::pdist`. `method` selects the distance recurrence. Centroid, median, and Ward require Euclidean distances; this geometric condition is the caller’s responsibility. Observations and optimal ordering are adapted to separate calls.
+/// `y` is upper-triangle condensed distance order `(0,1), (0,2), …, (1,2), …`. `method` selects the distance recurrence. Centroid, median, and Ward require Euclidean distances; this geometric condition is the caller’s responsibility. Observations and optimal ordering are adapted to separate calls.
 /// ## Domain
 ///
 /// Finite, nonnegative distances for 2..=512 observations; condensed length must be n(n−1)/2.
@@ -117,7 +184,7 @@ pub enum Method {
 ///
 /// [SciPy linkage](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html).
 pub fn linkage(y: &[f64], method: Method) -> Result<Matrix> {
-    let n = crate::spatial::distance::num_obs_y(y)?;
+    let n = num_obs_y(y)?;
     if !(2..=MAX_LEAVES).contains(&n) || y.iter().any(|v| !v.is_finite() || *v < 0.0) {
         return Err(Error::InvalidInput(
             "invalid condensed clustering distances",
@@ -641,7 +708,7 @@ pub fn from_mlab_linkage(z: &[Vec<f64>]) -> Result<Matrix> {
 /// [SciPy correspond](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.correspond.html).
 pub fn correspond(z: &[Vec<f64>], y: &[f64]) -> Result<bool> {
     let n = validate(z)?;
-    let m = crate::spatial::distance::num_obs_y(y)?;
+    let m = num_obs_y(y)?;
     if y.iter().any(|v| !v.is_finite() || *v < 0.0) {
         return Err(Error::InvalidInput("invalid distances"));
     }
@@ -1079,7 +1146,8 @@ pub fn fcluster(z: &[Vec<f64>], threshold: f64, criterion: Criterion<'_>) -> Res
 /// Returns a shared error for invalid linkage structure, values, counts, dimensions, or work limits.
 /// ## Numerical behavior
 ///
-/// Reuses shared spatial distances, the private linkage backend, and [`fcluster`]. Checks observation size before computing pairwise distances.
+/// Uses local Euclidean pair distances, the private linkage backend, and [`fcluster`].
+/// Checks observation size and pairwise work before computing distances.
 /// # Examples
 ///
 /// ```
@@ -1101,7 +1169,7 @@ pub fn fclusterdata(
     {
         return Err(Error::InvalidInput("observation work limit"));
     }
-    let y = crate::spatial::distance::pdist(x, crate::spatial::distance::Metric::Euclidean)?;
+    let y = euclidean_distances(x)?;
     fcluster(&linkage(&y, method)?, threshold, criterion)
 }
 

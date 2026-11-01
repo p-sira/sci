@@ -243,3 +243,210 @@ fn validation_and_tree_properties() {
     assert!(h::cut_tree(&inverted, Cut::Heights(&[2.0])).is_err());
     assert!(!h::is_valid_im(&[vec![0.0, 0.0, 1.0, f64::NAN]]));
 }
+
+#[test]
+fn whiten_matches_shared_population_std_at_extreme_scales() {
+    use sci::cluster::vq;
+
+    let cases = [
+        vec![vec![1.0], vec![3.0]],
+        vec![vec![1.0, -0.0], vec![1.0, 0.0]],
+        // The first observation is between later values, so the normalized
+        // deviations alternate in sign and exercise both compensated sums.
+        vec![
+            vec![0.0],
+            vec![1.0],
+            vec![-1.0],
+            vec![f64::EPSILON],
+            vec![-f64::EPSILON],
+            vec![0.25],
+            vec![-0.125],
+        ],
+        vec![
+            vec![0.0],
+            vec![-1.0],
+            vec![1.0],
+            vec![-0.25],
+            vec![0.125],
+            vec![f64::EPSILON / 2.0],
+        ],
+        vec![vec![1e-300], vec![-1e-300], vec![0.0]],
+        vec![vec![f64::MIN_POSITIVE], vec![0.0], vec![f64::from_bits(1)]],
+        vec![vec![f64::MAX], vec![-f64::MAX]],
+        // Mix overflow-safe subtraction, ordinary scaling, and a constant
+        // column to check scratch-buffer reuse across successive features.
+        vec![
+            vec![f64::MAX, 1.0, 7.0],
+            vec![-f64::MAX, -1.0, 7.0],
+            vec![0.0, 0.5, 7.0],
+        ],
+        vec![vec![1e12 + 0.125], vec![1e12 + 0.25], vec![1e12 + 0.5]],
+        vec![
+            vec![1e200, -1e200, 7.0],
+            vec![1e200 + 1e185, -1e200 + 1e185, 7.0],
+            vec![1e200 + 2e185, -1e200 + 2e185, 7.0],
+        ],
+    ];
+    for obs in cases {
+        let columns = obs[0].len();
+        let scales: Vec<_> = (0..columns)
+            .map(|j| {
+                let column: Vec<_> = obs.iter().map(|row| row[j]).collect();
+                sci::stats::std(&column, 0)
+            })
+            .collect::<Result<_, _>>()
+            .unwrap();
+        let actual = vq::whiten(&obs).unwrap();
+        for (row, original) in actual.iter().zip(&obs) {
+            for (j, &value) in row.iter().enumerate() {
+                let denominator = if scales[j] == 0.0 { 1.0 } else { scales[j] };
+                let expected = original[j] / denominator;
+                assert_eq!(
+                    value.to_bits(),
+                    expected.to_bits(),
+                    "whiten changed f64 rounding at column {j}, input {}",
+                    original[j]
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn whiten_validates_boundaries_and_preserves_constant_columns() {
+    use sci::cluster::vq;
+
+    assert_eq!(
+        vq::whiten(&[vec![f64::INFINITY]]),
+        Err(sci::Error::InvalidInput("coordinates must be finite")),
+    );
+    assert_eq!(
+        vq::whiten(&[vec![1.0], vec![]]),
+        Err(sci::Error::DimensionMismatch),
+    );
+    assert_eq!(
+        vq::whiten(&[vec![]]),
+        Err(sci::Error::InvalidInput(
+            "observations must be nonempty and contain at most 1000000 entries"
+        )),
+    );
+
+    // The exact one-million-element limit must succeed, including a full
+    // pass over every column. One additional element must fail validation.
+    let boundary = vec![vec![2.0; 1_000]; 1_000];
+    assert_eq!(vq::whiten(&boundary).unwrap(), boundary);
+    let oversized = vec![vec![2.0; 1_001]; 1_000];
+    assert_eq!(
+        vq::whiten(&oversized),
+        Err(sci::Error::InvalidInput(
+            "observations must be nonempty and contain at most 1000000 entries"
+        )),
+    );
+}
+
+#[test]
+fn whiten_rejects_a_nonfinite_population_scale() {
+    use sci::cluster::vq;
+
+    // Forty balanced, extremal observations make the sequential sum of
+    // 1/40 contributions round slightly above one. Multiplying its square
+    // root by f64::MAX must report overflow, as the shared std kernel does.
+    let observations: Vec<Vec<f64>> = (0..40)
+        .map(|i| vec![if i % 2 == 0 { f64::MAX } else { -f64::MAX }])
+        .collect();
+    let column: Vec<_> = observations.iter().map(|row| row[0]).collect();
+    assert_eq!(
+        sci::stats::std(&column, 0),
+        Err(sci::Error::NonFiniteEvaluation)
+    );
+    assert_eq!(
+        vq::whiten(&observations),
+        Err(sci::Error::NonFiniteEvaluation)
+    );
+}
+
+#[cfg(feature = "spatial")]
+#[test]
+fn hierarchy_euclidean_matches_spatial_condensed_order_and_errors() {
+    use sci::spatial::{Metric, pdist};
+
+    let observations = [
+        vec![vec![0.0], vec![2.0], vec![5.0], vec![9.0]],
+        vec![
+            vec![0.0, 0.0],
+            vec![3.0, 4.0],
+            vec![3.0, -4.0],
+            vec![0.0, 0.0],
+        ],
+        vec![
+            vec![1e150, -1e150],
+            vec![1e150 + 1e135, -1e150 + 1e135],
+            vec![1e150 + 2e135, -1e150 + 2e135],
+        ],
+    ];
+    for x in observations {
+        let distances = pdist(&x, Metric::Euclidean).unwrap();
+        for method in [
+            Method::Single,
+            Method::Complete,
+            Method::Average,
+            Method::Weighted,
+            Method::Centroid,
+            Method::Median,
+            Method::Ward,
+        ] {
+            for threshold in [0.0, 3.0, 10.0] {
+                let expected = h::fcluster(
+                    &h::linkage(&distances, method).unwrap(),
+                    threshold,
+                    Criterion::Distance,
+                )
+                .unwrap();
+                assert_eq!(
+                    h::fclusterdata(&x, threshold, method, Criterion::Distance).unwrap(),
+                    expected,
+                    "{method:?} threshold {threshold}"
+                );
+            }
+        }
+    }
+
+    let z = vec![vec![0.0, 1.0, 2.0, 2.0]];
+    for length in [0, 1, 2, 3, 4, 6, 7, 10] {
+        let y = vec![1.0; length];
+        let expected = sci::spatial::num_obs_y(&y).map(|n| n == 2);
+        assert_eq!(h::correspond(&z, &y), expected, "length {length}");
+    }
+    assert_eq!(
+        h::fclusterdata(
+            &[vec![0.0], vec![f64::NAN]],
+            1.0,
+            Method::Single,
+            Criterion::Distance,
+        ),
+        Err(sci::Error::InvalidInput("coordinates must be finite")),
+    );
+    assert_eq!(
+        h::fclusterdata(
+            &[vec![f64::MAX], vec![-f64::MAX]],
+            1.0,
+            Method::Single,
+            Criterion::Distance,
+        ),
+        Err(sci::Error::NonFiniteEvaluation),
+    );
+    assert_eq!(
+        h::fclusterdata(
+            &[vec![0.0], vec![0.0, 1.0]],
+            1.0,
+            Method::Single,
+            Criterion::Distance,
+        ),
+        Err(sci::Error::DimensionMismatch),
+    );
+    let excessive_work = vec![vec![0.0; 100]; 512];
+    assert_eq!(
+        h::fclusterdata(&excessive_work, 1.0, Method::Single, Criterion::Distance),
+        Err(sci::Error::InvalidInput("geometry work limit exceeded")),
+    );
+}

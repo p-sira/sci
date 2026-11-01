@@ -1491,8 +1491,6 @@ version = "0.3.0"
 dependencies = [
  "kodama",
  "sci-core",
- "sci-spatial",
- "sci-stats",
 ]
 
 [[package]]
@@ -1583,7 +1581,6 @@ dependencies = [
  "flate2",
  "hound",
  "sci-core",
- "sci-sparse",
 ]
 
 [[package]]

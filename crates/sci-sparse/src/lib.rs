@@ -76,29 +76,7 @@ fn shape(rows: usize, cols: usize) -> Result<()> {
 /// # References
 /// [SciPy CSR storage](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_array.html).
 pub fn validate(a: &SparseMatrix) -> Result<()> {
-    shape(a.rows, a.cols)?;
-    if a.data.len() > LIMIT
-        || a.data.len() != a.indices.len()
-        || a.indptr.len() != a.rows + 1
-        || a.indptr.first() != Some(&0)
-        || a.indptr.last() != Some(&a.data.len())
-    {
-        return Err(Error::InvalidInput(
-            "invalid CSR storage lengths or pointers",
-        ));
-    }
-    for range in a.indptr.windows(2) {
-        if range[0] > range[1] || range[1] > a.data.len() {
-            return Err(Error::InvalidInput("invalid CSR row pointers"));
-        }
-        let columns = &a.indices[range[0]..range[1]];
-        if columns.iter().any(|&c| c >= a.cols) || columns.windows(2).any(|w| w[0] >= w[1]) {
-            return Err(Error::InvalidInput(
-                "CSR columns must be in bounds, sorted, and unique",
-            ));
-        }
-    }
-    sci_core::is_finite_slice(&a.data)
+    sci_core::csr::validate(a)
 }
 
 fn entries(a: &SparseMatrix) -> impl Iterator<Item = (usize, usize, f64)> + '_ {
@@ -134,45 +112,7 @@ pub fn from_coo(
     cols: usize,
     coordinates: &[(usize, usize, f64)],
 ) -> Result<SparseMatrix> {
-    shape(rows, cols)?;
-    if coordinates.len() > LIMIT {
-        return Err(Error::InvalidInput("sparse storage exceeds 1,000,000"));
-    }
-    for &(r, c, v) in coordinates {
-        if r >= rows || c >= cols || !v.is_finite() {
-            return Err(Error::InvalidInput(
-                "invalid sparse coordinate or nonfinite value",
-            ));
-        }
-    }
-    let mut coordinates = coordinates.to_vec();
-    coordinates.sort_by_key(|&(r, c, _)| (r, c));
-    let mut a: SparseMatrix = SparseMatrix {
-        rows,
-        cols,
-        indptr: vec![0; rows + 1],
-        indices: Vec::new(),
-        data: Vec::new(),
-    };
-    let mut previous = None;
-    for (r, c, v) in coordinates {
-        if previous == Some((r, c)) {
-            let last = a.data.last_mut().expect("previous entry exists");
-            *last = match *last + v {
-                value if value.is_finite() => Ok(value),
-                _ => Err(Error::NonFiniteEvaluation),
-            }?;
-        } else {
-            a.indices.push(c);
-            a.data.push(v);
-            a.indptr[r + 1] += 1;
-            previous = Some((r, c));
-        }
-    }
-    for i in 0..rows {
-        a.indptr[i + 1] += a.indptr[i];
-    }
-    Ok(a)
+    sci_core::csr::from_coo(rows, cols, coordinates)
 }
 
 /// Construct `A` from CSR storage, summing duplicate columns within each row.
@@ -319,18 +259,7 @@ fn dense_size(rows: usize, cols: usize) -> Result<()> {
 /// # References
 /// [SciPy csr_array.toarray](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_array.toarray.html).
 pub fn to_dense(a: &SparseMatrix) -> Result<Matrix> {
-    validate(a)?;
-    dense_size(a.rows, a.cols)?;
-    if a.rows == 0 && a.cols != 0 {
-        return Err(Error::InvalidInput(
-            "shared rows cannot represent shape (0,n)",
-        ));
-    }
-    let mut out = vec![vec![0.0; a.cols]; a.rows];
-    for (r, c, v) in entries(a) {
-        out[r][c] = v;
-    }
-    Ok(out)
+    sci_core::csr::to_dense(a)
 }
 
 /// Construct `A[i,j] = 1` when `j - i = offset`, and zero otherwise.

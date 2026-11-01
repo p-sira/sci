@@ -16,6 +16,4 @@ include = ["/src/**", "/LICENSE"]
 
 [dependencies]
 sci-core.workspace = true
-sci-spatial.workspace = true
-sci-stats.workspace = true
 kodama.workspace = true
