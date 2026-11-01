@@ -2,6 +2,10 @@
 
 Numerical optimization and minimization.
 
+Minimizers live under `sci_optimize::minimize` and numerical derivatives under
+`sci_optimize::derivatives`. `Options`, `Status`, and `Minimum` remain at the
+crate root.
+
 Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 
 Unconstrained minimization using Basin internally. Objective and gradient
@@ -23,7 +27,7 @@ minimum was proved; inspect the returned point, value, and status together.
 
 ```rust
 fn main() -> Result<(), sci_core::Error> {
-    let result = sci_optimize::minimize(
+    let result = sci_optimize::minimize::minimize(
         |x| (x[0] - 2.0).powi(2),
         &[0.0], sci_optimize::Options::default(),
     )?;

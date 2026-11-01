@@ -107,7 +107,6 @@ simple_window!(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = general_cosine(5,&[0.5,0.5],true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -184,7 +183,6 @@ cosine_window!(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = general_hamming(5,0.54,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -226,7 +224,6 @@ pub fn general_hamming(m: usize, alpha: f64, symmetric: bool) -> Result<Vec<f64>
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = gaussian(5,1.,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -268,7 +265,6 @@ pub fn gaussian(m: usize, std: f64, symmetric: bool) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = general_gaussian(5,1.5,2.,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -311,7 +307,6 @@ pub fn general_gaussian(m: usize, p: f64, sigma: f64, symmetric: bool) -> Result
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = exponential(5,None,1.,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -358,7 +353,6 @@ pub fn exponential(m: usize, center: Option<f64>, tau: f64, symmetric: bool) -> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = tukey(5,0.5,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -415,7 +409,6 @@ pub fn tukey(m: usize, alpha: f64, symmetric: bool) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = kaiser(5,4.,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -462,7 +455,6 @@ pub fn kaiser(m: usize, beta: f64, symmetric: bool) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = kaiser_bessel_derived(4,4.,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -519,7 +511,6 @@ pub fn kaiser_bessel_derived(m: usize, beta: f64, symmetric: bool) -> Result<Vec
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = chebwin(5,60.,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -605,7 +596,6 @@ pub fn chebwin(m: usize, attenuation: f64, symmetric: bool) -> Result<Vec<f64>> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = taylor(5,4,30.,true,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -687,7 +677,6 @@ pub fn taylor(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = dpss(5,1.,2,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -820,7 +809,6 @@ pub enum Window {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = get_window(&Window::Hann,5,true)?;
 /// # Ok::<(),sci_core::Error>(())

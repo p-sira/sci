@@ -28,4 +28,14 @@ pub use sci_core::{Error, Result};
 use sci_special as special;
 #[path = "mod.rs"]
 mod implementation;
-pub use implementation::*;
+/// Integration of sampled values by composite rules.
+pub mod sampled {
+    pub use crate::implementation::{
+        cumulative_simpson, cumulative_trapezoid, romb, simpson, trapezoid,
+    };
+}
+
+/// Fixed Gaussian quadrature and Newton–Cotes weights.
+pub mod quadrature {
+    pub use crate::implementation::{fixed_quad, newton_cotes};
+}

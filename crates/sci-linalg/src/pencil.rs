@@ -73,7 +73,7 @@ fn factor(s: Mat<C>, t: Mat<C>, q: Mat<C>, z: Mat<C>, selected: usize) -> Result
 /// # Examples
 ///
 /// ```
-/// let f = sci_linalg::qz(&[vec![2.]], &[vec![1.]])?;
+/// let f = sci_linalg::eigen::qz(&[vec![2.]], &[vec![1.]])?;
 /// assert_eq!(f.alpha.len(),1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -272,7 +272,7 @@ fn swap_pair(
 /// # Examples
 ///
 /// ```
-/// let f = sci_linalg::ordqz(&[vec![-2.,0.],vec![0.,3.]],
+/// let f = sci_linalg::eigen::ordqz(&[vec![-2.,0.],vec![0.,3.]],
 ///     &[vec![1.,0.],vec![0.,1.]], |a,b| (a.re*b.re+a.im*b.im)<0.)?;
 /// assert_eq!(f.selected,1);
 /// # Ok::<(), sci_core::Error>(())

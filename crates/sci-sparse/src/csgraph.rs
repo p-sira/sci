@@ -7,6 +7,7 @@
 //! callers supply a consistent application unit. Distances retain that unit;
 //! normalized Laplacians are dimensionless. Backend graph types stay private.
 use super::*;
+use crate::operations::eliminate_zeros;
 use petgraph::algo;
 use petgraph::{Directed, Graph, Undirected, graph::NodeIndex, visit::EdgeRef};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
@@ -274,7 +275,7 @@ fn paths(a: &SparseMatrix, o: &PathOptions, method: Method) -> Result<ShortestPa
 /// within a fixed backend version, but is not a cross-backend contract.
 /// # Examples
 /// ```
-/// let g=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let g=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let p=sci_sparse::csgraph::shortest_path(&g, &Default::default())?;
 /// assert_eq!(p.distances[0][1],3.);
 /// # Ok::<(), sci_core::Error>(())
@@ -308,7 +309,7 @@ pub fn shortest_path(a: &SparseMatrix, options: &PathOptions) -> Result<Shortest
 /// within a fixed backend version, but is not a cross-backend contract.
 /// # Examples
 /// ```
-/// let g=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let g=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let p=sci_sparse::csgraph::dijkstra(&g, &Default::default())?;
 /// assert_eq!(p.distances[0][1],3.);
 /// # Ok::<(), sci_core::Error>(())
@@ -342,7 +343,7 @@ pub fn dijkstra(a: &SparseMatrix, options: &PathOptions) -> Result<ShortestPaths
 /// within a fixed backend version, but is not a cross-backend contract.
 /// # Examples
 /// ```
-/// let g=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let g=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let p=sci_sparse::csgraph::bellman_ford(&g, &Default::default())?;
 /// assert_eq!(p.distances[0][1],3.);
 /// # Ok::<(), sci_core::Error>(())
@@ -376,7 +377,7 @@ pub fn bellman_ford(a: &SparseMatrix, options: &PathOptions) -> Result<ShortestP
 /// within a fixed backend version, but is not a cross-backend contract.
 /// # Examples
 /// ```
-/// let g=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let g=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let p=sci_sparse::csgraph::floyd_warshall(&g, &Default::default())?;
 /// assert_eq!(p.distances[0][1],3.);
 /// # Ok::<(), sci_core::Error>(())
@@ -410,7 +411,7 @@ pub fn floyd_warshall(a: &SparseMatrix, options: &PathOptions) -> Result<Shortes
 /// within a fixed backend version, but is not a cross-backend contract.
 /// # Examples
 /// ```
-/// let g=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let g=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let p=sci_sparse::csgraph::johnson(&g, &Default::default())?;
 /// assert_eq!(p.distances[0][1],3.);
 /// # Ok::<(), sci_core::Error>(())
@@ -1070,7 +1071,7 @@ fn k_paths(
 /// At most 256 vertices and 65,536 dense cells. Traversals and conversion use linear storage scans; path validation is at most cubic. Floating sums can round or overflow.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::connected_components(&a,true,false)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1096,7 +1097,7 @@ pub fn connected_components(a: &SparseMatrix, directed: bool, strong: bool) -> R
 /// At most 256 vertices and 65,536 dense cells. Traversals and conversion use linear storage scans; path validation is at most cubic. Floating sums can round or overflow.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::breadth_first_order(&a,0,true)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1122,7 +1123,7 @@ pub fn breadth_first_order(a: &SparseMatrix, start: usize, directed: bool) -> Re
 /// At most 256 vertices and 65,536 dense cells. Traversals and conversion use linear storage scans; path validation is at most cubic. Floating sums can round or overflow.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::depth_first_order(&a,0,true)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1148,7 +1149,7 @@ pub fn depth_first_order(a: &SparseMatrix, start: usize, directed: bool) -> Resu
 /// At most 256 vertices and 65,536 dense cells. Traversals and conversion use linear storage scans; path validation is at most cubic. Floating sums can round or overflow.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::breadth_first_tree(&a,0,true)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1178,7 +1179,7 @@ pub fn breadth_first_tree(a: &SparseMatrix, start: usize, directed: bool) -> Res
 /// At most 256 vertices and 65,536 dense cells. Traversals and conversion use linear storage scans; path validation is at most cubic. Floating sums can round or overflow.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::depth_first_tree(&a,0,true)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1208,7 +1209,7 @@ pub fn depth_first_tree(a: &SparseMatrix, start: usize, directed: bool) -> Resul
 /// At most 256 vertices and 65,536 dense cells. Traversals and conversion use linear storage scans; path validation is at most cubic. Floating sums can round or overflow.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::reconstruct_path(&a,&[None,Some(0)],true)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1238,7 +1239,7 @@ pub fn reconstruct_path(
 /// At most 256 vertices and 65,536 dense cells. Traversals and conversion use linear storage scans; path validation is at most cubic. Floating sums can round or overflow.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::construct_dist_matrix(&a,&[vec![None,Some(0)],vec![None,None]],true,f64::INFINITY)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1269,7 +1270,7 @@ pub fn construct_dist_matrix(
 /// Private petgraph Kruskal kernel, O(edges log edges). Floating ties may produce a different optimal forest.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::minimum_spanning_tree(&a)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1295,7 +1296,7 @@ pub fn minimum_spanning_tree(a: &SparseMatrix) -> Result<SparseMatrix> {
 /// At most 256 vertices and 65,536 dense cells. Traversals and conversion use linear storage scans; path validation is at most cubic. Floating sums can round or overflow.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::reverse_cuthill_mckee(&a,false)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1321,7 +1322,7 @@ pub fn reverse_cuthill_mckee(a: &SparseMatrix, symmetric_mode: bool) -> Result<V
 /// At most 256 vertices and 65,536 dense cells. Traversals and conversion use linear storage scans; path validation is at most cubic. Floating sums can round or overflow.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::laplacian(&a,false,false,false)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1352,7 +1353,7 @@ pub fn laplacian(
 /// Private petgraph maximum matching or lapjv assignment backend; cubic work bounded by axis limits. Nonunique optima can choose different pairs than SciPy.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::maximum_bipartite_matching(&a,true)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1381,7 +1382,7 @@ pub fn maximum_bipartite_matching(
 /// Private petgraph maximum matching or lapjv assignment backend; cubic work bounded by axis limits. Nonunique optima can choose different pairs than SciPy.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::structural_rank(&a)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1407,8 +1408,8 @@ pub fn structural_rank(a: &SparseMatrix) -> Result<usize> {
 /// Private petgraph maximum matching or lapjv assignment backend; cubic work bounded by axis limits. Nonunique optima can choose different pairs than SciPy.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
-/// let _ = sci_sparse::csgraph::min_weight_full_bipartite_matching(&sci_sparse::identity(2)?,false)?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
+/// let _ = sci_sparse::csgraph::min_weight_full_bipartite_matching(&sci_sparse::construct::identity(2)?,false)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -1436,7 +1437,7 @@ pub fn min_weight_full_bipartite_matching(
 /// Private petgraph Dinic kernel; exact integer arithmetic under the capacity sum bound. Work is bounded by 256 vertices and at most 65,536 edges.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::maximum_flow(&a,0,1)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1462,7 +1463,7 @@ pub fn maximum_flow(a: &SparseMatrix, source: usize, sink: usize) -> Result<Maxi
 /// Yen spur-path assembly uses private petgraph A* with a zero heuristic. Storage is bounded by 64 paths and their candidates; work is checked before searches.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::yen(&a,0,1,2,true,false)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1495,7 +1496,7 @@ pub fn yen(
 /// At most 256 vertices and 65,536 dense cells. Traversals and conversion use linear storage scans; path validation is at most cubic. Floating sums can round or overflow.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::csgraph_from_dense(&vec![vec![0.]],0.,true,true)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1526,7 +1527,7 @@ pub fn csgraph_from_dense(
 /// At most 256 vertices and 65,536 dense cells. Traversals and conversion use linear storage scans; path validation is at most cubic. Floating sums can round or overflow.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::csgraph_masked_from_dense(&vec![vec![0.]],0.,true,true)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1583,7 +1584,7 @@ pub fn csgraph_from_masked(a: &MaskedGraph) -> Result<SparseMatrix> {
 /// At most 256 vertices and 65,536 dense cells. Traversals and conversion use linear storage scans; path validation is at most cubic. Floating sums can round or overflow.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::csgraph_to_dense(&a,f64::INFINITY)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1609,7 +1610,7 @@ pub fn csgraph_to_dense(a: &SparseMatrix, null_value: f64) -> Result<Matrix> {
 /// At most 256 vertices and 65,536 dense cells. Traversals and conversion use linear storage scans; path validation is at most cubic. Floating sums can round or overflow.
 /// # Examples
 /// ```
-/// let a=sci_sparse::from_coo(2,2,&[(0,1,3.)])?;
+/// let a=sci_sparse::construct::from_coo(2,2,&[(0,1,3.)])?;
 /// let _ = sci_sparse::csgraph::csgraph_to_masked(&a)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```

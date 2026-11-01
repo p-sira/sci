@@ -109,7 +109,7 @@ fn specification(rp: f64, rs: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
 /// let _ = besselap(3,BesselNorm::Phase)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -225,7 +225,8 @@ pub fn besselap(n: usize, norm: BesselNorm) -> Result<Zpk> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
+/// use sci_signal::design::{BandType};
 /// let _ = bessel(3,&[0.2],BandType::Lowpass,Some(2.),BesselNorm::Phase)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -271,7 +272,7 @@ pub fn bessel(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
 /// let _ = ellipap(4,1.,40.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -375,7 +376,8 @@ pub fn ellipap(n: usize, rp: f64, rs: f64) -> Result<Zpk> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
+/// use sci_signal::design::{BandType};
 /// let _ = ellip(3,1.,40.,&[0.2],BandType::Lowpass,Some(2.))?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -421,7 +423,7 @@ pub fn ellip(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
 /// let _ = ellipord(0.2,0.3,1.,40.,Some(2.))?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -478,7 +480,8 @@ pub fn ellipord(wp: f64, ws: f64, gpass: f64, gstop: f64, fs: Option<f64>) -> Re
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
+/// use sci_signal::design::{IirFamily};
 /// let _ = band_stop_obj(1.,0,[0.8,4.],[2.,3.],1.,40.,IirFamily::Butterworth)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -556,7 +559,8 @@ pub fn band_stop_obj(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
+/// use sci_signal::design::{IirFamily};
 /// let _ = iirdesign(0.2,0.3,1.,40.,Some(2.),IirFamily::Elliptic(1.,40.))?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -627,7 +631,7 @@ pub fn iirdesign(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
 /// let _ = iircomb(20.,30.,false,200.,false)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -691,7 +695,7 @@ pub fn iircomb(w0: f64, q: f64, peak: bool, fs: f64, pass_zero: bool) -> Result<
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
 /// let _ = findfreqs(&[1.,0.],&[1.,8.,25.],9)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -770,7 +774,7 @@ pub fn findfreqs(b: &[f64], a: &[f64], n: usize) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
 /// let _ = gammatone(440.,true,4,16,16000.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

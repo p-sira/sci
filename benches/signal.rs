@@ -9,8 +9,17 @@ use common::*;
 use divan::{Bencher, black_box};
 use sci::complex::Complex;
 use sci::signal::{
-    self, BandType, BesselNorm, Boundary, ChirpMethod, Discretization, EdgeMode, IirFamily, Mode,
-    RootRepresentative, Scaling, StateSpace, Zpk, windows, windows::Window,
+    self, Mode,
+    advanced_design::BesselNorm,
+    design::{BandType, IirFamily, Zpk},
+    multidimensional::Boundary,
+    peaks::EdgeMode,
+    representations::RootRepresentative,
+    spectral::Scaling,
+    systems::{Discretization, StateSpace},
+    waveforms::ChirpMethod,
+    windows,
+    windows::Window,
 };
 
 fn main() {
@@ -35,24 +44,24 @@ fn image(n: usize, seed: u64) -> Vec<Vec<f64>> {
 
 /// Digital order-`n` Butterworth lowpass (normalized frequency, Nyquist = 1).
 fn digital_butter(n: usize) -> (Vec<f64>, Vec<f64>) {
-    signal::butter(n, &[0.2], BandType::Lowpass, Some(2.)).unwrap()
+    signal::design::butter(n, &[0.2], BandType::Lowpass, Some(2.)).unwrap()
 }
 
 /// Analog order-`n` Butterworth lowpass with unit cutoff.
 fn analog_butter(n: usize) -> (Vec<f64>, Vec<f64>) {
-    signal::zpk2tf(&signal::buttap(n).unwrap()).unwrap()
+    signal::design::zpk2tf(&signal::design::buttap(n).unwrap()).unwrap()
 }
 
 fn digital_zpk(n: usize) -> Zpk {
-    signal::bilinear_zpk(
-        &signal::lp2lp_zpk(&signal::buttap(n).unwrap(), 2.).unwrap(),
+    signal::design::bilinear_zpk(
+        &signal::design::lp2lp_zpk(&signal::design::buttap(n).unwrap(), 2.).unwrap(),
         10.,
     )
     .unwrap()
 }
 
 fn digital_sos(n: usize) -> Vec<[f64; 6]> {
-    signal::zpk2sos(&digital_zpk(n)).unwrap()
+    signal::representations::zpk2sos(&digital_zpk(n)).unwrap()
 }
 
 /// Grid of digital frequencies in `[0, pi]`.
@@ -75,67 +84,78 @@ mod convolution_benches {
     fn convolve(bencher: Bencher) {
         let x = sine_signal(N);
         let h = values(32, 3);
-        bencher.bench(|| signal::convolve(black_box(&x), black_box(&h), Mode::Full).unwrap());
+        bencher.bench(|| {
+            signal::convolution::convolve(black_box(&x), black_box(&h), Mode::Full).unwrap()
+        });
     }
 
     #[divan::bench(args = [32, 1024])]
     fn convolve_valid(bencher: Bencher, kernel_len: usize) {
         let x = sine_signal(N);
         let h = values(kernel_len, 3);
-        bencher.bench(|| signal::convolve(black_box(&x), black_box(&h), Mode::Valid).unwrap());
+        bencher.bench(|| {
+            signal::convolution::convolve(black_box(&x), black_box(&h), Mode::Valid).unwrap()
+        });
     }
 
     #[divan::bench]
     fn correlate(bencher: Bencher) {
         let x = sine_signal(N);
         let y = values(32, 3);
-        bencher.bench(|| signal::correlate(black_box(&x), black_box(&y), Mode::Same).unwrap());
+        bencher.bench(|| {
+            signal::convolution::correlate(black_box(&x), black_box(&y), Mode::Same).unwrap()
+        });
     }
 
     #[divan::bench]
     fn correlation_lags(bencher: Bencher) {
-        bencher
-            .bench(|| signal::correlation_lags(black_box(N), black_box(256), Mode::Full).unwrap());
+        bencher.bench(|| {
+            signal::convolution::correlation_lags(black_box(N), black_box(256), Mode::Full).unwrap()
+        });
     }
 
     #[divan::bench]
     fn fftconvolve(bencher: Bencher) {
         let x = sine_signal(N);
         let h = values(128, 3);
-        bencher.bench(|| signal::fftconvolve(black_box(&x), black_box(&h), Mode::Full).unwrap());
+        bencher.bench(|| {
+            signal::convolution::fftconvolve(black_box(&x), black_box(&h), Mode::Full).unwrap()
+        });
     }
 
     #[divan::bench]
     fn oaconvolve(bencher: Bencher) {
         let x = sine_signal(N);
         let h = values(64, 3);
-        bencher.bench(|| signal::oaconvolve(black_box(&x), black_box(&h), Mode::Full).unwrap());
+        bencher.bench(|| {
+            signal::utilities::oaconvolve(black_box(&x), black_box(&h), Mode::Full).unwrap()
+        });
     }
 
     #[divan::bench]
     fn deconvolve(bencher: Bencher) {
         let h: Vec<f64> = (0..8).map(|i| 0.5f64.powi(i)).collect();
-        let x = signal::convolve(&values(256, 5), &h, Mode::Full).unwrap();
-        bencher.bench(|| signal::deconvolve(black_box(&x), black_box(&h)).unwrap());
+        let x = signal::convolution::convolve(&values(256, 5), &h, Mode::Full).unwrap();
+        bencher.bench(|| signal::convolution::deconvolve(black_box(&x), black_box(&h)).unwrap());
     }
 
     #[divan::bench]
     fn upfirdn(bencher: Bencher) {
-        let h = signal::firwin(31, &[0.25], true, &Window::Hamming, true, 2.).unwrap();
+        let h = signal::filtering::firwin(31, &[0.25], true, &Window::Hamming, true, 2.).unwrap();
         let x = sine_signal(N);
-        bencher.bench(|| signal::upfirdn(black_box(&h), black_box(&x), 3, 2).unwrap());
+        bencher.bench(|| signal::convolution::upfirdn(black_box(&h), black_box(&x), 3, 2).unwrap());
     }
 
     #[divan::bench]
     fn resample_poly(bencher: Bencher) {
         let x = sine_signal(N);
-        bencher.bench(|| signal::resample_poly(black_box(&x), 3, 2, None).unwrap());
+        bencher.bench(|| signal::convolution::resample_poly(black_box(&x), 3, 2, None).unwrap());
     }
 
     #[divan::bench]
     fn decimate(bencher: Bencher) {
         let x = sine_signal(N);
-        bencher.bench(|| signal::decimate(black_box(&x), 4, 8, true).unwrap());
+        bencher.bench(|| signal::convolution::decimate(black_box(&x), 4, 8, true).unwrap());
     }
 }
 
@@ -144,64 +164,71 @@ mod prototype_benches {
 
     #[divan::bench]
     fn buttap(bencher: Bencher) {
-        bencher.bench(|| signal::buttap(black_box(8)).unwrap());
+        bencher.bench(|| signal::design::buttap(black_box(8)).unwrap());
     }
 
     #[divan::bench]
     fn cheb1ap(bencher: Bencher) {
-        bencher.bench(|| signal::cheb1ap(black_box(8), black_box(1.)).unwrap());
+        bencher.bench(|| signal::design::cheb1ap(black_box(8), black_box(1.)).unwrap());
     }
 
     #[divan::bench]
     fn cheb2ap(bencher: Bencher) {
-        bencher.bench(|| signal::cheb2ap(black_box(8), black_box(40.)).unwrap());
+        bencher.bench(|| signal::design::cheb2ap(black_box(8), black_box(40.)).unwrap());
     }
 
     #[divan::bench]
     fn besselap(bencher: Bencher) {
-        bencher.bench(|| signal::besselap(black_box(8), BesselNorm::Phase).unwrap());
+        bencher
+            .bench(|| signal::advanced_design::besselap(black_box(8), BesselNorm::Phase).unwrap());
     }
 
     #[divan::bench]
     fn ellipap(bencher: Bencher) {
-        bencher.bench(|| signal::ellipap(black_box(8), black_box(1.), black_box(40.)).unwrap());
+        bencher.bench(|| {
+            signal::advanced_design::ellipap(black_box(8), black_box(1.), black_box(40.)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn lp2lp_zpk(bencher: Bencher) {
-        let zpk = signal::buttap(8).unwrap();
-        bencher.bench(|| signal::lp2lp_zpk(black_box(&zpk), black_box(2.)).unwrap());
+        let zpk = signal::design::buttap(8).unwrap();
+        bencher.bench(|| signal::design::lp2lp_zpk(black_box(&zpk), black_box(2.)).unwrap());
     }
 
     #[divan::bench]
     fn lp2hp_zpk(bencher: Bencher) {
-        let zpk = signal::buttap(8).unwrap();
-        bencher.bench(|| signal::lp2hp_zpk(black_box(&zpk), black_box(2.)).unwrap());
+        let zpk = signal::design::buttap(8).unwrap();
+        bencher.bench(|| signal::design::lp2hp_zpk(black_box(&zpk), black_box(2.)).unwrap());
     }
 
     #[divan::bench]
     fn lp2bp_zpk(bencher: Bencher) {
-        let zpk = signal::buttap(8).unwrap();
-        bencher.bench(|| signal::lp2bp_zpk(black_box(&zpk), black_box(2.), black_box(1.)).unwrap());
+        let zpk = signal::design::buttap(8).unwrap();
+        bencher.bench(|| {
+            signal::design::lp2bp_zpk(black_box(&zpk), black_box(2.), black_box(1.)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn lp2bs_zpk(bencher: Bencher) {
-        let zpk = signal::buttap(8).unwrap();
-        bencher.bench(|| signal::lp2bs_zpk(black_box(&zpk), black_box(2.), black_box(1.)).unwrap());
+        let zpk = signal::design::buttap(8).unwrap();
+        bencher.bench(|| {
+            signal::design::lp2bs_zpk(black_box(&zpk), black_box(2.), black_box(1.)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn bilinear_zpk(bencher: Bencher) {
-        let zpk = signal::buttap(8).unwrap();
-        bencher.bench(|| signal::bilinear_zpk(black_box(&zpk), black_box(10.)).unwrap());
+        let zpk = signal::design::buttap(8).unwrap();
+        bencher.bench(|| signal::design::bilinear_zpk(black_box(&zpk), black_box(10.)).unwrap());
     }
 
     #[divan::bench]
     fn lp2lp(bencher: Bencher) {
         let (b, a) = analog_butter(4);
         warm(bencher, || {
-            signal::lp2lp(black_box(&b), black_box(&a), black_box(2.)).unwrap()
+            signal::design::lp2lp(black_box(&b), black_box(&a), black_box(2.)).unwrap()
         });
     }
 
@@ -209,7 +236,7 @@ mod prototype_benches {
     fn lp2hp(bencher: Bencher) {
         let (b, a) = analog_butter(4);
         warm(bencher, || {
-            signal::lp2hp(black_box(&b), black_box(&a), black_box(2.)).unwrap()
+            signal::design::lp2hp(black_box(&b), black_box(&a), black_box(2.)).unwrap()
         });
     }
 
@@ -217,7 +244,8 @@ mod prototype_benches {
     fn lp2bp(bencher: Bencher) {
         let (b, a) = analog_butter(4);
         warm(bencher, || {
-            signal::lp2bp(black_box(&b), black_box(&a), black_box(2.), black_box(1.)).unwrap()
+            signal::design::lp2bp(black_box(&b), black_box(&a), black_box(2.), black_box(1.))
+                .unwrap()
         });
     }
 
@@ -225,7 +253,8 @@ mod prototype_benches {
     fn lp2bs(bencher: Bencher) {
         let (b, a) = analog_butter(4);
         warm(bencher, || {
-            signal::lp2bs(black_box(&b), black_box(&a), black_box(2.), black_box(1.)).unwrap()
+            signal::design::lp2bs(black_box(&b), black_box(&a), black_box(2.), black_box(1.))
+                .unwrap()
         });
     }
 
@@ -233,7 +262,7 @@ mod prototype_benches {
     fn bilinear(bencher: Bencher) {
         let (b, a) = analog_butter(4);
         warm(bencher, || {
-            signal::bilinear(black_box(&b), black_box(&a), black_box(10.)).unwrap()
+            signal::design::bilinear(black_box(&b), black_box(&a), black_box(10.)).unwrap()
         });
     }
 }
@@ -244,14 +273,15 @@ mod iir_design_benches {
     #[divan::bench]
     fn butter(bencher: Bencher) {
         bencher.bench(|| {
-            signal::butter(black_box(8), black_box(&[0.2]), BandType::Lowpass, Some(2.)).unwrap()
+            signal::design::butter(black_box(8), black_box(&[0.2]), BandType::Lowpass, Some(2.))
+                .unwrap()
         });
     }
 
     #[divan::bench]
     fn butter_bandpass(bencher: Bencher) {
         bencher.bench(|| {
-            signal::butter(
+            signal::design::butter(
                 black_box(4),
                 black_box(&[0.2, 0.4]),
                 BandType::Bandpass,
@@ -264,7 +294,7 @@ mod iir_design_benches {
     #[divan::bench]
     fn cheby1(bencher: Bencher) {
         bencher.bench(|| {
-            signal::cheby1(
+            signal::design::cheby1(
                 black_box(8),
                 black_box(1.),
                 black_box(&[0.2]),
@@ -278,7 +308,7 @@ mod iir_design_benches {
     #[divan::bench]
     fn cheby2(bencher: Bencher) {
         bencher.bench(|| {
-            signal::cheby2(
+            signal::design::cheby2(
                 black_box(8),
                 black_box(40.),
                 black_box(&[0.2]),
@@ -292,7 +322,7 @@ mod iir_design_benches {
     #[divan::bench]
     fn bessel(bencher: Bencher) {
         bencher.bench(|| {
-            signal::bessel(
+            signal::advanced_design::bessel(
                 black_box(8),
                 black_box(&[0.2]),
                 BandType::Lowpass,
@@ -306,7 +336,7 @@ mod iir_design_benches {
     #[divan::bench]
     fn ellip(bencher: Bencher) {
         bencher.bench(|| {
-            signal::ellip(
+            signal::advanced_design::ellip(
                 black_box(6),
                 black_box(1.),
                 black_box(40.),
@@ -321,7 +351,7 @@ mod iir_design_benches {
     #[divan::bench]
     fn iirfilter(bencher: Bencher) {
         bencher.bench(|| {
-            signal::iirfilter(
+            signal::design::iirfilter(
                 black_box(6),
                 black_box(&[0.2, 0.4]),
                 BandType::Bandstop,
@@ -335,7 +365,7 @@ mod iir_design_benches {
     #[divan::bench]
     fn iirdesign(bencher: Bencher) {
         bencher.bench(|| {
-            signal::iirdesign(
+            signal::advanced_design::iirdesign(
                 black_box(0.2),
                 black_box(0.3),
                 black_box(1.),
@@ -349,32 +379,37 @@ mod iir_design_benches {
 
     #[divan::bench]
     fn buttord(bencher: Bencher) {
-        bencher
-            .bench(|| signal::buttord(black_box(0.2), black_box(0.3), 1., 40., Some(2.)).unwrap());
+        bencher.bench(|| {
+            signal::design::buttord(black_box(0.2), black_box(0.3), 1., 40., Some(2.)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn cheb1ord(bencher: Bencher) {
-        bencher
-            .bench(|| signal::cheb1ord(black_box(0.2), black_box(0.3), 1., 40., Some(2.)).unwrap());
+        bencher.bench(|| {
+            signal::design::cheb1ord(black_box(0.2), black_box(0.3), 1., 40., Some(2.)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn cheb2ord(bencher: Bencher) {
-        bencher
-            .bench(|| signal::cheb2ord(black_box(0.2), black_box(0.3), 1., 40., Some(2.)).unwrap());
+        bencher.bench(|| {
+            signal::design::cheb2ord(black_box(0.2), black_box(0.3), 1., 40., Some(2.)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn ellipord(bencher: Bencher) {
-        bencher
-            .bench(|| signal::ellipord(black_box(0.2), black_box(0.3), 1., 40., Some(2.)).unwrap());
+        bencher.bench(|| {
+            signal::advanced_design::ellipord(black_box(0.2), black_box(0.3), 1., 40., Some(2.))
+                .unwrap()
+        });
     }
 
     #[divan::bench]
     fn band_stop_obj(bencher: Bencher) {
         bencher.bench(|| {
-            signal::band_stop_obj(
+            signal::advanced_design::band_stop_obj(
                 black_box(1.),
                 0,
                 black_box([0.8, 4.]),
@@ -389,35 +424,41 @@ mod iir_design_benches {
 
     #[divan::bench]
     fn iirnotch(bencher: Bencher) {
-        bencher.bench(|| signal::iirnotch(black_box(50.), black_box(30.), FS).unwrap());
+        bencher.bench(|| signal::filtering::iirnotch(black_box(50.), black_box(30.), FS).unwrap());
     }
 
     #[divan::bench]
     fn iirpeak(bencher: Bencher) {
-        bencher.bench(|| signal::iirpeak(black_box(50.), black_box(30.), FS).unwrap());
+        bencher.bench(|| signal::filtering::iirpeak(black_box(50.), black_box(30.), FS).unwrap());
     }
 
     #[divan::bench]
     fn iircomb(bencher: Bencher) {
-        bencher
-            .bench(|| signal::iircomb(black_box(20.), black_box(30.), false, 200., false).unwrap());
+        bencher.bench(|| {
+            signal::advanced_design::iircomb(black_box(20.), black_box(30.), false, 200., false)
+                .unwrap()
+        });
     }
 
     #[divan::bench]
     fn gammatone_fir(bencher: Bencher) {
-        bencher.bench(|| signal::gammatone(black_box(440.), true, 4, 128, 16000.).unwrap());
+        bencher.bench(|| {
+            signal::advanced_design::gammatone(black_box(440.), true, 4, 128, 16000.).unwrap()
+        });
     }
 
     #[divan::bench]
     fn gammatone_iir(bencher: Bencher) {
-        bencher.bench(|| signal::gammatone(black_box(440.), false, 4, 0, 16000.).unwrap());
+        bencher.bench(|| {
+            signal::advanced_design::gammatone(black_box(440.), false, 4, 0, 16000.).unwrap()
+        });
     }
 
     #[divan::bench]
     fn findfreqs(bencher: Bencher) {
         let (b, a) = analog_butter(4);
         warm(bencher, || {
-            signal::findfreqs(black_box(&b), black_box(&a), 256).unwrap()
+            signal::advanced_design::findfreqs(black_box(&b), black_box(&a), 256).unwrap()
         });
     }
 }
@@ -428,14 +469,14 @@ mod representation_benches {
     #[divan::bench]
     fn zpk2tf(bencher: Bencher) {
         let zpk = digital_zpk(8);
-        bencher.bench(|| signal::zpk2tf(black_box(&zpk)).unwrap());
+        bencher.bench(|| signal::design::zpk2tf(black_box(&zpk)).unwrap());
     }
 
     #[divan::bench]
     fn tf2zpk(bencher: Bencher) {
         let (b, a) = digital_butter(8);
         warm(bencher, || {
-            signal::tf2zpk(black_box(&b), black_box(&a)).unwrap()
+            signal::design::tf2zpk(black_box(&b), black_box(&a)).unwrap()
         });
     }
 
@@ -446,40 +487,40 @@ mod representation_benches {
             .chain(b.iter().map(|v| 3. * v))
             .collect();
         let a: Vec<f64> = a.iter().map(|v| 3. * v).collect();
-        bencher.bench(|| signal::normalize(black_box(&b), black_box(&a)).unwrap());
+        bencher.bench(|| signal::design::normalize(black_box(&b), black_box(&a)).unwrap());
     }
 
     #[divan::bench]
     fn zpk2sos(bencher: Bencher) {
         let zpk = digital_zpk(8);
-        bencher.bench(|| signal::zpk2sos(black_box(&zpk)).unwrap());
+        bencher.bench(|| signal::representations::zpk2sos(black_box(&zpk)).unwrap());
     }
 
     #[divan::bench]
     fn tf2sos(bencher: Bencher) {
         let (b, a) = digital_butter(8);
         warm(bencher, || {
-            signal::tf2sos(black_box(&b), black_box(&a)).unwrap()
+            signal::representations::tf2sos(black_box(&b), black_box(&a)).unwrap()
         });
     }
 
     #[divan::bench]
     fn sos2zpk(bencher: Bencher) {
         let sos = digital_sos(8);
-        bencher.bench(|| signal::sos2zpk(black_box(&sos)).unwrap());
+        bencher.bench(|| signal::design::sos2zpk(black_box(&sos)).unwrap());
     }
 
     #[divan::bench]
     fn sos2tf(bencher: Bencher) {
         let sos = digital_sos(8);
-        bencher.bench(|| signal::sos2tf(black_box(&sos)).unwrap());
+        bencher.bench(|| signal::filtering::sos2tf(black_box(&sos)).unwrap());
     }
 
     #[divan::bench]
     fn residue(bencher: Bencher) {
         let (b, a) = analog_butter(4);
         warm(bencher, || {
-            signal::residue(black_box(&b), black_box(&a), 1e-3).unwrap()
+            signal::representations::residue(black_box(&b), black_box(&a), 1e-3).unwrap()
         });
     }
 
@@ -487,16 +528,16 @@ mod representation_benches {
     fn residuez(bencher: Bencher) {
         let (b, a) = digital_butter(4);
         warm(bencher, || {
-            signal::residuez(black_box(&b), black_box(&a), 1e-3).unwrap()
+            signal::representations::residuez(black_box(&b), black_box(&a), 1e-3).unwrap()
         });
     }
 
     #[divan::bench]
     fn invres(bencher: Bencher) {
         let (b, a) = analog_butter(4);
-        let p = signal::residue(&b, &a, 1e-3).unwrap();
+        let p = signal::representations::residue(&b, &a, 1e-3).unwrap();
         warm(bencher, || {
-            signal::invres(
+            signal::representations::invres(
                 black_box(&p.residues),
                 black_box(&p.poles),
                 black_box(&p.direct),
@@ -508,9 +549,9 @@ mod representation_benches {
     #[divan::bench]
     fn invresz(bencher: Bencher) {
         let (b, a) = digital_butter(4);
-        let p = signal::residuez(&b, &a, 1e-3).unwrap();
+        let p = signal::representations::residuez(&b, &a, 1e-3).unwrap();
         warm(bencher, || {
-            signal::invresz(
+            signal::representations::invresz(
                 black_box(&p.residues),
                 black_box(&p.poles),
                 black_box(&p.direct),
@@ -521,10 +562,11 @@ mod representation_benches {
 
     #[divan::bench]
     fn unique_roots(bencher: Bencher) {
-        let mut roots = signal::buttap(8).unwrap().poles;
+        let mut roots = signal::design::buttap(8).unwrap().poles;
         roots.extend(roots.clone());
         bencher.bench(|| {
-            signal::unique_roots(black_box(&roots), 1e-3, RootRepresentative::Mean).unwrap()
+            signal::representations::unique_roots(black_box(&roots), 1e-3, RootRepresentative::Mean)
+                .unwrap()
         });
     }
 }
@@ -536,35 +578,39 @@ mod response_benches {
     fn freqz(bencher: Bencher) {
         let (b, a) = digital_butter(8);
         let w = digital_frequencies(512);
-        bencher.bench(|| signal::freqz(black_box(&b), black_box(&a), black_box(&w)).unwrap());
+        bencher.bench(|| {
+            signal::filtering::freqz(black_box(&b), black_box(&a), black_box(&w)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn freqs(bencher: Bencher) {
         let (b, a) = analog_butter(8);
         let w = analog_frequencies(512);
-        bencher.bench(|| signal::freqs(black_box(&b), black_box(&a), black_box(&w)).unwrap());
+        bencher.bench(|| {
+            signal::filtering::freqs(black_box(&b), black_box(&a), black_box(&w)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn freqz_sos(bencher: Bencher) {
         let sos = digital_sos(8);
         let w = digital_frequencies(512);
-        bencher.bench(|| signal::freqz_sos(black_box(&sos), black_box(&w)).unwrap());
+        bencher.bench(|| signal::filtering::freqz_sos(black_box(&sos), black_box(&w)).unwrap());
     }
 
     #[divan::bench]
     fn freqs_zpk(bencher: Bencher) {
-        let zpk = signal::buttap(8).unwrap();
+        let zpk = signal::design::buttap(8).unwrap();
         let w = analog_frequencies(512);
-        bencher.bench(|| signal::freqs_zpk(black_box(&zpk), black_box(&w)).unwrap());
+        bencher.bench(|| signal::design::freqs_zpk(black_box(&zpk), black_box(&w)).unwrap());
     }
 
     #[divan::bench]
     fn freqz_zpk(bencher: Bencher) {
         let zpk = digital_zpk(8);
         let w = digital_frequencies(512);
-        bencher.bench(|| signal::freqz_zpk(black_box(&zpk), black_box(&w)).unwrap());
+        bencher.bench(|| signal::design::freqz_zpk(black_box(&zpk), black_box(&w)).unwrap());
     }
 
     #[divan::bench]
@@ -572,21 +618,25 @@ mod response_benches {
         let (b, a) = digital_butter(4);
         // Stay away from the zeros at z = -1, where the group delay is undefined.
         let w = linspace(0., 3., 512);
-        bencher.bench(|| signal::group_delay(black_box(&b), black_box(&a), black_box(&w)).unwrap());
+        bencher.bench(|| {
+            signal::filtering::group_delay(black_box(&b), black_box(&a), black_box(&w)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn bode(bencher: Bencher) {
         let (b, a) = analog_butter(8);
         let w = analog_frequencies(512);
-        bencher.bench(|| signal::bode(black_box(&b), black_box(&a), black_box(&w)).unwrap());
+        bencher
+            .bench(|| signal::design::bode(black_box(&b), black_box(&a), black_box(&w)).unwrap());
     }
 
     #[divan::bench]
     fn dbode(bencher: Bencher) {
         let (b, a) = digital_butter(8);
         let w = digital_frequencies(512);
-        bencher.bench(|| signal::dbode(black_box(&b), black_box(&a), black_box(&w)).unwrap());
+        bencher
+            .bench(|| signal::design::dbode(black_box(&b), black_box(&a), black_box(&w)).unwrap());
     }
 }
 
@@ -597,17 +647,24 @@ mod filtering_benches {
     fn lfilter(bencher: Bencher) {
         let (b, a) = digital_butter(8);
         let x = sine_signal(N);
-        bencher.bench(|| signal::lfilter(black_box(&b), black_box(&a), black_box(&x)).unwrap());
+        bencher.bench(|| {
+            signal::filtering::lfilter(black_box(&b), black_box(&a), black_box(&x)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn lfilter_with_state(bencher: Bencher) {
         let (b, a) = digital_butter(8);
-        let zi = signal::lfilter_zi(&b, &a).unwrap();
+        let zi = signal::filtering::lfilter_zi(&b, &a).unwrap();
         let x = sine_signal(N);
         bencher.bench(|| {
-            signal::lfilter_with_state(black_box(&b), black_box(&a), black_box(&x), black_box(&zi))
-                .unwrap()
+            signal::filtering::lfilter_with_state(
+                black_box(&b),
+                black_box(&a),
+                black_box(&x),
+                black_box(&zi),
+            )
+            .unwrap()
         });
     }
 
@@ -615,7 +672,7 @@ mod filtering_benches {
     fn lfilter_zi(bencher: Bencher) {
         let (b, a) = digital_butter(8);
         warm(bencher, || {
-            signal::lfilter_zi(black_box(&b), black_box(&a)).unwrap()
+            signal::filtering::lfilter_zi(black_box(&b), black_box(&a)).unwrap()
         });
     }
 
@@ -625,7 +682,7 @@ mod filtering_benches {
         let past_y = values(8, 3);
         let past_x = values(8, 4);
         bencher.bench(|| {
-            signal::lfiltic(
+            signal::filtering::lfiltic(
                 black_box(&b),
                 black_box(&a),
                 black_box(&past_y),
@@ -640,7 +697,7 @@ mod filtering_benches {
         let (b, a) = digital_butter(4);
         let x = sine_signal(N);
         warm(bencher, || {
-            signal::filtfilt(black_box(&b), black_box(&a), black_box(&x), 15).unwrap()
+            signal::filtering::filtfilt(black_box(&b), black_box(&a), black_box(&x), 15).unwrap()
         });
     }
 
@@ -648,13 +705,15 @@ mod filtering_benches {
     fn sosfilt(bencher: Bencher) {
         let sos = digital_sos(8);
         let x = sine_signal(N);
-        bencher.bench(|| signal::sosfilt(black_box(&sos), black_box(&x)).unwrap());
+        bencher.bench(|| signal::filtering::sosfilt(black_box(&sos), black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn sosfilt_zi(bencher: Bencher) {
         let sos = digital_sos(8);
-        warm(bencher, || signal::sosfilt_zi(black_box(&sos)).unwrap());
+        warm(bencher, || {
+            signal::filtering::sosfilt_zi(black_box(&sos)).unwrap()
+        });
     }
 
     #[divan::bench]
@@ -662,32 +721,32 @@ mod filtering_benches {
         let sos = digital_sos(8);
         let x = sine_signal(N);
         warm(bencher, || {
-            signal::sosfiltfilt(black_box(&sos), black_box(&x), 27).unwrap()
+            signal::filtering::sosfiltfilt(black_box(&sos), black_box(&x), 27).unwrap()
         });
     }
 
     #[divan::bench]
     fn medfilt(bencher: Bencher) {
         let x = sine_signal(N);
-        bencher.bench(|| signal::medfilt(black_box(&x), 5).unwrap());
+        bencher.bench(|| signal::filtering::medfilt(black_box(&x), 5).unwrap());
     }
 
     #[divan::bench]
     fn order_filter(bencher: Bencher) {
         let x = sine_signal(N);
-        bencher.bench(|| signal::order_filter(black_box(&x), 5, 1).unwrap());
+        bencher.bench(|| signal::filtering::order_filter(black_box(&x), 5, 1).unwrap());
     }
 
     #[divan::bench]
     fn wiener(bencher: Bencher) {
         let x = sine_signal(N);
-        bencher.bench(|| signal::wiener(black_box(&x), 5, None).unwrap());
+        bencher.bench(|| signal::filtering::wiener(black_box(&x), 5, None).unwrap());
     }
 
     #[divan::bench]
     fn savgol_coeffs(bencher: Bencher) {
         warm(bencher, || {
-            signal::savgol_coeffs(black_box(11), black_box(3), 0, 1.).unwrap()
+            signal::filtering::savgol_coeffs(black_box(11), black_box(3), 0, 1.).unwrap()
         });
     }
 
@@ -695,26 +754,26 @@ mod filtering_benches {
     fn savgol_filter(bencher: Bencher) {
         let x = sine_signal(N);
         warm(bencher, || {
-            signal::savgol_filter(black_box(&x), 11, 3, 0, 1.).unwrap()
+            signal::filtering::savgol_filter(black_box(&x), 11, 3, 0, 1.).unwrap()
         });
     }
 
     #[divan::bench]
     fn detrend(bencher: Bencher) {
         let x = sine_signal(N);
-        bencher.bench(|| signal::detrend(black_box(&x), true).unwrap());
+        bencher.bench(|| signal::waveforms::detrend(black_box(&x), true).unwrap());
     }
 
     #[divan::bench]
     fn symiirorder1(bencher: Bencher) {
         let x = sine_signal(N);
-        bencher.bench(|| signal::symiirorder1(black_box(&x), 1., 0.5, 1e-8).unwrap());
+        bencher.bench(|| signal::splines::symiirorder1(black_box(&x), 1., 0.5, 1e-8).unwrap());
     }
 
     #[divan::bench]
     fn symiirorder2(bencher: Bencher) {
         let x = sine_signal(N);
-        bencher.bench(|| signal::symiirorder2(black_box(&x), 0.5, 0.6, 1e-8).unwrap());
+        bencher.bench(|| signal::splines::symiirorder2(black_box(&x), 0.5, 0.6, 1e-8).unwrap());
     }
 }
 
@@ -723,24 +782,24 @@ mod fir_benches {
 
     #[divan::bench]
     fn kaiser_beta(bencher: Bencher) {
-        bencher.bench(|| signal::kaiser_beta(black_box(60.)));
+        bencher.bench(|| signal::filtering::kaiser_beta(black_box(60.)));
     }
 
     #[divan::bench]
     fn kaiser_atten(bencher: Bencher) {
-        bencher.bench(|| signal::kaiser_atten(black_box(31), black_box(0.1)).unwrap());
+        bencher.bench(|| signal::filtering::kaiser_atten(black_box(31), black_box(0.1)).unwrap());
     }
 
     #[divan::bench]
     fn kaiserord(bencher: Bencher) {
-        bencher.bench(|| signal::kaiserord(black_box(60.), black_box(0.1)).unwrap());
+        bencher.bench(|| signal::filtering::kaiserord(black_box(60.), black_box(0.1)).unwrap());
     }
 
     #[divan::bench]
     fn firwin(bencher: Bencher) {
         let window = Window::Kaiser(8.);
         bencher.bench(|| {
-            signal::firwin(
+            signal::filtering::firwin(
                 black_box(63),
                 black_box(&[0.2, 0.4]),
                 false,
@@ -757,7 +816,7 @@ mod fir_benches {
         let freq = [0., 0.4, 0.6, 1.];
         let gain = [1., 1., 0., 0.];
         bencher.bench(|| {
-            signal::firwin2(
+            signal::fir::firwin2(
                 black_box(63),
                 black_box(&freq),
                 black_box(&gain),
@@ -773,7 +832,7 @@ mod fir_benches {
     #[divan::bench]
     fn firwin_2d(bencher: Bencher) {
         bencher.bench(|| {
-            signal::firwin_2d(
+            signal::fir::firwin_2d(
                 black_box((15, 15)),
                 black_box(&[0.3]),
                 true,
@@ -792,7 +851,7 @@ mod fir_benches {
         let desired = [1., 1., 0., 0.];
         let weight = [1., 1.];
         warm(bencher, || {
-            signal::firls(
+            signal::fir::firls(
                 black_box(31),
                 black_box(&bands),
                 black_box(&desired),
@@ -809,7 +868,7 @@ mod fir_benches {
         let desired = [1., 0.];
         let weight = [1., 1.];
         warm(bencher, || {
-            signal::remez(
+            signal::fir::remez(
                 black_box(7),
                 black_box(&bands),
                 black_box(&desired),
@@ -822,8 +881,8 @@ mod fir_benches {
 
     #[divan::bench]
     fn minimum_phase(bencher: Bencher) {
-        let h = signal::firwin(31, &[0.3], true, &Window::Hamming, true, 2.).unwrap();
-        bencher.bench(|| signal::minimum_phase(black_box(&h), 256, true).unwrap());
+        let h = signal::filtering::firwin(31, &[0.3], true, &Window::Hamming, true, 2.).unwrap();
+        bencher.bench(|| signal::fir::minimum_phase(black_box(&h), 256, true).unwrap());
     }
 }
 
@@ -835,8 +894,13 @@ mod multidimensional_benches {
         let x = image(32, 1);
         let h = image(5, 2);
         bencher.bench(|| {
-            signal::convolve2d(black_box(&x), black_box(&h), Mode::Same, Boundary::Fill(0.))
-                .unwrap()
+            signal::multidimensional::convolve2d(
+                black_box(&x),
+                black_box(&h),
+                Mode::Same,
+                Boundary::Fill(0.),
+            )
+            .unwrap()
         });
     }
 
@@ -845,7 +909,7 @@ mod multidimensional_benches {
         let x = image(32, 1);
         let h = image(5, 2);
         bencher.bench(|| {
-            signal::correlate2d(
+            signal::multidimensional::correlate2d(
                 black_box(&x),
                 black_box(&h),
                 Mode::Same,
@@ -861,20 +925,21 @@ mod multidimensional_benches {
         let row = [0.0625, 0.25, 0.375, 0.25, 0.0625];
         let column = [0.25, 0.5, 0.25];
         bencher.bench(|| {
-            signal::sepfir2d(black_box(&x), black_box(&row), black_box(&column)).unwrap()
+            signal::multidimensional::sepfir2d(black_box(&x), black_box(&row), black_box(&column))
+                .unwrap()
         });
     }
 
     #[divan::bench]
     fn medfilt2d(bencher: Bencher) {
         let x = image(32, 1);
-        bencher.bench(|| signal::medfilt2d(black_box(&x), [3, 3]).unwrap());
+        bencher.bench(|| signal::multidimensional::medfilt2d(black_box(&x), [3, 3]).unwrap());
     }
 
     #[divan::bench]
     fn hilbert2(bencher: Bencher) {
         let x = image(32, 1);
-        bencher.bench(|| signal::hilbert2(black_box(&x)).unwrap());
+        bencher.bench(|| signal::multidimensional::hilbert2(black_box(&x)).unwrap());
     }
 }
 
@@ -884,51 +949,55 @@ mod spline_benches {
     #[divan::bench]
     fn cspline1d(bencher: Bencher) {
         let x = sine_signal(N);
-        bencher.bench(|| signal::cspline1d(black_box(&x), 0.).unwrap());
+        bencher.bench(|| signal::splines::cspline1d(black_box(&x), 0.).unwrap());
     }
 
     #[divan::bench]
     fn cspline1d_smoothing(bencher: Bencher) {
         let x = sine_signal(256);
-        bencher.bench(|| signal::cspline1d(black_box(&x), 0.5).unwrap());
+        bencher.bench(|| signal::splines::cspline1d(black_box(&x), 0.5).unwrap());
     }
 
     #[divan::bench]
     fn qspline1d(bencher: Bencher) {
         let x = sine_signal(N);
-        bencher.bench(|| signal::qspline1d(black_box(&x)).unwrap());
+        bencher.bench(|| signal::splines::qspline1d(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn cspline1d_eval(bencher: Bencher) {
-        let c = signal::cspline1d(&sine_signal(128), 0.).unwrap();
+        let c = signal::splines::cspline1d(&sine_signal(128), 0.).unwrap();
         let x = linspace(0., 127., N);
-        bencher.bench(|| signal::cspline1d_eval(black_box(&c), black_box(&x), 1., 0.).unwrap());
+        bencher.bench(|| {
+            signal::splines::cspline1d_eval(black_box(&c), black_box(&x), 1., 0.).unwrap()
+        });
     }
 
     #[divan::bench]
     fn qspline1d_eval(bencher: Bencher) {
-        let c = signal::qspline1d(&sine_signal(128)).unwrap();
+        let c = signal::splines::qspline1d(&sine_signal(128)).unwrap();
         let x = linspace(0., 127., N);
-        bencher.bench(|| signal::qspline1d_eval(black_box(&c), black_box(&x), 1., 0.).unwrap());
+        bencher.bench(|| {
+            signal::splines::qspline1d_eval(black_box(&c), black_box(&x), 1., 0.).unwrap()
+        });
     }
 
     #[divan::bench]
     fn cspline2d(bencher: Bencher) {
         let x = image(32, 1);
-        bencher.bench(|| signal::cspline2d(black_box(&x), 0., 1e-6).unwrap());
+        bencher.bench(|| signal::splines::cspline2d(black_box(&x), 0., 1e-6).unwrap());
     }
 
     #[divan::bench]
     fn qspline2d(bencher: Bencher) {
         let x = image(32, 1);
-        bencher.bench(|| signal::qspline2d(black_box(&x), 1e-6).unwrap());
+        bencher.bench(|| signal::splines::qspline2d(black_box(&x), 1e-6).unwrap());
     }
 
     #[divan::bench]
     fn spline_filter(bencher: Bencher) {
         let x = image(32, 1);
-        bencher.bench(|| signal::spline_filter(black_box(&x), 0.1).unwrap());
+        bencher.bench(|| signal::splines::spline_filter(black_box(&x), 0.1).unwrap());
     }
 
     #[divan::bench]
@@ -936,7 +1005,8 @@ mod spline_benches {
         let y = sine_signal(128);
         let weights = vec![1.; 128];
         warm(bencher, || {
-            signal::whittaker_henderson(black_box(&y), 10., 2, black_box(&weights)).unwrap()
+            signal::splines::whittaker_henderson(black_box(&y), 10., 2, black_box(&weights))
+                .unwrap()
         });
     }
 }
@@ -948,40 +1018,44 @@ mod peak_benches {
     fn argrelextrema(bencher: Bencher) {
         let x = sine_signal(N);
         bencher.bench(|| {
-            signal::argrelextrema(black_box(&x), |a, b| a > b, 3, EdgeMode::Clip).unwrap()
+            signal::peaks::argrelextrema(black_box(&x), |a, b| a > b, 3, EdgeMode::Clip).unwrap()
         });
     }
 
     #[divan::bench]
     fn argrelmax(bencher: Bencher) {
         let x = sine_signal(N);
-        bencher.bench(|| signal::argrelmax(black_box(&x), 3, EdgeMode::Clip).unwrap());
+        bencher.bench(|| signal::peaks::argrelmax(black_box(&x), 3, EdgeMode::Clip).unwrap());
     }
 
     #[divan::bench]
     fn argrelmin(bencher: Bencher) {
         let x = sine_signal(N);
-        bencher.bench(|| signal::argrelmin(black_box(&x), 3, EdgeMode::Wrap).unwrap());
+        bencher.bench(|| signal::peaks::argrelmin(black_box(&x), 3, EdgeMode::Wrap).unwrap());
     }
 
     #[divan::bench]
     fn find_peaks(bencher: Bencher) {
         let x = sine_signal(N);
-        bencher.bench(|| signal::find_peaks(black_box(&x)).unwrap());
+        bencher.bench(|| signal::peaks::find_peaks(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn peak_prominences(bencher: Bencher) {
         let x = sine_signal(N);
-        let peaks = signal::find_peaks(&x).unwrap();
-        bencher.bench(|| signal::peak_prominences(black_box(&x), black_box(&peaks), None).unwrap());
+        let peaks = signal::peaks::find_peaks(&x).unwrap();
+        bencher.bench(|| {
+            signal::peaks::peak_prominences(black_box(&x), black_box(&peaks), None).unwrap()
+        });
     }
 
     #[divan::bench]
     fn peak_widths(bencher: Bencher) {
         let x = sine_signal(N);
-        let peaks = signal::find_peaks(&x).unwrap();
-        bencher.bench(|| signal::peak_widths(black_box(&x), black_box(&peaks), 0.5, None).unwrap());
+        let peaks = signal::peaks::find_peaks(&x).unwrap();
+        bencher.bench(|| {
+            signal::peaks::peak_widths(black_box(&x), black_box(&peaks), 0.5, None).unwrap()
+        });
     }
 
     #[divan::bench]
@@ -989,7 +1063,7 @@ mod peak_benches {
         let x = sine_signal(256);
         let widths = [1., 2., 3., 4., 6., 8.];
         warm(bencher, || {
-            signal::find_peaks_cwt(black_box(&x), black_box(&widths)).unwrap()
+            signal::utilities::find_peaks_cwt(black_box(&x), black_box(&widths)).unwrap()
         });
     }
 }
@@ -1000,27 +1074,31 @@ mod spectral_benches {
     #[divan::bench]
     fn hilbert(bencher: Bencher) {
         let x = sine_signal(N);
-        warm(bencher, || signal::hilbert(black_box(&x)).unwrap());
+        warm(bencher, || {
+            signal::spectral::hilbert(black_box(&x)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn envelope(bencher: Bencher) {
         let x = sine_signal(N);
         warm(bencher, || {
-            signal::envelope(black_box(&x), (0, 200), 512, false, true).unwrap()
+            signal::utilities::envelope(black_box(&x), (0, 200), 512, false, true).unwrap()
         });
     }
 
     #[divan::bench]
     fn resample(bencher: Bencher) {
         let x = sine_signal(N);
-        warm(bencher, || signal::resample(black_box(&x), 768).unwrap());
+        warm(bencher, || {
+            signal::spectral::resample(black_box(&x), 768).unwrap()
+        });
     }
 
     #[divan::bench]
     fn czt_points(bencher: Bencher) {
         let a = Complex { re: 1., im: 0. };
-        bencher.bench(|| signal::czt_points(black_box(256), None, black_box(a)).unwrap());
+        bencher.bench(|| signal::spectral::czt_points(black_box(256), None, black_box(a)).unwrap());
     }
 
     #[divan::bench]
@@ -1028,7 +1106,7 @@ mod spectral_benches {
         let x = complex_values(128, 1);
         let a = Complex { re: 1., im: 0. };
         warm(bencher, || {
-            signal::czt(black_box(&x), 128, None, black_box(a)).unwrap()
+            signal::spectral::czt(black_box(&x), 128, None, black_box(a)).unwrap()
         });
     }
 
@@ -1036,7 +1114,7 @@ mod spectral_benches {
     fn zoom_fft(bencher: Bencher) {
         let x = complex_values(128, 1);
         warm(bencher, || {
-            signal::zoom_fft(black_box(&x), 40., 140., 128, FS, false).unwrap()
+            signal::spectral::zoom_fft(black_box(&x), 40., 140., 128, FS, false).unwrap()
         });
     }
 
@@ -1045,7 +1123,7 @@ mod spectral_benches {
         let x = sine_signal(N);
         let window = windows::hann(N, false).unwrap();
         warm(bencher, || {
-            signal::periodogram(
+            signal::spectral::periodogram(
                 black_box(&x),
                 black_box(&window),
                 N,
@@ -1062,7 +1140,7 @@ mod spectral_benches {
         let x = sine_signal(N);
         let window = windows::hann(256, false).unwrap();
         warm(bencher, || {
-            signal::welch(
+            signal::spectral::welch(
                 black_box(&x),
                 black_box(&window),
                 128,
@@ -1081,7 +1159,7 @@ mod spectral_benches {
         let y = values(N, 5);
         let window = windows::hann(256, false).unwrap();
         warm(bencher, || {
-            signal::csd(
+            signal::spectral::csd(
                 black_box(&x),
                 black_box(&y),
                 black_box(&window),
@@ -1101,7 +1179,7 @@ mod spectral_benches {
         let y = values(N, 5);
         let window = windows::hann(256, false).unwrap();
         warm(bencher, || {
-            signal::coherence(
+            signal::spectral::coherence(
                 black_box(&x),
                 black_box(&y),
                 black_box(&window),
@@ -1118,7 +1196,7 @@ mod spectral_benches {
         let x = sine_signal(N);
         let window = windows::hann(128, false).unwrap();
         warm(bencher, || {
-            signal::spectrogram(
+            signal::spectral::spectrogram(
                 black_box(&x),
                 black_box(&window),
                 64,
@@ -1136,29 +1214,30 @@ mod spectral_benches {
         let x = sine_signal(N);
         let window = windows::hann(128, false).unwrap();
         warm(bencher, || {
-            signal::stft(black_box(&x), black_box(&window), 64, 128, FS).unwrap()
+            signal::spectral::stft(black_box(&x), black_box(&window), 64, 128, FS).unwrap()
         });
     }
 
     #[divan::bench]
     fn istft(bencher: Bencher) {
         let window = windows::hann(128, false).unwrap();
-        let (_, _, spectrum) = signal::stft(&sine_signal(N), &window, 64, 128, FS).unwrap();
+        let (_, _, spectrum) =
+            signal::spectral::stft(&sine_signal(N), &window, 64, 128, FS).unwrap();
         warm(bencher, || {
-            signal::istft(black_box(&spectrum), black_box(&window), 64, 128, FS).unwrap()
+            signal::spectral::istft(black_box(&spectrum), black_box(&window), 64, 128, FS).unwrap()
         });
     }
 
     #[divan::bench]
     fn check_cola(bencher: Bencher) {
         let window = windows::hann(256, false).unwrap();
-        bencher.bench(|| signal::check_cola(black_box(&window), 128, 1e-10).unwrap());
+        bencher.bench(|| signal::spectral::check_cola(black_box(&window), 128, 1e-10).unwrap());
     }
 
     #[divan::bench]
     fn check_nola(bencher: Bencher) {
         let window = windows::hann(256, false).unwrap();
-        bencher.bench(|| signal::check_nola(black_box(&window), 128, 1e-10).unwrap());
+        bencher.bench(|| signal::spectral::check_nola(black_box(&window), 128, 1e-10).unwrap());
     }
 
     #[divan::bench]
@@ -1166,8 +1245,13 @@ mod spectral_benches {
         let window = windows::hann(256, false).unwrap();
         let desired = windows::hamming(256, false).unwrap();
         bencher.bench(|| {
-            signal::closest_stft_dual_window(black_box(&window), 64, black_box(&desired), true)
-                .unwrap()
+            signal::utilities::closest_stft_dual_window(
+                black_box(&window),
+                64,
+                black_box(&desired),
+                true,
+            )
+            .unwrap()
         });
     }
 
@@ -1184,7 +1268,7 @@ mod spectral_benches {
             .collect();
         let freqs = linspace(10., 2000., 32);
         bencher.bench(|| {
-            signal::lombscargle(
+            signal::spectral::lombscargle(
                 black_box(&times),
                 black_box(&x),
                 black_box(&freqs),
@@ -1201,19 +1285,19 @@ mod system_benches {
 
     fn continuous() -> StateSpace {
         let (b, a) = analog_butter(4);
-        signal::tf2ss(&b, &a).unwrap()
+        signal::systems::tf2ss(&b, &a).unwrap()
     }
 
     fn discrete() -> StateSpace {
         let (b, a) = digital_butter(4);
-        signal::tf2ss(&b, &a).unwrap()
+        signal::systems::tf2ss(&b, &a).unwrap()
     }
 
     #[divan::bench]
     fn abcd_normalize(bencher: Bencher) {
         let s = continuous();
         bencher.bench(|| {
-            signal::abcd_normalize(
+            signal::systems::abcd_normalize(
                 black_box(&s.a),
                 black_box(&s.b),
                 black_box(&s.c),
@@ -1226,32 +1310,37 @@ mod system_benches {
     #[divan::bench]
     fn tf2ss(bencher: Bencher) {
         let (b, a) = analog_butter(8);
-        bencher.bench(|| signal::tf2ss(black_box(&b), black_box(&a)).unwrap());
+        bencher.bench(|| signal::systems::tf2ss(black_box(&b), black_box(&a)).unwrap());
     }
 
     #[divan::bench]
     fn zpk2ss(bencher: Bencher) {
-        let zpk = signal::buttap(8).unwrap();
-        bencher.bench(|| signal::zpk2ss(black_box(&zpk)).unwrap());
+        let zpk = signal::design::buttap(8).unwrap();
+        bencher.bench(|| signal::systems::zpk2ss(black_box(&zpk)).unwrap());
     }
 
     #[divan::bench]
     fn ss2tf(bencher: Bencher) {
         let s = continuous();
-        warm(bencher, || signal::ss2tf(black_box(&s), 0).unwrap());
+        warm(bencher, || {
+            signal::systems::ss2tf(black_box(&s), 0).unwrap()
+        });
     }
 
     #[divan::bench]
     fn ss2zpk(bencher: Bencher) {
         let s = continuous();
-        warm(bencher, || signal::ss2zpk(black_box(&s), 0, 0).unwrap());
+        warm(bencher, || {
+            signal::systems::ss2zpk(black_box(&s), 0, 0).unwrap()
+        });
     }
 
     #[divan::bench]
     fn cont2discrete(bencher: Bencher) {
         let s = continuous();
         warm(bencher, || {
-            signal::cont2discrete(black_box(&s), 0.1, Discretization::ZeroOrderHold).unwrap()
+            signal::systems::cont2discrete(black_box(&s), 0.1, Discretization::ZeroOrderHold)
+                .unwrap()
         });
     }
 
@@ -1261,7 +1350,7 @@ mod system_benches {
         let u: Vec<Vec<f64>> = sine_signal(256).into_iter().map(|v| vec![v]).collect();
         let initial = [0.; 4];
         bencher.bench(|| {
-            signal::dlsim(black_box(&s), black_box(&u), 1., black_box(&initial)).unwrap()
+            signal::systems::dlsim(black_box(&s), black_box(&u), 1., black_box(&initial)).unwrap()
         });
     }
 
@@ -1272,7 +1361,7 @@ mod system_benches {
         let u: Vec<Vec<f64>> = sine_signal(256).into_iter().map(|v| vec![v]).collect();
         let initial = [0.; 4];
         warm(bencher, || {
-            signal::lsim(
+            signal::systems::lsim(
                 black_box(&s),
                 black_box(&u),
                 black_box(&t),
@@ -1288,7 +1377,7 @@ mod system_benches {
         let s = continuous();
         let t = linspace(0., 25.5, 256);
         warm(bencher, || {
-            signal::step(black_box(&s), black_box(&t), 0).unwrap()
+            signal::systems::step(black_box(&s), black_box(&t), 0).unwrap()
         });
     }
 
@@ -1297,20 +1386,20 @@ mod system_benches {
         let s = continuous();
         let t = linspace(0., 25.5, 256);
         warm(bencher, || {
-            signal::impulse(black_box(&s), black_box(&t), 0).unwrap()
+            signal::systems::impulse(black_box(&s), black_box(&t), 0).unwrap()
         });
     }
 
     #[divan::bench]
     fn dstep(bencher: Bencher) {
         let s = discrete();
-        bencher.bench(|| signal::dstep(black_box(&s), 1., 256, 0).unwrap());
+        bencher.bench(|| signal::systems::dstep(black_box(&s), 1., 256, 0).unwrap());
     }
 
     #[divan::bench]
     fn dimpulse(bencher: Bencher) {
         let s = discrete();
-        bencher.bench(|| signal::dimpulse(black_box(&s), 1., 256, 0).unwrap());
+        bencher.bench(|| signal::systems::dimpulse(black_box(&s), 1., 256, 0).unwrap());
     }
 
     #[divan::bench]
@@ -1329,7 +1418,7 @@ mod system_benches {
             })
             .collect();
         warm(bencher, || {
-            signal::place_poles(black_box(&a), black_box(&b), black_box(&poles)).unwrap()
+            signal::systems::place_poles(black_box(&a), black_box(&b), black_box(&poles)).unwrap()
         });
     }
 }
@@ -1347,7 +1436,7 @@ mod waveform_benches {
         bencher.bench(|| {
             black_box(&t)
                 .iter()
-                .map(|&t| signal::sawtooth(20. * t, 0.5))
+                .map(|&t| signal::waveforms::sawtooth(20. * t, 0.5))
                 .collect::<Vec<_>>()
         });
     }
@@ -1358,7 +1447,7 @@ mod waveform_benches {
         bencher.bench(|| {
             black_box(&t)
                 .iter()
-                .map(|&t| signal::square(20. * t, 0.3))
+                .map(|&t| signal::waveforms::square(20. * t, 0.3))
                 .collect::<Vec<_>>()
         });
     }
@@ -1369,7 +1458,9 @@ mod waveform_benches {
         bencher.bench(|| {
             black_box(&t)
                 .iter()
-                .map(|&t| signal::chirp(t, 5., 1., 50., ChirpMethod::Logarithmic, 0.).unwrap())
+                .map(|&t| {
+                    signal::waveforms::chirp(t, 5., 1., 50., ChirpMethod::Logarithmic, 0.).unwrap()
+                })
                 .collect::<Vec<_>>()
         });
     }
@@ -1381,7 +1472,7 @@ mod waveform_benches {
         bencher.bench(|| {
             black_box(&t)
                 .iter()
-                .map(|&t| signal::sweep_poly(t, black_box(&coefficients), 0.).unwrap())
+                .map(|&t| signal::waveforms::sweep_poly(t, black_box(&coefficients), 0.).unwrap())
                 .collect::<Vec<_>>()
         });
     }
@@ -1392,7 +1483,7 @@ mod waveform_benches {
         bencher.bench(|| {
             black_box(&t)
                 .iter()
-                .map(|&t| signal::gausspulse(t, 5., 0.5, -6.).unwrap())
+                .map(|&t| signal::waveforms::gausspulse(t, 5., 0.5, -6.).unwrap())
                 .collect::<Vec<_>>()
         });
     }
@@ -1403,26 +1494,27 @@ mod waveform_benches {
         bencher.bench(|| {
             black_box(&x)
                 .iter()
-                .map(|&x| signal::gauss_spline(x, 3))
+                .map(|&x| signal::waveforms::gauss_spline(x, 3))
                 .collect::<Vec<_>>()
         });
     }
 
     #[divan::bench]
     fn unit_impulse(bencher: Bencher) {
-        bencher.bench(|| signal::unit_impulse(black_box(N), black_box(N / 2)).unwrap());
+        bencher.bench(|| signal::waveforms::unit_impulse(black_box(N), black_box(N / 2)).unwrap());
     }
 
     #[divan::bench]
     fn vectorstrength(bencher: Bencher) {
         let events: Vec<f64> = positive_values(N, 9).iter().map(|v| v / 10.).collect();
-        bencher.bench(|| signal::vectorstrength(black_box(&events), 0.1).unwrap());
+        bencher.bench(|| signal::waveforms::vectorstrength(black_box(&events), 0.1).unwrap());
     }
 
     #[divan::bench]
     fn max_len_seq(bencher: Bencher) {
         let state = [1u8; 10];
-        bencher.bench(|| signal::max_len_seq(10, black_box(&state), 1023, None).unwrap());
+        bencher
+            .bench(|| signal::utilities::max_len_seq(10, black_box(&state), 1023, None).unwrap());
     }
 }
 
@@ -1522,6 +1614,7 @@ mod window_benches {
     #[divan::bench]
     fn get_window(bencher: Bencher) {
         let window = Window::Taylor(4, 30., true);
-        bencher.bench(|| signal::get_window(black_box(&window), black_box(M), true).unwrap());
+        bencher
+            .bench(|| signal::windows::get_window(black_box(&window), black_box(M), true).unwrap());
     }
 }

@@ -1,7 +1,8 @@
 use super::{MatrixNorm, norm};
 use crate::*;
 use sci_complex::Complex;
-pub use sci_linalg::{EigenResult, GeneralEigenResult, SvdResult};
+pub use sci_linalg::decompositions::SvdResult;
+pub use sci_linalg::eigen::{EigenResult, GeneralEigenResult};
 
 fn check_shape(a: &SparseMatrix, square: bool) -> Result<()> {
     validate(a)?;
@@ -76,7 +77,7 @@ fn selection(w: &[Complex], k: usize, which: Spectrum) -> Result<Vec<usize>> {
     }
 }
 fn general(a: &SparseMatrix, k: usize, which: Spectrum) -> Result<GeneralEigenResult> {
-    let e = sci_linalg::eig(&dense(a, true)?)?;
+    let e = sci_linalg::eigen::eig(&dense(a, true)?)?;
     let ix = selection(&e.eigenvalues, k, which)?;
     Ok(GeneralEigenResult {
         eigenvalues: ix.iter().map(|&i| e.eigenvalues[i]).collect(),
@@ -96,7 +97,7 @@ fn hermitian(a: &SparseMatrix, k: usize, which: Spectrum) -> Result<EigenResult>
             "imaginary selection is invalid for symmetric spectra",
         ));
     }
-    let e = sci_linalg::eigh(&symmetric(a)?, true)?;
+    let e = sci_linalg::eigen::eigh(&symmetric(a)?, true)?;
     let mut ix = selection(
         &e.eigenvalues
             .iter()
@@ -116,7 +117,7 @@ fn hermitian(a: &SparseMatrix, k: usize, which: Spectrum) -> Result<EigenResult>
     })
 }
 fn partial_svd(a: &SparseMatrix, k: usize, largest: bool) -> Result<SvdResult> {
-    let s = sci_linalg::svd(&dense(a, false)?)?;
+    let s = sci_linalg::decompositions::svd(&dense(a, false)?)?;
     let n = s.singular_values.len();
     if k == 0 || k > n {
         return Err(Error::InvalidInput("SVD count must be in 1..=min(shape)"));
@@ -161,7 +162,7 @@ fn block_eigen(a: &SparseMatrix, x: &Matrix, largest: bool) -> Result<EigenResul
     )
 }
 fn exponential(a: &SparseMatrix) -> Result<SparseMatrix> {
-    from_dense(&sci_linalg::expm(&dense(a, true)?)?)
+    from_dense(&sci_linalg::matrix_functions::expm(&dense(a, true)?)?)
 }
 fn exponential_action(a: &SparseMatrix, b: &[f64], times: &[f64]) -> Result<Matrix> {
     check_shape(a, true)?;
@@ -185,7 +186,7 @@ fn exponential_action(a: &SparseMatrix, b: &[f64], times: &[f64]) -> Result<Matr
                     _ => Err(crate::Error::NonFiniteEvaluation),
                 }?;
             }
-            let e = sci_linalg::expm(&scaled)?;
+            let e = sci_linalg::matrix_functions::expm(&scaled)?;
             let mut y = vec![0.; a.rows];
             for (i, r) in e.iter().enumerate() {
                 y[i] = match r.iter().zip(b).map(|(x, y)| x * y).sum::<f64>() {
@@ -292,7 +293,7 @@ fn krylov<F: FnMut(Complex) -> Complex>(
                     .collect()
             })
             .collect::<Result<_>>()?;
-        let fm = sci_linalg::funm(&projected, &mut f)?;
+        let fm = sci_linalg::matrix_functions::funm(&projected, &mut f)?;
         let mut y = vec![Complex { re: 0., im: 0. }; b.len()];
         for i in 0..b.len() {
             for k in 0..=j {
@@ -355,7 +356,7 @@ fn krylov<F: FnMut(Complex) -> Complex>(
 /// Accuracy deteriorates for ill-conditioned or nearly defective problems.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let _=sci_sparse::linalg::eigs(&a,1,sci_sparse::linalg::Spectrum::LargestMagnitude)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -380,7 +381,7 @@ pub fn eigs(a: &SparseMatrix, k: usize, which: Spectrum) -> Result<GeneralEigenR
 /// Accuracy deteriorates for ill-conditioned or nearly defective problems.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let _=sci_sparse::linalg::eigsh(&a,1,sci_sparse::linalg::Spectrum::LargestReal)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -405,7 +406,7 @@ pub fn eigsh(a: &SparseMatrix, k: usize, which: Spectrum) -> Result<EigenResult>
 /// Accuracy deteriorates for ill-conditioned or nearly defective problems.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let _=sci_sparse::linalg::svds(&a,1,true)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -430,7 +431,7 @@ pub fn svds(a: &SparseMatrix, k: usize, largest: bool) -> Result<SvdResult> {
 /// Accuracy deteriorates for ill-conditioned or nearly defective problems.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let _=sci_sparse::linalg::lobpcg(&a,&vec![vec![1.],vec![0.]],true)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -455,7 +456,7 @@ pub fn lobpcg(a: &SparseMatrix, initial: &Matrix, largest: bool) -> Result<Eigen
 /// Accuracy deteriorates for ill-conditioned or nearly defective problems.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let _=sci_sparse::linalg::expm(&a)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -480,7 +481,7 @@ pub fn expm(a: &SparseMatrix) -> Result<SparseMatrix> {
 /// Accuracy deteriorates for ill-conditioned or nearly defective problems.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let _=sci_sparse::linalg::expm_multiply(&a,&[1.,2.],&[0.,1.])?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -505,7 +506,7 @@ pub fn expm_multiply(a: &SparseMatrix, b: &[f64], times: &[f64]) -> Result<Matri
 /// Accuracy deteriorates for ill-conditioned or nearly defective problems.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let _=sci_sparse::linalg::onenormest(&a)?;
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -537,7 +538,7 @@ pub fn onenormest(a: &SparseMatrix) -> Result<f64> {
 /// # Examples
 /// ```
 /// let y=sci_sparse::linalg::funm_multiply_krylov(
-///     &sci_sparse::identity(2)?, &[1.,2.], sci_complex::exp, Default::default())?;
+///     &sci_sparse::construct::identity(2)?, &[1.,2.], sci_complex::exp, Default::default())?;
 /// assert!((y[0].re-1_f64.exp()).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -573,7 +574,7 @@ pub fn funm_multiply_krylov<F: FnMut(Complex) -> Complex>(
 /// magnitude for p>0, or smallest nonzero magnitude for p<0, reducing overflow.
 /// # Examples
 /// ```
-/// assert_eq!(sci_sparse::linalg::norm_axis(&sci_sparse::identity(2)?,2.,0)?,[1.,1.]);
+/// assert_eq!(sci_sparse::linalg::norm_axis(&sci_sparse::construct::identity(2)?,2.,0)?,[1.,1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References

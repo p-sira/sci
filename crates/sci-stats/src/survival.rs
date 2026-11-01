@@ -35,7 +35,7 @@ use super::*;
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::logrank(&[1.,2.,3.], &[true;3], &[1.,2.,3.], &[true;3], sci_stats::Alternative::TwoSided)?;
+/// let r = sci_stats::survival::logrank(&[1.,2.,3.], &[true;3], &[1.,2.,3.], &[true;3], sci_stats::inference::Alternative::TwoSided)?;
 /// assert_eq!(r.statistic, 0.);
 /// assert_eq!(r.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())

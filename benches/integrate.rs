@@ -28,15 +28,17 @@ mod sampled {
     fn trapezoid(bencher: Bencher) {
         let y = sine_signal(N);
         let x = uneven_coordinates(N);
-        bencher
-            .bench(|| sci::integrate::trapezoid(black_box(&y), Some(black_box(&x)), DX).unwrap());
+        bencher.bench(|| {
+            sci::integrate::sampled::trapezoid(black_box(&y), Some(black_box(&x)), DX).unwrap()
+        });
     }
 
     #[divan::bench]
     fn cumulative_trapezoid(bencher: Bencher) {
         let y = sine_signal(N);
         bencher.bench(|| {
-            sci::integrate::cumulative_trapezoid(black_box(&y), None, DX, Some(0.0)).unwrap()
+            sci::integrate::sampled::cumulative_trapezoid(black_box(&y), None, DX, Some(0.0))
+                .unwrap()
         });
     }
 
@@ -44,20 +46,23 @@ mod sampled {
     fn simpson(bencher: Bencher) {
         let y = sine_signal(N);
         let x = uneven_coordinates(N);
-        bencher.bench(|| sci::integrate::simpson(black_box(&y), Some(black_box(&x)), DX).unwrap());
+        bencher.bench(|| {
+            sci::integrate::sampled::simpson(black_box(&y), Some(black_box(&x)), DX).unwrap()
+        });
     }
 
     #[divan::bench]
     fn cumulative_simpson(bencher: Bencher) {
         let y = sine_signal(N);
-        bencher
-            .bench(|| sci::integrate::cumulative_simpson(black_box(&y), None, DX, None).unwrap());
+        bencher.bench(|| {
+            sci::integrate::sampled::cumulative_simpson(black_box(&y), None, DX, None).unwrap()
+        });
     }
 
     #[divan::bench]
     fn romb(bencher: Bencher) {
         let y = sine_signal(N + 1);
-        bencher.bench(|| sci::integrate::romb(black_box(&y), DX).unwrap());
+        bencher.bench(|| sci::integrate::sampled::romb(black_box(&y), DX).unwrap());
     }
 }
 
@@ -68,7 +73,7 @@ mod quadrature {
     #[divan::bench]
     fn fixed_quad(bencher: Bencher) {
         bencher.bench(|| {
-            sci::integrate::fixed_quad(
+            sci::integrate::quadrature::fixed_quad(
                 |x: f64| (-x * x).exp() * x.cos(),
                 black_box(-3.0),
                 black_box(3.0),
@@ -82,6 +87,6 @@ mod quadrature {
     #[divan::bench]
     fn newton_cotes(bencher: Bencher) {
         let nodes: Vec<f64> = (0..=12).map(f64::from).collect();
-        bencher.bench(|| sci::integrate::newton_cotes(black_box(&nodes)).unwrap());
+        bencher.bench(|| sci::integrate::quadrature::newton_cotes(black_box(&nodes)).unwrap());
     }
 }

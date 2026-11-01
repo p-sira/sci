@@ -6,26 +6,29 @@ use sci::{
 
 #[test]
 fn shapes_and_controls_are_validated() {
-    assert_eq!(linalg::dot(&[1.0], &[]), Err(Error::DimensionMismatch));
     assert_eq!(
-        linalg::matvec(&[vec![1.0], vec![]], &[1.0]),
+        linalg::basic::dot(&[1.0], &[]),
         Err(Error::DimensionMismatch)
     );
     assert_eq!(
-        linalg::matmul(&[vec![1.0, 2.0]], &[vec![1.0]]),
+        linalg::basic::matvec(&[vec![1.0], vec![]], &[1.0]),
         Err(Error::DimensionMismatch)
     );
-    assert!(stats::mean::<f64>(&[]).is_err());
-    assert!(stats::variance(&[1.0], 1).is_err());
-    assert!(stats::normal_pdf(0.0, 0.0, 0.0).is_err());
-    assert!(stats::normal_cdf(f64::NAN, 0.0, 1.0).is_err());
-    assert!(stats::normal_ppf(-0.1, 0.0, 1.0).is_err());
-    assert!(optimize::minimize(|_| 0.0, &[], Default::default()).is_err());
+    assert_eq!(
+        linalg::basic::matmul(&[vec![1.0, 2.0]], &[vec![1.0]]),
+        Err(Error::DimensionMismatch)
+    );
+    assert!(stats::descriptive::mean::<f64>(&[]).is_err());
+    assert!(stats::descriptive::variance(&[1.0], 1).is_err());
+    assert!(stats::distributions::normal_pdf(0.0, 0.0, 0.0).is_err());
+    assert!(stats::distributions::normal_cdf(f64::NAN, 0.0, 1.0).is_err());
+    assert!(stats::distributions::normal_ppf(-0.1, 0.0, 1.0).is_err());
+    assert!(optimize::minimize::minimize(|_| 0.0, &[], Default::default()).is_err());
     assert!(
-        optimize::minimize(
+        optimize::minimize::minimize(
             |_| 0.0,
             &[1.0],
-            optimize::Options {
+            optimize::minimize::Options {
                 tolerance: f64::NAN,
                 ..Default::default()
             }
@@ -33,7 +36,7 @@ fn shapes_and_controls_are_validated() {
         .is_err()
     );
     assert_eq!(
-        optimize::minimize_with_gradient(|_| 1.0, |_| vec![], &[1.0], Default::default(),),
+        optimize::minimize::minimize_with_gradient(|_| 1.0, |_| vec![], &[1.0], Default::default(),),
         Err(Error::DimensionMismatch)
     );
 }
@@ -58,42 +61,42 @@ fn invalid_evaluations_and_unrepresentable_steps_are_rejected() {
         .is_err()
     );
     assert_eq!(
-        optimize::minimize(|_| f64::NAN, &[0.0], Default::default()),
+        optimize::minimize::minimize(|_| f64::NAN, &[0.0], Default::default()),
         Err(Error::NonFiniteEvaluation)
     );
     let error = Error::InvalidInput("callback failure");
     assert_eq!(
-        optimize::try_minimize(|_| Err(error.clone()), &[0.0], Default::default()),
+        optimize::minimize::try_minimize(|_| Err(error.clone()), &[0.0], Default::default()),
         Err(error)
     );
 }
 
 #[test]
 fn limits_are_distinct_from_convergence() {
-    let result = optimize::minimize(
+    let result = optimize::minimize::minimize(
         |x| x[0].powi(2),
         &[2.0],
-        optimize::Options {
+        optimize::minimize::Options {
             max_iterations: 0,
             ..Default::default()
         },
     )
     .unwrap();
-    assert_eq!(result.status, optimize::Status::IterationLimit);
+    assert_eq!(result.status, optimize::minimize::Status::IterationLimit);
     assert_eq!(result.iterations, 0);
 }
 
 #[test]
 fn finite_difference_gradients_feed_optimization() {
-    let objective = |x: &[f64]| linalg::dot(x, x).unwrap();
-    let result = optimize::try_minimize_with_gradient(
-        |x| linalg::dot(x, x),
+    let objective = |x: &[f64]| linalg::basic::dot(x, x).unwrap();
+    let result = optimize::minimize::try_minimize_with_gradient(
+        |x| linalg::basic::dot(x, x),
         |x| differentiate::gradient(objective, x, 1e-5),
         &[3.0, -4.0],
         Default::default(),
     )
     .unwrap();
-    assert_eq!(result.status, optimize::Status::Converged);
+    assert_eq!(result.status, optimize::minimize::Status::Converged);
     assert!(result.cost < 1e-12);
 }
 
@@ -106,7 +109,7 @@ fn fft_round_trips_odd_and_even_lengths() {
                 im: (i as f64).sin(),
             })
             .collect::<Vec<_>>();
-        let recovered = fft::ifft(&fft::fft(&input));
+        let recovered = fft::fourier::ifft(&fft::fourier::fft(&input));
         assert_eq!(recovered.len(), input.len());
         for (actual, expected) in recovered.iter().zip(&input) {
             assert!((actual.re - expected.re).abs() < 1e-12);
@@ -114,7 +117,7 @@ fn fft_round_trips_odd_and_even_lengths() {
         }
         let real = (0..length).map(|i| i as f64).collect::<Vec<_>>();
         assert_eq!(
-            fft::rfft(&real).len(),
+            fft::real::rfft(&real).len(),
             if length == 0 { 0 } else { length / 2 + 1 }
         );
     }
@@ -134,6 +137,12 @@ fn special_function_domains_and_boundaries_are_predictable() {
     assert!(special::elliptic::ellipk(1.0).is_err());
     assert!(special::elliptic::elliprf(0.0, 0.0, 1.0).is_err());
     assert!(special::elliptic::ellipk(f64::NAN).is_err());
-    assert_eq!(stats::normal_ppf(0.0, 0.0, 1.0).unwrap(), f64::NEG_INFINITY);
-    assert_eq!(stats::normal_ppf(1.0, 0.0, 1.0).unwrap(), f64::INFINITY);
+    assert_eq!(
+        stats::distributions::normal_ppf(0.0, 0.0, 1.0).unwrap(),
+        f64::NEG_INFINITY
+    );
+    assert_eq!(
+        stats::distributions::normal_ppf(1.0, 0.0, 1.0).unwrap(),
+        f64::INFINITY
+    );
 }

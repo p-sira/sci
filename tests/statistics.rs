@@ -2,7 +2,13 @@ mod common;
 use common::concat_pair;
 use common::vector as numbers;
 
-use sci::{Error, Result, stats::*};
+use sci::stats::{
+    association::*, binning::*, contingency, contingency::*, descriptive::*, diagnostics::*,
+    distances::*, distributions::*, estimation::*, goodness::*, inference::*, multivariate::*,
+    normality::*, qmc, ranking::*, regression::*, resampling::*, sensitivity::*, survival::*,
+    transformations::*,
+};
+use sci::{Error, Result};
 
 #[test]
 fn trimming_preserves_signed_zero_and_empty_samples() {
@@ -1837,7 +1843,7 @@ fn scaling_and_independent_properties() -> Result<()> {
     for p in [0.001, 0.1, 0.5, 0.9, 0.999] {
         assert!((cdf(d, ppf(d, p)?)? - p).abs() < 1e-12);
     }
-    let f = sci::fft::rfft(&[1., 2., 3., 4.]);
+    let f = sci::fft::real::rfft(&[1., 2., 3., 4.]);
     let amplitudes = f.into_iter().map(sci::complex::abs).collect::<Vec<_>>();
     assert_eq!(describe(&amplitudes, 1, true)?.count, amplitudes.len());
     Ok(())

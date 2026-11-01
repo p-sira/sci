@@ -197,7 +197,7 @@ fn separable(x: &[Vec<f64>], filter: impl Fn(&[f64]) -> Result<Vec<f64>>) -> Res
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::splines::*;
 /// let _=symiirorder1(&[1.;32],1.,0.2,1e-8)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -253,7 +253,7 @@ pub fn symiirorder1(x: &[f64], c0: f64, z1: f64, p: f64) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::splines::*;
 /// let _=symiirorder2(&[1.;64],0.3,0.6,1e-8)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -332,7 +332,7 @@ pub fn symiirorder2(x: &[f64], r: f64, omega: f64, p: f64) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::splines::*;
 /// let _=cspline1d(&[1.,2.,3.,2.,1.],0.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -414,7 +414,7 @@ pub fn cspline1d(x: &[f64], lambda: f64) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::splines::*;
 /// let _=qspline1d(&[1.,2.,3.,2.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -453,7 +453,7 @@ pub fn qspline1d(x: &[f64]) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::splines::*;
 /// let _=cspline1d_eval(&[1.,2.,3.],&[-1.,0.,0.5,2.],1.,0.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -492,7 +492,7 @@ pub fn cspline1d_eval(c: &[f64], x: &[f64], dx: f64, x0: f64) -> Result<Vec<f64>
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::splines::*;
 /// let _=qspline1d_eval(&[1.,2.,3.],&[-1.,0.,0.5,2.],1.,0.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -531,7 +531,7 @@ pub fn qspline1d_eval(c: &[f64], x: &[f64], dx: f64, x0: f64) -> Result<Vec<f64>
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::splines::*;
 /// let _=cspline2d(&vec![vec![1.;32];32],0.,1e-6)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -580,7 +580,7 @@ pub fn cspline2d(x: &[Vec<f64>], lambda: f64, p: f64) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::splines::*;
 /// let _=qspline2d(&vec![vec![1.;32];32],1e-6)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -620,7 +620,7 @@ pub fn qspline2d(x: &[Vec<f64>], p: f64) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::splines::*;
 /// let _=spline_filter(&vec![vec![1.;32];32],0.1)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -664,7 +664,7 @@ pub fn spline_filter(x: &[Vec<f64>], lambda: f64) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::splines::*;
 /// let _=whittaker_henderson(&[1.,2.,4.,3.],1.,2,&[1.;4])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

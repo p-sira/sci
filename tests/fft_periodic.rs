@@ -16,31 +16,31 @@ fn public_periodic_operators_match_scipy() {
         covered.insert(c[1]);
         let re = vector(c[2]);
         let got = match c[1] {
-            "diff" => f::diff(&re, c[7].parse().unwrap(), c[6].parse().unwrap()),
-            "hilbert" => f::hilbert(&re),
-            "ihilbert" => f::ihilbert(&re),
-            "tilbert" => f::tilbert(&re, c[5].parse().unwrap(), c[6].parse().unwrap()),
-            "itilbert" => f::itilbert(&re, c[5].parse().unwrap(), c[6].parse().unwrap()),
-            "shift" => f::shift(&re, c[3].parse().unwrap(), c[6].parse().unwrap()),
-            "cc_diff" => f::cc_diff(
+            "diff" => f::utilities::diff(&re, c[7].parse().unwrap(), c[6].parse().unwrap()),
+            "hilbert" => f::utilities::hilbert(&re),
+            "ihilbert" => f::utilities::ihilbert(&re),
+            "tilbert" => f::utilities::tilbert(&re, c[5].parse().unwrap(), c[6].parse().unwrap()),
+            "itilbert" => f::utilities::itilbert(&re, c[5].parse().unwrap(), c[6].parse().unwrap()),
+            "shift" => f::utilities::shift(&re, c[3].parse().unwrap(), c[6].parse().unwrap()),
+            "cc_diff" => f::utilities::cc_diff(
                 &re,
                 c[3].parse().unwrap(),
                 c[4].parse().unwrap(),
                 c[6].parse().unwrap(),
             ),
-            "cs_diff" => f::cs_diff(
+            "cs_diff" => f::utilities::cs_diff(
                 &re,
                 c[3].parse().unwrap(),
                 c[4].parse().unwrap(),
                 c[6].parse().unwrap(),
             ),
-            "sc_diff" => f::sc_diff(
+            "sc_diff" => f::utilities::sc_diff(
                 &re,
                 c[3].parse().unwrap(),
                 c[4].parse().unwrap(),
                 c[6].parse().unwrap(),
             ),
-            "ss_diff" => f::ss_diff(
+            "ss_diff" => f::utilities::ss_diff(
                 &re,
                 c[3].parse().unwrap(),
                 c[4].parse().unwrap(),
@@ -66,29 +66,29 @@ fn properties_and_interoperability() {
         .map(|j| (j as f64 * std::f64::consts::TAU / n as f64).sin())
         .collect();
     let p = std::f64::consts::TAU;
-    for (a, b) in f::diff(&x, 1, p).unwrap().iter().enumerate() {
+    for (a, b) in f::utilities::diff(&x, 1, p).unwrap().iter().enumerate() {
         finite_close(*b, (a as f64 * p / n as f64).cos(), 3e-12, 3e-12);
     }
     for order in [-3, -2, -1, 1, 2, 3] {
-        let y = f::diff(&f::diff(&x, order, p).unwrap(), -order, p).unwrap();
+        let y = f::utilities::diff(&f::utilities::diff(&x, order, p).unwrap(), -order, p).unwrap();
         for (a, b) in y.iter().zip(&x) {
             finite_close(*a, *b, 3e-12, 3e-12);
         }
     }
-    let y = f::hilbert(&x).unwrap();
-    let analytic = sci::signal::hilbert(&x).unwrap();
+    let y = f::utilities::hilbert(&x).unwrap();
+    let analytic = sci::signal::spectral::hilbert(&x).unwrap();
     for (a, b) in y.iter().zip(&analytic) {
         finite_close(*a, -b.im, 3e-12, 3e-12);
     }
-    let z = f::ihilbert(&y).unwrap();
+    let z = f::utilities::ihilbert(&y).unwrap();
     for (a, b) in z.iter().zip(&x) {
         finite_close(*a, *b, 3e-12, 3e-12);
     }
-    let z = f::tilbert(&f::itilbert(&x, 0.3, p).unwrap(), 0.3, p).unwrap();
+    let z = f::utilities::tilbert(&f::utilities::itilbert(&x, 0.3, p).unwrap(), 0.3, p).unwrap();
     for (a, b) in z.iter().zip(&x) {
         finite_close(*a, *b, 3e-12, 3e-12);
     }
-    for (a, b) in f::shift(&x, p / n as f64, p)
+    for (a, b) in f::utilities::shift(&x, p / n as f64, p)
         .unwrap()
         .iter()
         .zip(x.iter().cycle().skip(1))
@@ -100,14 +100,14 @@ fn properties_and_interoperability() {
         .collect();
     let phase: f64 = 3.0 * (-0.2) * p / 10.0;
     let scale = phase.cos() + phase.sin();
-    for (a, b) in f::shift(&alternate, -0.2, 10.0)
+    for (a, b) in f::utilities::shift(&alternate, -0.2, 10.0)
         .unwrap()
         .iter()
         .zip(&alternate)
     {
         finite_close(*a, *b * scale, 3e-12, 3e-12);
     }
-    for (a, b) in f::cc_diff(&[1.0, 2.0, 3.0], 1000.0, 1000.0, p)
+    for (a, b) in f::utilities::cc_diff(&[1.0, 2.0, 3.0], 1000.0, 1000.0, p)
         .unwrap()
         .iter()
         .zip([1.0, 2.0, 3.0])
@@ -123,29 +123,29 @@ fn invalid_domains_and_work_bounds() {
         vec![f64::INFINITY],
         vec![1.0; 1_048_577],
     ] {
-        assert!(f::diff(&x, 1, 1.0).is_err());
-        assert!(f::hilbert(&x).is_err());
-        assert!(f::ihilbert(&x).is_err());
-        assert!(f::tilbert(&x, 1.0, 1.0).is_err());
-        assert!(f::itilbert(&x, 1.0, 1.0).is_err());
-        assert!(f::shift(&x, 0.1, 1.0).is_err());
-        assert!(f::cc_diff(&x, 1.0, 1.0, 1.0).is_err());
-        assert!(f::cs_diff(&x, 1.0, 1.0, 1.0).is_err());
-        assert!(f::sc_diff(&x, 1.0, 1.0, 1.0).is_err());
-        assert!(f::ss_diff(&x, 1.0, 1.0, 1.0).is_err());
+        assert!(f::utilities::diff(&x, 1, 1.0).is_err());
+        assert!(f::utilities::hilbert(&x).is_err());
+        assert!(f::utilities::ihilbert(&x).is_err());
+        assert!(f::utilities::tilbert(&x, 1.0, 1.0).is_err());
+        assert!(f::utilities::itilbert(&x, 1.0, 1.0).is_err());
+        assert!(f::utilities::shift(&x, 0.1, 1.0).is_err());
+        assert!(f::utilities::cc_diff(&x, 1.0, 1.0, 1.0).is_err());
+        assert!(f::utilities::cs_diff(&x, 1.0, 1.0, 1.0).is_err());
+        assert!(f::utilities::sc_diff(&x, 1.0, 1.0, 1.0).is_err());
+        assert!(f::utilities::ss_diff(&x, 1.0, 1.0, 1.0).is_err());
     }
-    assert!(f::diff(&[1.0], 65, 1.0).is_err());
-    assert!(f::diff(&[1.0], i32::MIN, 1.0).is_err());
+    assert!(f::utilities::diff(&[1.0], 65, 1.0).is_err());
+    assert!(f::utilities::diff(&[1.0], i32::MIN, 1.0).is_err());
     for period in [0.0, -1.0, f64::NAN, f64::INFINITY] {
-        assert!(f::diff(&[1.0], 0, period).is_err());
-        assert!(f::shift(&[1.0], 0.0, period).is_err());
+        assert!(f::utilities::diff(&[1.0], 0, period).is_err());
+        assert!(f::utilities::shift(&[1.0], 0.0, period).is_err());
     }
-    assert!(f::cs_diff(&[1.0], 1.0, 0.0, 1.0).is_err());
-    assert!(f::ss_diff(&[1.0], 1.0, 0.0, 1.0).is_err());
-    assert!(f::cc_diff(&[1.0], f64::NAN, 1.0, 1.0).is_err());
-    assert!(f::sc_diff(&[1.0], 1.0, f64::INFINITY, 1.0).is_err());
-    assert!(f::tilbert(&[1.0], 0.0, 1.0).is_err());
-    assert!(f::itilbert(&[1.0], f64::NAN, 1.0).is_err());
-    assert!(f::shift(&[1.0], f64::INFINITY, 1.0).is_err());
-    assert!(f::cc_diff(&[1.0, 2.0, 3.0], 1000.0, 1.0, 1.0).is_err());
+    assert!(f::utilities::cs_diff(&[1.0], 1.0, 0.0, 1.0).is_err());
+    assert!(f::utilities::ss_diff(&[1.0], 1.0, 0.0, 1.0).is_err());
+    assert!(f::utilities::cc_diff(&[1.0], f64::NAN, 1.0, 1.0).is_err());
+    assert!(f::utilities::sc_diff(&[1.0], 1.0, f64::INFINITY, 1.0).is_err());
+    assert!(f::utilities::tilbert(&[1.0], 0.0, 1.0).is_err());
+    assert!(f::utilities::itilbert(&[1.0], f64::NAN, 1.0).is_err());
+    assert!(f::utilities::shift(&[1.0], f64::INFINITY, 1.0).is_err());
+    assert!(f::utilities::cc_diff(&[1.0, 2.0, 3.0], 1000.0, 1.0, 1.0).is_err());
 }

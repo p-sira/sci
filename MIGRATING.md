@@ -8,6 +8,39 @@ Use matching workspace releases so shared error and numerical types agree.
 Sci uses SciPy for independent numerical references. Its public API follows
 Rust types and ownership; SciPy inventory names do not require extra exports.
 
+## Numerical-family modules throughout the workspace (breaking)
+
+Numerical functions in the `sci-stats`, `sci-signal`, `sci-linalg`, `sci-sparse`,
+`sci-filter`, `sci-fft`, `sci-interpolate`, `sci-integrate`, `sci-optimize`, and
+`sci-spatial` crates are now exported through public mathematical-family modules
+instead of their previous flat crate roots. `sci-io` also groups Matrix Market
+operations under `matrix_market` and MATLAB file operations under `matlab`.
+Shared errors, foundational data types, and explicitly documented common
+configuration types remain at the crate root. `sci-core` stays flat; cluster,
+complex, constants, and differentiation retain their existing public APIs.
+
+| Before | After |
+| --- | --- |
+| `sci::stats::mean(&xs)` | `sci::stats::descriptive::mean(&xs)` |
+| `sci::stats::normal_cdf(x, mu, sigma)` | `sci::stats::distributions::normal_cdf(x, mu, sigma)` |
+| `sci::signal::convolve(&x, &h, mode)` | `sci::signal::convolution::convolve(&x, &h, mode)` |
+| `sci::linalg::solve(&a, &b)` | `sci::linalg::solvers::solve(&a, &b)` |
+| `sci::linalg::svd(&a)` | `sci::linalg::decompositions::svd(&a)` |
+| `sci::sparse::identity(n)` | `sci::sparse::construct::identity(n)` |
+| `sci::sparse::matvec(&a, &x)` | `sci::sparse::operations::matvec(&a, &x)` |
+| `sci::filter::kalman_predict(&prior, &f, &q)` | `sci::filter::kalman::kalman_predict(&prior, &f, &q)` |
+| `sci::fft::rfft(&x)` | `sci::fft::real::rfft(&x)` |
+| `sci::integrate::simpson(&y, x, dx)` | `sci::integrate::sampled::simpson(&y, x, dx)` |
+| `sci::interpolate::lagrange(&x, &y)` | `sci::interpolate::polynomial::lagrange(&x, &y)` |
+| `sci::optimize::minimize(f, &x, options)` | `sci::optimize::minimize::minimize(f, &x, options)` |
+| `sci::spatial::pdist(&points, metric)` | `sci::spatial::distance::pdist(&points, metric)` |
+| `sci::io::mmread(bytes)` | `sci::io::matrix_market::mmread(bytes)` |
+| `sci::io::loadmat(bytes)` | `sci::io::matlab::loadmat(bytes)` |
+
+The same changes apply to direct `sci-*` crate imports. Existing numerical
+algorithms, domains, signatures, and result ordering are unchanged. No new
+Cargo feature selections are required by this namespace migration.
+
 ## Special-function family modules (breaking)
 
 All 362 formerly root-exported numerical functions are assigned to public
@@ -77,8 +110,8 @@ precision dispatch. Both support `f32` and `f64`.
 let gradient = sci::differentiate::gradient(
     |x| x[0] * x[0] + x[1] * x[1], &[1.0_f32, 2.0], 0.125,
 )?;
-let average: f32 = sci::stats::mean(&gradient)?;
-let spectrum = sci::fft::rfft(&gradient);
+let average: f32 = sci::stats::descriptive::mean(&gradient)?;
+let spectrum = sci::fft::real::rfft(&gradient);
 assert_eq!(average, 3.0);
 assert_eq!(sci::complex::real(spectrum[0]), 6.0_f32);
 # Ok::<(), sci::Error>(())
@@ -140,8 +173,8 @@ and the facade `sci::sparse` API preserve the preexisting capabilities;
 conversions:
 
 ```rust
-let a = sci::sparse::identity(2)?;
-let indices = sci::sparse::csr_indices_i32(&a)?;
+let a = sci::sparse::construct::identity(2)?;
+let indices = sci::sparse::array::csr_indices_i32(&a)?;
 assert_eq!(indices.indptr, vec![0_i32, 1, 2]);
 assert_eq!(indices.indices, vec![0_i32, 1]);
 # Ok::<(), sci::Error>(())

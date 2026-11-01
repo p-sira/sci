@@ -145,7 +145,7 @@ fn exponential(a: &DMatrix<f64>) -> Result<DMatrix<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::systems::*;
 /// let _ = abcd_normalize(&[vec![-1.]],&[vec![1.]],&[vec![1.]],&[vec![0.]])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -202,7 +202,7 @@ pub fn abcd_normalize(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::systems::*;
 /// let _ = tf2ss(&[1.],&[1.,2.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -267,7 +267,8 @@ pub fn tf2ss(b: &[f64], a: &[f64]) -> Result<StateSpace> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::systems::*;
+/// use sci_signal::design::buttap;
 /// let _ = zpk2ss(&buttap(2)?)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -307,7 +308,7 @@ pub fn zpk2ss(zpk: &Zpk) -> Result<StateSpace> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::systems::*;
 /// let s=tf2ss(&[1.],&[1.,2.])?; let _ = ss2tf(&s,0)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -368,7 +369,7 @@ pub fn ss2tf(s: &StateSpace, input: usize) -> Result<(Vec<Vec<f64>>, Vec<f64>)> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::systems::*;
 /// let s=tf2ss(&[1.],&[1.,2.])?; let _ = ss2zpk(&s,0,0)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -411,7 +412,7 @@ pub fn ss2zpk(s: &StateSpace, input: usize, output: usize) -> Result<Zpk> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::systems::*;
 /// let s=tf2ss(&[1.],&[1.,2.])?;let _ = cont2discrete(&s,0.1,Discretization::ZeroOrderHold)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -490,7 +491,7 @@ pub fn cont2discrete(s: &StateSpace, dt: f64, method: Discretization) -> Result<
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::systems::*;
 /// let s=tf2ss(&[1.],&[1.,-0.5])?;let _=dlsim(&s,&[vec![1.],vec![0.]],1.,&[0.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -555,7 +556,7 @@ pub fn dlsim(s: &StateSpace, u: &[Vec<f64>], dt: f64, initial: &[f64]) -> Result
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::systems::*;
 /// let s=tf2ss(&[1.],&[1.,1.])?;let _=lsim(&s,&[vec![1.],vec![1.]],&[0.,1.],&[0.],true)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -643,7 +644,7 @@ pub fn lsim(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::systems::*;
 /// let s=tf2ss(&[1.],&[1.,1.])?;let _=step(&s,&[0.,1.,2.],0)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -691,7 +692,7 @@ pub fn step(s: &StateSpace, t: &[f64], input: usize) -> Result<Simulation> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::systems::*;
 /// let s=tf2ss(&[1.],&[1.,1.])?;let _=impulse(&s,&[0.,1.,2.],0)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -741,7 +742,7 @@ pub fn impulse(s: &StateSpace, t: &[f64], input: usize) -> Result<Simulation> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::systems::*;
 /// let s=tf2ss(&[1.],&[1.,-0.5])?;let _=dstep(&s,1.,5,0)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -789,7 +790,7 @@ pub fn dstep(s: &StateSpace, dt: f64, length: usize, input: usize) -> Result<Sim
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::systems::*;
 /// let s=tf2ss(&[1.],&[1.,-0.5])?;let _=dimpulse(&s,1.,5,0)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -835,7 +836,7 @@ pub fn dimpulse(s: &StateSpace, dt: f64, length: usize, input: usize) -> Result<
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::systems::*;
 /// let _=place_poles(&[vec![0.,1.],vec![0.,0.]],&[0.,1.],&[sci_complex::Complex{re:-1.,im:0.},sci_complex::Complex{re:-2.,im:0.}])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

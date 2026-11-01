@@ -166,7 +166,7 @@ fn input(a: &(impl super::MatrixInput + ?Sized)) -> Result<(Mat<C>, f64)> {
 /// # Examples
 ///
 /// ```
-/// let r = sci_linalg::sqrtm(&[vec![-4.]])?;
+/// let r = sci_linalg::matrix_functions::sqrtm(&[vec![-4.]])?;
 /// assert!((r[0][0].im-2.).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -212,7 +212,7 @@ pub fn sqrtm(a: &(impl super::MatrixInput + ?Sized)) -> Result<ComplexMatrix> {
 /// # Examples
 ///
 /// ```
-/// let l = sci_linalg::logm(&[vec![1.]])?;
+/// let l = sci_linalg::matrix_functions::logm(&[vec![1.]])?;
 /// assert!(l[0][0].re.abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -264,7 +264,7 @@ pub fn logm(a: &(impl super::MatrixInput + ?Sized)) -> Result<ComplexMatrix> {
 /// # Examples
 ///
 /// ```
-/// let p = sci_linalg::fractional_matrix_power(&[vec![4.]],0.5)?;
+/// let p = sci_linalg::matrix_functions::fractional_matrix_power(&[vec![4.]],0.5)?;
 /// assert!((p[0][0].re-2.).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -353,7 +353,7 @@ pub fn fractional_matrix_power(
 /// # Examples
 ///
 /// ```
-/// let f = sci_linalg::funm(&[vec![1.,0.],vec![0.,2.]],
+/// let f = sci_linalg::matrix_functions::funm(&[vec![1.,0.],vec![0.,2.]],
 ///     |z| sci_complex::exp(z))?;
 /// assert!((f[0][0].re-std::f64::consts::E).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
@@ -430,7 +430,7 @@ pub fn funm<F: FnMut(Complex) -> Complex>(
 /// # Examples
 ///
 /// ```
-/// let s = sci_linalg::signm(&[vec![-2.,0.],vec![0.,3.]])?;
+/// let s = sci_linalg::matrix_functions::signm(&[vec![-2.,0.],vec![0.,3.]])?;
 /// assert!((s[0][0].re+1.).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -484,7 +484,7 @@ pub fn signm(a: &(impl super::MatrixInput + ?Sized)) -> Result<ComplexMatrix> {
 /// # Examples
 ///
 /// ```
-/// let (t,z) = sci_linalg::rsf2csf(&[vec![0.,-1.],vec![1.,0.]],
+/// let (t,z) = sci_linalg::decompositions::rsf2csf(&[vec![0.,-1.],vec![1.,0.]],
 ///     &[vec![1.,0.],vec![0.,1.]])?;
 /// assert_eq!(t.len(),z.len());
 /// # Ok::<(), sci_core::Error>(())

@@ -205,7 +205,7 @@ fn evaluation_counts_and_symmetric_matrix_interoperate() {
     assert_eq!(calls.replace(0), 9);
     assert_eq!(hessian, vec![vec![2.0, 3.0], vec![3.0, 4.0]]);
     assert_eq!(
-        linalg::matvec(&hessian, &[2.0, -1.0]).unwrap(),
+        linalg::basic::matvec(&hessian, &[2.0, -1.0]).unwrap(),
         vec![1.0, 2.0]
     );
     d::gradient(f, &point, 0.125).unwrap();

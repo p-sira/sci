@@ -1,4 +1,7 @@
-use sci::{Error, Matrix, filter::*};
+use sci::{
+    Error, Matrix,
+    filter::{Gaussian, SigmaPoints, Update, kalman::*, particle::*},
+};
 mod common;
 use common::finite_close;
 

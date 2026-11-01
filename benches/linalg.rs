@@ -26,7 +26,9 @@ mod performance_benches {
     #[divan::bench(args = [16, 64, 256])]
     fn eigvalsh(bencher: Bencher, n: usize) {
         let a = symmetric_matrix(n);
-        warm(bencher, || linalg::eigvalsh(black_box(&a), true).unwrap());
+        warm(bencher, || {
+            linalg::eigen::eigvalsh(black_box(&a), true).unwrap()
+        });
     }
 
     #[divan::bench(args = [16, 64, 256])]
@@ -34,7 +36,7 @@ mod performance_benches {
         let d = values(n, 1);
         let e = values(n - 1, 2);
         warm(bencher, || {
-            linalg::eigvalsh_tridiagonal(black_box(&d), black_box(&e)).unwrap()
+            linalg::eigen::eigvalsh_tridiagonal(black_box(&d), black_box(&e)).unwrap()
         });
     }
 
@@ -42,20 +44,22 @@ mod performance_benches {
     fn eigvals_banded(bencher: Bencher, n: usize) {
         let ab = vec![values(n, 1), values(n, 2)];
         warm(bencher, || {
-            linalg::eigvals_banded(black_box(&ab), true).unwrap()
+            linalg::eigen::eigvals_banded(black_box(&ab), true).unwrap()
         });
     }
 
     #[divan::bench(args = [16, 64, 256])]
     fn transpose(bencher: Bencher, n: usize) {
         let a = square_matrix(n);
-        warm(bencher, || linalg::transpose(black_box(&a)).unwrap());
+        warm(bencher, || linalg::basic::transpose(black_box(&a)).unwrap());
     }
 
     #[divan::bench(args = [16, 64, 256])]
     fn eigh(bencher: Bencher, n: usize) {
         let a = symmetric_matrix(n);
-        warm(bencher, || linalg::eigh(black_box(&a), true).unwrap());
+        warm(bencher, || {
+            linalg::eigen::eigh(black_box(&a), true).unwrap()
+        });
     }
 }
 
@@ -69,7 +73,7 @@ mod borrowed_input_benches {
     fn matmul_faer(bencher: Bencher, n: usize) {
         let a = square_matrix(n).to_faer().unwrap();
         warm(bencher, || {
-            linalg::matmul(black_box(&a), black_box(&a)).unwrap()
+            linalg::basic::matmul(black_box(&a), black_box(&a)).unwrap()
         });
     }
 
@@ -78,7 +82,7 @@ mod borrowed_input_benches {
         let a = square_matrix(n).to_faer().unwrap();
         let b = values(n, 3);
         warm(bencher, || {
-            linalg::solve(black_box(&a), black_box(&b)).unwrap()
+            linalg::solvers::solve(black_box(&a), black_box(&b)).unwrap()
         });
     }
 
@@ -86,14 +90,16 @@ mod borrowed_input_benches {
     fn norm_ndarray(bencher: Bencher, n: usize) {
         let a = square_matrix(n).to_ndarray().unwrap();
         warm(bencher, || {
-            linalg::norm(black_box(&a), linalg::MatrixNorm::One).unwrap()
+            linalg::basic::norm(black_box(&a), linalg::basic::MatrixNorm::One).unwrap()
         });
     }
 
     #[divan::bench(args = [16, 64, 256])]
     fn cholesky_nalgebra(bencher: Bencher, n: usize) {
         let a = spd_matrix(n).to_nalgebra().unwrap();
-        warm(bencher, || linalg::cholesky(black_box(&a), true).unwrap());
+        warm(bencher, || {
+            linalg::decompositions::cholesky(black_box(&a), true).unwrap()
+        });
     }
 }
 
@@ -120,7 +126,7 @@ fn scaled(a: &[Vec<f64>], factor: f64) -> Vec<Vec<f64>> {
 fn low_rank(m: usize, n: usize, k: usize) -> Vec<Vec<f64>> {
     let left = points(m, k, 21);
     let right = points(k, n, 22);
-    linalg::matmul(&left, &right).unwrap()
+    linalg::basic::matmul(&left, &right).unwrap()
 }
 
 /// Identity matrix of order `n`.
@@ -138,7 +144,7 @@ mod basic_benches {
         let x = values(1_000, 1);
         let y = values(1_000, 2);
         warm(bencher, || {
-            linalg::dot(black_box(&x), black_box(&y)).unwrap()
+            linalg::basic::dot(black_box(&x), black_box(&y)).unwrap()
         });
     }
 
@@ -147,7 +153,7 @@ mod basic_benches {
         let a = square_matrix(N);
         let x = values(N, 3);
         warm(bencher, || {
-            linalg::matvec(black_box(&a), black_box(&x)).unwrap()
+            linalg::basic::matvec(black_box(&a), black_box(&x)).unwrap()
         });
     }
 
@@ -156,21 +162,21 @@ mod basic_benches {
         let a = square_matrix(N);
         let b = symmetric_matrix(N);
         warm(bencher, || {
-            linalg::matmul(black_box(&a), black_box(&b)).unwrap()
+            linalg::basic::matmul(black_box(&a), black_box(&b)).unwrap()
         });
     }
 
     #[divan::bench]
     fn transpose(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::transpose(black_box(&a)).unwrap());
+        warm(bencher, || linalg::basic::transpose(black_box(&a)).unwrap());
     }
 
     #[divan::bench]
     fn norm_frobenius(bencher: Bencher) {
         let a = square_matrix(N);
         warm(bencher, || {
-            linalg::norm(black_box(&a), linalg::MatrixNorm::Frobenius).unwrap()
+            linalg::basic::norm(black_box(&a), linalg::basic::MatrixNorm::Frobenius).unwrap()
         });
     }
 
@@ -178,14 +184,14 @@ mod basic_benches {
     fn norm_spectral(bencher: Bencher) {
         let a = square_matrix(N);
         warm(bencher, || {
-            linalg::norm(black_box(&a), linalg::MatrixNorm::Spectral).unwrap()
+            linalg::basic::norm(black_box(&a), linalg::basic::MatrixNorm::Spectral).unwrap()
         });
     }
 
     #[divan::bench]
     fn bandwidth(bencher: Bencher) {
-        let a = linalg::toeplitz(&values(N, 4), None).unwrap();
-        warm(bencher, || linalg::bandwidth(black_box(&a)).unwrap());
+        let a = linalg::structured::toeplitz(&values(N, 4), None).unwrap();
+        warm(bencher, || linalg::basic::bandwidth(black_box(&a)).unwrap());
     }
 
     /// Also covers the `ishermitian` alias.
@@ -193,7 +199,7 @@ mod basic_benches {
     fn issymmetric(bencher: Bencher) {
         let a = symmetric_matrix(N);
         warm(bencher, || {
-            linalg::issymmetric(black_box(&a), None, None).unwrap()
+            linalg::basic::issymmetric(black_box(&a), None, None).unwrap()
         });
     }
 
@@ -202,7 +208,7 @@ mod basic_benches {
         let a = points(4, N, 5);
         let b = points(4, N, 6);
         warm(bencher, || {
-            linalg::khatri_rao(black_box(&a), black_box(&b)).unwrap()
+            linalg::basic::khatri_rao(black_box(&a), black_box(&b)).unwrap()
         });
     }
 
@@ -214,7 +220,7 @@ mod basic_benches {
             .map(|i| if i % 3 == 0 { -1.0 } else { 1.0 })
             .collect();
         warm(bencher, || {
-            linalg::clarkson_woodruff_transform(
+            linalg::subspaces::clarkson_woodruff_transform(
                 black_box(&a),
                 8,
                 black_box(&buckets),
@@ -233,20 +239,20 @@ mod solve_benches {
         let a = square_matrix(N);
         let b = values(N, 3);
         warm(bencher, || {
-            linalg::solve(black_box(&a), black_box(&b)).unwrap()
+            linalg::solvers::solve(black_box(&a), black_box(&b)).unwrap()
         });
     }
 
     #[divan::bench]
     fn inv(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::inv(black_box(&a)).unwrap());
+        warm(bencher, || linalg::basic::inv(black_box(&a)).unwrap());
     }
 
     #[divan::bench]
     fn det(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::det(black_box(&a)).unwrap());
+        warm(bencher, || linalg::basic::det(black_box(&a)).unwrap());
     }
 
     #[divan::bench]
@@ -254,7 +260,8 @@ mod solve_benches {
         let a = square_matrix(N);
         let b = values(N, 3);
         warm(bencher, || {
-            linalg::solve_triangular(black_box(&a), black_box(&b), true, false, false).unwrap()
+            linalg::solvers::solve_triangular(black_box(&a), black_box(&b), true, false, false)
+                .unwrap()
         });
     }
 
@@ -271,7 +278,8 @@ mod solve_benches {
         r[0] = c[0];
         let b = values(N, 3);
         warm(bencher, || {
-            linalg::solve_toeplitz(black_box(&c), Some(black_box(&r)), black_box(&b)).unwrap()
+            linalg::solvers::solve_toeplitz(black_box(&c), Some(black_box(&r)), black_box(&b))
+                .unwrap()
         });
     }
 
@@ -282,7 +290,8 @@ mod solve_benches {
         r[0] = c[0];
         let x = points(N, 4, 10);
         warm(bencher, || {
-            linalg::matmul_toeplitz(black_box(&c), Some(black_box(&r)), black_box(&x)).unwrap()
+            linalg::structured::matmul_toeplitz(black_box(&c), Some(black_box(&r)), black_box(&x))
+                .unwrap()
         });
     }
 
@@ -291,37 +300,41 @@ mod solve_benches {
         let c = toeplitz_column();
         let b = values(N, 3);
         warm(bencher, || {
-            linalg::solve_circulant(black_box(&c), black_box(&b)).unwrap()
+            linalg::solvers::solve_circulant(black_box(&c), black_box(&b)).unwrap()
         });
     }
 
     #[divan::bench]
     fn lu_factor(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::lu_factor(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::decompositions::lu_factor(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn lu_solve(bencher: Bencher) {
-        let factor = linalg::lu_factor(&square_matrix(N)).unwrap();
+        let factor = linalg::decompositions::lu_factor(&square_matrix(N)).unwrap();
         let b = values(N, 3);
         warm(bencher, || {
-            linalg::lu_solve(black_box(&factor), black_box(&b), false).unwrap()
+            linalg::solvers::lu_solve(black_box(&factor), black_box(&b), false).unwrap()
         });
     }
 
     #[divan::bench]
     fn cho_factor(bencher: Bencher) {
         let a = spd_matrix(N);
-        warm(bencher, || linalg::cho_factor(black_box(&a), true).unwrap());
+        warm(bencher, || {
+            linalg::decompositions::cho_factor(black_box(&a), true).unwrap()
+        });
     }
 
     #[divan::bench]
     fn cho_solve(bencher: Bencher) {
-        let factor = linalg::cho_factor(&spd_matrix(N), true).unwrap();
+        let factor = linalg::decompositions::cho_factor(&spd_matrix(N), true).unwrap();
         let b = values(N, 3);
         warm(bencher, || {
-            linalg::cho_solve(black_box(&factor), black_box(&b)).unwrap()
+            linalg::solvers::cho_solve(black_box(&factor), black_box(&b)).unwrap()
         });
     }
 
@@ -330,21 +343,23 @@ mod solve_benches {
         let a = points(2 * N, N, 11);
         let b = values(2 * N, 12);
         warm(bencher, || {
-            linalg::lstsq(black_box(&a), black_box(&b), None).unwrap()
+            linalg::solvers::lstsq(black_box(&a), black_box(&b), None).unwrap()
         });
     }
 
     #[divan::bench]
     fn pinv(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::pinv(black_box(&a), 0.0, None).unwrap());
+        warm(bencher, || {
+            linalg::basic::pinv(black_box(&a), 0.0, None).unwrap()
+        });
     }
 
     #[divan::bench]
     fn pinvh(bencher: Bencher) {
         let a = symmetric_matrix(N);
         warm(bencher, || {
-            linalg::pinvh(black_box(&a), 0.0, None, true).unwrap()
+            linalg::basic::pinvh(black_box(&a), 0.0, None, true).unwrap()
         });
     }
 }
@@ -369,7 +384,7 @@ mod banded_benches {
         let ab = general_band();
         let b = values(N, 3);
         warm(bencher, || {
-            linalg::solve_banded(1, 1, black_box(&ab), black_box(&b)).unwrap()
+            linalg::solvers::solve_banded(1, 1, black_box(&ab), black_box(&b)).unwrap()
         });
     }
 
@@ -378,7 +393,7 @@ mod banded_benches {
         let ab = symmetric_band();
         let b = values(N, 3);
         warm(bencher, || {
-            linalg::solveh_banded(black_box(&ab), black_box(&b), true).unwrap()
+            linalg::solvers::solveh_banded(black_box(&ab), black_box(&b), true).unwrap()
         });
     }
 
@@ -386,16 +401,16 @@ mod banded_benches {
     fn cholesky_banded(bencher: Bencher) {
         let ab = symmetric_band();
         warm(bencher, || {
-            linalg::cholesky_banded(black_box(&ab), true).unwrap()
+            linalg::decompositions::cholesky_banded(black_box(&ab), true).unwrap()
         });
     }
 
     #[divan::bench]
     fn cho_solve_banded(bencher: Bencher) {
-        let cb = linalg::cholesky_banded(&symmetric_band(), true).unwrap();
+        let cb = linalg::decompositions::cholesky_banded(&symmetric_band(), true).unwrap();
         let b = values(N, 3);
         warm(bencher, || {
-            linalg::cho_solve_banded(black_box(&cb), black_box(&b), true).unwrap()
+            linalg::solvers::cho_solve_banded(black_box(&cb), black_box(&b), true).unwrap()
         });
     }
 
@@ -403,7 +418,7 @@ mod banded_benches {
     fn eig_banded(bencher: Bencher) {
         let ab = symmetric_band();
         warm(bencher, || {
-            linalg::eig_banded(black_box(&ab), true).unwrap()
+            linalg::eigen::eig_banded(black_box(&ab), true).unwrap()
         });
     }
 
@@ -411,7 +426,7 @@ mod banded_benches {
     fn eigvals_banded(bencher: Bencher) {
         let ab = symmetric_band();
         warm(bencher, || {
-            linalg::eigvals_banded(black_box(&ab), true).unwrap()
+            linalg::eigen::eigvals_banded(black_box(&ab), true).unwrap()
         });
     }
 
@@ -420,7 +435,7 @@ mod banded_benches {
         let d = vec![4.0; N];
         let e = values(N - 1, 15);
         warm(bencher, || {
-            linalg::eigh_tridiagonal(black_box(&d), black_box(&e)).unwrap()
+            linalg::eigen::eigh_tridiagonal(black_box(&d), black_box(&e)).unwrap()
         });
     }
 
@@ -429,7 +444,7 @@ mod banded_benches {
         let d = vec![4.0; N];
         let e = values(N - 1, 15);
         warm(bencher, || {
-            linalg::eigvalsh_tridiagonal(black_box(&d), black_box(&e)).unwrap()
+            linalg::eigen::eigvalsh_tridiagonal(black_box(&d), black_box(&e)).unwrap()
         });
     }
 }
@@ -440,31 +455,41 @@ mod decomposition_benches {
     #[divan::bench]
     fn cholesky(bencher: Bencher) {
         let a = spd_matrix(N);
-        warm(bencher, || linalg::cholesky(black_box(&a), true).unwrap());
+        warm(bencher, || {
+            linalg::decompositions::cholesky(black_box(&a), true).unwrap()
+        });
     }
 
     #[divan::bench]
     fn lu(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::lu(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::decompositions::lu(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn ldl(bencher: Bencher) {
         let a = symmetric_matrix(N);
-        warm(bencher, || linalg::ldl(black_box(&a), true).unwrap());
+        warm(bencher, || {
+            linalg::decompositions::ldl(black_box(&a), true).unwrap()
+        });
     }
 
     #[divan::bench]
     fn qr(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::qr(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::decompositions::qr(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn rq(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::rq(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::decompositions::rq(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
@@ -472,17 +497,17 @@ mod decomposition_benches {
         let a = square_matrix(N);
         let c = symmetric_matrix(N);
         warm(bencher, || {
-            linalg::qr_multiply(black_box(&a), black_box(&c), true).unwrap()
+            linalg::decompositions::qr_multiply(black_box(&a), black_box(&c), true).unwrap()
         });
     }
 
     #[divan::bench]
     fn qr_update(bencher: Bencher) {
-        let f = linalg::qr(&square_matrix(N)).unwrap();
+        let f = linalg::decompositions::qr(&square_matrix(N)).unwrap();
         let u = values(N, 16);
         let v = values(N, 17);
         warm(bencher, || {
-            linalg::qr_update(
+            linalg::decompositions::qr_update(
                 black_box(&f.q),
                 black_box(&f.r),
                 black_box(&u),
@@ -494,49 +519,66 @@ mod decomposition_benches {
 
     #[divan::bench]
     fn qr_insert(bencher: Bencher) {
-        let f = linalg::qr(&square_matrix(N)).unwrap();
+        let f = linalg::decompositions::qr(&square_matrix(N)).unwrap();
         let row = points(1, N, 18);
         warm(bencher, || {
-            linalg::qr_insert(black_box(&f.q), black_box(&f.r), black_box(&row), N, true).unwrap()
+            linalg::decompositions::qr_insert(
+                black_box(&f.q),
+                black_box(&f.r),
+                black_box(&row),
+                N,
+                true,
+            )
+            .unwrap()
         });
     }
 
     #[divan::bench]
     fn qr_delete(bencher: Bencher) {
-        let f = linalg::qr(&square_matrix(N)).unwrap();
+        let f = linalg::decompositions::qr(&square_matrix(N)).unwrap();
         warm(bencher, || {
-            linalg::qr_delete(black_box(&f.q), black_box(&f.r), 0, 1, true).unwrap()
+            linalg::decompositions::qr_delete(black_box(&f.q), black_box(&f.r), 0, 1, true).unwrap()
         });
     }
 
     #[divan::bench]
     fn svd(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::svd(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::decompositions::svd(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn svdvals(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::svdvals(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::decompositions::svdvals(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn orth(bencher: Bencher) {
         let a = low_rank(N, N, 6);
-        warm(bencher, || linalg::orth(black_box(&a), None).unwrap());
+        warm(bencher, || {
+            linalg::subspaces::orth(black_box(&a), None).unwrap()
+        });
     }
 
     #[divan::bench]
     fn null_space(bencher: Bencher) {
         let a = points(N / 2, N, 19);
-        warm(bencher, || linalg::null_space(black_box(&a), None).unwrap());
+        warm(bencher, || {
+            linalg::subspaces::null_space(black_box(&a), None).unwrap()
+        });
     }
 
     #[divan::bench]
     fn polar(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::polar(black_box(&a), true).unwrap());
+        warm(bencher, || {
+            linalg::decompositions::polar(black_box(&a), true).unwrap()
+        });
     }
 
     #[divan::bench]
@@ -544,7 +586,7 @@ mod decomposition_benches {
         let a = square_matrix(N);
         let b = symmetric_matrix(N);
         warm(bencher, || {
-            linalg::orthogonal_procrustes(black_box(&a), black_box(&b)).unwrap()
+            linalg::subspaces::orthogonal_procrustes(black_box(&a), black_box(&b)).unwrap()
         });
     }
 
@@ -553,15 +595,15 @@ mod decomposition_benches {
         let a = points(N, 4, 20);
         let b = points(N, 4, 21);
         warm(bencher, || {
-            linalg::subspace_angles(black_box(&a), black_box(&b)).unwrap()
+            linalg::subspaces::subspace_angles(black_box(&a), black_box(&b)).unwrap()
         });
     }
 
     #[divan::bench]
     fn cossin(bencher: Bencher) {
-        let x = linalg::qr(&square_matrix(SMALL)).unwrap().q;
+        let x = linalg::decompositions::qr(&square_matrix(SMALL)).unwrap().q;
         warm(bencher, || {
-            linalg::cossin(black_box(&x), SMALL / 2, SMALL / 2).unwrap()
+            linalg::decompositions::cossin(black_box(&x), SMALL / 2, SMALL / 2).unwrap()
         });
     }
 }
@@ -572,52 +614,60 @@ mod eigen_benches {
     #[divan::bench]
     fn eigh(bencher: Bencher) {
         let a = symmetric_matrix(N);
-        warm(bencher, || linalg::eigh(black_box(&a), true).unwrap());
+        warm(bencher, || {
+            linalg::eigen::eigh(black_box(&a), true).unwrap()
+        });
     }
 
     #[divan::bench]
     fn eigvalsh(bencher: Bencher) {
         let a = symmetric_matrix(N);
-        warm(bencher, || linalg::eigvalsh(black_box(&a), true).unwrap());
+        warm(bencher, || {
+            linalg::eigen::eigvalsh(black_box(&a), true).unwrap()
+        });
     }
 
     #[divan::bench]
     fn eig(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::eig(black_box(&a)).unwrap());
+        warm(bencher, || linalg::eigen::eig(black_box(&a)).unwrap());
     }
 
     #[divan::bench]
     fn eigvals(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::eigvals(black_box(&a)).unwrap());
+        warm(bencher, || linalg::eigen::eigvals(black_box(&a)).unwrap());
     }
 
     #[divan::bench]
     fn cdf2rdf(bencher: Bencher) {
-        let e = linalg::eig(&square_matrix(N)).unwrap();
+        let e = linalg::eigen::eig(&square_matrix(N)).unwrap();
         warm(bencher, || {
-            linalg::cdf2rdf(black_box(&e.eigenvalues), black_box(&e.eigenvectors)).unwrap()
+            linalg::eigen::cdf2rdf(black_box(&e.eigenvalues), black_box(&e.eigenvectors)).unwrap()
         });
     }
 
     #[divan::bench]
     fn hessenberg(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::hessenberg(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::decompositions::hessenberg(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn schur(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::schur(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::decompositions::schur(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn rsf2csf(bencher: Bencher) {
-        let (t, z) = linalg::schur(&square_matrix(N)).unwrap();
+        let (t, z) = linalg::decompositions::schur(&square_matrix(N)).unwrap();
         warm(bencher, || {
-            linalg::rsf2csf(black_box(&t), black_box(&z)).unwrap()
+            linalg::decompositions::rsf2csf(black_box(&t), black_box(&z)).unwrap()
         });
     }
 
@@ -634,7 +684,7 @@ mod eigen_benches {
             })
             .collect();
         warm(bencher, || {
-            linalg::matrix_balance(black_box(&a), true, true).unwrap()
+            linalg::decompositions::matrix_balance(black_box(&a), true, true).unwrap()
         });
     }
 
@@ -643,7 +693,7 @@ mod eigen_benches {
         let a = mixed_matrix(SMALL);
         let b = spd_matrix(SMALL);
         warm(bencher, || {
-            linalg::qz(black_box(&a), black_box(&b)).unwrap()
+            linalg::eigen::qz(black_box(&a), black_box(&b)).unwrap()
         });
     }
 
@@ -652,7 +702,7 @@ mod eigen_benches {
         let a = mixed_matrix(SMALL);
         let b = spd_matrix(SMALL);
         warm(bencher, || {
-            linalg::ordqz(black_box(&a), black_box(&b), |alpha, beta| {
+            linalg::eigen::ordqz(black_box(&a), black_box(&b), |alpha, beta| {
                 alpha.re * beta.re + alpha.im * beta.im < 0.0
             })
             .unwrap()
@@ -676,43 +726,57 @@ mod matrix_function_benches {
     #[divan::bench]
     fn expm(bencher: Bencher) {
         let a = small_norm();
-        warm(bencher, || linalg::expm(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::matrix_functions::expm(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn cosm(bencher: Bencher) {
         let a = small_norm();
-        warm(bencher, || linalg::cosm(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::matrix_functions::cosm(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn sinm(bencher: Bencher) {
         let a = small_norm();
-        warm(bencher, || linalg::sinm(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::matrix_functions::sinm(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn coshm(bencher: Bencher) {
         let a = small_norm();
-        warm(bencher, || linalg::coshm(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::matrix_functions::coshm(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn sinhm(bencher: Bencher) {
         let a = small_norm();
-        warm(bencher, || linalg::sinhm(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::matrix_functions::sinhm(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn tanm(bencher: Bencher) {
         let a = small_norm();
-        warm(bencher, || linalg::tanm(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::matrix_functions::tanm(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn tanhm(bencher: Bencher) {
         let a = small_norm();
-        warm(bencher, || linalg::tanhm(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::matrix_functions::tanhm(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
@@ -720,7 +784,7 @@ mod matrix_function_benches {
         let a = small_norm();
         let e = scaled(&symmetric_matrix(SMALL), 0.1);
         warm(bencher, || {
-            linalg::expm_frechet(black_box(&a), black_box(&e)).unwrap()
+            linalg::matrix_functions::expm_frechet(black_box(&a), black_box(&e)).unwrap()
         });
     }
 
@@ -728,26 +792,32 @@ mod matrix_function_benches {
     #[divan::bench]
     fn expm_cond(bencher: Bencher) {
         let a = scaled(&square_matrix(4), 0.5 / 4.0);
-        warm(bencher, || linalg::expm_cond(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::matrix_functions::expm_cond(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn sqrtm(bencher: Bencher) {
         let a = spd();
-        warm(bencher, || linalg::sqrtm(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::matrix_functions::sqrtm(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn logm(bencher: Bencher) {
         let a = spd();
-        warm(bencher, || linalg::logm(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::matrix_functions::logm(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn fractional_matrix_power(bencher: Bencher) {
         let a = spd();
         warm(bencher, || {
-            linalg::fractional_matrix_power(black_box(&a), 0.3).unwrap()
+            linalg::matrix_functions::fractional_matrix_power(black_box(&a), 0.3).unwrap()
         });
     }
 
@@ -755,14 +825,16 @@ mod matrix_function_benches {
     fn funm(bencher: Bencher) {
         let a = small_norm();
         warm(bencher, || {
-            linalg::funm(black_box(&a), sci::complex::exp).unwrap()
+            linalg::matrix_functions::funm(black_box(&a), sci::complex::exp).unwrap()
         });
     }
 
     #[divan::bench]
     fn signm(bencher: Bencher) {
         let a = mixed_matrix(SMALL);
-        warm(bencher, || linalg::signm(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::matrix_functions::signm(black_box(&a)).unwrap()
+        });
     }
 }
 
@@ -775,7 +847,7 @@ mod equation_benches {
         let b = spd_matrix(SMALL);
         let q = points(SMALL, SMALL, 23);
         warm(bencher, || {
-            linalg::solve_sylvester(black_box(&a), black_box(&b), black_box(&q)).unwrap()
+            linalg::solvers::solve_sylvester(black_box(&a), black_box(&b), black_box(&q)).unwrap()
         });
     }
 
@@ -784,7 +856,7 @@ mod equation_benches {
         let a = scaled(&square_matrix(SMALL), -1.0);
         let q = spd_matrix(SMALL);
         warm(bencher, || {
-            linalg::solve_continuous_lyapunov(black_box(&a), black_box(&q)).unwrap()
+            linalg::solvers::solve_continuous_lyapunov(black_box(&a), black_box(&q)).unwrap()
         });
     }
 
@@ -793,7 +865,7 @@ mod equation_benches {
         let a = scaled(&square_matrix(SMALL), 0.5 / SMALL as f64);
         let q = spd_matrix(SMALL);
         warm(bencher, || {
-            linalg::solve_discrete_lyapunov(black_box(&a), black_box(&q)).unwrap()
+            linalg::solvers::solve_discrete_lyapunov(black_box(&a), black_box(&q)).unwrap()
         });
     }
 
@@ -804,8 +876,13 @@ mod equation_benches {
         let q = identity(SMALL);
         let r = identity(SMALL);
         warm(bencher, || {
-            linalg::solve_continuous_are(black_box(&a), black_box(&b), black_box(&q), black_box(&r))
-                .unwrap()
+            linalg::solvers::solve_continuous_are(
+                black_box(&a),
+                black_box(&b),
+                black_box(&q),
+                black_box(&r),
+            )
+            .unwrap()
         });
     }
 
@@ -816,114 +893,121 @@ mod equation_benches {
         let q = identity(SMALL);
         let r = identity(SMALL);
         warm(bencher, || {
-            linalg::solve_discrete_are(black_box(&a), black_box(&b), black_box(&q), black_box(&r))
-                .unwrap()
+            linalg::solvers::solve_discrete_are(
+                black_box(&a),
+                black_box(&b),
+                black_box(&q),
+                black_box(&r),
+            )
+            .unwrap()
         });
     }
 }
 
 mod structured_benches {
     use super::*;
-    use linalg::{DftScale, PascalKind};
+    use linalg::structured::{DftScale, PascalKind};
 
     #[divan::bench]
     fn toeplitz(bencher: Bencher) {
         let c = values(N, 1);
         let r = values(N, 2);
-        bencher.bench(|| linalg::toeplitz(black_box(&c), Some(black_box(&r))).unwrap());
+        bencher.bench(|| linalg::structured::toeplitz(black_box(&c), Some(black_box(&r))).unwrap());
     }
 
     #[divan::bench]
     fn hankel(bencher: Bencher) {
         let c = values(N, 1);
         let r = values(N, 2);
-        bencher.bench(|| linalg::hankel(black_box(&c), Some(black_box(&r))).unwrap());
+        bencher.bench(|| linalg::structured::hankel(black_box(&c), Some(black_box(&r))).unwrap());
     }
 
     #[divan::bench]
     fn circulant(bencher: Bencher) {
         let c = values(N, 1);
-        bencher.bench(|| linalg::circulant(black_box(&c)).unwrap());
+        bencher.bench(|| linalg::structured::circulant(black_box(&c)).unwrap());
     }
 
     #[divan::bench]
     fn hilbert(bencher: Bencher) {
-        bencher.bench(|| linalg::hilbert(black_box(N)).unwrap());
+        bencher.bench(|| linalg::structured::hilbert(black_box(N)).unwrap());
     }
 
     #[divan::bench]
     fn invhilbert(bencher: Bencher) {
-        bencher.bench(|| linalg::invhilbert(black_box(SMALL)).unwrap());
+        bencher.bench(|| linalg::structured::invhilbert(black_box(SMALL)).unwrap());
     }
 
     #[divan::bench]
     fn pascal(bencher: Bencher) {
-        bencher.bench(|| linalg::pascal(black_box(N), PascalKind::Symmetric).unwrap());
+        bencher.bench(|| linalg::structured::pascal(black_box(N), PascalKind::Symmetric).unwrap());
     }
 
     #[divan::bench]
     fn invpascal(bencher: Bencher) {
-        bencher.bench(|| linalg::invpascal(black_box(N), PascalKind::Lower).unwrap());
+        bencher.bench(|| linalg::structured::invpascal(black_box(N), PascalKind::Lower).unwrap());
     }
 
     #[divan::bench]
     fn hadamard(bencher: Bencher) {
-        bencher.bench(|| linalg::hadamard(black_box(N)).unwrap());
+        bencher.bench(|| linalg::structured::hadamard(black_box(N)).unwrap());
     }
 
     #[divan::bench]
     fn helmert(bencher: Bencher) {
-        bencher.bench(|| linalg::helmert(black_box(N), true).unwrap());
+        bencher.bench(|| linalg::structured::helmert(black_box(N), true).unwrap());
     }
 
     #[divan::bench]
     fn fiedler(bencher: Bencher) {
         let a = values(N, 1);
-        bencher.bench(|| linalg::fiedler(black_box(&a)).unwrap());
+        bencher.bench(|| linalg::structured::fiedler(black_box(&a)).unwrap());
     }
 
     #[divan::bench]
     fn companion(bencher: Bencher) {
         let mut a = values(N + 1, 1);
         a[0] = 1.0;
-        bencher.bench(|| linalg::companion(black_box(&a)).unwrap());
+        bencher.bench(|| linalg::structured::companion(black_box(&a)).unwrap());
     }
 
     #[divan::bench]
     fn fiedler_companion(bencher: Bencher) {
         let mut a = values(N + 1, 1);
         a[0] = 1.0;
-        bencher.bench(|| linalg::fiedler_companion(black_box(&a)).unwrap());
+        bencher.bench(|| linalg::structured::fiedler_companion(black_box(&a)).unwrap());
     }
 
     #[divan::bench]
     fn leslie(bencher: Bencher) {
         let f = common::unit_values(N, 1);
         let s = common::unit_values(N - 1, 2);
-        bencher.bench(|| linalg::leslie(black_box(&f), black_box(&s)).unwrap());
+        bencher.bench(|| linalg::structured::leslie(black_box(&f), black_box(&s)).unwrap());
     }
 
     #[divan::bench]
     fn block_diag(bencher: Bencher) {
         let blocks = vec![square_matrix(4), symmetric_matrix(5), spd_matrix(7)];
-        bencher.bench(|| linalg::block_diag(black_box(&blocks)).unwrap());
+        bencher.bench(|| linalg::structured::block_diag(black_box(&blocks)).unwrap());
     }
 
     #[divan::bench]
     fn convolution_matrix(bencher: Bencher) {
         let a = values(SMALL, 1);
-        bencher.bench(|| linalg::convolution_matrix(black_box(&a), N, sci::Mode::Full).unwrap());
+        bencher.bench(|| {
+            linalg::structured::convolution_matrix(black_box(&a), N, sci::Mode::Full).unwrap()
+        });
     }
 
     #[divan::bench]
     fn dft(bencher: Bencher) {
-        bencher.bench(|| linalg::dft(black_box(N), DftScale::SqrtN).unwrap());
+        bencher.bench(|| linalg::structured::dft(black_box(N), DftScale::SqrtN).unwrap());
     }
 
     #[divan::bench]
     fn diagsvd(bencher: Bencher) {
         let s = common::positive_values(SMALL, 1);
-        bencher.bench(|| linalg::diagsvd(black_box(&s), N, SMALL).unwrap());
+        bencher.bench(|| linalg::structured::diagsvd(black_box(&s), N, SMALL).unwrap());
     }
 }
 
@@ -1085,7 +1169,7 @@ mod interop_benches {
         let a = square_matrix(N).to_ndarray().unwrap();
         let b = symmetric_matrix(N).to_nalgebra().unwrap();
         warm(bencher, || {
-            linalg::matmul(black_box(&a), black_box(&b)).unwrap()
+            linalg::basic::matmul(black_box(&a), black_box(&b)).unwrap()
         });
     }
 }

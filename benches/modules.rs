@@ -80,7 +80,7 @@ mod linalg_benches {
         let a = square_matrix(n);
         let b = symmetric_matrix(n);
         warm(bencher, || {
-            linalg::matmul(black_box(&a), black_box(&b)).unwrap()
+            linalg::basic::matmul(black_box(&a), black_box(&b)).unwrap()
         });
     }
 
@@ -89,32 +89,36 @@ mod linalg_benches {
         let a = square_matrix(n);
         let b = values(n, 3);
         warm(bencher, || {
-            linalg::solve(black_box(&a), black_box(&b)).unwrap()
+            linalg::solvers::solve(black_box(&a), black_box(&b)).unwrap()
         });
     }
 
     #[divan::bench(args = SIZES)]
     fn det(bencher: Bencher, n: usize) {
         let a = square_matrix(n);
-        warm(bencher, || linalg::det(black_box(&a)).unwrap());
+        warm(bencher, || linalg::basic::det(black_box(&a)).unwrap());
     }
 
     #[divan::bench(args = SIZES)]
     fn inv(bencher: Bencher, n: usize) {
         let a = square_matrix(n);
-        warm(bencher, || linalg::inv(black_box(&a)).unwrap());
+        warm(bencher, || linalg::basic::inv(black_box(&a)).unwrap());
     }
 
     #[divan::bench(args = SIZES)]
     fn svd(bencher: Bencher, n: usize) {
         let a = square_matrix(n);
-        warm(bencher, || linalg::svd(black_box(&a)).unwrap());
+        warm(bencher, || {
+            linalg::decompositions::svd(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench(args = SIZES)]
     fn eigh(bencher: Bencher, n: usize) {
         let a = symmetric_matrix(n);
-        warm(bencher, || linalg::eigh(black_box(&a), true).unwrap());
+        warm(bencher, || {
+            linalg::eigen::eigh(black_box(&a), true).unwrap()
+        });
     }
 }
 
@@ -130,20 +134,20 @@ mod fft_benches {
             .zip(values(n, 6))
             .map(|(re, im)| Complex { re: re[0], im })
             .collect();
-        warm(bencher, || fft::fft(black_box(&input)));
+        warm(bencher, || fft::fourier::fft(black_box(&input)));
     }
 
     #[divan::bench(args = SIZES)]
     fn rfft(bencher: Bencher, n: usize) {
         let input = values(n, 5);
-        warm(bencher, || fft::rfft(black_box(&input)));
+        warm(bencher, || fft::real::rfft(black_box(&input)));
     }
 
     #[divan::bench(args = SIZES)]
     fn dct_ii(bencher: Bencher, n: usize) {
         let input = values(n, 5);
         warm(bencher, || {
-            fft::dct(black_box(&input), fft::RealTransformType::II).unwrap()
+            fft::real::dct(black_box(&input), fft::real::RealTransformType::II).unwrap()
         });
     }
 }
@@ -156,19 +160,19 @@ mod stats_benches {
     #[divan::bench]
     fn mean(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::mean(black_box(&x)).unwrap());
+        bencher.bench(|| stats::descriptive::mean(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn variance(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::variance(black_box(&x), 1).unwrap());
+        bencher.bench(|| stats::descriptive::variance(black_box(&x), 1).unwrap());
     }
 
     #[divan::bench]
     fn median(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::median(black_box(&x)).unwrap());
+        bencher.bench(|| stats::descriptive::median(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
@@ -177,8 +181,8 @@ mod stats_benches {
         bencher.bench(|| {
             x.iter()
                 .map(|&v| {
-                    let p = stats::normal_cdf(black_box(v), 0.0, 1.0).unwrap();
-                    stats::normal_ppf(p, 0.0, 1.0).unwrap()
+                    let p = stats::distributions::normal_cdf(black_box(v), 0.0, 1.0).unwrap();
+                    stats::distributions::normal_ppf(p, 0.0, 1.0).unwrap()
                 })
                 .sum::<f64>()
         });
@@ -255,13 +259,13 @@ mod integrate_benches {
     #[divan::bench]
     fn trapezoid(bencher: Bencher) {
         let y = samples();
-        bencher.bench(|| integrate::trapezoid(black_box(&y), None, 0.001).unwrap());
+        bencher.bench(|| integrate::sampled::trapezoid(black_box(&y), None, 0.001).unwrap());
     }
 
     #[divan::bench]
     fn simpson(bencher: Bencher) {
         let y = samples();
-        bencher.bench(|| integrate::simpson(black_box(&y), None, 0.001).unwrap());
+        bencher.bench(|| integrate::sampled::simpson(black_box(&y), None, 0.001).unwrap());
     }
 }
 
@@ -278,19 +282,21 @@ mod interpolate_benches {
     #[divan::bench]
     fn make_interp_spline_cubic(bencher: Bencher) {
         let (x, y, _) = nodes();
-        bencher.bench(|| interpolate::make_interp_spline(black_box(&x), black_box(&y), 3).unwrap());
+        bencher.bench(|| {
+            interpolate::fitting::make_interp_spline(black_box(&x), black_box(&y), 3).unwrap()
+        });
     }
 
     #[divan::bench]
     fn splev_cubic(bencher: Bencher) {
         let (x, y, q) = nodes();
-        let spline = interpolate::make_interp_spline(&x, &y, 3).unwrap();
+        let spline = interpolate::fitting::make_interp_spline(&x, &y, 3).unwrap();
         bencher.bench(|| {
-            interpolate::splev(
+            interpolate::spline::splev(
                 black_box(&q),
                 &spline,
                 0,
-                interpolate::SplineExtension::Extrapolate,
+                interpolate::spline::SplineExtension::Extrapolate,
             )
             .unwrap()
         });
@@ -300,7 +306,8 @@ mod interpolate_benches {
     fn pchip_interpolate(bencher: Bencher) {
         let (x, y, q) = nodes();
         bencher.bench(|| {
-            interpolate::pchip_interpolate(black_box(&x), black_box(&y), black_box(&q)).unwrap()
+            interpolate::polynomial::pchip_interpolate(black_box(&x), black_box(&y), black_box(&q))
+                .unwrap()
         });
     }
 }
@@ -314,16 +321,18 @@ mod signal_benches {
     fn convolve(bencher: Bencher, taps: usize) {
         let x = sine_signal(N);
         let h = values(taps, 12);
-        bencher.bench(|| signal::convolve(black_box(&x), black_box(&h), sci::Mode::Full).unwrap());
+        bencher.bench(|| {
+            signal::convolution::convolve(black_box(&x), black_box(&h), sci::Mode::Full).unwrap()
+        });
     }
 
     #[divan::bench]
     fn butter_design(bencher: Bencher) {
         bencher.bench(|| {
-            signal::butter(
+            signal::design::butter(
                 black_box(6),
                 &[100.0],
-                signal::BandType::Lowpass,
+                signal::design::BandType::Lowpass,
                 Some(1000.0),
             )
             .unwrap()
@@ -333,8 +342,12 @@ mod signal_benches {
     #[divan::bench]
     fn lfilter_butter(bencher: Bencher) {
         let x = sine_signal(N);
-        let (b, a) = signal::butter(6, &[100.0], signal::BandType::Lowpass, Some(1000.0)).unwrap();
-        bencher.bench(|| signal::lfilter(black_box(&b), black_box(&a), black_box(&x)).unwrap());
+        let (b, a) =
+            signal::design::butter(6, &[100.0], signal::design::BandType::Lowpass, Some(1000.0))
+                .unwrap();
+        bencher.bench(|| {
+            signal::filtering::lfilter(black_box(&b), black_box(&a), black_box(&x)).unwrap()
+        });
     }
 
     #[divan::bench]
@@ -344,14 +357,14 @@ mod signal_benches {
             .map(|i| 0.5 - 0.5 * (2.0 * std::f64::consts::PI * i as f64 / 256.0).cos())
             .collect();
         bencher.bench(|| {
-            signal::welch(
+            signal::spectral::welch(
                 black_box(&x),
                 &window,
                 128,
                 256,
                 1000.0,
                 true,
-                signal::Scaling::Density,
+                signal::spectral::Scaling::Density,
             )
             .unwrap()
         });
@@ -360,7 +373,7 @@ mod signal_benches {
     #[divan::bench]
     fn find_peaks(bencher: Bencher) {
         let x = sine_signal(N);
-        bencher.bench(|| signal::find_peaks(black_box(&x)).unwrap());
+        bencher.bench(|| signal::peaks::find_peaks(black_box(&x)).unwrap());
     }
 }
 
@@ -370,7 +383,9 @@ mod spatial_benches {
     #[divan::bench]
     fn pdist_euclidean(bencher: Bencher) {
         let x = points(200, 3, 13);
-        bencher.bench(|| spatial::pdist(black_box(&x), spatial::Metric::Euclidean).unwrap());
+        bencher.bench(|| {
+            spatial::distance::pdist(black_box(&x), spatial::distance::Metric::Euclidean).unwrap()
+        });
     }
 
     #[divan::bench]
@@ -378,7 +393,12 @@ mod spatial_benches {
         let x = points(200, 3, 13);
         let y = points(100, 3, 14);
         bencher.bench(|| {
-            spatial::cdist(black_box(&x), black_box(&y), spatial::Metric::Euclidean).unwrap()
+            spatial::distance::cdist(
+                black_box(&x),
+                black_box(&y),
+                spatial::distance::Metric::Euclidean,
+            )
+            .unwrap()
         });
     }
 }
@@ -396,7 +416,7 @@ mod cluster_benches {
     #[divan::bench]
     fn linkage_average(bencher: Bencher) {
         let x = points(100, 3, 16);
-        let y = spatial::pdist(&x, spatial::Metric::Euclidean).unwrap();
+        let y = spatial::distance::pdist(&x, spatial::distance::Metric::Euclidean).unwrap();
         bencher.bench(|| {
             cluster::hierarchy::linkage(black_box(&y), cluster::hierarchy::Method::Average).unwrap()
         });
@@ -409,10 +429,10 @@ mod optimize_benches {
     #[divan::bench]
     fn minimize_rosenbrock(bencher: Bencher) {
         bencher.bench(|| {
-            optimize::minimize(
-                |x| optimize::rosen(x).unwrap(),
+            optimize::minimize::minimize(
+                |x| optimize::derivatives::rosen(x).unwrap(),
                 black_box(&[-1.2, 1.0]),
-                optimize::Options::default(),
+                optimize::minimize::Options::default(),
             )
             .unwrap()
         });
@@ -421,11 +441,11 @@ mod optimize_benches {
     #[divan::bench]
     fn minimize_with_gradient_rosenbrock(bencher: Bencher) {
         bencher.bench(|| {
-            optimize::minimize_with_gradient(
-                |x| optimize::rosen(x).unwrap(),
-                |x| optimize::rosen_der(x).unwrap(),
+            optimize::minimize::minimize_with_gradient(
+                |x| optimize::derivatives::rosen(x).unwrap(),
+                |x| optimize::derivatives::rosen_der(x).unwrap(),
                 black_box(&[0.9, 0.8]),
-                optimize::Options {
+                optimize::minimize::Options {
                     max_iterations: 2_000,
                     learning_rate: 0.001,
                     tolerance: 1e-6,

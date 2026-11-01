@@ -7,7 +7,7 @@ mod common;
 use common::{sine_signal, values, warm};
 use divan::{Bencher, black_box};
 use sci::complex::Complex;
-use sci::fft::RealTransformType;
+use sci::fft::real::RealTransformType;
 
 fn main() {
     divan::main();
@@ -37,12 +37,12 @@ fn rows<T: Clone>(flat: &[T], cols: usize) -> Vec<Vec<T>> {
 
 /// Half-spectrum of a real signal of length `N`.
 fn half_spectrum() -> Vec<Complex> {
-    sci::fft::rfft(&sine_signal(N))
+    sci::fft::real::rfft(&sine_signal(N))
 }
 
 /// Reduced 2-D spectrum of a real `SIDE x SIDE` grid.
 fn half_spectrum_2d() -> Vec<Complex> {
-    sci::fft::rfftn(&values(SIDE * SIDE, 5), &SHAPE, &AXES)
+    sci::fft::real::rfftn(&values(SIDE * SIDE, 5), &SHAPE, &AXES)
         .unwrap()
         .0
 }
@@ -53,20 +53,20 @@ mod complex_transforms {
     #[divan::bench]
     fn fft(bencher: Bencher) {
         let input = complex_values(N, 1);
-        warm(bencher, || sci::fft::fft(black_box(&input)));
+        warm(bencher, || sci::fft::fourier::fft(black_box(&input)));
     }
 
     #[divan::bench]
     fn ifft(bencher: Bencher) {
         let input = complex_values(N, 2);
-        warm(bencher, || sci::fft::ifft(black_box(&input)));
+        warm(bencher, || sci::fft::fourier::ifft(black_box(&input)));
     }
 
     #[divan::bench]
     fn fftn(bencher: Bencher) {
         let input = complex_values(SIDE * SIDE, 3);
         warm(bencher, || {
-            sci::fft::fftn(black_box(&input), &SHAPE, &AXES).unwrap()
+            sci::fft::fourier::fftn(black_box(&input), &SHAPE, &AXES).unwrap()
         });
     }
 
@@ -74,20 +74,24 @@ mod complex_transforms {
     fn ifftn(bencher: Bencher) {
         let input = complex_values(SIDE * SIDE, 4);
         warm(bencher, || {
-            sci::fft::ifftn(black_box(&input), &SHAPE, &AXES).unwrap()
+            sci::fft::fourier::ifftn(black_box(&input), &SHAPE, &AXES).unwrap()
         });
     }
 
     #[divan::bench]
     fn fft2(bencher: Bencher) {
         let input = rows(&complex_values(SIDE * SIDE, 5), SIDE);
-        warm(bencher, || sci::fft::fft2(black_box(&input)).unwrap());
+        warm(bencher, || {
+            sci::fft::fourier::fft2(black_box(&input)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn ifft2(bencher: Bencher) {
         let input = rows(&complex_values(SIDE * SIDE, 6), SIDE);
-        warm(bencher, || sci::fft::ifft2(black_box(&input)).unwrap());
+        warm(bencher, || {
+            sci::fft::fourier::ifft2(black_box(&input)).unwrap()
+        });
     }
 }
 
@@ -97,14 +101,14 @@ mod real_transforms {
     #[divan::bench]
     fn rfft(bencher: Bencher) {
         let input = sine_signal(N);
-        warm(bencher, || sci::fft::rfft(black_box(&input)));
+        warm(bencher, || sci::fft::real::rfft(black_box(&input)));
     }
 
     #[divan::bench]
     fn irfft(bencher: Bencher) {
         let input = half_spectrum();
         warm(bencher, || {
-            sci::fft::irfft(black_box(&input), Some(N)).unwrap()
+            sci::fft::real::irfft(black_box(&input), Some(N)).unwrap()
         });
     }
 
@@ -112,7 +116,7 @@ mod real_transforms {
     fn hfft(bencher: Bencher) {
         let input = half_spectrum();
         warm(bencher, || {
-            sci::fft::hfft(black_box(&input), Some(N)).unwrap()
+            sci::fft::real::hfft(black_box(&input), Some(N)).unwrap()
         });
     }
 
@@ -120,7 +124,7 @@ mod real_transforms {
     fn ihfft(bencher: Bencher) {
         let input = sine_signal(N);
         warm(bencher, || {
-            sci::fft::ihfft(black_box(&input), None).unwrap()
+            sci::fft::real::ihfft(black_box(&input), None).unwrap()
         });
     }
 
@@ -128,7 +132,7 @@ mod real_transforms {
     fn rfftn(bencher: Bencher) {
         let input = values(SIDE * SIDE, 7);
         warm(bencher, || {
-            sci::fft::rfftn(black_box(&input), &SHAPE, &AXES).unwrap()
+            sci::fft::real::rfftn(black_box(&input), &SHAPE, &AXES).unwrap()
         });
     }
 
@@ -136,7 +140,7 @@ mod real_transforms {
     fn irfftn(bencher: Bencher) {
         let input = half_spectrum_2d();
         warm(bencher, || {
-            sci::fft::irfftn(black_box(&input), &SHAPE, &AXES).unwrap()
+            sci::fft::real::irfftn(black_box(&input), &SHAPE, &AXES).unwrap()
         });
     }
 
@@ -144,7 +148,7 @@ mod real_transforms {
     fn hfftn(bencher: Bencher) {
         let input = half_spectrum_2d();
         warm(bencher, || {
-            sci::fft::hfftn(black_box(&input), &SHAPE, &AXES).unwrap()
+            sci::fft::real::hfftn(black_box(&input), &SHAPE, &AXES).unwrap()
         });
     }
 
@@ -152,21 +156,23 @@ mod real_transforms {
     fn ihfftn(bencher: Bencher) {
         let input = values(SIDE * SIDE, 8);
         warm(bencher, || {
-            sci::fft::ihfftn(black_box(&input), &SHAPE, &AXES).unwrap()
+            sci::fft::real::ihfftn(black_box(&input), &SHAPE, &AXES).unwrap()
         });
     }
 
     #[divan::bench]
     fn rfft2(bencher: Bencher) {
         let input = rows(&values(SIDE * SIDE, 9), SIDE);
-        warm(bencher, || sci::fft::rfft2(black_box(&input)).unwrap());
+        warm(bencher, || {
+            sci::fft::real::rfft2(black_box(&input)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn irfft2(bencher: Bencher) {
         let input = rows(&half_spectrum_2d(), SIDE / 2 + 1);
         warm(bencher, || {
-            sci::fft::irfft2(black_box(&input), SIDE).unwrap()
+            sci::fft::real::irfft2(black_box(&input), SIDE).unwrap()
         });
     }
 
@@ -174,14 +180,16 @@ mod real_transforms {
     fn hfft2(bencher: Bencher) {
         let input = rows(&half_spectrum_2d(), SIDE / 2 + 1);
         warm(bencher, || {
-            sci::fft::hfft2(black_box(&input), SIDE).unwrap()
+            sci::fft::real::hfft2(black_box(&input), SIDE).unwrap()
         });
     }
 
     #[divan::bench]
     fn ihfft2(bencher: Bencher) {
         let input = rows(&values(SIDE * SIDE, 10), SIDE);
-        warm(bencher, || sci::fft::ihfft2(black_box(&input)).unwrap());
+        warm(bencher, || {
+            sci::fft::real::ihfft2(black_box(&input)).unwrap()
+        });
     }
 }
 
@@ -190,24 +198,24 @@ mod helpers {
 
     #[divan::bench]
     fn fftfreq(bencher: Bencher) {
-        bencher.bench(|| sci::fft::fftfreq(black_box(N), black_box(0.001)).unwrap());
+        bencher.bench(|| sci::fft::utilities::fftfreq(black_box(N), black_box(0.001)).unwrap());
     }
 
     #[divan::bench]
     fn rfftfreq(bencher: Bencher) {
-        bencher.bench(|| sci::fft::rfftfreq(black_box(N), black_box(0.001)).unwrap());
+        bencher.bench(|| sci::fft::utilities::rfftfreq(black_box(N), black_box(0.001)).unwrap());
     }
 
     #[divan::bench]
     fn fftshift(bencher: Bencher) {
         let input = complex_values(N, 11);
-        bencher.bench(|| sci::fft::fftshift(black_box(&input)).unwrap());
+        bencher.bench(|| sci::fft::utilities::fftshift(black_box(&input)).unwrap());
     }
 
     #[divan::bench]
     fn ifftshift(bencher: Bencher) {
         let input = complex_values(N, 12);
-        bencher.bench(|| sci::fft::ifftshift(black_box(&input)).unwrap());
+        bencher.bench(|| sci::fft::utilities::ifftshift(black_box(&input)).unwrap());
     }
 
     /// Searches upward from 128 awkward targets using the RustFFT size heuristic.
@@ -217,7 +225,7 @@ mod helpers {
         bencher.bench(|| {
             black_box(&targets)
                 .iter()
-                .map(|&t| sci::fft::next_fast_len(t).unwrap())
+                .map(|&t| sci::fft::utilities::next_fast_len(t).unwrap())
                 .sum::<usize>()
         });
     }
@@ -229,7 +237,7 @@ mod helpers {
         bencher.bench(|| {
             black_box(&targets)
                 .iter()
-                .map(|&t| sci::fft::prev_fast_len(t).unwrap())
+                .map(|&t| sci::fft::utilities::prev_fast_len(t).unwrap())
                 .sum::<usize>()
         });
     }
@@ -243,32 +251,40 @@ mod trigonometric_transforms {
     #[divan::bench]
     fn dct(bencher: Bencher) {
         let input = sine_signal(N);
-        warm(bencher, || sci::fft::dct(black_box(&input), KIND).unwrap());
+        warm(bencher, || {
+            sci::fft::real::dct(black_box(&input), KIND).unwrap()
+        });
     }
 
     #[divan::bench]
     fn idct(bencher: Bencher) {
         let input = sine_signal(N);
-        warm(bencher, || sci::fft::idct(black_box(&input), KIND).unwrap());
+        warm(bencher, || {
+            sci::fft::real::idct(black_box(&input), KIND).unwrap()
+        });
     }
 
     #[divan::bench]
     fn dst(bencher: Bencher) {
         let input = sine_signal(N);
-        warm(bencher, || sci::fft::dst(black_box(&input), KIND).unwrap());
+        warm(bencher, || {
+            sci::fft::real::dst(black_box(&input), KIND).unwrap()
+        });
     }
 
     #[divan::bench]
     fn idst(bencher: Bencher) {
         let input = sine_signal(N);
-        warm(bencher, || sci::fft::idst(black_box(&input), KIND).unwrap());
+        warm(bencher, || {
+            sci::fft::real::idst(black_box(&input), KIND).unwrap()
+        });
     }
 
     #[divan::bench]
     fn dctn(bencher: Bencher) {
         let input = values(SIDE * SIDE, 13);
         warm(bencher, || {
-            sci::fft::dctn(black_box(&input), &SHAPE, &AXES, KIND).unwrap()
+            sci::fft::real::dctn(black_box(&input), &SHAPE, &AXES, KIND).unwrap()
         });
     }
 
@@ -276,7 +292,7 @@ mod trigonometric_transforms {
     fn idctn(bencher: Bencher) {
         let input = values(SIDE * SIDE, 14);
         warm(bencher, || {
-            sci::fft::idctn(black_box(&input), &SHAPE, &AXES, KIND).unwrap()
+            sci::fft::real::idctn(black_box(&input), &SHAPE, &AXES, KIND).unwrap()
         });
     }
 
@@ -284,7 +300,7 @@ mod trigonometric_transforms {
     fn dstn(bencher: Bencher) {
         let input = values(SIDE * SIDE, 15);
         warm(bencher, || {
-            sci::fft::dstn(black_box(&input), &SHAPE, &AXES, KIND).unwrap()
+            sci::fft::real::dstn(black_box(&input), &SHAPE, &AXES, KIND).unwrap()
         });
     }
 
@@ -292,7 +308,7 @@ mod trigonometric_transforms {
     fn idstn(bencher: Bencher) {
         let input = values(SIDE * SIDE, 16);
         warm(bencher, || {
-            sci::fft::idstn(black_box(&input), &SHAPE, &AXES, KIND).unwrap()
+            sci::fft::real::idstn(black_box(&input), &SHAPE, &AXES, KIND).unwrap()
         });
     }
 }
@@ -317,18 +333,18 @@ mod hankel {
     #[divan::bench]
     fn fht(bencher: Bencher) {
         let input = input();
-        let offset = sci::fft::fhtoffset(DLN, MU, 0.0, 0.0).unwrap();
+        let offset = sci::fft::hankel::fhtoffset(DLN, MU, 0.0, 0.0).unwrap();
         warm(bencher, || {
-            sci::fft::fht(black_box(&input), DLN, MU, offset, 0.0).unwrap()
+            sci::fft::hankel::fht(black_box(&input), DLN, MU, offset, 0.0).unwrap()
         });
     }
 
     #[divan::bench]
     fn ifht(bencher: Bencher) {
         let input = input();
-        let offset = sci::fft::fhtoffset(DLN, MU, 0.0, 0.0).unwrap();
+        let offset = sci::fft::hankel::fhtoffset(DLN, MU, 0.0, 0.0).unwrap();
         warm(bencher, || {
-            sci::fft::ifht(black_box(&input), DLN, MU, offset, 0.0).unwrap()
+            sci::fft::hankel::ifht(black_box(&input), DLN, MU, offset, 0.0).unwrap()
         });
     }
 
@@ -339,7 +355,7 @@ mod hankel {
         bencher.bench(|| {
             black_box(&orders)
                 .iter()
-                .map(|&mu| sci::fft::fhtoffset(DLN, mu, 0.5, 0.0).unwrap())
+                .map(|&mu| sci::fft::hankel::fhtoffset(DLN, mu, 0.5, 0.0).unwrap())
                 .sum::<f64>()
         });
     }
@@ -352,27 +368,31 @@ mod periodic {
     fn diff(bencher: Bencher) {
         let input = sine_signal(N);
         warm(bencher, || {
-            sci::fft::diff(black_box(&input), 1, PERIOD).unwrap()
+            sci::fft::utilities::diff(black_box(&input), 1, PERIOD).unwrap()
         });
     }
 
     #[divan::bench]
     fn hilbert(bencher: Bencher) {
         let input = sine_signal(N);
-        warm(bencher, || sci::fft::hilbert(black_box(&input)).unwrap());
+        warm(bencher, || {
+            sci::fft::utilities::hilbert(black_box(&input)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn ihilbert(bencher: Bencher) {
         let input = sine_signal(N);
-        warm(bencher, || sci::fft::ihilbert(black_box(&input)).unwrap());
+        warm(bencher, || {
+            sci::fft::utilities::ihilbert(black_box(&input)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn tilbert(bencher: Bencher) {
         let input = sine_signal(N);
         warm(bencher, || {
-            sci::fft::tilbert(black_box(&input), 0.5, PERIOD).unwrap()
+            sci::fft::utilities::tilbert(black_box(&input), 0.5, PERIOD).unwrap()
         });
     }
 
@@ -380,7 +400,7 @@ mod periodic {
     fn itilbert(bencher: Bencher) {
         let input = sine_signal(N);
         warm(bencher, || {
-            sci::fft::itilbert(black_box(&input), 0.5, PERIOD).unwrap()
+            sci::fft::utilities::itilbert(black_box(&input), 0.5, PERIOD).unwrap()
         });
     }
 
@@ -388,7 +408,7 @@ mod periodic {
     fn shift(bencher: Bencher) {
         let input = sine_signal(N);
         warm(bencher, || {
-            sci::fft::shift(black_box(&input), 0.1, PERIOD).unwrap()
+            sci::fft::utilities::shift(black_box(&input), 0.1, PERIOD).unwrap()
         });
     }
 
@@ -396,7 +416,7 @@ mod periodic {
     fn cc_diff(bencher: Bencher) {
         let input = sine_signal(N);
         warm(bencher, || {
-            sci::fft::cc_diff(black_box(&input), 0.1, 0.2, PERIOD).unwrap()
+            sci::fft::utilities::cc_diff(black_box(&input), 0.1, 0.2, PERIOD).unwrap()
         });
     }
 
@@ -404,7 +424,7 @@ mod periodic {
     fn cs_diff(bencher: Bencher) {
         let input = sine_signal(N);
         warm(bencher, || {
-            sci::fft::cs_diff(black_box(&input), 0.1, 0.2, PERIOD).unwrap()
+            sci::fft::utilities::cs_diff(black_box(&input), 0.1, 0.2, PERIOD).unwrap()
         });
     }
 
@@ -412,7 +432,7 @@ mod periodic {
     fn sc_diff(bencher: Bencher) {
         let input = sine_signal(N);
         warm(bencher, || {
-            sci::fft::sc_diff(black_box(&input), 0.1, 0.2, PERIOD).unwrap()
+            sci::fft::utilities::sc_diff(black_box(&input), 0.1, 0.2, PERIOD).unwrap()
         });
     }
 
@@ -420,7 +440,7 @@ mod periodic {
     fn ss_diff(bencher: Bencher) {
         let input = sine_signal(N);
         warm(bencher, || {
-            sci::fft::ss_diff(black_box(&input), 0.1, 0.2, PERIOD).unwrap()
+            sci::fft::utilities::ss_diff(black_box(&input), 0.1, 0.2, PERIOD).unwrap()
         });
     }
 }

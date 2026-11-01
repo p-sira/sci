@@ -263,7 +263,7 @@ fn pairs(mut roots: Vec<C>) -> Result<Vec<[f64; 3]>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::representations::*;
 /// let _=unique_roots(&[sci_complex::Complex{re:1.,im:0.}],1e-3,RootRepresentative::Mean)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -337,7 +337,7 @@ pub fn unique_roots(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::representations::*;
 /// let _=residue(&[1.],&[1.,-0.5],1e-3)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -376,7 +376,7 @@ pub fn residue(b: &[f64], a: &[f64], tol: f64) -> Result<PartialFractions> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::representations::*;
 /// let _=residuez(&[1.],&[1.,-0.5],1e-3)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -415,7 +415,7 @@ pub fn residuez(b: &[f64], a: &[f64], tol: f64) -> Result<PartialFractions> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::representations::*;
 /// let p=residue(&[1.],&[1.,-0.5],1e-3)?;let _=invres(&p.residues,&p.poles,&p.direct)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -454,7 +454,7 @@ pub fn invres(r: &[Complex], p: &[Complex], k: &[f64]) -> Result<TransferFunctio
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::representations::*;
 /// let p=residuez(&[1.],&[1.,-0.5],1e-3)?;let _=invresz(&p.residues,&p.poles,&p.direct)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -493,7 +493,8 @@ pub fn invresz(r: &[Complex], p: &[Complex], k: &[f64]) -> Result<TransferFuncti
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::representations::*;
+/// use sci_signal::design::buttap;
 /// let _=zpk2sos(&buttap(3)?)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -555,7 +556,7 @@ pub fn zpk2sos(zpk: &Zpk) -> Result<Vec<[f64; 6]>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::representations::*;
 /// let _=tf2sos(&[1.],&[1.,-0.5])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

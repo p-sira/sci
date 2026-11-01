@@ -27,141 +27,143 @@ mod descriptive_benches {
     #[divan::bench]
     fn mean(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::mean(black_box(&x)).unwrap());
+        bencher.bench(|| stats::descriptive::mean(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn variance(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::variance(black_box(&x), 1).unwrap());
+        bencher.bench(|| stats::descriptive::variance(black_box(&x), 1).unwrap());
     }
 
     #[divan::bench]
     fn std(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::std(black_box(&x), 1).unwrap());
+        bencher.bench(|| stats::descriptive::std(black_box(&x), 1).unwrap());
     }
 
     #[divan::bench]
     fn sem(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::sem(black_box(&x), 1).unwrap());
+        bencher.bench(|| stats::descriptive::sem(black_box(&x), 1).unwrap());
     }
 
     #[divan::bench]
     fn variation(bencher: Bencher) {
         let x = positive_values(N, 1);
-        bencher.bench(|| stats::variation(black_box(&x), 1).unwrap());
+        bencher.bench(|| stats::descriptive::variation(black_box(&x), 1).unwrap());
     }
 
     #[divan::bench]
     fn quantile(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::quantile(black_box(&x), 0.3).unwrap());
+        bencher.bench(|| stats::descriptive::quantile(black_box(&x), 0.3).unwrap());
     }
 
     #[divan::bench]
     fn scoreatpercentile(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::scoreatpercentile(black_box(&x), 75.0).unwrap());
+        bencher.bench(|| stats::descriptive::scoreatpercentile(black_box(&x), 75.0).unwrap());
     }
 
     #[divan::bench]
     fn median(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::median(black_box(&x)).unwrap());
+        bencher.bench(|| stats::descriptive::median(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn iqr(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::iqr(black_box(&x)).unwrap());
+        bencher.bench(|| stats::descriptive::iqr(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn median_abs_deviation(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::median_abs_deviation(black_box(&x), 1.0).unwrap());
+        bencher.bench(|| stats::descriptive::median_abs_deviation(black_box(&x), 1.0).unwrap());
     }
 
     #[divan::bench]
     fn gmean(bencher: Bencher) {
         let x = positive_values(N, 1);
-        bencher.bench(|| stats::gmean(black_box(&x)).unwrap());
+        bencher.bench(|| stats::descriptive::gmean(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn hmean(bencher: Bencher) {
         let x = positive_values(N, 1);
-        bencher.bench(|| stats::hmean(black_box(&x)).unwrap());
+        bencher.bench(|| stats::descriptive::hmean(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn gstd(bencher: Bencher) {
         let x = positive_values(N, 1);
-        bencher.bench(|| stats::gstd(black_box(&x), 1).unwrap());
+        bencher.bench(|| stats::descriptive::gstd(black_box(&x), 1).unwrap());
     }
 
     #[divan::bench]
     fn moment(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::moment(black_box(&x), 3).unwrap());
+        bencher.bench(|| stats::descriptive::moment(black_box(&x), 3).unwrap());
     }
 
     #[divan::bench]
     fn skew(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::skew(black_box(&x), false).unwrap());
+        bencher.bench(|| stats::descriptive::skew(black_box(&x), false).unwrap());
     }
 
     #[divan::bench]
     fn kurtosis(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::kurtosis(black_box(&x), true, false).unwrap());
+        bencher.bench(|| stats::descriptive::kurtosis(black_box(&x), true, false).unwrap());
     }
 
     #[divan::bench]
     fn zscore(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::zscore(black_box(&x), 1).unwrap());
+        bencher.bench(|| stats::descriptive::zscore(black_box(&x), 1).unwrap());
     }
 
     #[divan::bench]
     fn zmap(bencher: Bencher) {
         let scores = values(N, 1);
         let compare = values(N, 2);
-        bencher.bench(|| stats::zmap(black_box(&scores), black_box(&compare), 1).unwrap());
+        bencher.bench(|| {
+            stats::descriptive::zmap(black_box(&scores), black_box(&compare), 1).unwrap()
+        });
     }
 
     #[divan::bench]
     fn gzscore(bencher: Bencher) {
         let x = positive_values(N, 1);
-        bencher.bench(|| stats::gzscore(black_box(&x), 1).unwrap());
+        bencher.bench(|| stats::descriptive::gzscore(black_box(&x), 1).unwrap());
     }
 
     #[divan::bench]
     fn trimboth(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::trimboth(black_box(&x), 0.1).unwrap());
+        bencher.bench(|| stats::descriptive::trimboth(black_box(&x), 0.1).unwrap());
     }
 
     #[divan::bench]
     fn trim_mean(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::trim_mean(black_box(&x), 0.1).unwrap());
+        bencher.bench(|| stats::descriptive::trim_mean(black_box(&x), 0.1).unwrap());
     }
 
     #[divan::bench]
     fn mode(bencher: Bencher) {
         // Discretized data so that the mode is meaningful.
         let x: Vec<f64> = values(N, 1).iter().map(|v| (v * 20.0).round()).collect();
-        bencher.bench(|| stats::mode(black_box(&x)).unwrap());
+        bencher.bench(|| stats::descriptive::mode(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn describe(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::describe(black_box(&x), 1, false).unwrap());
+        bencher.bench(|| stats::descriptive::describe(black_box(&x), 1, false).unwrap());
     }
 }
 
@@ -173,81 +175,83 @@ mod extras_benches {
     #[divan::bench]
     fn tmean(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::tmean(black_box(&x), LIMITS, (true, true)).unwrap());
+        bencher.bench(|| stats::descriptive::tmean(black_box(&x), LIMITS, (true, true)).unwrap());
     }
 
     #[divan::bench]
     fn tvar(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::tvar(black_box(&x), LIMITS, (true, true), 1).unwrap());
+        bencher.bench(|| stats::descriptive::tvar(black_box(&x), LIMITS, (true, true), 1).unwrap());
     }
 
     #[divan::bench]
     fn tstd(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::tstd(black_box(&x), LIMITS, (true, true), 1).unwrap());
+        bencher.bench(|| stats::descriptive::tstd(black_box(&x), LIMITS, (true, true), 1).unwrap());
     }
 
     #[divan::bench]
     fn tsem(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::tsem(black_box(&x), LIMITS, (true, true), 1).unwrap());
+        bencher.bench(|| stats::descriptive::tsem(black_box(&x), LIMITS, (true, true), 1).unwrap());
     }
 
     #[divan::bench]
     fn tmin(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::tmin(black_box(&x), Some(-0.5), true).unwrap());
+        bencher.bench(|| stats::descriptive::tmin(black_box(&x), Some(-0.5), true).unwrap());
     }
 
     #[divan::bench]
     fn tmax(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::tmax(black_box(&x), Some(0.5), true).unwrap());
+        bencher.bench(|| stats::descriptive::tmax(black_box(&x), Some(0.5), true).unwrap());
     }
 
     #[divan::bench]
     fn trim1(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::trim1(black_box(&x), 0.1, stats::Tail::Upper).unwrap());
+        bencher.bench(|| {
+            stats::descriptive::trim1(black_box(&x), 0.1, stats::descriptive::Tail::Upper).unwrap()
+        });
     }
 
     #[divan::bench]
     fn kstat(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::kstat(black_box(&x), 4).unwrap());
+        bencher.bench(|| stats::descriptive::kstat(black_box(&x), 4).unwrap());
     }
 
     #[divan::bench]
     fn kstatvar(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::kstatvar(black_box(&x), 2).unwrap());
+        bencher.bench(|| stats::descriptive::kstatvar(black_box(&x), 2).unwrap());
     }
 
-    const COMBINE_METHODS: [stats::CombineMethod; 5] = [
-        stats::CombineMethod::Fisher,
-        stats::CombineMethod::Pearson,
-        stats::CombineMethod::Tippett,
-        stats::CombineMethod::Stouffer,
-        stats::CombineMethod::MudholkarGeorge,
+    const COMBINE_METHODS: [stats::inference::CombineMethod; 5] = [
+        stats::inference::CombineMethod::Fisher,
+        stats::inference::CombineMethod::Pearson,
+        stats::inference::CombineMethod::Tippett,
+        stats::inference::CombineMethod::Stouffer,
+        stats::inference::CombineMethod::MudholkarGeorge,
     ];
 
     #[divan::bench(args = COMBINE_METHODS)]
-    fn combine_pvalues(bencher: Bencher, method: stats::CombineMethod) {
+    fn combine_pvalues(bencher: Bencher, method: stats::inference::CombineMethod) {
         let p = unit_values(256, 3);
-        bencher.bench(|| stats::combine_pvalues(black_box(&p), method, None).unwrap());
+        bencher.bench(|| stats::inference::combine_pvalues(black_box(&p), method, None).unwrap());
     }
 
     #[divan::bench]
     fn sigmaclip(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::sigmaclip(black_box(&x), 1.5, 1.5).unwrap());
+        bencher.bench(|| stats::descriptive::sigmaclip(black_box(&x), 1.5, 1.5).unwrap());
     }
 }
 
 mod distribution_benches {
     use super::*;
-    use stats::Distribution;
+    use stats::distributions::Distribution;
 
     const FAMILIES: [&str; 5] = ["normal", "gamma", "beta", "student_t", "levy"];
 
@@ -282,11 +286,11 @@ mod distribution_benches {
 
     fn eval(
         bencher: Bencher,
-        distribution: impl Into<stats::DistributionSpec> + Copy,
+        distribution: impl Into<stats::distributions::DistributionSpec> + Copy,
         xs: Vec<f64>,
-        f: fn(stats::DistributionSpec, f64) -> sci::stats::Result<f64>,
+        f: fn(stats::distributions::DistributionSpec, f64) -> sci::stats::Result<f64>,
     ) {
-        let d: stats::DistributionSpec = distribution.into();
+        let d: stats::distributions::DistributionSpec = distribution.into();
         bencher.bench(|| {
             black_box(&xs)
                 .iter()
@@ -297,22 +301,42 @@ mod distribution_benches {
 
     #[divan::bench(args = FAMILIES)]
     fn pdf(bencher: Bencher, name: &str) {
-        eval(bencher, family(name), support_grid(name), stats::pdf);
+        eval(
+            bencher,
+            family(name),
+            support_grid(name),
+            stats::distributions::pdf,
+        );
     }
 
     #[divan::bench(args = FAMILIES)]
     fn logpdf(bencher: Bencher, name: &str) {
-        eval(bencher, family(name), support_grid(name), stats::logpdf);
+        eval(
+            bencher,
+            family(name),
+            support_grid(name),
+            stats::distributions::logpdf,
+        );
     }
 
     #[divan::bench(args = FAMILIES)]
     fn cdf(bencher: Bencher, name: &str) {
-        eval(bencher, family(name), support_grid(name), stats::cdf);
+        eval(
+            bencher,
+            family(name),
+            support_grid(name),
+            stats::distributions::cdf,
+        );
     }
 
     #[divan::bench(args = FAMILIES)]
     fn sf(bencher: Bencher, name: &str) {
-        eval(bencher, family(name), support_grid(name), stats::sf);
+        eval(
+            bencher,
+            family(name),
+            support_grid(name),
+            stats::distributions::sf,
+        );
     }
 
     #[divan::bench(args = FAMILIES)]
@@ -322,7 +346,7 @@ mod distribution_benches {
             bencher,
             family(name),
             linspace(0.005, 0.995, PPF_GRID),
-            stats::ppf,
+            stats::distributions::ppf,
         );
     }
 
@@ -332,7 +356,7 @@ mod distribution_benches {
         bencher.bench(|| {
             black_box(&xs)
                 .iter()
-                .map(|&x| stats::normal_pdf(x, 0.5, 1.5).unwrap())
+                .map(|&x| stats::distributions::normal_pdf(x, 0.5, 1.5).unwrap())
                 .sum::<f64>()
         });
     }
@@ -343,7 +367,7 @@ mod distribution_benches {
         bencher.bench(|| {
             black_box(&xs)
                 .iter()
-                .map(|&x| stats::normal_cdf(x, 0.5, 1.5).unwrap())
+                .map(|&x| stats::distributions::normal_cdf(x, 0.5, 1.5).unwrap())
                 .sum::<f64>()
         });
     }
@@ -354,7 +378,7 @@ mod distribution_benches {
         bencher.bench(|| {
             black_box(&ps)
                 .iter()
-                .map(|&p| stats::normal_ppf(p, 0.5, 1.5).unwrap())
+                .map(|&p| stats::distributions::normal_ppf(p, 0.5, 1.5).unwrap())
                 .sum::<f64>()
         });
     }
@@ -366,8 +390,8 @@ mod distribution_benches {
             black_box(&xs)
                 .iter()
                 .map(|&x| {
-                    let p = stats::normal_cdf(x, 0.0, 1.0).unwrap();
-                    stats::normal_ppf(p, 0.0, 1.0).unwrap()
+                    let p = stats::distributions::normal_cdf(x, 0.0, 1.0).unwrap();
+                    stats::distributions::normal_ppf(p, 0.0, 1.0).unwrap()
                 })
                 .sum::<f64>()
         });
@@ -376,7 +400,7 @@ mod distribution_benches {
 
 mod composition_benches {
     use super::*;
-    use stats::Distribution;
+    use stats::distributions::Distribution;
 
     const NORMAL: Distribution = Distribution::Normal {
         mean: 0.0,
@@ -385,40 +409,44 @@ mod composition_benches {
 
     #[divan::bench]
     fn truncate(bencher: Bencher) {
-        bencher.bench(|| stats::truncate(black_box(NORMAL), black_box(-1.0), 2.0).unwrap());
+        bencher.bench(|| {
+            stats::distributions::truncate(black_box(NORMAL), black_box(-1.0), 2.0).unwrap()
+        });
     }
 
     #[divan::bench]
     fn truncated_cdf(bencher: Bencher) {
-        let d = stats::truncate(NORMAL, -1.0, 2.0).unwrap();
+        let d = stats::distributions::truncate(NORMAL, -1.0, 2.0).unwrap();
         let xs = linspace(-0.99, 1.99, GRID);
         bencher.bench(|| {
             black_box(&xs)
                 .iter()
-                .map(|&x| stats::cdf(black_box(d), x).unwrap())
+                .map(|&x| stats::distributions::cdf(black_box(d), x).unwrap())
                 .sum::<f64>()
         });
     }
 
     #[divan::bench]
     fn order_statistic(bencher: Bencher) {
-        bencher.bench(|| stats::order_statistic(black_box(NORMAL), black_box(3), 7).unwrap());
+        bencher.bench(|| {
+            stats::distributions::order_statistic(black_box(NORMAL), black_box(3), 7).unwrap()
+        });
     }
 
     #[divan::bench]
     fn order_statistic_pdf(bencher: Bencher) {
-        let d = stats::order_statistic(NORMAL, 3, 7).unwrap();
+        let d = stats::distributions::order_statistic(NORMAL, 3, 7).unwrap();
         let xs = linspace(-3.0, 3.0, GRID);
         bencher.bench(|| {
             black_box(&xs)
                 .iter()
-                .map(|&x| stats::pdf(black_box(d), x).unwrap())
+                .map(|&x| stats::distributions::pdf(black_box(d), x).unwrap())
                 .sum::<f64>()
         });
     }
 
-    fn custom() -> sci::stats::Result<stats::DistributionSpec> {
-        stats::make_distribution(
+    fn custom() -> sci::stats::Result<stats::distributions::DistributionSpec> {
+        stats::distributions::make_distribution(
             0.0,
             1.0,
             |x| Ok(2.0 * x),
@@ -440,7 +468,7 @@ mod composition_benches {
         bencher.bench(|| {
             black_box(&ps)
                 .iter()
-                .map(|&p| stats::ppf(black_box(d), p).unwrap())
+                .map(|&p| stats::distributions::ppf(black_box(d), p).unwrap())
                 .sum::<f64>()
         });
     }
@@ -457,76 +485,80 @@ mod transformation_benches {
     #[divan::bench]
     fn circmean(bencher: Bencher) {
         let x = angles();
-        bencher.bench(|| stats::circmean(black_box(&x), -PI, PI).unwrap());
+        bencher.bench(|| stats::descriptive::circmean(black_box(&x), -PI, PI).unwrap());
     }
 
     #[divan::bench]
     fn circvar(bencher: Bencher) {
         let x = angles();
-        bencher.bench(|| stats::circvar(black_box(&x), -PI, PI).unwrap());
+        bencher.bench(|| stats::descriptive::circvar(black_box(&x), -PI, PI).unwrap());
     }
 
     #[divan::bench]
     fn circstd(bencher: Bencher) {
         let x = angles();
-        bencher.bench(|| stats::circstd(black_box(&x), -PI, PI, false).unwrap());
+        bencher.bench(|| stats::descriptive::circstd(black_box(&x), -PI, PI, false).unwrap());
     }
 
     #[divan::bench]
     fn entropy(bencher: Bencher) {
         let pk = unit_values(N, 1);
         let qk = unit_values(N, 2);
-        bencher.bench(|| stats::entropy(black_box(&pk), Some(black_box(&qk)), Some(2.0)).unwrap());
+        bencher.bench(|| {
+            stats::descriptive::entropy(black_box(&pk), Some(black_box(&qk)), Some(2.0)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn boxcox(bencher: Bencher) {
         let x = positive_values(N, 1);
-        bencher.bench(|| stats::boxcox(black_box(&x), 0.5).unwrap());
+        bencher.bench(|| stats::transformations::boxcox(black_box(&x), 0.5).unwrap());
     }
 
     #[divan::bench]
     fn yeojohnson(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::yeojohnson(black_box(&x), 0.5).unwrap());
+        bencher.bench(|| stats::transformations::yeojohnson(black_box(&x), 0.5).unwrap());
     }
 
     #[divan::bench]
     fn boxcox_llf(bencher: Bencher) {
         let x = positive_values(N, 1);
-        bencher.bench(|| stats::boxcox_llf(0.5, black_box(&x)).unwrap());
+        bencher.bench(|| stats::transformations::boxcox_llf(0.5, black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn yeojohnson_llf(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::yeojohnson_llf(0.5, black_box(&x)).unwrap());
+        bencher.bench(|| stats::transformations::yeojohnson_llf(0.5, black_box(&x)).unwrap());
     }
 
     #[divan::bench(args = [1.5, 1e-18])]
     fn pmean(bencher: Bencher, power: f64) {
         let x = positive_values(N, 1);
-        bencher.bench(|| stats::pmean(black_box(&x), black_box(power)).unwrap());
+        bencher.bench(|| stats::descriptive::pmean(black_box(&x), black_box(power)).unwrap());
     }
 
     #[divan::bench]
     fn expectile(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::expectile(black_box(&x), 0.3).unwrap());
+        bencher.bench(|| stats::descriptive::expectile(black_box(&x), 0.3).unwrap());
     }
 
     #[divan::bench]
     fn wasserstein_distance(bencher: Bencher) {
         let a = values(N, 1);
         let b = values(N, 2);
-        bencher.bench(|| stats::wasserstein_distance(black_box(&a), black_box(&b)).unwrap());
+        bencher.bench(|| {
+            stats::distances::wasserstein_distance(black_box(&a), black_box(&b)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn energy_distance(bencher: Bencher) {
         let a = values(N, 1);
         let b = values(N, 2);
-        bencher.bench(|| stats::energy_distance(black_box(&a), black_box(&b)).unwrap());
+        bencher.bench(|| stats::distances::energy_distance(black_box(&a), black_box(&b)).unwrap());
     }
 }
 
@@ -539,11 +571,11 @@ mod binning_benches {
         let v = values(N, 2);
         let edges = linspace(-1.0, 1.0, 21);
         bencher.bench(|| {
-            stats::binned_statistic(
+            stats::binning::binned_statistic(
                 black_box(&x),
                 black_box(&v),
                 black_box(&edges),
-                stats::BinStatistic::Mean,
+                stats::binning::BinStatistic::Mean,
             )
             .unwrap()
         });
@@ -555,11 +587,11 @@ mod binning_benches {
         let v = values(N, 2);
         let edges = linspace(-1.0, 1.0, 21);
         bencher.bench(|| {
-            stats::binned_statistic(
+            stats::binning::binned_statistic(
                 black_box(&x),
                 black_box(&v),
                 black_box(&edges),
-                stats::BinStatistic::Median,
+                stats::binning::BinStatistic::Median,
             )
             .unwrap()
         });
@@ -572,13 +604,13 @@ mod binning_benches {
         let v = values(N, 3);
         let edges = linspace(-1.0, 1.0, 11);
         bencher.bench(|| {
-            stats::binned_statistic_2d(
+            stats::binning::binned_statistic_2d(
                 black_box(&x),
                 black_box(&y),
                 black_box(&v),
                 black_box(&edges),
                 black_box(&edges),
-                stats::BinStatistic::Sum,
+                stats::binning::BinStatistic::Sum,
             )
             .unwrap()
         });
@@ -590,11 +622,11 @@ mod binning_benches {
         let v = values(N, 2);
         let edges = vec![linspace(-1.0, 1.0, 6); 3];
         bencher.bench(|| {
-            stats::binned_statistic_dd(
+            stats::binning::binned_statistic_dd(
                 black_box(&p),
                 black_box(&v),
                 black_box(&edges),
-                stats::BinStatistic::Std,
+                stats::binning::BinStatistic::Std,
             )
             .unwrap()
         });
@@ -603,13 +635,13 @@ mod binning_benches {
     #[divan::bench]
     fn cumfreq(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::cumfreq(black_box(&x), 20, -1.0, 1.0).unwrap());
+        bencher.bench(|| stats::binning::cumfreq(black_box(&x), 20, -1.0, 1.0).unwrap());
     }
 
     #[divan::bench]
     fn relfreq(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::relfreq(black_box(&x), 20, -1.0, 1.0).unwrap());
+        bencher.bench(|| stats::binning::relfreq(black_box(&x), 20, -1.0, 1.0).unwrap());
     }
 }
 
@@ -624,20 +656,27 @@ mod ranking_benches {
     #[divan::bench]
     fn rankdata(bencher: Bencher) {
         let x = tied();
-        bencher.bench(|| stats::rankdata(black_box(&x), stats::RankMethod::Average).unwrap());
+        bencher.bench(|| {
+            stats::ranking::rankdata(black_box(&x), stats::ranking::RankMethod::Average).unwrap()
+        });
     }
 
     #[divan::bench]
     fn tiecorrect(bencher: Bencher) {
-        let ranks = stats::rankdata(&tied(), stats::RankMethod::Average).unwrap();
-        bencher.bench(|| stats::tiecorrect(black_box(&ranks)).unwrap());
+        let ranks = stats::ranking::rankdata(&tied(), stats::ranking::RankMethod::Average).unwrap();
+        bencher.bench(|| stats::ranking::tiecorrect(black_box(&ranks)).unwrap());
     }
 
     #[divan::bench]
     fn percentileofscore(bencher: Bencher) {
         let x = values(N, 1);
         bencher.bench(|| {
-            stats::percentileofscore(black_box(&x), 0.25, stats::PercentileKind::Rank).unwrap()
+            stats::ranking::percentileofscore(
+                black_box(&x),
+                0.25,
+                stats::ranking::PercentileKind::Rank,
+            )
+            .unwrap()
         });
     }
 
@@ -645,22 +684,30 @@ mod ranking_benches {
     fn false_discovery_control(bencher: Bencher) {
         let p = unit_values(N, 1);
         bencher.bench(|| {
-            stats::false_discovery_control(black_box(&p), stats::FdrMethod::BenjaminiHochberg)
-                .unwrap()
+            stats::inference::false_discovery_control(
+                black_box(&p),
+                stats::inference::FdrMethod::BenjaminiHochberg,
+            )
+            .unwrap()
         });
     }
 
     #[divan::bench]
     fn ecdf(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::ecdf(black_box(&x)).unwrap());
+        bencher.bench(|| stats::ranking::ecdf(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn estimated_cdf(bencher: Bencher) {
         let x = values(N, 1);
         bencher.bench(|| {
-            stats::estimated_cdf(black_box(&x), 0.25, stats::EstimatedCdfMethod::Linear).unwrap()
+            stats::ranking::estimated_cdf(
+                black_box(&x),
+                0.25,
+                stats::ranking::EstimatedCdfMethod::Linear,
+            )
+            .unwrap()
         });
     }
 }
@@ -684,11 +731,11 @@ mod robust_benches {
     fn theilslopes(bencher: Bencher) {
         let (x, y) = line(128);
         bencher.bench(|| {
-            stats::theilslopes(
+            stats::regression::theilslopes(
                 black_box(&x),
                 black_box(&y),
                 0.95,
-                stats::TheilMethod::Separate,
+                stats::regression::TheilMethod::Separate,
             )
             .unwrap()
         });
@@ -698,10 +745,10 @@ mod robust_benches {
     fn siegelslopes(bencher: Bencher) {
         let (x, y) = line(128);
         bencher.bench(|| {
-            stats::siegelslopes(
+            stats::regression::siegelslopes(
                 black_box(&x),
                 black_box(&y),
-                stats::SiegelMethod::Hierarchical,
+                stats::regression::SiegelMethod::Hierarchical,
             )
             .unwrap()
         });
@@ -714,11 +761,11 @@ mod utility_benches {
     #[divan::bench]
     fn binomtest(bencher: Bencher) {
         bencher.bench(|| {
-            stats::binomtest(
+            stats::inference::binomtest(
                 black_box(430),
                 black_box(1_000),
                 0.45,
-                stats::Alternative::TwoSided,
+                stats::inference::Alternative::TwoSided,
             )
             .unwrap()
         });
@@ -733,19 +780,19 @@ mod utility_benches {
                 p
             })
             .collect();
-        bencher.bench(|| stats::directional_stats(black_box(&obs), true).unwrap());
+        bencher.bench(|| stats::descriptive::directional_stats(black_box(&obs), true).unwrap());
     }
 
     #[divan::bench]
     fn differential_entropy(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::differential_entropy(black_box(&x), 8, None).unwrap());
+        bencher.bench(|| stats::descriptive::differential_entropy(black_box(&x), 8, None).unwrap());
     }
 
     #[divan::bench]
     fn lmoment(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::lmoment(black_box(&x), 4, true).unwrap());
+        bencher.bench(|| stats::descriptive::lmoment(black_box(&x), 4, true).unwrap());
     }
 }
 
@@ -755,29 +802,29 @@ mod estimation_benches {
     #[divan::bench]
     fn mvsdist(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::mvsdist(black_box(&x), 0.9).unwrap());
+        bencher.bench(|| stats::estimation::mvsdist(black_box(&x), 0.9).unwrap());
     }
 
     #[divan::bench]
     fn bayes_mvs(bencher: Bencher) {
         let x = values(N, 1);
-        bencher.bench(|| stats::bayes_mvs(black_box(&x), 0.9).unwrap());
+        bencher.bench(|| stats::estimation::bayes_mvs(black_box(&x), 0.9).unwrap());
     }
 }
 
 mod fitting_benches {
     use super::*;
 
-    const FAMILIES: [stats::FitFamily; 3] = [
-        stats::FitFamily::Normal,
-        stats::FitFamily::Exponential,
-        stats::FitFamily::Uniform,
+    const FAMILIES: [stats::distributions::FitFamily; 3] = [
+        stats::distributions::FitFamily::Normal,
+        stats::distributions::FitFamily::Exponential,
+        stats::distributions::FitFamily::Uniform,
     ];
 
     #[divan::bench(args = FAMILIES)]
-    fn fit(bencher: Bencher, family: stats::FitFamily) {
+    fn fit(bencher: Bencher, family: stats::distributions::FitFamily) {
         let x = positive_values(N, 1);
-        bencher.bench(|| stats::fit(black_box(&x), family).unwrap());
+        bencher.bench(|| stats::distributions::fit(black_box(&x), family).unwrap());
     }
 
     #[divan::bench]
@@ -786,11 +833,11 @@ mod fitting_benches {
         let draws: Vec<Vec<f64>> = (0..32).map(|s| values(64, 100 + s)).collect();
         let null: Vec<&[f64]> = draws.iter().map(Vec::as_slice).collect();
         bencher.bench(|| {
-            stats::goodness_of_fit(
+            stats::goodness::goodness_of_fit(
                 black_box(&x),
                 black_box(&null),
-                stats::FitFamily::Normal,
-                stats::GoodnessStatistic::KolmogorovSmirnov,
+                stats::distributions::FitFamily::Normal,
+                stats::goodness::GoodnessStatistic::KolmogorovSmirnov,
             )
             .unwrap()
         });
@@ -806,7 +853,8 @@ mod characteristic_benches {
         let y: Vec<f64> = values(120, 2).iter().map(|v| 0.2 + 1.2 * v).collect();
         let t = [0.4, 0.8];
         bencher.bench(|| {
-            stats::epps_singleton_2samp(black_box(&x), black_box(&y), black_box(&t)).unwrap()
+            stats::inference::epps_singleton_2samp(black_box(&x), black_box(&y), black_box(&t))
+                .unwrap()
         });
     }
 }
@@ -878,7 +926,12 @@ mod multivariate_benches {
     fn multivariate_normal_pdf(bencher: Bencher) {
         let (x, loc, cov) = mvn_inputs();
         bencher.bench(|| {
-            stats::multivariate_normal_pdf(black_box(&x), black_box(&loc), black_box(&cov)).unwrap()
+            stats::multivariate::multivariate_normal_pdf(
+                black_box(&x),
+                black_box(&loc),
+                black_box(&cov),
+            )
+            .unwrap()
         });
     }
 
@@ -886,8 +939,12 @@ mod multivariate_benches {
     fn multivariate_normal_logpdf(bencher: Bencher) {
         let (x, loc, cov) = mvn_inputs();
         bencher.bench(|| {
-            stats::multivariate_normal_logpdf(black_box(&x), black_box(&loc), black_box(&cov))
-                .unwrap()
+            stats::multivariate::multivariate_normal_logpdf(
+                black_box(&x),
+                black_box(&loc),
+                black_box(&cov),
+            )
+            .unwrap()
         });
     }
 
@@ -895,7 +952,13 @@ mod multivariate_benches {
     fn multivariate_t_pdf(bencher: Bencher) {
         let (x, loc, cov) = mvn_inputs();
         bencher.bench(|| {
-            stats::multivariate_t_pdf(black_box(&x), black_box(&loc), black_box(&cov), 5.0).unwrap()
+            stats::multivariate::multivariate_t_pdf(
+                black_box(&x),
+                black_box(&loc),
+                black_box(&cov),
+                5.0,
+            )
+            .unwrap()
         });
     }
 
@@ -903,8 +966,13 @@ mod multivariate_benches {
     fn multivariate_t_logpdf(bencher: Bencher) {
         let (x, loc, cov) = mvn_inputs();
         bencher.bench(|| {
-            stats::multivariate_t_logpdf(black_box(&x), black_box(&loc), black_box(&cov), 5.0)
-                .unwrap()
+            stats::multivariate::multivariate_t_logpdf(
+                black_box(&x),
+                black_box(&loc),
+                black_box(&cov),
+                5.0,
+            )
+            .unwrap()
         });
     }
 
@@ -922,14 +990,18 @@ mod multivariate_benches {
     fn dirichlet_pdf(bencher: Bencher) {
         let x = simplex_point();
         let alpha = positive_values(DIM, 4);
-        bencher.bench(|| stats::dirichlet_pdf(black_box(&x), black_box(&alpha)).unwrap());
+        bencher.bench(|| {
+            stats::multivariate::dirichlet_pdf(black_box(&x), black_box(&alpha)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn dirichlet_logpdf(bencher: Bencher) {
         let x = simplex_point();
         let alpha = positive_values(DIM, 4);
-        bencher.bench(|| stats::dirichlet_logpdf(black_box(&x), black_box(&alpha)).unwrap());
+        bencher.bench(|| {
+            stats::multivariate::dirichlet_logpdf(black_box(&x), black_box(&alpha)).unwrap()
+        });
     }
 
     fn multinomial_inputs() -> (Vec<f64>, Vec<f64>) {
@@ -940,13 +1012,17 @@ mod multivariate_benches {
     #[divan::bench]
     fn multinomial_pmf(bencher: Bencher) {
         let (counts, p) = multinomial_inputs();
-        bencher.bench(|| stats::multinomial_pmf(black_box(&counts), black_box(&p)).unwrap());
+        bencher.bench(|| {
+            stats::multivariate::multinomial_pmf(black_box(&counts), black_box(&p)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn multinomial_logpmf(bencher: Bencher) {
         let (counts, p) = multinomial_inputs();
-        bencher.bench(|| stats::multinomial_logpmf(black_box(&counts), black_box(&p)).unwrap());
+        bencher.bench(|| {
+            stats::multivariate::multinomial_logpmf(black_box(&counts), black_box(&p)).unwrap()
+        });
     }
 
     #[divan::bench]
@@ -954,7 +1030,7 @@ mod multivariate_benches {
         let w = positive_values(64, 5);
         bencher.bench(|| {
             (0..64)
-                .map(|k| stats::categorical_pmf(black_box(&w), k as f64).unwrap())
+                .map(|k| stats::multivariate::categorical_pmf(black_box(&w), k as f64).unwrap())
                 .sum::<f64>()
         });
     }
@@ -964,7 +1040,7 @@ mod multivariate_benches {
         let w = positive_values(64, 5);
         bencher.bench(|| {
             (0..64)
-                .map(|k| stats::categorical_cdf(black_box(&w), k as f64).unwrap())
+                .map(|k| stats::multivariate::categorical_cdf(black_box(&w), k as f64).unwrap())
                 .sum::<f64>()
         });
     }

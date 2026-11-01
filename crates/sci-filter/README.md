@@ -2,6 +2,10 @@
 
 Functional Bayesian state estimation on shared row-major `Matrix` values.
 
+Kalman functions live under `sci_filter::kalman` and particle functions under
+`sci_filter::particle`. Shared `Gaussian`, `Update`, `SigmaPoints`, and
+`ParticleSet` types remain available from the crate root.
+
 Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 
 Linear and extended Kalman steps and the scaled unscented filter delegate to
@@ -20,7 +24,7 @@ than converted to a plausible estimate.
 
 ```rust
 fn main() -> Result<(), sci_filter::Error> {
-    use sci_filter::{Gaussian, kalman_predict, kalman_update};
+    use sci_filter::{Gaussian, kalman::{kalman_predict, kalman_update}};
     let prior = Gaussian { mean: vec![0.], covariance: vec![vec![1.]] };
     let predicted = kalman_predict(&prior, &[vec![1.]], &[vec![0.1]])?;
     let updated = kalman_update(&predicted, &[2.], &[vec![1.]], &[vec![0.5]])?;

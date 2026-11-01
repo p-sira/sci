@@ -86,7 +86,7 @@ fn finite_difference_scales_before_an_overflowing_quotient() {
 
 #[test]
 fn optimization_validation_precedes_callbacks_and_preserves_late_errors() {
-    use optimize::Options;
+    use optimize::minimize::Options;
     let never = |_: &[f64]| -> f64 { panic!("invalid controls reached callback") };
     let never_gradient = |_: &[f64]| -> Vec<f64> { panic!("invalid controls reached gradient") };
     for bad in [0.0, -1.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
@@ -94,28 +94,36 @@ fn optimization_validation_precedes_callbacks_and_preserves_late_errors() {
             tolerance: bad,
             ..Default::default()
         };
-        assert!(optimize::minimize(never, &[0.0], options).is_err());
-        assert!(optimize::minimize_with_gradient(never, never_gradient, &[0.0], options).is_err());
+        assert!(optimize::minimize::minimize(never, &[0.0], options).is_err());
+        assert!(
+            optimize::minimize::minimize_with_gradient(never, never_gradient, &[0.0], options)
+                .is_err()
+        );
         let options = Options {
             learning_rate: bad,
             ..Default::default()
         };
-        assert!(optimize::minimize_with_gradient(never, never_gradient, &[0.0], options).is_err());
+        assert!(
+            optimize::minimize::minimize_with_gradient(never, never_gradient, &[0.0], options)
+                .is_err()
+        );
     }
     let options = Options {
         max_iterations: u64::MAX,
         ..Default::default()
     };
-    assert!(optimize::minimize(never, &[0.0], options).is_err());
-    assert!(optimize::minimize_with_gradient(never, never_gradient, &[0.0], options).is_err());
+    assert!(optimize::minimize::minimize(never, &[0.0], options).is_err());
+    assert!(
+        optimize::minimize::minimize_with_gradient(never, never_gradient, &[0.0], options).is_err()
+    );
     let options = Options {
         max_iterations: 0,
         ..Default::default()
     };
-    assert!(optimize::minimize(never, &vec![0.0; 1000], options).is_err());
+    assert!(optimize::minimize::minimize(never, &vec![0.0; 1000], options).is_err());
     let error = Error::NumericalFailure("gradient callback failed");
     assert_eq!(
-        optimize::try_minimize_with_gradient(
+        optimize::minimize::try_minimize_with_gradient(
             |x| Ok(x[0] * x[0]),
             |_| Err(error.clone()),
             &[1.0],
@@ -125,7 +133,7 @@ fn optimization_validation_precedes_callbacks_and_preserves_late_errors() {
     );
     let error = Error::InvalidInput("trial point rejected");
     assert_eq!(
-        optimize::try_minimize(
+        optimize::minimize::try_minimize(
             |x| if x[0] == 1.0 {
                 Ok(1.0)
             } else {
@@ -138,7 +146,12 @@ fn optimization_validation_precedes_callbacks_and_preserves_late_errors() {
     );
     for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
         assert_eq!(
-            optimize::minimize_with_gradient(|_| 1.0, |_| vec![bad], &[0.0], Default::default()),
+            optimize::minimize::minimize_with_gradient(
+                |_| 1.0,
+                |_| vec![bad],
+                &[0.0],
+                Default::default()
+            ),
             Err(Error::NonFiniteEvaluation)
         );
     }
@@ -149,7 +162,7 @@ fn integration_rejects_overflow_and_respects_callback_counts() {
     use std::cell::Cell;
     for n in [1, 2, 16, 256] {
         let count = Cell::new(0);
-        let result = integrate::fixed_quad(
+        let result = integrate::quadrature::fixed_quad(
             |_| {
                 count.set(count.get() + 1);
                 1.0
@@ -163,38 +176,38 @@ fn integration_rejects_overflow_and_respects_callback_counts() {
         assert_eq!(count.get(), n);
     }
     assert_eq!(
-        integrate::fixed_quad(|_| 0.0, -f64::MAX, f64::MAX, 2),
+        integrate::quadrature::fixed_quad(|_| 0.0, -f64::MAX, f64::MAX, 2),
         Ok(0.0)
     );
     finite_close(
-        integrate::fixed_quad(|_| f64::MAX, 0.0, 1.0, 2).unwrap(),
+        integrate::quadrature::fixed_quad(|_| f64::MAX, 0.0, 1.0, 2).unwrap(),
         f64::MAX,
         2e-12,
         2e-12,
     );
     assert_eq!(
-        integrate::fixed_quad(|_| f64::MAX, 0.0, 2.0, 2),
+        integrate::quadrature::fixed_quad(|_| f64::MAX, 0.0, 2.0, 2),
         Err(Error::NonFiniteEvaluation)
     );
     assert_eq!(
-        integrate::trapezoid(&[1.0, 1.0], Some(&[-f64::MAX, f64::MAX]), 1.0),
+        integrate::sampled::trapezoid(&[1.0, 1.0], Some(&[-f64::MAX, f64::MAX]), 1.0),
         Err(Error::NonFiniteEvaluation)
     );
     assert!(
-        integrate::cumulative_simpson(&[1.0, 1.0, 1.0], None, 1.0, Some(f64::MAX))
+        integrate::sampled::cumulative_simpson(&[1.0, 1.0, 1.0], None, 1.0, Some(f64::MAX))
             .unwrap()
             .iter()
             .all(|x| x.is_finite())
     );
-    for integrate in [integrate::trapezoid, integrate::simpson] {
+    for integrate in [integrate::sampled::trapezoid, integrate::sampled::simpson] {
         assert!(integrate(&[f64::MAX; 3], None, f64::MAX).is_err());
     }
-    assert!(integrate::romb(&[f64::MAX; 3], f64::MAX).is_err());
+    assert!(integrate::sampled::romb(&[f64::MAX; 3], f64::MAX).is_err());
 }
 
 #[test]
 fn spline_public_fields_are_validated_by_every_consumer() {
-    use interpolate::SplineExtension;
+    use interpolate::spline::SplineExtension;
     let valid = Spline {
         knots: vec![0.0, 0.0, 1.0, 1.0],
         coefficients: vec![0.0, 1.0],
@@ -209,17 +222,19 @@ fn spline_public_fields_are_validated_by_every_consumer() {
     let mut bad_shape = valid.clone();
     bad_shape.coefficients.pop();
     for spline in [bad_knots, bad_coefficients, bad_degree, bad_shape] {
-        assert!(interpolate::splev(&[0.5], &spline, 0, SplineExtension::Extrapolate).is_err());
-        assert!(interpolate::splder(&spline, 0).is_err());
-        assert!(interpolate::splantider(&spline, 0).is_err());
-        assert!(interpolate::spalde(&[0.5], &spline).is_err());
-        assert!(interpolate::splint(0.0, 1.0, &spline).is_err());
-        assert!(interpolate::insert(0.5, &spline, 1).is_err());
+        assert!(
+            interpolate::spline::splev(&[0.5], &spline, 0, SplineExtension::Extrapolate).is_err()
+        );
+        assert!(interpolate::spline::splder(&spline, 0).is_err());
+        assert!(interpolate::spline::splantider(&spline, 0).is_err());
+        assert!(interpolate::spline::spalde(&[0.5], &spline).is_err());
+        assert!(interpolate::spline::splint(0.0, 1.0, &spline).is_err());
+        assert!(interpolate::spline::insert(0.5, &spline, 1).is_err());
     }
-    assert_eq!(interpolate::splder(&valid, 0).unwrap(), valid);
-    assert_eq!(interpolate::splantider(&valid, 0).unwrap(), valid);
+    assert_eq!(interpolate::spline::splder(&valid, 0).unwrap(), valid);
+    assert_eq!(interpolate::spline::splantider(&valid, 0).unwrap(), valid);
     finite_close(
-        interpolate::splint(1.0, 0.0, &valid).unwrap(),
+        interpolate::spline::splint(1.0, 0.0, &valid).unwrap(),
         -0.5,
         2e-12,
         2e-12,
@@ -332,25 +347,25 @@ fn special_reductions_handle_empty_and_nonfinite_normalization() {
 fn fft_tensor_axes_validate_shapes_and_empty_axes_preserve_input() {
     use complex::Complex;
     let input = vec![Complex { re: 1.0, im: -2.0 }; 6];
-    assert_eq!(fft::fftn(&input, &[2, 3], &[]).unwrap(), input);
-    assert_eq!(fft::ifftn(&input, &[2, 3], &[]).unwrap(), input);
+    assert_eq!(fft::fourier::fftn(&input, &[2, 3], &[]).unwrap(), input);
+    assert_eq!(fft::fourier::ifftn(&input, &[2, 3], &[]).unwrap(), input);
     for axes in [&[0, 0][..], &[2], &[usize::MAX]] {
-        assert!(fft::fftn(&input, &[2, 3], axes).is_err());
-        assert!(fft::ifftn(&input, &[2, 3], axes).is_err());
-        assert!(fft::rfftn(&[1.0; 6], &[2, 3], axes).is_err());
+        assert!(fft::fourier::fftn(&input, &[2, 3], axes).is_err());
+        assert!(fft::fourier::ifftn(&input, &[2, 3], axes).is_err());
+        assert!(fft::real::rfftn(&[1.0; 6], &[2, 3], axes).is_err());
     }
     for shape in [&[usize::MAX][..], &[1_048_576, 2], &[2, 2], &[0, 3]] {
-        assert!(fft::fftn(&input, shape, &[0]).is_err());
+        assert!(fft::fourier::fftn(&input, shape, &[0]).is_err());
     }
-    for transform in [fft::fft2, fft::ifft2] {
+    for transform in [fft::fourier::fft2, fft::fourier::ifft2] {
         assert!(transform(&[vec![input[0]], vec![]]).is_err());
     }
     // Tiny logarithmic spacing overflows the frequency before gamma evaluation.
     assert_eq!(
-        fft::fhtoffset(f64::from_bits(1), 0.0, 0.0, 0.0),
+        fft::hankel::fhtoffset(f64::from_bits(1), 0.0, 0.0, 0.0),
         Err(Error::NonFiniteEvaluation)
     );
-    for transform in [fft::fht, fft::ifht] {
+    for transform in [fft::hankel::fht, fft::hankel::ifht] {
         assert!(transform(&[1.0; 3], 1000.0, 0.0, 0.0, 1.0).is_err());
     }
 }
@@ -359,16 +374,16 @@ fn fft_tensor_axes_validate_shapes_and_empty_axes_preserve_input() {
 fn fft_zero_hyperbolic_numerators_and_overflow_are_explicit() {
     let x = [1.0, -2.0, 4.0];
     assert_eq!(
-        fft::sc_diff(&x, 0.0, 1.0, std::f64::consts::TAU).unwrap(),
+        fft::utilities::sc_diff(&x, 0.0, 1.0, std::f64::consts::TAU).unwrap(),
         vec![0.0; 3]
     );
     let mean = x.iter().sum::<f64>() / x.len() as f64;
-    for v in fft::ss_diff(&x, 0.0, 1.0, std::f64::consts::TAU).unwrap() {
+    for v in fft::utilities::ss_diff(&x, 0.0, 1.0, std::f64::consts::TAU).unwrap() {
         finite_close(v, 0.0 * mean, 2e-12, 2e-12);
     }
-    assert!(fft::diff(&x, 64, f64::MIN_POSITIVE).is_err());
-    assert!(fft::shift(&x, f64::MAX, 1.0).is_err());
-    assert!(fft::sc_diff(&x, f64::MAX, 1.0, 1.0).is_err());
+    assert!(fft::utilities::diff(&x, 64, f64::MIN_POSITIVE).is_err());
+    assert!(fft::utilities::shift(&x, f64::MAX, 1.0).is_err());
+    assert!(fft::utilities::sc_diff(&x, f64::MAX, 1.0, 1.0).is_err());
 }
 
 #[test]
@@ -400,17 +415,17 @@ fn linalg_array_slice_adapters_preserve_order_and_ieee_bits() {
 #[test]
 fn principal_matrix_functions_distinguish_zero_and_nilpotent_inputs() {
     let zero = [[0.0; 2]; 2];
-    let root = linalg::sqrtm(&zero).unwrap();
+    let root = linalg::matrix_functions::sqrtm(&zero).unwrap();
     assert!(root.iter().flatten().all(|z| z.re == 0.0 && z.im == 0.0));
-    assert!(linalg::logm(&zero).is_err());
-    assert!(linalg::fractional_matrix_power(&zero, -1.0).is_err());
+    assert!(linalg::matrix_functions::logm(&zero).is_err());
+    assert!(linalg::matrix_functions::fractional_matrix_power(&zero, -1.0).is_err());
     assert_eq!(
-        linalg::sqrtm(&[[0.0, 1.0], [0.0, 0.0]]),
+        linalg::matrix_functions::sqrtm(&[[0.0, 1.0], [0.0, 0.0]]),
         Err(Error::NumericalFailure(
             "matrix has no supported principal square root"
         ))
     );
-    let identity = linalg::fractional_matrix_power(&zero, 0.0).unwrap();
+    let identity = linalg::matrix_functions::fractional_matrix_power(&zero, 0.0).unwrap();
     for (i, row) in identity.iter().enumerate() {
         for (j, z) in row.iter().enumerate() {
             assert_eq!(z.re, f64::from(i == j));
@@ -423,24 +438,35 @@ fn principal_matrix_functions_distinguish_zero_and_nilpotent_inputs() {
 fn signal_division_and_convolution_cover_short_dividends_and_operand_order() {
     let x = [2.0, -1.0];
     let h = [1.0, 3.0, -2.0, 4.0];
-    assert_eq!(signal::deconvolve(&x, &h).unwrap(), (vec![], x.to_vec()));
+    assert_eq!(
+        signal::convolution::deconvolve(&x, &h).unwrap(),
+        (vec![], x.to_vec())
+    );
     for mode in [Mode::Full, Mode::Valid] {
-        let a = signal::convolve(&x, &h, mode).unwrap();
-        assert_eq!(a, signal::convolve(&h, &x, mode).unwrap());
-        let b = signal::fftconvolve(&x, &h, mode).unwrap();
+        let a = signal::convolution::convolve(&x, &h, mode).unwrap();
+        assert_eq!(a, signal::convolution::convolve(&h, &x, mode).unwrap());
+        let b = signal::convolution::fftconvolve(&x, &h, mode).unwrap();
         assert_eq!(a.len(), b.len());
         for (a, b) in a.iter().zip(b) {
             finite_close(*a, b, 2e-12, 2e-12);
         }
     }
     // Same-mode output is sized to the first operand, including n < m.
-    assert_eq!(signal::convolve(&x, &h, Mode::Same).unwrap().len(), x.len());
-    let (quotient, remainder) =
-        signal::deconvolve(&signal::convolve(&x, &h, Mode::Full).unwrap(), &h).unwrap();
+    assert_eq!(
+        signal::convolution::convolve(&x, &h, Mode::Same)
+            .unwrap()
+            .len(),
+        x.len()
+    );
+    let (quotient, remainder) = signal::convolution::deconvolve(
+        &signal::convolution::convolve(&x, &h, Mode::Full).unwrap(),
+        &h,
+    )
+    .unwrap();
     assert_eq!(quotient, x);
     assert!(remainder.iter().all(|v| *v == 0.0));
-    assert!(signal::lfilter_with_state(&[1.0, 1.0], &[1.0], &x, &[0.0, 0.0]).is_err());
-    assert!(signal::lfilter(&[f64::MAX], &[f64::MIN_POSITIVE], &x).is_err());
+    assert!(signal::filtering::lfilter_with_state(&[1.0, 1.0], &[1.0], &x, &[0.0, 0.0]).is_err());
+    assert!(signal::filtering::lfilter(&[f64::MAX], &[f64::MIN_POSITIVE], &x).is_err());
 }
 
 #[test]

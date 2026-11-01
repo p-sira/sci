@@ -157,7 +157,7 @@ fn identities_inverse_round_trips_and_fft_interoperability() {
         complex_close(c::from_polar(r, theta).unwrap(), z);
     }
     let input = [Complex { re: 1.0, im: 0.0 }, Complex { re: 0.0, im: 1.0 }];
-    let spectrum = fft::fft(&input);
+    let spectrum = fft::fourier::fft(&input);
     let energy: f64 = spectrum.iter().copied().map(c::norm_sqr).sum();
     assert_nonzero_close(energy, 4.0, 3e-14, 1e-6, "Parseval");
 }

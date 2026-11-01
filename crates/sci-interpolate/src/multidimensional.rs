@@ -47,7 +47,7 @@ pub enum ScatteredMethod {
 /// # Examples
 ///
 /// ```
-/// let v=sci_interpolate::interpn(&[vec![0.,1.]], &[0.,2.], &[vec![0.5]],sci_interpolate::GridMethod::Linear,true,None)?;
+/// let v=sci_interpolate::multidimensional::interpn(&[vec![0.,1.]], &[0.,2.], &[vec![0.5]],sci_interpolate::multidimensional::GridMethod::Linear,true,None)?;
 /// assert_eq!(v,vec![1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -201,7 +201,7 @@ pub fn interpn(
 /// # Examples
 ///
 /// ```
-/// let v=sci_interpolate::griddata(&[vec![0.],vec![1.]], &[0.,2.], &[vec![0.5]],sci_interpolate::ScatteredMethod::Linear,f64::NAN,false)?;
+/// let v=sci_interpolate::multidimensional::griddata(&[vec![0.],vec![1.]], &[0.,2.], &[vec![0.5]],sci_interpolate::multidimensional::ScatteredMethod::Linear,f64::NAN,false)?;
 /// assert_eq!(v,vec![1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -323,7 +323,7 @@ pub fn griddata(
         order.sort_by(|a, b| p[*a][0].total_cmp(&p[*b][0]));
         let x: Vec<_> = order.iter().map(|i| p[*i][0]).collect();
         let y: Vec<_> = order.iter().map(|i| values[*i]).collect();
-        let s = crate::make_interp_spline(
+        let s = crate::fitting::make_interp_spline(
             &x,
             &y,
             if method == ScatteredMethod::Cubic {
@@ -427,8 +427,8 @@ pub fn griddata(
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::bisplrep(&[0.,0.,1.,1.], &[0.,1.,0.,1.], &[0.,1.,1.,2.], &[0.,0.,1.,1.], &[0.,0.,1.,1.],1,1,None)?;
-/// let v=sci_interpolate::bisplev(&[0.5],&[0.5],&s,0,0)?;
+/// let s=sci_interpolate::fitting::bisplrep(&[0.,0.,1.,1.], &[0.,1.,0.,1.], &[0.,1.,1.,2.], &[0.,0.,1.,1.], &[0.,0.,1.,1.],1,1,None)?;
+/// let v=sci_interpolate::multidimensional::bisplev(&[0.5],&[0.5],&s,0,0)?;
 /// assert!((v[0][0]-1.).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -488,14 +488,19 @@ pub fn bisplev(
         for (i, c) in sx.coefficients.iter_mut().enumerate() {
             *c = spline.coefficients[i * ny + j];
         }
-        along_x.push(crate::splev(x, &sx, dx, crate::SplineExtension::Clamp)?);
+        along_x.push(crate::spline::splev(
+            x,
+            &sx,
+            dx,
+            crate::spline::SplineExtension::Clamp,
+        )?);
     }
     (0..x.len())
         .map(|i| {
             for (c, row) in sy.coefficients.iter_mut().zip(&along_x) {
                 *c = row[i];
             }
-            crate::splev(y, &sy, dy, crate::SplineExtension::Clamp)
+            crate::spline::splev(y, &sy, dy, crate::spline::SplineExtension::Clamp)
         })
         .collect()
 }

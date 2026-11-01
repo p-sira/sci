@@ -133,7 +133,7 @@ fn line_intercept(x: &[f64], y: &[f64], slope: f64) -> Result<f64> {
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{theilslopes, TheilMethod};
+/// use sci_stats::{regression::theilslopes, regression::TheilMethod};
 /// let fit = theilslopes(&[0.,1.,2.], &[1.,3.,5.], 0.95, TheilMethod::Separate)?;
 /// assert_eq!((fit.slope, fit.intercept), (2., 1.));
 /// # Ok::<(), sci_core::Error>(())
@@ -226,7 +226,7 @@ pub fn theilslopes(
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{siegelslopes, SiegelMethod};
+/// use sci_stats::{regression::siegelslopes, regression::SiegelMethod};
 /// let fit = siegelslopes(&[0.,1.,2.], &[1.,3.,5.], SiegelMethod::Hierarchical)?;
 /// assert_eq!((fit.slope, fit.intercept), (2., 1.));
 /// # Ok::<(), sci_core::Error>(())

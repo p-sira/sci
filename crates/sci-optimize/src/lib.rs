@@ -10,8 +10,8 @@
 //!
 //! ## Algorithms
 //!
-//! [`minimize`] uses Nelder–Mead, a derivative-free simplex method.
-//! [`minimize_with_gradient`] uses fixed-step gradient descent. Its learning
+//! [`minimize::minimize`] uses Nelder–Mead, a derivative-free simplex method.
+//! [`minimize::minimize_with_gradient`] uses fixed-step gradient descent. Its learning
 //! rate must suit the objective; convergence is not guaranteed for arbitrary
 //! functions. Limits return a result with a status, while invalid evaluations
 //! return the shared [`Error`].
@@ -22,7 +22,7 @@
 //! ## Examples
 //!
 //! ```
-//! let result = sci_optimize::minimize(
+//! let result = sci_optimize::minimize::minimize(
 //!     |x| (x[0] - 2.0).powi(2),
 //!     &[0.0], sci_optimize::Options::default(),
 //! )?;
@@ -47,4 +47,19 @@ use sci_core as linalg;
 pub use sci_core::{Error, Result};
 #[path = "mod.rs"]
 mod implementation;
-pub use implementation::*;
+pub use implementation::{Minimum, Options, Status};
+
+/// Objective minimization and its solver configuration and results.
+pub mod minimize {
+    pub use crate::implementation::{
+        Minimum, Options, Status, minimize, minimize_with_gradient, try_minimize,
+        try_minimize_with_gradient,
+    };
+}
+
+/// Numerical derivatives and Rosenbrock benchmark functions.
+pub mod derivatives {
+    pub use crate::implementation::{
+        approx_fprime, check_grad, rosen, rosen_der, rosen_hess, rosen_hess_prod,
+    };
+}

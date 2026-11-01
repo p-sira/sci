@@ -81,7 +81,7 @@ fn resample_work(length: usize, repetitions: usize) -> Result<()> {
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{permutation_test, mean, Alternative};
+/// use sci_stats::{resampling::permutation_test, descriptive::mean, inference::Alternative};
 /// let r = permutation_test(&[1.,2.], &[3.,4.], |x,y| Ok(mean(x)?-mean(y)?), Alternative::Less)?;
 /// assert_eq!(r.null_distribution.len(), 6);
 /// # Ok::<(), sci_core::Error>(())
@@ -186,7 +186,7 @@ where
 ///
 /// ```
 /// let draws: &[&[f64]] = &[&[0.,1.], &[1.,2.], &[2.,3.]];
-/// let r = sci_stats::monte_carlo_test(&[2.,3.], draws, sci_stats::mean, sci_stats::Alternative::Greater)?;
+/// let r = sci_stats::resampling::monte_carlo_test(&[2.,3.], draws, sci_stats::descriptive::mean, sci_stats::inference::Alternative::Greater)?;
 /// assert_eq!(r.pvalue, 0.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -291,7 +291,7 @@ pub struct BootstrapResult {
 ///
 /// ```
 /// let indices: &[&[usize]] = &[&[0,0,1], &[0,1,2], &[1,2,2]];
-/// let r = sci_stats::bootstrap(&[1.,2.,3.], indices, sci_stats::mean, 0.9, sci_stats::BootstrapMethod::Percentile)?;
+/// let r = sci_stats::resampling::bootstrap(&[1.,2.,3.], indices, sci_stats::descriptive::mean, 0.9, sci_stats::resampling::BootstrapMethod::Percentile)?;
 /// assert_eq!(r.statistic, 2.);
 /// assert_eq!(r.bootstrap_distribution.len(), 3);
 /// # Ok::<(), sci_core::Error>(())
@@ -398,7 +398,7 @@ where
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::bws_test(&[1.,2.], &[3.,4.], sci_stats::Alternative::TwoSided)?;
+/// let r = sci_stats::resampling::bws_test(&[1.,2.], &[3.,4.], sci_stats::inference::Alternative::TwoSided)?;
 /// assert!(r.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

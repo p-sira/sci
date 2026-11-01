@@ -2,6 +2,9 @@
 
 One-dimensional integration of samples and fixed-order Gaussian quadrature.
 
+Sample-based rules live under `sci_integrate::sampled`, and fixed Gaussian
+quadrature and Newton–Cotes weights under `sci_integrate::quadrature`.
+
 Sampled rules and fixed Gaussian quadrature accept `T: sci_core::Float`; Newton–Cotes weights use `f64`.
 
 Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.

@@ -168,7 +168,7 @@ fn accumulate<T: Float>(intervals: impl Iterator<Item = T>, initial: Option<T>) 
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_integrate::trapezoid(&[0.0, 1.0, 2.0], None, 1.0)?, 2.0);
+/// assert_eq!(sci_integrate::sampled::trapezoid(&[0.0, 1.0, 2.0], None, 1.0)?, 2.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -206,7 +206,7 @@ pub fn trapezoid<T: Float>(y: &[T], x: Option<&[T]>, dx: T) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_integrate::cumulative_trapezoid(&[0.0, 2.0], None, 1.0, Some(0.0))?, vec![0.0, 1.0]);
+/// assert_eq!(sci_integrate::sampled::cumulative_trapezoid(&[0.0, 2.0], None, 1.0, Some(0.0))?, vec![0.0, 1.0]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -292,7 +292,7 @@ fn validate_quadratic<T: Float>(h: &[T], increasing: bool) -> Result<()> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_integrate::simpson(&[0.0_f64, 1.0, 4.0], None, 1.0)? - 8.0/3.0).abs() < 1e-14);
+/// assert!((sci_integrate::sampled::simpson(&[0.0_f64, 1.0, 4.0], None, 1.0)? - 8.0/3.0).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -345,7 +345,7 @@ pub fn simpson<T: Float>(y: &[T], x: Option<&[T]>, dx: T) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// let integrals = sci_integrate::cumulative_simpson(&[0.0_f64, 1.0, 4.0], None, 1.0, Some(2.0))?;
+/// let integrals = sci_integrate::sampled::cumulative_simpson(&[0.0_f64, 1.0, 4.0], None, 1.0, Some(2.0))?;
 /// assert!((integrals[1] - 7.0/3.0).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -411,7 +411,7 @@ pub fn cumulative_simpson<T: Float>(
 /// # Examples
 ///
 /// ```
-/// assert!((sci_integrate::romb(&[0.0_f64, 1.0, 4.0, 9.0, 16.0], 1.0)? - 64.0/3.0).abs() < 1e-12);
+/// assert!((sci_integrate::sampled::romb(&[0.0_f64, 1.0, 4.0, 9.0, 16.0], 1.0)? - 64.0/3.0).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -495,7 +495,7 @@ pub fn romb<T: Float>(y: &[T], dx: T) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// let value = sci_integrate::fixed_quad(|x|x*x, 0.0_f64, 1.0, 3)?;
+/// let value = sci_integrate::quadrature::fixed_quad(|x|x*x, 0.0_f64, 1.0, 3)?;
 /// assert!((value-1.0/3.0).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -579,7 +579,7 @@ pub fn fixed_quad<T: Float>(f: impl Fn(T) -> T, a: T, b: T, n: usize) -> Result<
 /// # Examples
 ///
 /// ```
-/// let (weights, _) = sci_integrate::newton_cotes(&[0.0, 1.0, 2.0])?;
+/// let (weights, _) = sci_integrate::quadrature::newton_cotes(&[0.0, 1.0, 2.0])?;
 /// assert!((weights[1]-4.0/3.0).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

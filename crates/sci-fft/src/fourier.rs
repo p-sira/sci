@@ -13,7 +13,7 @@
 //! ## Examples
 //!
 //! ```
-//! use sci_fft as fft; use sci_complex as complex;
+//! use sci_fft::real as fft; use sci_complex as complex;
 //! let spectrum = fft::rfft(&[1.0, 1.0, 1.0, 1.0]);
 //! assert_eq!(complex::abs(spectrum[0]), 4.0);
 //! ```
@@ -188,7 +188,7 @@ fn transform<T: FftFloat>(
 /// # Examples
 ///
 /// ```
-/// use sci_fft as fft; use sci_complex::Complex;
+/// use sci_fft::fourier as fft; use sci_complex::Complex;
 /// assert_eq!(fft::fft(&[Complex { re: 2.0, im: 1.0 }]),
 ///            vec![Complex { re: 2.0, im: 1.0 }]);
 /// ```
@@ -222,7 +222,7 @@ pub fn fft<T: FftFloat>(input: &[Complex<T>]) -> Vec<Complex<T>> {
 /// # Examples
 ///
 /// ```
-/// use sci_fft as fft; use sci_complex::Complex;
+/// use sci_fft::fourier as fft; use sci_complex::Complex;
 /// let input = [Complex { re: 3.0, im: -2.0 }];
 /// assert_eq!(fft::ifft(&fft::fft(&input)), input);
 /// ```
@@ -258,7 +258,7 @@ pub fn ifft<T: FftFloat>(input: &[Complex<T>]) -> Vec<Complex<T>> {
 /// # Examples
 ///
 /// ```
-/// let result = sci_fft::rfft(&[1.0, 1.0, 1.0, 1.0]);
+/// let result = sci_fft::real::rfft(&[1.0, 1.0, 1.0, 1.0]);
 /// assert_eq!(result.len(), 3);
 /// assert_eq!(result[0].re, 4.0);
 /// ```

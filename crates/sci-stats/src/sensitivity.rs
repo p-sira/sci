@@ -48,7 +48,7 @@ pub struct SobolIndices {
 ///
 /// ```
 /// let a = [0.,1.,2.,3.]; let b = [3.,2.,1.,0.];
-/// let r = sci_stats::sobol_indices(&a,&b,&[&b])?;
+/// let r = sci_stats::sensitivity::sobol_indices(&a,&b,&[&b])?;
 /// assert_eq!(r.first_order.len(), 1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -171,7 +171,7 @@ pub struct PowerResult {
 ///
 /// ```
 /// let samples: &[&[f64]] = &[&[1.,2.,3.], &[2.,3.,4.]];
-/// let r = sci_stats::power(samples, |x| Ok(sci_stats::ttest_1samp(x,0.,sci_stats::Alternative::Greater)?.pvalue), 0.05)?;
+/// let r = sci_stats::inference::power(samples, |x| Ok(sci_stats::inference::ttest_1samp(x,0.,sci_stats::inference::Alternative::Greater)?.pvalue), 0.05)?;
 /// assert_eq!(r.pvalues.len(), 2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

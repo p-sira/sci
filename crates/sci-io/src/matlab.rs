@@ -351,7 +351,7 @@ fn numeric_data(data: &[u8], storage: u32, endian: Endian) -> Result<NumericData
 /// # Examples
 /// ```
 /// let mut b=Vec::new();
-/// sci_io::savemat(&mut b,&Default::default(),false)?;
+/// sci_io::matlab::savemat(&mut b,&Default::default(),false)?;
 /// assert_eq!(sci_io::matlab::matfile_version(b.as_slice())?,(1,0));
 /// # Ok::<(), sci_io::Error>(())
 /// ```
@@ -378,8 +378,8 @@ pub fn matfile_version(mut reader: impl Read) -> Result<(u8, u8)> {
 /// real plus imaginary scalars, or rank/axis limits documented by [`MatArray`].
 /// # Examples
 /// ```
-/// let mut b=Vec::new();sci_io::savemat(&mut b,&Default::default(),true)?;
-/// assert!(sci_io::whosmat(b.as_slice())?.is_empty());
+/// let mut b=Vec::new();sci_io::matlab::savemat(&mut b,&Default::default(),true)?;
+/// assert!(sci_io::matlab::whosmat(b.as_slice())?.is_empty());
 /// # Ok::<(), sci_io::Error>(())
 /// ```
 /// # References
@@ -415,8 +415,8 @@ pub fn whosmat(reader: impl Read) -> Result<Vec<MatVariableInfo>> {
 /// use sci_io::{NumericData, matlab::{MatArray, MatFile}};
 /// let a=MatArray {shape:vec![1,2],real:NumericData::F64(vec![1.0,2.0]),imag:None};
 /// let f=MatFile::from([("x".into(),a)]);
-/// let mut b=Vec::new();sci_io::savemat(&mut b,&f,true)?;
-/// assert_eq!(sci_io::loadmat(b.as_slice())?,f);
+/// let mut b=Vec::new();sci_io::matlab::savemat(&mut b,&f,true)?;
+/// assert_eq!(sci_io::matlab::loadmat(b.as_slice())?,f);
 /// # Ok::<(), sci_io::Error>(())
 /// ```
 /// # References
@@ -476,8 +476,8 @@ fn numeric_bytes(d: &NumericData) -> Vec<u8> {
 /// lexicographic order; output has no timestamps or platform-dependent header text.
 /// # Examples
 /// ```
-/// let mut b=Vec::new();sci_io::savemat(&mut b,&Default::default(),false)?;
-/// assert!(sci_io::loadmat(b.as_slice())?.is_empty());
+/// let mut b=Vec::new();sci_io::matlab::savemat(&mut b,&Default::default(),false)?;
+/// assert!(sci_io::matlab::loadmat(b.as_slice())?.is_empty());
 /// # Ok::<(), sci_io::Error>(())
 /// ```
 /// # References

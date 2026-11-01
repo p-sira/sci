@@ -32,7 +32,7 @@ impl SparseLu {
     /// ill-conditioning may amplify errors. See [`splu`] for work limits.
     /// # Examples
     /// ```
-    /// let lu = sci_sparse::linalg::splu(&sci_sparse::identity(2)?)?;
+    /// let lu = sci_sparse::linalg::splu(&sci_sparse::construct::identity(2)?)?;
     /// assert_eq!(lu.solve(&[2.0, 3.0])?, vec![2.0, 3.0]);
     /// # Ok::<(), sci_sparse::Error>(())
     /// ```
@@ -71,7 +71,7 @@ impl SparseLu {
 /// singularity is not diagnosed by a condition estimate. No SuperLU options.
 /// # Examples
 /// ```
-/// let lu = sci_sparse::linalg::splu(&sci_sparse::identity(2)?)?;
+/// let lu = sci_sparse::linalg::splu(&sci_sparse::construct::identity(2)?)?;
 /// assert_eq!(lu.solve(&[1.0, 2.0])?, vec![1.0, 2.0]);
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
@@ -114,7 +114,7 @@ pub fn splu(a: &SparseMatrix) -> Result<SparseLu> {
 /// Uses [`splu`] and [`SparseLu::solve`], including their accuracy/work limits.
 /// # Examples
 /// ```
-/// assert_eq!(sci_sparse::linalg::spsolve(&sci_sparse::identity(2)?, &[3.0, 4.0])?, vec![3.0, 4.0]);
+/// assert_eq!(sci_sparse::linalg::spsolve(&sci_sparse::construct::identity(2)?, &[3.0, 4.0])?, vec![3.0, 4.0]);
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
 /// # References
@@ -146,7 +146,7 @@ pub fn spsolve(a: &SparseMatrix, b: &[f64]) -> Result<Vec<f64>> {
 /// Small pivots and cancellation can severely reduce accuracy.
 /// # Examples
 /// ```
-/// let a = sci_sparse::from_dense(&[vec![2.0, 0.0], vec![1.0, 3.0]])?;
+/// let a = sci_sparse::construct::from_dense(&[vec![2.0, 0.0], vec![1.0, 3.0]])?;
 /// assert_eq!(sci_sparse::linalg::spsolve_triangular(&a, &[2.0, 7.0], true, false)?, vec![1.0, 2.0]);
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
@@ -237,7 +237,7 @@ pub enum MatrixNorm {
 /// # Examples
 /// ```
 /// use sci_sparse::linalg::{norm, MatrixNorm};
-/// assert_eq!(norm(&sci_sparse::identity(4)?, MatrixNorm::Frobenius)?, 2.0);
+/// assert_eq!(norm(&sci_sparse::construct::identity(4)?, MatrixNorm::Frobenius)?, 2.0);
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
 /// # References
@@ -289,7 +289,7 @@ pub fn norm(a: &SparseMatrix, order: MatrixNorm) -> Result<f64> {
 /// the crate's 20,000,000 scalar-product bound. Error can grow with power and conditioning.
 /// # Examples
 /// ```
-/// let a = sci_sparse::identity(3)?;
+/// let a = sci_sparse::construct::identity(3)?;
 /// assert_eq!(sci_sparse::linalg::matrix_power(&a, 7)?, a);
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
@@ -333,7 +333,7 @@ pub fn matrix_power(a: &SparseMatrix, mut power: u32) -> Result<SparseMatrix> {
 /// or iterative refinement; solving a system directly usually has lower cost.
 /// # Examples
 /// ```
-/// let a = sci_sparse::identity(2)?;
+/// let a = sci_sparse::construct::identity(2)?;
 /// assert_eq!(sci_sparse::linalg::inv(&a)?, a);
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
@@ -375,7 +375,7 @@ pub fn inv(a: &SparseMatrix) -> Result<SparseMatrix> {
 /// Exact index arithmetic in O(rows + stored entries) work.
 /// # Examples
 /// ```
-/// assert_eq!(sci_sparse::linalg::spbandwidth(&sci_sparse::eye(2, 3, 1)?)?, (0, 1));
+/// assert_eq!(sci_sparse::linalg::spbandwidth(&sci_sparse::construct::eye(2, 3, 1)?)?, (0, 1));
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
 /// # References
@@ -407,7 +407,7 @@ pub fn spbandwidth(a: &SparseMatrix) -> Result<(usize, usize)> {
 /// Exact nonzero-pattern checks using [`spbandwidth`].
 /// # Examples
 /// ```
-/// assert_eq!(sci_sparse::linalg::is_sptriangular(&sci_sparse::identity(2)?)?, (true, true));
+/// assert_eq!(sci_sparse::linalg::is_sptriangular(&sci_sparse::construct::identity(2)?)?, (true, true));
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
 /// # References

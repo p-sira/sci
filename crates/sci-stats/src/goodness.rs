@@ -60,7 +60,7 @@ pub struct AndersonResult {
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::anderson(&[1.,2.,3.,4.,5.], sci_stats::AndersonFamily::Normal)?;
+/// let r = sci_stats::goodness::anderson(&[1.,2.,3.,4.,5.], sci_stats::goodness::AndersonFamily::Normal)?;
 /// assert_eq!(r.location, 3.);
 /// assert_eq!(r.significance_levels, [15.,10.,5.,2.5,1.]);
 /// # Ok::<(), sci_core::Error>(())
@@ -245,7 +245,7 @@ fn cvm_correction(x: f64) -> Result<f64> {
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::cramervonmises(&[-1.,0.,1.], sci_stats::Distribution::Normal { mean:0., std_dev:1. })?;
+/// let r = sci_stats::goodness::cramervonmises(&[-1.,0.,1.], sci_stats::distributions::Distribution::Normal { mean:0., std_dev:1. })?;
 /// assert!((0.0..=1.0).contains(&r.pvalue));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -340,7 +340,7 @@ fn cvm_rank_u(first_ranks: &[f64], second_ranks: &[f64]) -> f64 {
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::cramervonmises_2samp(&[1.,2.,3.], &[4.,5.,6.], sci_stats::CvmMethod::Exact)?;
+/// let r = sci_stats::goodness::cramervonmises_2samp(&[1.,2.,3.], &[4.,5.,6.], sci_stats::goodness::CvmMethod::Exact)?;
 /// assert!((0.0..=1.0).contains(&r.pvalue));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -467,7 +467,7 @@ pub enum AndersonVariant {
 ///
 /// ```
 /// let groups: &[&[f64]] = &[&[1.,2.,3.], &[4.,5.,6.]];
-/// let r = sci_stats::anderson_ksamp(groups, sci_stats::AndersonVariant::Midrank)?;
+/// let r = sci_stats::goodness::anderson_ksamp(groups, sci_stats::goodness::AndersonVariant::Midrank)?;
 /// assert!((0.001..=0.25).contains(&r.pvalue));
 /// # Ok::<(), sci_core::Error>(())
 /// ```

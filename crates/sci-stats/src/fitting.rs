@@ -46,8 +46,8 @@ pub enum FitFamily {
 /// ## Examples
 ///
 /// ```
-/// let d = sci_stats::fit(&[1.,2.,3.], sci_stats::FitFamily::Normal)?;
-/// assert_eq!(sci_stats::cdf(d,2.)?, 0.5);
+/// let d = sci_stats::distributions::fit(&[1.,2.,3.], sci_stats::distributions::FitFamily::Normal)?;
+/// assert_eq!(sci_stats::distributions::cdf(d,2.)?, 0.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -157,8 +157,8 @@ fn goodness_statistic(
 ///
 /// ```
 /// let draws: &[&[f64]] = &[&[-1.,0.,1.], &[-2.,1.,3.]];
-/// let r = sci_stats::goodness_of_fit(&[1.,2.,4.], draws, sci_stats::FitFamily::Normal,
-///     sci_stats::GoodnessStatistic::CramerVonMises)?;
+/// let r = sci_stats::goodness::goodness_of_fit(&[1.,2.,4.], draws, sci_stats::distributions::FitFamily::Normal,
+///     sci_stats::goodness::GoodnessStatistic::CramerVonMises)?;
 /// assert!((0.0..=1.0).contains(&r.pvalue));
 /// # Ok::<(), sci_core::Error>(())
 /// ```

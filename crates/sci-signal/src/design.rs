@@ -96,7 +96,7 @@ fn product(roots: &[Complex], f: impl Fn(Complex64) -> Complex64) -> Complex64 {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = buttap(3)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -143,7 +143,7 @@ pub fn buttap(n: usize) -> Result<Zpk> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = cheb1ap(3,1.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -206,7 +206,7 @@ pub fn cheb1ap(n: usize, ripple: f64) -> Result<Zpk> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = cheb2ap(3,40.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -270,7 +270,7 @@ pub fn cheb2ap(n: usize, attenuation: f64) -> Result<Zpk> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = lp2lp_zpk(&buttap(3)?,2.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -312,7 +312,7 @@ pub fn lp2lp_zpk(zpk: &Zpk, wo: f64) -> Result<Zpk> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = lp2hp_zpk(&buttap(3)?,2.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -388,7 +388,7 @@ fn band_roots(roots: &[Complex], wo: f64, bw: f64, invert: bool) -> Vec<Complex>
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = lp2bp_zpk(&buttap(3)?,2.,1.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -438,7 +438,7 @@ pub fn lp2bp_zpk(zpk: &Zpk, wo: f64, bw: f64) -> Result<Zpk> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = lp2bs_zpk(&buttap(3)?,2.,1.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -495,7 +495,7 @@ pub fn lp2bs_zpk(zpk: &Zpk, wo: f64, bw: f64) -> Result<Zpk> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = bilinear_zpk(&buttap(3)?,10.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -569,7 +569,7 @@ pub(super) fn polynomial(roots: &[Complex]) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = zpk2tf(&buttap(3)?)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -647,7 +647,7 @@ pub(super) fn roots(coefficients: &[f64]) -> Result<Vec<Complex>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = normalize(&[0.,2.],&[0.,2.,4.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -696,7 +696,7 @@ pub fn normalize(b: &[f64], a: &[f64]) -> Result<TransferFunction> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = tf2zpk(&[1.],&[1.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -740,7 +740,7 @@ pub fn tf2zpk(b: &[f64], a: &[f64]) -> Result<Zpk> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = sos2zpk(&[[1.,0.,0.,1.,-0.5,0.1]])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -808,7 +808,7 @@ fn zpk_response(zpk: &Zpk, frequencies: &[f64], digital: bool) -> Result<Vec<Com
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = freqs_zpk(&buttap(3)?,&[0.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -844,7 +844,7 @@ pub fn freqs_zpk(zpk: &Zpk, frequencies: &[f64]) -> Result<Vec<Complex>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = freqz_zpk(&bilinear_zpk(&buttap(3)?,10.)?,&[0.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -929,7 +929,7 @@ pub(super) fn design(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = butter(3,&[0.2],BandType::Lowpass,Some(2.))?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -970,7 +970,7 @@ pub fn butter(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = cheby1(3,1.,&[0.2],BandType::Lowpass,Some(2.))?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1012,7 +1012,7 @@ pub fn cheby1(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = cheby2(3,40.,&[0.2],BandType::Lowpass,Some(2.))?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1055,7 +1055,7 @@ pub fn cheby2(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = bode(&[1.],&[1.,1.],&[0.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1092,7 +1092,7 @@ pub fn bode(b: &[f64], a: &[f64], frequencies: &[f64]) -> Result<(Vec<f64>, Vec<
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _result = dbode(&[1.],&[1.,-0.5],&[0.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1175,7 +1175,7 @@ pub enum IirFamily {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::design::*;
 /// let _ = iirfilter(3,&[0.2],BandType::Lowpass,Some(2.),IirFamily::Butterworth)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1276,7 +1276,7 @@ macro_rules! order_function {
         "\n\n# Return values\nReturns (order, critical frequency), suitable for the matching design function, in caller units. Critical frequency preserves the specified passband loss.",
         "\n\n# Errors\nReturns shared errors for invalid parameters, required order outside 1..64 or nonfinite arithmetic.",
         "\n\n# Numerical behavior\nClosed-form f64 evaluation with tangent prewarping for digital edges; cancellation at tiny dB differences can limit accuracy.",
-        "\n\n# Examples\n```\nlet (n,w)=sci_signal::",stringify!($name),"(0.2,0.4,1.,40.,Some(2.))?;\nassert!(n>0 && w>0.);\n# Ok::<(),sci_core::Error>(())\n```",
+        "\n\n# Examples\n```\nlet (n,w)=sci_signal::design::",stringify!($name),"(0.2,0.4,1.,40.,Some(2.))?;\nassert!(n>0 && w>0.);\n# Ok::<(),sci_core::Error>(())\n```",
         "\n\n# References\n[SciPy order selection](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.",stringify!($name),".html).")]
         pub fn $name(wp:f64,ws:f64,gpass:f64,gstop:f64,fs:Option<f64>)->Result<(usize,f64)>{minimum_order(wp,ws,gpass,gstop,fs,$family)}
     }
@@ -1293,7 +1293,7 @@ macro_rules! transform_function {
         "\n\n# Return values\nReturns normalized (numerator,denominator). Analog coefficients use descending powers; bilinear output uses ascending digital delays. Leading normalized numerator coefficients <=1e-14 are trimmed following tf2zpk.",
         "\n\n# Errors\nReturns shared errors for invalid domains, work limits, eigensolver failure, non-real coefficients or arithmetic overflow.",
         "\n\n# Numerical behavior\nReuses root conversion, bounded private nalgebra Schur factorization, and the shared ZPK transformation. Repeated roots and high-degree polynomial coefficients can be ill-conditioned; prefer root transformations when possible.",
-        "\n\n# Examples\n```\n",$("let ",stringify!($parameter),"=2.;\n"),+,"let _ = sci_signal::",stringify!($name),"(&[1.],&[1.,1.]",$(",",stringify!($parameter)),+, ")?;\n# Ok::<(),sci_core::Error>(())\n```",
+        "\n\n# Examples\n```\n",$("let ",stringify!($parameter),"=2.;\n"),+,"let _ = sci_signal::design::",stringify!($name),"(&[1.],&[1.,1.]",$(",",stringify!($parameter)),+, ")?;\n# Ok::<(),sci_core::Error>(())\n```",
         "\n\n# References\n[SciPy transformation](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.",stringify!($name),".html).")]
         pub fn $name(b:&[f64],a:&[f64],$($parameter:f64),+)->Result<TransferFunction>{
             zpk2tf(&$root_function(&tf2zpk(b,a)?,$($parameter),+)?)

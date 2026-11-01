@@ -13,36 +13,36 @@ fn evaluate(row: &[&str]) -> Result<Vec<f64>> {
     };
     let p = numbers(row[4]);
     let alternative = |value| match value as usize {
-        0 => stats::Alternative::TwoSided,
-        1 => stats::Alternative::Less,
-        2 => stats::Alternative::Greater,
+        0 => stats::inference::Alternative::TwoSided,
+        1 => stats::inference::Alternative::Less,
+        2 => stats::inference::Alternative::Greater,
         _ => panic!("invalid alternative"),
     };
     Ok(match row[1] {
-        "expectile" => vec![stats::expectile(&x, p[0])?],
-        "normal_pdf" => vec![stats::normal_pdf(x[0], p[0], p[1])?],
-        "normal_cdf" => vec![stats::normal_cdf(x[0], p[0], p[1])?],
-        "normal_ppf" => vec![stats::normal_ppf(x[0], p[0], p[1])?],
+        "expectile" => vec![stats::descriptive::expectile(&x, p[0])?],
+        "normal_pdf" => vec![stats::distributions::normal_pdf(x[0], p[0], p[1])?],
+        "normal_cdf" => vec![stats::distributions::normal_cdf(x[0], p[0], p[1])?],
+        "normal_ppf" => vec![stats::distributions::normal_ppf(x[0], p[0], p[1])?],
         "normal_generic_pdf" | "normal_logpdf" | "normal_generic_cdf" | "normal_sf"
         | "normal_generic_ppf" => {
-            let d = stats::Distribution::Normal {
+            let d = stats::distributions::Distribution::Normal {
                 mean: p[0],
                 std_dev: p[1],
             };
             vec![match row[1] {
-                "normal_generic_pdf" => stats::pdf(d, x[0])?,
-                "normal_logpdf" => stats::logpdf(d, x[0])?,
-                "normal_generic_cdf" => stats::cdf(d, x[0])?,
-                "normal_sf" => stats::sf(d, x[0])?,
-                _ => stats::ppf(d, x[0])?,
+                "normal_generic_pdf" => stats::distributions::pdf(d, x[0])?,
+                "normal_logpdf" => stats::distributions::logpdf(d, x[0])?,
+                "normal_generic_cdf" => stats::distributions::cdf(d, x[0])?,
+                "normal_sf" => stats::distributions::sf(d, x[0])?,
+                _ => stats::distributions::ppf(d, x[0])?,
             }]
         }
         "gradient_descent" => {
-            let r = optimize::minimize_with_gradient(
+            let r = optimize::minimize::minimize_with_gradient(
                 |x| x.iter().map(|v| 0.5 * p[0] * v * v).sum(),
                 |x| x.iter().map(|v| p[0] * v).collect(),
                 &x,
-                optimize::Options {
+                optimize::minimize::Options {
                     learning_rate: p[1],
                     tolerance: p[2],
                     max_iterations: p[3] as u64,
@@ -54,26 +54,26 @@ fn evaluate(row: &[&str]) -> Result<Vec<f64>> {
                     r.cost,
                     r.iterations as f64,
                     match r.status {
-                        optimize::Status::Converged => 0.,
-                        optimize::Status::IterationLimit => 1.,
-                        optimize::Status::NoProgress => 2.,
+                        optimize::minimize::Status::Converged => 0.,
+                        optimize::minimize::Status::IterationLimit => 1.,
+                        optimize::minimize::Status::NoProgress => 2.,
                     },
                 ])
                 .collect()
         }
-        "cosine" => vec![spatial::cosine(&x, &y, Some(&p))?],
-        "correlation" => vec![spatial::correlation(&x, &y, Some(&p), true)?],
-        "braycurtis" => vec![spatial::braycurtis(&x, &y, Some(&p))?],
-        "euclidean" => vec![spatial::euclidean(&x, &y, Some(&p))?],
-        "sqeuclidean" => vec![spatial::sqeuclidean(&x, &y, Some(&p))?],
-        "cityblock" => vec![spatial::cityblock(&x, &y, Some(&p))?],
-        "chebyshev" => vec![spatial::chebyshev(&x, &y, Some(&p))?],
-        "minkowski" => vec![spatial::minkowski(&x, &y, p[0], Some(&p[1..]))?],
+        "cosine" => vec![spatial::distance::cosine(&x, &y, Some(&p))?],
+        "correlation" => vec![spatial::distance::correlation(&x, &y, Some(&p), true)?],
+        "braycurtis" => vec![spatial::distance::braycurtis(&x, &y, Some(&p))?],
+        "euclidean" => vec![spatial::distance::euclidean(&x, &y, Some(&p))?],
+        "sqeuclidean" => vec![spatial::distance::sqeuclidean(&x, &y, Some(&p))?],
+        "cityblock" => vec![spatial::distance::cityblock(&x, &y, Some(&p))?],
+        "chebyshev" => vec![spatial::distance::chebyshev(&x, &y, Some(&p))?],
+        "minkowski" => vec![spatial::distance::minkowski(&x, &y, p[0], Some(&p[1..]))?],
         "ttest_ind_from_stats" | "ttest_ind" => {
             let t = if row[1] == "ttest_ind" {
-                stats::ttest_ind(&x, &y, p[0] != 0., alternative(p[1]))?
+                stats::inference::ttest_ind(&x, &y, p[0] != 0., alternative(p[1]))?
             } else {
-                stats::ttest_ind_from_stats(
+                stats::inference::ttest_ind_from_stats(
                     x[0],
                     x[1],
                     x[2] as usize,
@@ -90,17 +90,18 @@ fn evaluate(row: &[&str]) -> Result<Vec<f64>> {
         "kl_div" => vec![special::elementary::kl_div(x[0], x[1])],
         "pseudo_huber" => vec![special::elementary::pseudo_huber(x[0], x[1])],
         "particle_update" => {
-            let prior = filter::ParticleSet {
+            let prior = filter::particle::ParticleSet {
                 states: (0..x.len()).map(|i| vec![i as f64]).collect(),
                 weights: x,
             };
-            let posterior = filter::particle_update(&prior, |state| Ok(y[state[0] as usize]))?;
+            let posterior =
+                filter::particle::particle_update(&prior, |state| Ok(y[state[0] as usize]))?;
             assert_eq!(posterior.states, prior.states);
             assert_eq!(posterior.weights.len(), prior.weights.len());
             posterior.weights
         }
         "coherence" => {
-            let (frequencies, values) = signal::coherence(
+            let (frequencies, values) = signal::spectral::coherence(
                 &x,
                 &y,
                 &matrix(row[5])[0],
@@ -114,7 +115,7 @@ fn evaluate(row: &[&str]) -> Result<Vec<f64>> {
         }
         "fractional_matrix_power" => {
             let a = matrix(row[5]);
-            let power = linalg::fractional_matrix_power(&a, p[0])?;
+            let power = linalg::matrix_functions::fractional_matrix_power(&a, p[0])?;
             assert_eq!(power.len(), a.len());
             assert!(power.iter().all(|row| row.len() == a.len()));
             power
@@ -123,17 +124,17 @@ fn evaluate(row: &[&str]) -> Result<Vec<f64>> {
                 .flat_map(|z| [z.re, z.im])
                 .collect()
         }
-        "mean" => vec![stats::mean(&x)?],
-        "variance" => vec![stats::variance(&x, p[0] as usize)?],
-        "std" => vec![stats::std(&x, p[0] as usize)?],
-        "zscore" => stats::zscore(&x, p[0] as usize)?,
-        "zmap" => stats::zmap(&x, &y, p[0] as usize)?,
-        "gzscore" => stats::gzscore(&x, p[0] as usize)?,
-        "moment" => vec![stats::moment(&x, p[0] as usize)?],
-        "skew" => vec![stats::skew(&x, true)?],
-        "kurtosis" => vec![stats::kurtosis(&x, true, true)?],
+        "mean" => vec![stats::descriptive::mean(&x)?],
+        "variance" => vec![stats::descriptive::variance(&x, p[0] as usize)?],
+        "std" => vec![stats::descriptive::std(&x, p[0] as usize)?],
+        "zscore" => stats::descriptive::zscore(&x, p[0] as usize)?,
+        "zmap" => stats::descriptive::zmap(&x, &y, p[0] as usize)?,
+        "gzscore" => stats::descriptive::gzscore(&x, p[0] as usize)?,
+        "moment" => vec![stats::descriptive::moment(&x, p[0] as usize)?],
+        "skew" => vec![stats::descriptive::skew(&x, true)?],
+        "kurtosis" => vec![stats::descriptive::kurtosis(&x, true, true)?],
         "linregress" => {
-            let r = stats::linregress(&x, &y, stats::Alternative::TwoSided)?;
+            let r = stats::regression::linregress(&x, &y, stats::inference::Alternative::TwoSided)?;
             vec![r.slope, r.intercept, r.stderr, r.intercept_stderr]
         }
         "fft" | "ifft" | "rfft" => {
@@ -143,9 +144,9 @@ fn evaluate(row: &[&str]) -> Result<Vec<f64>> {
                 .map(|(&re, &im)| Complex { re, im })
                 .collect();
             let output = match row[1] {
-                "fft" => fft::fft(&values),
-                "ifft" => fft::ifft(&values),
-                _ => fft::rfft(&x),
+                "fft" => fft::fourier::fft(&values),
+                "ifft" => fft::fourier::ifft(&values),
+                _ => fft::real::rfft(&x),
             };
             assert_eq!(
                 output.len(),
@@ -158,21 +159,22 @@ fn evaluate(row: &[&str]) -> Result<Vec<f64>> {
             output.iter().flat_map(|z| [z.re, z.im]).collect()
         }
         "savgol_coeffs" => {
-            signal::savgol_coeffs(p[0] as usize, p[1] as usize, p[2] as usize, p[3])?
+            signal::filtering::savgol_coeffs(p[0] as usize, p[1] as usize, p[2] as usize, p[3])?
         }
         "savgol_filter" => {
-            signal::savgol_filter(&x, p[0] as usize, p[1] as usize, p[2] as usize, p[3])?
+            signal::filtering::savgol_filter(&x, p[0] as usize, p[1] as usize, p[2] as usize, p[3])?
         }
         "cdist" => {
             let (x, y, vi) = (matrix(row[2]), matrix(row[3]), matrix(row[5]));
-            let out = spatial::cdist(&x, &y, spatial::Metric::Mahalanobis(&vi))?;
+            let out =
+                spatial::distance::cdist(&x, &y, spatial::distance::Metric::Mahalanobis(&vi))?;
             assert_eq!(out.len(), x.len());
             assert!(out.iter().all(|row| row.len() == y.len()));
             out.into_iter().flatten().collect()
         }
         "pdist" => {
             let (x, vi) = (matrix(row[2]), matrix(row[5]));
-            let out = spatial::pdist(&x, spatial::Metric::Mahalanobis(&vi))?;
+            let out = spatial::distance::pdist(&x, spatial::distance::Metric::Mahalanobis(&vi))?;
             assert_eq!(out.len(), x.len() * (x.len() - 1) / 2);
             out
         }
@@ -244,11 +246,11 @@ fn numerical_losses_and_probabilities_preserve_independent_identities() {
             );
         }
     }
-    let prior = filter::ParticleSet {
+    let prior = filter::particle::ParticleSet {
         states: vec![vec![0.], vec![1.], vec![2.]],
         weights: vec![1., 1., f64::from_bits(1)],
     };
-    let posterior = filter::particle_update(&prior, |state| {
+    let posterior = filter::particle::particle_update(&prior, |state| {
         Ok(if state[0] == 2. {
             0.
         } else {
@@ -258,45 +260,57 @@ fn numerical_losses_and_probabilities_preserve_independent_identities() {
     .unwrap();
     assert_eq!(posterior.states, prior.states);
     assert_eq!(posterior.weights, vec![0., 0., 1.]);
-    let impossible = filter::particle_update(&prior, |_| Ok(f64::NEG_INFINITY));
+    let impossible = filter::particle::particle_update(&prior, |_| Ok(f64::NEG_INFINITY));
     assert!(matches!(impossible, Err(Error::NumericalFailure(_))));
     for exponent in [-4294967296., -4294967297., 4294967297., f64::NAN] {
-        assert!(linalg::fractional_matrix_power(&[[0.]], exponent).is_err());
+        assert!(linalg::matrix_functions::fractional_matrix_power(&[[0.]], exponent).is_err());
     }
 }
 
 #[test]
 fn precision_fixes_preserve_scale_exclusion_and_inverse_identities() -> Result<()> {
     for scale in [1e-308, 1., 1e308] {
-        let d = stats::Distribution::Normal {
+        let d = stats::distributions::Distribution::Normal {
             mean: 0.,
             std_dev: scale,
         };
         for p in [0.1, 0.5, 0.9] {
-            let x = stats::normal_ppf(p, 0., scale)?;
+            let x = stats::distributions::normal_ppf(p, 0., scale)?;
             if x.is_finite() {
-                assert_eq!(stats::ppf(d, p)?, x);
-                assert_eq!(stats::cdf(d, x)?, stats::normal_cdf(x, 0., scale)?);
-                assert!((stats::cdf(d, x)? - p).abs() < 2e-14);
-                assert!((stats::cdf(d, x)? + stats::sf(d, x)? - 1.).abs() < 2e-15);
+                assert_eq!(stats::distributions::ppf(d, p)?, x);
+                assert_eq!(
+                    stats::distributions::cdf(d, x)?,
+                    stats::distributions::normal_cdf(x, 0., scale)?
+                );
+                assert!((stats::distributions::cdf(d, x)? - p).abs() < 2e-14);
+                assert!(
+                    (stats::distributions::cdf(d, x)? + stats::distributions::sf(d, x)? - 1.).abs()
+                        < 2e-15
+                );
             }
         }
-        assert_eq!(stats::normal_cdf(f64::INFINITY, 0., scale)?, 1.);
-        assert_eq!(stats::normal_cdf(f64::NEG_INFINITY, 0., scale)?, 0.);
+        assert_eq!(
+            stats::distributions::normal_cdf(f64::INFINITY, 0., scale)?,
+            1.
+        );
+        assert_eq!(
+            stats::distributions::normal_cdf(f64::NEG_INFINITY, 0., scale)?,
+            0.
+        );
     }
     let u = [1e-300, 2e-300];
     let v = [2e-300, 1e-300];
     let with_excluded_u = [u[0], u[1], 1e308];
     let with_excluded_v = [v[0], v[1], -1e308];
-    for metric in [spatial::cosine, spatial::braycurtis] {
+    for metric in [spatial::distance::cosine, spatial::distance::braycurtis] {
         assert_eq!(
             metric(&u, &v, None)?,
             metric(&with_excluded_u, &with_excluded_v, Some(&[1., 1., 0.]))?
         );
     }
     assert_eq!(
-        spatial::correlation(&u, &v, None, true)?,
-        spatial::correlation(
+        spatial::distance::correlation(&u, &v, None, true)?,
+        spatial::distance::correlation(
             &with_excluded_u,
             &with_excluded_v,
             Some(&[1., 1., 0.]),
@@ -305,7 +319,7 @@ fn precision_fixes_preserve_scale_exclusion_and_inverse_identities() -> Result<(
     );
     for factor in [1e-150, 1., 1e150] {
         let x = [factor, 2. * factor];
-        let norm = spatial::euclidean(&x, &[0.; 2], Some(&[1e308; 2]));
+        let norm = spatial::distance::euclidean(&x, &[0.; 2], Some(&[1e308; 2]));
         if factor <= 1. {
             let norm = norm?;
             let scaled = norm / 1e154 / factor;
@@ -316,12 +330,14 @@ fn precision_fixes_preserve_scale_exclusion_and_inverse_identities() -> Result<(
     }
     for alpha in [0.1, 0.25, 0.5, 0.75, 0.9] {
         let x = [-3., 1., 4., 10.];
-        let result = stats::expectile(&x, alpha)?;
+        let result = stats::descriptive::expectile(&x, alpha)?;
         let negated: Vec<_> = x.iter().map(|v| -v).collect();
-        assert!((stats::expectile(&negated, 1. - alpha)? + result).abs() < 2e-14);
+        assert!((stats::descriptive::expectile(&negated, 1. - alpha)? + result).abs() < 2e-14);
         for scale in [1e-100, 1e100] {
             let scaled: Vec<_> = x.iter().map(|v| v * scale).collect();
-            assert!((stats::expectile(&scaled, alpha)? / scale - result).abs() < 2e-14);
+            assert!(
+                (stats::descriptive::expectile(&scaled, alpha)? / scale - result).abs() < 2e-14
+            );
         }
     }
     Ok(())
@@ -330,27 +346,27 @@ fn precision_fixes_preserve_scale_exclusion_and_inverse_identities() -> Result<(
 #[test]
 fn precision_fixes_keep_invalid_domains_and_true_overflow_explicit() {
     for (mean, scale) in [(f64::NAN, 1.), (0., 0.), (0., -1.), (0., f64::INFINITY)] {
-        let d = stats::Distribution::Normal {
+        let d = stats::distributions::Distribution::Normal {
             mean,
             std_dev: scale,
         };
-        assert!(stats::normal_cdf(f64::INFINITY, mean, scale).is_err());
-        assert!(stats::normal_ppf(0., mean, scale).is_err());
-        assert!(stats::sf(d, f64::INFINITY).is_err());
-        assert!(stats::ppf(d, 1.).is_err());
+        assert!(stats::distributions::normal_cdf(f64::INFINITY, mean, scale).is_err());
+        assert!(stats::distributions::normal_ppf(0., mean, scale).is_err());
+        assert!(stats::distributions::sf(d, f64::INFINITY).is_err());
+        assert!(stats::distributions::ppf(d, 1.).is_err());
     }
-    assert!(stats::normal_pdf(f64::NAN, 0., 1.).is_err());
-    assert!(stats::normal_ppf(f64::NAN, 0., 1.).is_err());
-    assert!(stats::normal_ppf(1.1, 0., 1.).is_err());
-    assert!(stats::normal_ppf(0.99, 0., 1e308).is_err());
-    assert!(stats::normal_pdf(0., 0., f64::from_bits(1)).is_err());
-    assert!(stats::expectile(&[], 0.5).is_err());
-    assert!(stats::expectile(&[1.], f64::NAN).is_err());
-    assert!(stats::expectile(&[f64::INFINITY], 0.5).is_err());
-    assert!(spatial::euclidean(&[1e308; 2], &[-1e308; 2], None).is_err());
-    assert!(spatial::euclidean(&[1.], &[0.], Some(&[0.])).is_err());
-    assert!(spatial::euclidean(&[1.], &[0.], Some(&[-1.])).is_err());
-    assert!(spatial::minkowski(&[1.], &[0.], 0., None).is_err());
+    assert!(stats::distributions::normal_pdf(f64::NAN, 0., 1.).is_err());
+    assert!(stats::distributions::normal_ppf(f64::NAN, 0., 1.).is_err());
+    assert!(stats::distributions::normal_ppf(1.1, 0., 1.).is_err());
+    assert!(stats::distributions::normal_ppf(0.99, 0., 1e308).is_err());
+    assert!(stats::distributions::normal_pdf(0., 0., f64::from_bits(1)).is_err());
+    assert!(stats::descriptive::expectile(&[], 0.5).is_err());
+    assert!(stats::descriptive::expectile(&[1.], f64::NAN).is_err());
+    assert!(stats::descriptive::expectile(&[f64::INFINITY], 0.5).is_err());
+    assert!(spatial::distance::euclidean(&[1e308; 2], &[-1e308; 2], None).is_err());
+    assert!(spatial::distance::euclidean(&[1.], &[0.], Some(&[0.])).is_err());
+    assert!(spatial::distance::euclidean(&[1.], &[0.], Some(&[-1.])).is_err());
+    assert!(spatial::distance::minkowski(&[1.], &[0.], 0., None).is_err());
 }
 
 struct BudgetMatrix(usize, usize);
@@ -365,30 +381,30 @@ impl linalg::MatrixInput for BudgetMatrix {
 
 #[test]
 fn work_limits_precede_callbacks_and_input_reads() {
-    let options = optimize::Options {
+    let options = optimize::minimize::Options {
         max_iterations: 0,
         ..Default::default()
     };
     let objective = |_: &[f64]| -> f64 { panic!("invalid work must precede callbacks") };
-    assert!(optimize::minimize(objective, &vec![0.0; 1000], options).is_err());
+    assert!(optimize::minimize::minimize(objective, &vec![0.0; 1000], options).is_err());
     assert!(
-        optimize::minimize(
+        optimize::minimize::minimize(
             objective,
             &[0.0],
-            optimize::Options {
+            optimize::minimize::Options {
                 max_iterations: u64::MAX,
                 ..options
             }
         )
         .is_err()
     );
-    assert!(optimize::minimize(objective, &[0.0; 129], Default::default()).is_err());
+    assert!(optimize::minimize::minimize(objective, &[0.0; 129], Default::default()).is_err());
     assert!(
-        optimize::minimize_with_gradient(
+        optimize::minimize::minimize_with_gradient(
             objective,
             |_| panic!("invalid work"),
             &[0.0],
-            optimize::Options {
+            optimize::minimize::Options {
                 max_iterations: 16_777_216,
                 ..options
             }
@@ -397,21 +413,21 @@ fn work_limits_precede_callbacks_and_input_reads() {
     );
     // Largest n whose n*(n+1) simplex fits the storage bound.
     assert_eq!(
-        optimize::minimize(|_| 1.0, &vec![0.0; 999], options)
+        optimize::minimize::minimize(|_| 1.0, &vec![0.0; 999], options)
             .unwrap()
             .point
             .len(),
         999
     );
     assert_eq!(
-        linalg::matmul(&BudgetMatrix(257, 256), &BudgetMatrix(256, 256)),
+        linalg::basic::matmul(&BudgetMatrix(257, 256), &BudgetMatrix(256, 256)),
         Err(Error::InvalidInput(
             "matrix multiplication work exceeds 16777216"
         ))
     );
     let a = vec![vec![0.0; 256]; 256];
     let b = vec![vec![1.0; 256]; 256];
-    assert_eq!(linalg::matmul(&a, &b).unwrap(), a);
+    assert_eq!(linalg::basic::matmul(&a, &b).unwrap(), a);
 }
 
 #[test]
@@ -421,7 +437,8 @@ fn batch_mahalanobis_reuses_a_validated_metric_with_new_work_bound() {
         .collect();
     let x: Vec<_> = (0..64).map(|i| vec![i as f64; 16]).collect();
     // The old per-pair cubic work count rejected this batch.
-    let distances = spatial::cdist(&x, &x, spatial::Metric::Mahalanobis(&vi)).unwrap();
+    let distances =
+        spatial::distance::cdist(&x, &x, spatial::distance::Metric::Mahalanobis(&vi)).unwrap();
     for (i, row) in distances.iter().enumerate() {
         for (j, &d) in row.iter().enumerate() {
             let expected = 4.0 * i.abs_diff(j) as f64;
@@ -429,7 +446,8 @@ fn batch_mahalanobis_reuses_a_validated_metric_with_new_work_bound() {
             assert!((d - expected).abs() <= 8.0 * f64::EPSILON * expected);
         }
     }
-    let condensed = spatial::pdist(&x, spatial::Metric::Mahalanobis(&vi)).unwrap();
+    let condensed =
+        spatial::distance::pdist(&x, spatial::distance::Metric::Mahalanobis(&vi)).unwrap();
     assert_eq!(
         condensed,
         distances
@@ -439,9 +457,18 @@ fn batch_mahalanobis_reuses_a_validated_metric_with_new_work_bound() {
             .collect::<Vec<_>>()
     );
     let invalid = vec![vec![0.0; 16]; 16];
-    assert!(spatial::cdist(&[], &x, spatial::Metric::Mahalanobis(&invalid)).is_err());
-    assert!(spatial::pdist(&x[..1], spatial::Metric::Mahalanobis(&invalid)).is_err());
-    assert!(spatial::cdist(&x, &x, spatial::Metric::Mahalanobis(&vi[..15])).is_err());
+    assert!(
+        spatial::distance::cdist(&[], &x, spatial::distance::Metric::Mahalanobis(&invalid))
+            .is_err()
+    );
+    assert!(
+        spatial::distance::pdist(&x[..1], spatial::distance::Metric::Mahalanobis(&invalid))
+            .is_err()
+    );
+    assert!(
+        spatial::distance::cdist(&x, &x, spatial::distance::Metric::Mahalanobis(&vi[..15]))
+            .is_err()
+    );
 }
 
 #[test]
@@ -453,13 +480,13 @@ fn fft_workspaces_preserve_round_trips_and_thread_isolation() {
                     let x: Vec<_> = (0..n)
                         .map(|i| (i as f64 * 0.01 + thread as f64).sin())
                         .collect();
-                    let restored = fft::irfft(&fft::rfft(&x), Some(n)).unwrap();
+                    let restored = fft::real::irfft(&fft::real::rfft(&x), Some(n)).unwrap();
                     assert_eq!(restored.len(), n);
                     for (a, b) in restored.iter().zip(&x) {
                         assert!((a - b).abs() < 2e-11);
                     }
                     let z: Vec<_> = x.iter().map(|&re| Complex { re, im: -0.5 * re }).collect();
-                    for (a, b) in fft::ifft(&fft::fft(&z)).iter().zip(z) {
+                    for (a, b) in fft::fourier::ifft(&fft::fourier::fft(&z)).iter().zip(z) {
                         assert!((a.re - b.re).abs() < 2e-11 && (a.im - b.im).abs() < 2e-11);
                     }
                 }
@@ -469,6 +496,10 @@ fn fft_workspaces_preserve_round_trips_and_thread_isolation() {
     for thread in threads {
         thread.join().unwrap();
     }
-    assert!(fft::rfft::<f64>(&[]).is_empty());
-    assert!(fft::rfft(&[f64::NAN, 1.0]).iter().any(|z| z.re.is_nan()));
+    assert!(fft::real::rfft::<f64>(&[]).is_empty());
+    assert!(
+        fft::real::rfft(&[f64::NAN, 1.0])
+            .iter()
+            .any(|z| z.re.is_nan())
+    );
 }

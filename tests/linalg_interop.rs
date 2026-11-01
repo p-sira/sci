@@ -23,12 +23,12 @@ fn check_matrix(a: &[Vec<f64>], b: &[Vec<f64>]) {
 }
 
 fn check_basic(a: &dyn MatrixInput, b: &dyn MatrixInput, x: &dyn VectorInput, expected: &[&str]) {
-    check_matrix(&l::matmul(a, b).unwrap(), &matrix(expected[1]));
-    check_vector(&l::matvec(a, x).unwrap(), &vector(expected[2]));
-    check_matrix(&l::transpose(a).unwrap(), &matrix(expected[3]));
+    check_matrix(&l::basic::matmul(a, b).unwrap(), &matrix(expected[1]));
+    check_vector(&l::basic::matvec(a, x).unwrap(), &vector(expected[2]));
+    check_matrix(&l::basic::transpose(a).unwrap(), &matrix(expected[3]));
     let reverse: Vec<_> = x.to_vector().unwrap().into_iter().rev().collect();
     relative_close(
-        l::dot(x, &reverse).unwrap(),
+        l::basic::dot(x, &reverse).unwrap(),
         expected[4].parse().unwrap(),
         2e-14,
     );
@@ -77,7 +77,7 @@ fn mixed_library_products_and_strided_views_match_scipy() {
             &reversed_x.as_ref().reverse_rows(),
             &e,
         );
-        let ft = l::transpose(&a).unwrap().to_faer().unwrap();
+        let ft = l::basic::transpose(&a).unwrap().to_faer().unwrap();
         let nx = x.to_nalgebra_vector().unwrap();
         check_basic(&ft.as_ref().transpose(), &b.to_ndarray().unwrap(), &nx, &e);
         check_basic(&fa, &nb, &x, &e);
@@ -94,34 +94,52 @@ fn mutable_views_are_read_only_and_fixed_storage_is_supported() {
     let mut na = nalgebra::Matrix2::new(2.0, 1.0, 0.0, 3.0);
     let mut fa = nd.to_faer().unwrap();
     let rhs = nalgebra::Vector2::new(5.0, 6.0);
-    assert_eq!(l::solve(&nd.view_mut(), &rhs).unwrap(), vec![1.5, 2.0]);
     assert_eq!(
-        l::solve(&na.view_mut((0, 0), (2, 2)), &rhs).unwrap(),
+        l::solvers::solve(&nd.view_mut(), &rhs).unwrap(),
         vec![1.5, 2.0]
     );
-    assert_eq!(l::solve(&fa.as_mut(), &rhs).unwrap(), vec![1.5, 2.0]);
+    assert_eq!(
+        l::solvers::solve(&na.view_mut((0, 0), (2, 2)), &rhs).unwrap(),
+        vec![1.5, 2.0]
+    );
+    assert_eq!(
+        l::solvers::solve(&fa.as_mut(), &rhs).unwrap(),
+        vec![1.5, 2.0]
+    );
     assert_eq!(nd, original);
     assert_eq!(na.to_ndarray().unwrap(), original);
     assert_eq!(fa.to_ndarray().unwrap(), original);
     assert_eq!(
-        l::solve(&[[2.0, 1.0], [0.0, 3.0]], &rhs).unwrap(),
+        l::solvers::solve(&[[2.0, 1.0], [0.0, 3.0]], &rhs).unwrap(),
         vec![1.5, 2.0]
     );
     let mut col = [5.0, 6.0].to_faer_col().unwrap();
-    assert_eq!(l::solve(&nd, &col.as_mut()).unwrap(), vec![1.5, 2.0]);
+    assert_eq!(
+        l::solvers::solve(&nd, &col.as_mut()).unwrap(),
+        vec![1.5, 2.0]
+    );
     let mut row = faer::Row::from_fn(2, |i| [5.0, 6.0][i]);
-    assert_eq!(l::solve(&nd, &row).unwrap(), vec![1.5, 2.0]);
-    assert_eq!(l::solve(&nd, &row.as_mut()).unwrap(), vec![1.5, 2.0]);
+    assert_eq!(l::solvers::solve(&nd, &row).unwrap(), vec![1.5, 2.0]);
+    assert_eq!(
+        l::solvers::solve(&nd, &row.as_mut()).unwrap(),
+        vec![1.5, 2.0]
+    );
     let mut nx = ndarray::arr1(&[5.0, 6.0]);
-    assert_eq!(l::solve(&nd, &nx.view_mut()).unwrap(), vec![1.5, 2.0]);
+    assert_eq!(
+        l::solvers::solve(&nd, &nx.view_mut()).unwrap(),
+        vec![1.5, 2.0]
+    );
     let mut nv = rhs;
-    assert_eq!(l::solve(&nd, &nv.rows_mut(0, 2)).unwrap(), vec![1.5, 2.0]);
+    assert_eq!(
+        l::solvers::solve(&nd, &nv.rows_mut(0, 2)).unwrap(),
+        vec![1.5, 2.0]
+    );
 }
 
 #[test]
 fn conversions_preserve_ieee_values_and_empty_axes() {
     let a = [[-0.0, f64::NAN], [f64::INFINITY, f64::NEG_INFINITY]];
-    let transposed = l::transpose(&a).unwrap();
+    let transposed = l::basic::transpose(&a).unwrap();
     assert_eq!(transposed[0][0].to_bits(), (-0.0_f64).to_bits());
     assert_eq!(transposed[0][1], f64::INFINITY);
     assert!(transposed[1][0].is_nan());
@@ -152,9 +170,9 @@ fn conversions_preserve_ieee_values_and_empty_axes() {
         assert_eq!(fa.to_ndarray().unwrap().dim(), (m, n));
         assert_eq!(na.matrix_shape().unwrap(), (m, n));
         assert_eq!(fa.matrix_shape().unwrap(), (m, n));
-        assert_eq!(l::matvec(&fa, &vec![0.0; n]).unwrap(), vec![0.0; m]);
-        assert_eq!(l::transpose(&fa).unwrap(), vec![vec![0.0; m]; n]);
-        assert_eq!(l::transpose(&na).unwrap(), vec![vec![0.0; m]; n]);
+        assert_eq!(l::basic::matvec(&fa, &vec![0.0; n]).unwrap(), vec![0.0; m]);
+        assert_eq!(l::basic::transpose(&fa).unwrap(), vec![vec![0.0; m]; n]);
+        assert_eq!(l::basic::transpose(&na).unwrap(), vec![vec![0.0; m]; n]);
         if m == 0 && n > 0 {
             assert_eq!(fa.to_matrix(), Err(Error::DimensionMismatch));
         } else {
@@ -162,7 +180,7 @@ fn conversions_preserve_ieee_values_and_empty_axes() {
         }
     }
     assert_eq!(
-        l::matmul(
+        l::basic::matmul(
             &ndarray::Array2::<f64>::zeros((2, 0)),
             &faer::Mat::<f64>::zeros(0, 3)
         )
@@ -172,7 +190,7 @@ fn conversions_preserve_ieee_values_and_empty_axes() {
     let empty: Vec<f64> = vec![];
     assert_eq!(empty.to_faer_col().unwrap().vector_len(), 0);
     assert_eq!(
-        l::dot(
+        l::basic::dot(
             &empty.to_ndarray_vector().unwrap(),
             &empty.to_nalgebra_vector().unwrap()
         )
@@ -191,21 +209,25 @@ fn errors_and_shared_results_interoperate_across_libraries() {
         &singular.to_faer().unwrap(),
         &singular.to_nalgebra().unwrap(),
     ] {
-        assert!(matches!(l::inv(a), Err(Error::NumericalFailure(_))));
-        assert_eq!(l::matvec(a, &[1.0]), Err(Error::DimensionMismatch));
+        assert!(matches!(l::basic::inv(a), Err(Error::NumericalFailure(_))));
+        assert_eq!(l::basic::matvec(a, &[1.0]), Err(Error::DimensionMismatch));
     }
     let bad = faer::Mat::from_fn(1, 1, |_, _| f64::NAN);
-    assert!(l::inv(&bad).is_err());
-    assert_eq!(l::matmul(&singular, &bad), Err(Error::DimensionMismatch));
+    assert!(l::basic::inv(&bad).is_err());
+    assert_eq!(
+        l::basic::matmul(&singular, &bad),
+        Err(Error::DimensionMismatch)
+    );
     let jac =
         sci::differentiate::jacobian(|x| vec![2.0 * x[0] + x[1], 3.0 * x[1]], &[0.0, 0.0], 1e-4)
             .unwrap();
-    let x = l::solve(&jac.to_faer().unwrap(), &nalgebra::Vector2::new(5.0, 6.0)).unwrap();
+    let x = l::solvers::solve(&jac.to_faer().unwrap(), &nalgebra::Vector2::new(5.0, 6.0)).unwrap();
     check_vector(&x, &[1.5, 2.0]);
-    let svd = l::svd(&jac.to_ndarray().unwrap()).unwrap();
-    let s = l::diagsvd(&svd.singular_values.to_nalgebra_vector().unwrap(), 2, 2).unwrap();
-    let us = l::matmul(&svd.u.to_faer().unwrap(), &s.to_nalgebra().unwrap()).unwrap();
-    let reconstructed = l::matmul(&us, &svd.vh.to_ndarray().unwrap()).unwrap();
+    let svd = l::decompositions::svd(&jac.to_ndarray().unwrap()).unwrap();
+    let s =
+        l::structured::diagsvd(&svd.singular_values.to_nalgebra_vector().unwrap(), 2, 2).unwrap();
+    let us = l::basic::matmul(&svd.u.to_faer().unwrap(), &s.to_nalgebra().unwrap()).unwrap();
+    let reconstructed = l::basic::matmul(&us, &svd.vh.to_ndarray().unwrap()).unwrap();
     // Reconstruction includes floating-point factorization error. Bound the
     // absolute residual by the matrix scale, including entries expected to be zero.
     let scale = jac.iter().flatten().fold(0.0_f64, |s, &v| s.max(v.abs()));
@@ -220,7 +242,7 @@ fn errors_and_shared_results_interoperate_across_libraries() {
     let b = nalgebra::Matrix2::identity();
     let blocks: [&dyn MatrixInput; 2] = [&a, &b];
     assert_eq!(
-        l::block_diag(&blocks).unwrap(),
+        l::structured::block_diag(&blocks).unwrap(),
         vec![
             vec![1.0, 2.0, 0.0, 0.0],
             vec![0.0, 0.0, 1.0, 0.0],
@@ -257,13 +279,13 @@ fn conversion_work_is_bounded_before_reading_or_allocating() {
     assert!(Oversized.to_ndarray_vector().is_err());
     assert!(Oversized.to_nalgebra_vector().is_err());
     assert!(Oversized.to_faer_col().is_err());
-    assert!(l::matvec(&Oversized, &[1.0]).is_err());
-    assert!(l::inv(&Oversized).is_err());
-    assert!(l::dot(&Oversized, &[1.0]).is_err());
+    assert!(l::basic::matvec(&Oversized, &[1.0]).is_err());
+    assert!(l::basic::inv(&Oversized).is_err());
+    assert!(l::basic::dot(&Oversized, &[1.0]).is_err());
     let huge = ndarray::Array2::<f64>::zeros((1001, 1000));
     assert!(huge.to_matrix().is_err());
     assert!(
-        l::matmul(
+        l::basic::matmul(
             &ndarray::Array2::<f64>::zeros((1001, 1)),
             &faer::Mat::<f64>::zeros(1, 1000)
         )
@@ -295,26 +317,26 @@ fn borrowed_storage_bypasses_element_conversion_and_preserves_inputs() {
         let expected = view.to_matrix().unwrap();
         let borrowed = ViewOnly(view);
         check_matrix(
-            &l::matmul(&borrowed, &[[1., 0.], [0., 1.]]).unwrap(),
+            &l::basic::matmul(&borrowed, &[[1., 0.], [0., 1.]]).unwrap(),
             &expected,
         );
         check_vector(
-            &l::matvec(&borrowed, &[1., 0.]).unwrap(),
+            &l::basic::matvec(&borrowed, &[1., 0.]).unwrap(),
             &[expected[0][0], expected[1][0]],
         );
         let rhs = [
             expected[0][0] + expected[0][1],
             expected[1][0] + expected[1][1],
         ];
-        check_vector(&l::solve(&borrowed, &rhs).unwrap(), &[1., 1.]);
+        check_vector(&l::solvers::solve(&borrowed, &rhs).unwrap(), &[1., 1.]);
         relative_close(
-            l::det(&borrowed).unwrap(),
+            l::basic::det(&borrowed).unwrap(),
             if view.row_stride() < 0 { -10. } else { 10. },
             2e-14,
         );
         relative_close(
-            l::norm(&borrowed, l::MatrixNorm::One).unwrap(),
-            l::norm(&expected, l::MatrixNorm::One).unwrap(),
+            l::basic::norm(&borrowed, l::basic::MatrixNorm::One).unwrap(),
+            l::basic::norm(&expected, l::basic::MatrixNorm::One).unwrap(),
             2e-14,
         );
         assert_eq!(view.to_matrix().unwrap(), expected);
@@ -384,7 +406,7 @@ fn triangular_backend_handles_all_flags_on_reversed_storage() {
                         })
                         .collect();
                     check_vector(
-                        &l::solve_triangular(&view, &rhs, lower, unit, transpose).unwrap(),
+                        &l::solvers::solve_triangular(&view, &rhs, lower, unit, transpose).unwrap(),
                         &solution,
                     );
                 }
@@ -400,7 +422,7 @@ fn fixed_slices_and_nested_references_preserve_rectangular_layout() {
     let reference = &slice;
     let identity = [[1., 0., 0.], [0., 1., 0.], [0., 0., 1.]];
     let expected = a.map(Vec::from);
-    assert_eq!(l::matmul(slice, &identity).unwrap(), expected);
-    assert_eq!(l::matmul(&reference, &identity).unwrap(), expected);
+    assert_eq!(l::basic::matmul(slice, &identity).unwrap(), expected);
+    assert_eq!(l::basic::matmul(&reference, &identity).unwrap(), expected);
     assert_eq!(reference.to_matrix().unwrap(), expected);
 }

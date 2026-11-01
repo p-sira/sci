@@ -36,7 +36,7 @@ pub enum EdgeMode {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::peaks::*;
 /// let _result = argrelextrema(&[1.,3.,1.],|a,b|a>b,1,EdgeMode::Clip)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -96,7 +96,7 @@ pub fn argrelextrema(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::peaks::*;
 /// let _result = argrelmax(&[1.,3.,1.],1,EdgeMode::Clip)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -134,7 +134,7 @@ pub fn argrelmax(x: &[f64], order: usize, mode: EdgeMode) -> Result<Vec<usize>> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::peaks::*;
 /// let _result = argrelmin(&[3.,1.,3.],1,EdgeMode::Clip)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -173,7 +173,7 @@ pub fn argrelmin(x: &[f64], order: usize, mode: EdgeMode) -> Result<Vec<usize>> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::peaks::*;
 /// let _result = find_peaks(&[1.,3.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -237,7 +237,7 @@ pub struct Prominences {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::peaks::*;
 /// let _result = peak_prominences(&[1.,3.,1.],&[1],None)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -333,7 +333,7 @@ pub struct PeakWidths {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::peaks::*;
 /// let _result = peak_widths(&[1.,3.,1.],&[1],0.5,None)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

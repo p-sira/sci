@@ -144,7 +144,7 @@ fn barnard_statistic(x: usize, y: usize, n1: usize, n2: usize, pooled: bool) -> 
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::barnard_exact(&[7.,12.,8.,3.],sci_stats::Alternative::Less,true)?;
+/// let r = sci_stats::contingency::barnard_exact(&[7.,12.,8.,3.],sci_stats::inference::Alternative::Less,true)?;
 /// assert!(r.pvalue < 0.05);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -247,7 +247,7 @@ fn boschloo_one_sided(
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::boschloo_exact(&[7.,12.,8.,3.],sci_stats::Alternative::Less)?;
+/// let r = sci_stats::contingency::boschloo_exact(&[7.,12.,8.,3.],sci_stats::inference::Alternative::Less)?;
 /// assert!(r.pvalue < 0.05);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -317,7 +317,7 @@ pub fn boschloo_exact(table: &[f64; 4], alternative: Alternative) -> Result<Test
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::poisson_means_test(0.,100.,3.,100.,0.,sci_stats::Alternative::TwoSided)?;
+/// let r = sci_stats::inference::poisson_means_test(0.,100.,3.,100.,0.,sci_stats::inference::Alternative::TwoSided)?;
 /// assert!((r.pvalue-0.08837900945483518).abs() < 1e-10);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

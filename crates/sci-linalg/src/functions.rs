@@ -115,7 +115,7 @@ fn quotient(numerator: Matrix, denominator: Matrix) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// let e=sci_linalg::expm(&[vec![0.,1.],vec![0.,0.]])?;
+/// let e=sci_linalg::matrix_functions::expm(&[vec![0.,1.],vec![0.,0.]])?;
 /// let expected=[[1.,1.],[0.,1.]];
 /// assert!(e.iter().flatten().zip(expected.iter().flatten()).all(|(a,b)| (a-b).abs()<1e-14));
 /// # Ok::<(), sci_core::Error>(())
@@ -154,7 +154,7 @@ pub fn expm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_linalg::cosm(&[vec![0.]])?[0][0]-1.).abs()<1e-14);
+/// assert!((sci_linalg::matrix_functions::cosm(&[vec![0.]])?[0][0]-1.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -191,7 +191,7 @@ pub fn cosm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::sinm(&[vec![0.]])?,vec![vec![0.]]);
+/// assert_eq!(sci_linalg::matrix_functions::sinm(&[vec![0.]])?,vec![vec![0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -228,7 +228,7 @@ pub fn sinm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_linalg::coshm(&[vec![0.]])?[0][0]-1.).abs()<1e-14);
+/// assert!((sci_linalg::matrix_functions::coshm(&[vec![0.]])?[0][0]-1.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -266,7 +266,7 @@ pub fn coshm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::sinhm(&[vec![0.]])?,vec![vec![0.]]);
+/// assert_eq!(sci_linalg::matrix_functions::sinhm(&[vec![0.]])?,vec![vec![0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -304,7 +304,7 @@ pub fn sinhm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::tanm(&[vec![0.]])?,vec![vec![0.]]);
+/// assert_eq!(sci_linalg::matrix_functions::tanm(&[vec![0.]])?,vec![vec![0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -345,7 +345,7 @@ pub fn tanm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::tanhm(&[vec![0.]])?,vec![vec![0.]]);
+/// assert_eq!(sci_linalg::matrix_functions::tanhm(&[vec![0.]])?,vec![vec![0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -401,7 +401,7 @@ pub fn tanhm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// let (exp,d)=sci_linalg::expm_frechet(&[vec![0.]],&[vec![2.]])?;
+/// let (exp,d)=sci_linalg::matrix_functions::expm_frechet(&[vec![0.]],&[vec![2.]])?;
 /// assert!((exp[0][0]-1.).abs()<1e-14 && (d[0][0]-2.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -466,7 +466,7 @@ pub fn expm_frechet(
 /// # Examples
 ///
 /// ```
-/// assert!((sci_linalg::expm_cond(&[vec![2.]])?-2.).abs()<1e-12);
+/// assert!((sci_linalg::matrix_functions::expm_cond(&[vec![2.]])?-2.).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

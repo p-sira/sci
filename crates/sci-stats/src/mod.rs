@@ -31,7 +31,7 @@ use statrs::distribution::{Continuous, ContinuousCDF, Normal};
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::mean(&[1., 2., 3.])?, 2.);
+/// assert_eq!(sci_stats::descriptive::mean(&[1., 2., 3.])?, 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -131,7 +131,7 @@ pub fn mean<T: Float>(values: &[T]) -> Result<T> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::variance(&[1., 2., 3.], 1)?, 1.);
+/// assert_eq!(sci_stats::descriptive::variance(&[1., 2., 3.], 1)?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -259,7 +259,7 @@ fn normal(mean: f64, std_dev: f64) -> Result<Normal> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_stats::normal_pdf(0., 0., 1.)? - 0.3989422804014327).abs() < 1e-15);
+/// assert!((sci_stats::distributions::normal_pdf(0., 0., 1.)? - 0.3989422804014327).abs() < 1e-15);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -304,7 +304,7 @@ pub fn normal_pdf(x: f64, mean: f64, std_dev: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::normal_cdf(0., 0., 1.)?, 0.5);
+/// assert_eq!(sci_stats::distributions::normal_cdf(0., 0., 1.)?, 0.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -349,7 +349,7 @@ pub fn normal_cdf(x: f64, mean: f64, std_dev: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::normal_ppf(0.5, 2., 3.)?, 2.);
+/// assert_eq!(sci_stats::distributions::normal_ppf(0.5, 2., 3.)?, 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

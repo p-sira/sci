@@ -34,7 +34,7 @@ pub(crate) fn validate_array(a: &SparseArray) -> Result<()> {
 /// Exact copying in O(rows + stored entries) work.
 /// # Examples
 /// ```
-/// let a = sci_sparse::as_array(&sci_sparse::identity(2)?)?;
+/// let a = sci_sparse::array::as_array(&sci_sparse::construct::identity(2)?)?;
 /// assert_eq!(a.shape, [2, 2]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -63,8 +63,8 @@ pub fn as_array(a: &SparseMatrix) -> Result<SparseArray> {
 /// Exact index manipulation; at most 32 million coordinate components.
 /// # Examples
 /// ```
-/// let a = sci_sparse::as_array(&sci_sparse::identity(2)?)?;
-/// assert_eq!(sci_sparse::expand_dims(&a, -1)?.shape, [2,2,1]);
+/// let a = sci_sparse::array::as_array(&sci_sparse::construct::identity(2)?)?;
+/// assert_eq!(sci_sparse::array::expand_dims(&a, -1)?.shape, [2,2,1]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -105,8 +105,8 @@ fn axis_index(axis: isize, n: usize) -> Result<usize> {
 /// Exact reindexing followed by O(nnz log nnz) stable sorting.
 /// # Examples
 /// ```
-/// let a = sci_sparse::as_array(&sci_sparse::identity(2)?)?;
-/// assert_eq!(sci_sparse::permute_dims(&a, &[1,0])?, a);
+/// let a = sci_sparse::array::as_array(&sci_sparse::construct::identity(2)?)?;
+/// assert_eq!(sci_sparse::array::permute_dims(&a, &[1,0])?, a);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -155,8 +155,8 @@ pub fn permute_dims(a: &SparseArray, axes: &[isize]) -> Result<SparseArray> {
 /// Uses [`permute_dims`] with its work and ordering conventions.
 /// # Examples
 /// ```
-/// let a = sci_sparse::as_array(&sci_sparse::identity(2)?)?;
-/// assert_eq!(sci_sparse::swapaxes(&a, 0, 1)?, a);
+/// let a = sci_sparse::array::as_array(&sci_sparse::construct::identity(2)?)?;
+/// assert_eq!(sci_sparse::array::swapaxes(&a, 0, 1)?, a);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -219,7 +219,7 @@ fn csr_indices<T: TryFrom<usize>>(a: &SparseMatrix) -> Result<CsrIndices<T>> {
 /// Exact checked integer conversion; O(rows + stored entries) time and storage.
 /// # Examples
 /// ```
-/// let indices = sci_sparse::csr_indices_i32(&sci_sparse::identity(2)?)?;
+/// let indices = sci_sparse::array::csr_indices_i32(&sci_sparse::construct::identity(2)?)?;
 /// assert_eq!(indices.indptr, vec![0_i32, 1, 2]);
 /// assert_eq!(indices.indices, vec![0_i32, 1]);
 /// # Ok::<(), sci_core::Error>(())
@@ -244,7 +244,7 @@ pub fn csr_indices_i32(a: &SparseMatrix) -> Result<CsrIndices<i32>> {
 /// Exact checked integer conversion; O(rows + stored entries) time and storage.
 /// # Examples
 /// ```
-/// let indices = sci_sparse::csr_indices_i64(&sci_sparse::identity(1)?)?;
+/// let indices = sci_sparse::array::csr_indices_i64(&sci_sparse::construct::identity(1)?)?;
 /// assert_eq!(indices.indptr, vec![0_i64, 1]);
 /// assert_eq!(indices.indices, vec![0_i64]);
 /// # Ok::<(), sci_core::Error>(())
@@ -273,7 +273,7 @@ pub fn csr_indices_i64(a: &SparseMatrix) -> Result<CsrIndices<i64>> {
 /// NumPy; a fixed seed reproduces this implementation, not SciPy's samples.
 /// # Examples
 /// ```
-/// assert_eq!(sci_sparse::random_array(&[4,5], 0.5, 42)?.data.len(), 10);
+/// assert_eq!(sci_sparse::array::random_array(&[4,5], 0.5, 42)?.data.len(), 10);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -319,100 +319,4 @@ pub fn random_array(shape: &[usize], density: f64, seed: u64) -> Result<SparseAr
         a.data.push(rng.random());
     }
     Ok(a)
-}
-
-/// Generate a two-dimensional sparse sample with uniform `[0,1)` values.
-///
-/// # Parameters and conventions
-/// rows, cols set shape; density and seed follow [`random_array`]. The shared
-/// CSR type replaces SciPy's format/dtype options and legacy matrix record.
-/// # Domain and special values
-/// Finite density in `[0,1]`, crate axis/storage limits and volume <=20,000,000.
-/// # Returns
-/// Canonical CSR with ties-to-even rounded density×volume stored entries.
-/// # Errors
-/// Invalid density, shape/volume overflow, or sampling/storage limits.
-/// # Numerical behavior
-/// Uses [`random_array`]; streams differ from NumPy. No custom sampler argument;
-/// callers may replace sampled data with validated finite values explicitly.
-/// # Examples
-/// ```
-/// assert_eq!(sci_sparse::random(2,3,1.,42)?.data.len(),6);
-/// # Ok::<(), sci_core::Error>(())
-/// ```
-/// # References
-/// [SciPy random](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.random.html).
-#[cfg(feature = "random")]
-pub fn random(rows: usize, cols: usize, density: f64, seed: u64) -> Result<SparseMatrix> {
-    let a = random_array(&[rows, cols], density, seed)?;
-    from_coo(
-        rows,
-        cols,
-        &a.coordinates
-            .iter()
-            .zip(&a.data)
-            .map(|(c, &v)| (c[0], c[1], v))
-            .collect::<Vec<_>>(),
-    )
-}
-
-/// Build a sparse matrix from padded diagonal rows, `A[j-k,j]=data[d][j]`.
-///
-/// # Parameters and conventions
-/// `offsets[d]` is the column-minus-row offset k. All data rows have equal width;
-/// unlike [`diags`], entries are aligned by output column, including padding.
-/// Out-of-bounds row/column positions are discarded; offsets must be unique.
-/// # Domain and special values
-/// Finite data, including explicit zeros; nonnegative dimensions under limits.
-/// Arbitrarily large offsets produce no entries without signed overflow.
-/// # Returns
-/// Canonical CSR of explicit shape rows×cols.
-/// # Errors
-/// Invalid lengths, repeated offsets, nonfinite data, or crate storage/work limits.
-/// # Numerical behavior
-/// Exact placement with O(input data size) work, capped at 1,000,000 input values.
-/// # Examples
-/// ```
-/// let a=sci_sparse::spdiags(&[vec![0.,2.,3.]],&[1],3,3)?;
-/// assert_eq!(sci_sparse::to_dense(&a)?[0][1],2.);
-/// # Ok::<(), sci_core::Error>(())
-/// ```
-/// # References
-/// [SciPy spdiags](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.spdiags.html).
-pub fn spdiags(
-    data: &[Vec<f64>],
-    offsets: &[isize],
-    rows: usize,
-    cols: usize,
-) -> Result<SparseMatrix> {
-    shape(rows, cols)?;
-    if data.len() > LIMIT {
-        return Err(Error::InvalidInput("too many diagonal rows"));
-    }
-    if data.len() != offsets.len() {
-        return Err(Error::DimensionMismatch);
-    }
-    let width = data.first().map_or(0, Vec::len);
-    if data.len().checked_mul(width).is_none_or(|n| n > LIMIT) {
-        return Err(Error::InvalidInput("diagonal data exceeds storage limit"));
-    }
-    let mut seen = std::collections::BTreeSet::new();
-    let mut t = vec![];
-    for (row, &k) in data.iter().zip(offsets) {
-        if row.len() != width {
-            return Err(Error::DimensionMismatch);
-        }
-        sci_core::is_finite_slice(row)?;
-        if !seen.insert(k) {
-            return Err(Error::InvalidInput("repeated diagonal offset"));
-        }
-        for (c, &v) in row.iter().enumerate().take(cols) {
-            if let Some(r) = c.checked_add_signed(k.saturating_neg())
-                && r < rows
-            {
-                t.push((r, c, v));
-            }
-        }
-    }
-    from_coo(rows, cols, &t)
 }

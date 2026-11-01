@@ -58,7 +58,7 @@ fn transform(values: &[f64], f: impl Fn(f64) -> f64) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::circmean(&[0., 0.], 0., std::f64::consts::TAU)?.abs() < 1e-14);
+/// assert!(sci_stats::descriptive::circmean(&[0., 0.], 0., std::f64::consts::TAU)?.abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -100,7 +100,7 @@ pub fn circmean(values: &[f64], low: f64, high: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::circvar(&[1., 1.], 0., std::f64::consts::TAU)?, 0.);
+/// assert_eq!(sci_stats::descriptive::circvar(&[1., 1.], 0., std::f64::consts::TAU)?, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -139,7 +139,7 @@ pub fn circvar(values: &[f64], low: f64, high: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::circstd(&[0., 0.], 0., std::f64::consts::TAU, false)?, 0.);
+/// assert_eq!(sci_stats::descriptive::circstd(&[0., 0.], 0., std::f64::consts::TAU, false)?, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -183,7 +183,7 @@ pub fn circstd(values: &[f64], low: f64, high: f64, normalize: bool) -> Result<f
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::entropy(&[1., 1.], None, Some(2.))?, 1.);
+/// assert_eq!(sci_stats::descriptive::entropy(&[1., 1.], None, Some(2.))?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -264,7 +264,7 @@ pub(super) fn probabilities(values: &[f64]) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::boxcox(&[1., 2.], 1.)?, vec![0., 1.]);
+/// assert_eq!(sci_stats::transformations::boxcox(&[1., 2.], 1.)?, vec![0., 1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -314,7 +314,7 @@ pub fn boxcox(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::yeojohnson(&[-1., 0., 1.], 1.)?, vec![-1., 0., 1.]);
+/// assert_eq!(sci_stats::transformations::yeojohnson(&[-1., 0., 1.], 1.)?, vec![-1., 0., 1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -376,7 +376,7 @@ pub fn yeojohnson(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::boxcox_llf(0., &[1., 2., 3.])?.is_finite());
+/// assert!(sci_stats::transformations::boxcox_llf(0., &[1., 2., 3.])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -423,7 +423,7 @@ pub fn boxcox_llf(lambda: f64, values: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::yeojohnson_llf(1., &[-1., 0., 1.])?.is_finite());
+/// assert!(sci_stats::transformations::yeojohnson_llf(1., &[-1., 0., 1.])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -477,7 +477,7 @@ pub fn yeojohnson_llf(lambda: f64, values: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_stats::pmean(&[1., 3.], 1.)? - 2.).abs() < 1e-14);
+/// assert!((sci_stats::descriptive::pmean(&[1., 3.], 1.)? - 2.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -564,7 +564,7 @@ pub fn pmean(values: &[f64], power: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_stats::expectile(&[1., 2., 6.], 0.5)? - 3.).abs() < 1e-14);
+/// assert!((sci_stats::descriptive::expectile(&[1., 2., 6.], 0.5)? - 3.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -680,7 +680,7 @@ pub fn expectile(values: &[f64], alpha: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::wasserstein_distance(&[0., 1.], &[1., 2.])?, 1.);
+/// assert_eq!(sci_stats::distances::wasserstein_distance(&[0., 1.], &[1., 2.])?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -718,7 +718,7 @@ pub fn wasserstein_distance(first: &[f64], second: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::energy_distance(&[0.], &[2.])?, 2.);
+/// assert_eq!(sci_stats::distances::energy_distance(&[0.], &[2.])?, 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

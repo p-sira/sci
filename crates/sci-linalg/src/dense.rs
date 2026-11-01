@@ -1,6 +1,6 @@
 //! Dense real decompositions and solvers using a private faer backend.
 use super::backend::*;
-use super::structured::{circulant, toeplitz};
+use super::structured_impl::{circulant, toeplitz};
 use crate::{Error, Result};
 use faer::prelude::Solve;
 use faer::{Mat, Scale};
@@ -212,7 +212,7 @@ fn pseudoinverse(d: &mut SvdFactors, cutoff: f64) -> Result<(Mat<f64>, usize)> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::solve(&[vec![2.,0.],vec![0.,4.]],&[6.,8.])?,vec![3.,2.]);
+/// assert_eq!(sci_linalg::solvers::solve(&[vec![2.,0.],vec![0.,4.]],&[6.,8.])?,vec![3.,2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -370,7 +370,7 @@ fn two_product(a: f64, b: f64, split_b: (f64, f64)) -> (f64, f64) {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::inv(&[vec![2.]])?,vec![vec![0.5]]);
+/// assert_eq!(sci_linalg::basic::inv(&[vec![2.]])?,vec![vec![0.5]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -409,7 +409,7 @@ pub fn inv(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::det(&[vec![2.]])?,2.);
+/// assert_eq!(sci_linalg::basic::det(&[vec![2.]])?,2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -447,7 +447,7 @@ pub fn det(a: &(impl super::MatrixInput + ?Sized)) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::solve_triangular(&[vec![2.,9.],vec![1.,3.]],&[4.,8.],true,false,false)?,vec![2.,2.]);
+/// assert_eq!(sci_linalg::solvers::solve_triangular(&[vec![2.,9.],vec![1.,3.]],&[4.,8.],true,false,false)?,vec![2.,2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -587,7 +587,7 @@ fn substitute_col_major(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::solve_toeplitz(&[2.,0.],None,&[4.,6.])?,vec![2.,3.]);
+/// assert_eq!(sci_linalg::solvers::solve_toeplitz(&[2.,0.],None,&[4.,6.])?,vec![2.,3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -633,7 +633,7 @@ pub fn solve_toeplitz(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::matmul_toeplitz(&[2.,0.],None,&[vec![1.],vec![3.]])?,vec![vec![2.],vec![6.]]);
+/// assert_eq!(sci_linalg::structured::matmul_toeplitz(&[2.,0.],None,&[vec![1.],vec![3.]])?,vec![vec![2.],vec![6.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -682,7 +682,7 @@ pub fn matmul_toeplitz(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::solve_circulant(&[2.,0.],&[4.,6.])?,vec![2.,3.]);
+/// assert_eq!(sci_linalg::solvers::solve_circulant(&[2.,0.],&[4.,6.])?,vec![2.,3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -727,7 +727,7 @@ pub fn solve_circulant(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::cholesky(&[vec![4.]],true)?,vec![vec![2.]]);
+/// assert_eq!(sci_linalg::decompositions::cholesky(&[vec![4.]],true)?,vec![vec![2.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -771,8 +771,8 @@ pub fn cholesky(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<M
 /// # Examples
 ///
 /// ```
-/// let f=sci_linalg::cho_factor(&[vec![4.]],true)?;
-/// assert_eq!(sci_linalg::cho_solve(&f,&[8.])?,vec![2.]);
+/// let f=sci_linalg::decompositions::cho_factor(&[vec![4.]],true)?;
+/// assert_eq!(sci_linalg::solvers::cho_solve(&f,&[8.])?,vec![2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -810,8 +810,8 @@ pub fn cho_factor(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result
 /// # Examples
 ///
 /// ```
-/// let f=sci_linalg::cho_factor(&[vec![4.]],false)?;
-/// assert_eq!(sci_linalg::cho_solve(&f,&[8.])?,vec![2.]);
+/// let f=sci_linalg::decompositions::cho_factor(&[vec![4.]],false)?;
+/// assert_eq!(sci_linalg::solvers::cho_solve(&f,&[8.])?,vec![2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -863,7 +863,7 @@ pub(super) fn solve_cholesky(
 /// # Examples
 ///
 /// ```
-/// let f=sci_linalg::lu(&[vec![2.]])?;
+/// let f=sci_linalg::decompositions::lu(&[vec![2.]])?;
 /// assert_eq!(f.u,vec![vec![2.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -908,7 +908,7 @@ pub fn lu(a: &(impl super::MatrixInput + ?Sized)) -> Result<LuResult> {
 /// # Examples
 ///
 /// ```
-/// let f=sci_linalg::qr(&[vec![2.]])?;
+/// let f=sci_linalg::decompositions::qr(&[vec![2.]])?;
 /// assert!((f.q[0][0]*f.r[0][0]-2.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -950,7 +950,7 @@ pub fn qr(a: &(impl super::MatrixInput + ?Sized)) -> Result<QrResult> {
 /// # Examples
 ///
 /// ```
-/// let f=sci_linalg::svd(&[vec![3.,0.],vec![0.,2.]])?;
+/// let f=sci_linalg::decompositions::svd(&[vec![3.,0.],vec![0.,2.]])?;
 /// assert_eq!(f.singular_values,vec![3.,2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -991,7 +991,7 @@ pub fn svd(a: &(impl super::MatrixInput + ?Sized)) -> Result<SvdResult> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::svdvals(&[vec![3.,0.],vec![0.,2.]])?,vec![3.,2.]);
+/// assert_eq!(sci_linalg::decompositions::svdvals(&[vec![3.,0.],vec![0.,2.]])?,vec![3.,2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -1026,7 +1026,7 @@ pub fn svdvals(a: &(impl super::MatrixInput + ?Sized)) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// let (p,rank)=sci_linalg::pinv(&[vec![2.]],0.,None)?;
+/// let (p,rank)=sci_linalg::basic::pinv(&[vec![2.]],0.,None)?;
 /// assert_eq!((p,rank),(vec![vec![0.5]],1));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1075,7 +1075,7 @@ pub fn pinv(
 /// # Examples
 ///
 /// ```
-/// let r=sci_linalg::lstsq(&[vec![1.],vec![1.]],&[1.,3.],None)?;
+/// let r=sci_linalg::solvers::lstsq(&[vec![1.],vec![1.]],&[1.,3.],None)?;
 /// assert!((r.solution[0]-2.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1140,7 +1140,7 @@ pub fn lstsq(
 /// # Examples
 ///
 /// ```
-/// let q=sci_linalg::orth(&[vec![1.],vec![0.]],None)?;
+/// let q=sci_linalg::subspaces::orth(&[vec![1.],vec![0.]],None)?;
 /// assert_eq!((q.len(),q[0].len()),(2,1));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1184,7 +1184,7 @@ pub fn orth(a: &(impl super::MatrixInput + ?Sized), rcond: Option<f64>) -> Resul
 /// # Examples
 ///
 /// ```
-/// let z=sci_linalg::null_space(&[vec![1.,0.]],None)?;
+/// let z=sci_linalg::subspaces::null_space(&[vec![1.,0.]],None)?;
 /// assert_eq!((z.len(),z[0].len()),(2,1));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1231,7 +1231,7 @@ pub fn null_space(a: &(impl super::MatrixInput + ?Sized), rcond: Option<f64>) ->
 /// # Examples
 ///
 /// ```
-/// let (u,p)=sci_linalg::polar(&[vec![2.]],true)?;
+/// let (u,p)=sci_linalg::decompositions::polar(&[vec![2.]],true)?;
 /// assert!((u[0][0]*p[0][0]-2.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1279,7 +1279,7 @@ pub fn polar(a: &(impl super::MatrixInput + ?Sized), right: bool) -> Result<(Mat
 /// # Examples
 ///
 /// ```
-/// let (r,s)=sci_linalg::orthogonal_procrustes(&[vec![2.]],&[vec![3.]])?;
+/// let (r,s)=sci_linalg::subspaces::orthogonal_procrustes(&[vec![2.]],&[vec![3.]])?;
 /// assert_eq!((r,s),(vec![vec![1.]],6.));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1334,7 +1334,7 @@ pub fn orthogonal_procrustes(
 /// # Examples
 ///
 /// ```
-/// let e=sci_linalg::eigh(&[vec![2.,0.],vec![0.,3.]],true)?;
+/// let e=sci_linalg::eigen::eigh(&[vec![2.,0.],vec![0.,3.]],true)?;
 /// assert!(e.eigenvalues.iter().zip([2.,3.]).all(|(a,b)| (a-b).abs()<1e-14));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1372,7 +1372,7 @@ pub fn eigh(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<Eigen
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::eigvalsh(&[vec![2.]],true)?,vec![2.]);
+/// assert_eq!(sci_linalg::eigen::eigvalsh(&[vec![2.]],true)?,vec![2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -1407,7 +1407,7 @@ pub fn eigvalsh(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<V
 /// # Examples
 ///
 /// ```
-/// let (p,r)=sci_linalg::pinvh(&[vec![-2.]],0.,None,true)?;
+/// let (p,r)=sci_linalg::basic::pinvh(&[vec![-2.]],0.,None,true)?;
 /// assert_eq!((p,r),(vec![vec![-0.5]],1));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1473,7 +1473,7 @@ pub fn pinvh(
 /// # Examples
 ///
 /// ```
-/// let e=sci_linalg::eigh_tridiagonal(&[2.,2.],&[1.])?;
+/// let e=sci_linalg::eigen::eigh_tridiagonal(&[2.,2.],&[1.])?;
 /// assert!((e.eigenvalues[0]-1.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1540,7 +1540,7 @@ fn tridiagonal(d: &[f64], e: &[f64]) -> Result<Mat<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::eigvalsh_tridiagonal(&[2.],&[])?,vec![2.]);
+/// assert_eq!(sci_linalg::eigen::eigvalsh_tridiagonal(&[2.],&[])?,vec![2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -1582,7 +1582,7 @@ pub fn eigvalsh_tridiagonal(
 /// # Examples
 ///
 /// ```
-/// let (h,q)=sci_linalg::hessenberg(&[vec![2.]])?;
+/// let (h,q)=sci_linalg::decompositions::hessenberg(&[vec![2.]])?;
 /// assert_eq!((h,q),(vec![vec![2.]],vec![vec![1.]]));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1624,7 +1624,7 @@ pub fn hessenberg(a: &(impl super::MatrixInput + ?Sized)) -> Result<(Matrix, Mat
 /// # Examples
 ///
 /// ```
-/// let (t,z)=sci_linalg::schur(&[vec![2.]])?;
+/// let (t,z)=sci_linalg::decompositions::schur(&[vec![2.]])?;
 /// assert_eq!((t,z),(vec![vec![2.]],vec![vec![1.]]));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1663,7 +1663,7 @@ pub fn schur(a: &(impl super::MatrixInput + ?Sized)) -> Result<(Matrix, Matrix)>
 /// # Examples
 ///
 /// ```
-/// let w=sci_linalg::eigvals(&[vec![0.,-1.],vec![1.,0.]])?;
+/// let w=sci_linalg::eigen::eigvals(&[vec![0.,-1.],vec![1.,0.]])?;
 /// assert!(w.iter().all(|z| (z.im.abs()-1.).abs()<1e-14));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1713,7 +1713,7 @@ pub fn eigvals(a: &(impl super::MatrixInput + ?Sized)) -> Result<Vec<crate::comp
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::norm(&[vec![3.,4.]],sci_linalg::MatrixNorm::Frobenius)?,5.);
+/// assert_eq!(sci_linalg::basic::norm(&[vec![3.,4.]],sci_linalg::basic::MatrixNorm::Frobenius)?,5.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

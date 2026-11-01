@@ -196,8 +196,8 @@ fn transform(
 /// # Examples
 ///
 /// ```
-/// let offset=sci_fft::fhtoffset(0.1,0.0,0.0,0.0)?;
-/// let y=sci_fft::fht(&[1.0,2.0,3.0,4.0],0.1,0.0,offset,0.0)?;
+/// let offset=sci_fft::hankel::fhtoffset(0.1,0.0,0.0,0.0)?;
+/// let y=sci_fft::hankel::fht(&[1.0,2.0,3.0,4.0],0.1,0.0,offset,0.0)?;
 /// assert_eq!(y.len(),4);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -234,9 +234,9 @@ pub fn fht(input: &[f64], dln: f64, mu: f64, offset: f64, bias: f64) -> Result<V
 /// # Examples
 ///
 /// ```
-/// let offset=sci_fft::fhtoffset(0.1,0.0,0.0,0.0)?;
-/// let y=sci_fft::fht(&[1.0,2.0,3.0,4.0],0.1,0.0,offset,0.0)?;
-/// let x=sci_fft::ifht(&y,0.1,0.0,offset,0.0)?;
+/// let offset=sci_fft::hankel::fhtoffset(0.1,0.0,0.0,0.0)?;
+/// let y=sci_fft::hankel::fht(&[1.0,2.0,3.0,4.0],0.1,0.0,offset,0.0)?;
+/// let x=sci_fft::hankel::ifht(&y,0.1,0.0,offset,0.0)?;
 /// assert!((x[0]-1.0).abs()<1e-12);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -274,7 +274,7 @@ pub fn ifht(input: &[f64], dln: f64, mu: f64, offset: f64, bias: f64) -> Result<
 /// # Examples
 ///
 /// ```
-/// let offset=sci_fft::fhtoffset(0.1,2.0,0.5,0.0)?;
+/// let offset=sci_fft::hankel::fhtoffset(0.1,2.0,0.5,0.0)?;
 /// assert!((offset-0.5454581477676637).abs()<1e-12);
 /// # Ok::<(),sci_core::Error>(())
 /// ```

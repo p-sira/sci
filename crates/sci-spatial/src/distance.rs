@@ -357,7 +357,7 @@ macro_rules! vector_distance {
         "L2 uses weighted components and hypot; zero-weight coordinates are excluded\n",
         "from Lp arithmetic and ratio-metric normalization scales.\n",
         "Rounding affects near-zero distances; no uniform relative accuracy is promised.\n\n",
-        "# Examples\n```\nlet d = sci_spatial::", stringify!($name),
+        "# Examples\n```\nlet d = sci_spatial::distance::", stringify!($name),
         "(&[1.0, 0.0, 1.0], &[0.0, 1.0, 1.0], None)?;\nassert!(d >= 0.0);\n",
         "# Ok::<(), sci_core::Error>(())\n```\n\n# References\n",
         "[SciPy definition](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.",
@@ -484,7 +484,7 @@ vector_distance!(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::minkowski(&[0.0], &[2.0], 3.0, None)?, 2.0);
+/// assert_eq!(sci_spatial::distance::minkowski(&[0.0], &[2.0], 3.0, None)?, 2.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -522,7 +522,7 @@ pub fn minkowski(u: &[f64], v: &[f64], p: f64, w: Option<&[f64]>) -> Result<f64>
 /// # Examples
 ///
 /// ```
-/// assert!(sci_spatial::correlation(&[1.0,2.0], &[2.0,4.0], None, true)? < 1e-14);
+/// assert!(sci_spatial::distance::correlation(&[1.0,2.0], &[2.0,4.0], None, true)? < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -567,7 +567,7 @@ pub fn correlation(u: &[f64], v: &[f64], w: Option<&[f64]>, centered: bool) -> R
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::seuclidean(&[0.0], &[2.0], &[4.0])?, 1.0);
+/// assert_eq!(sci_spatial::distance::seuclidean(&[0.0], &[2.0], &[4.0])?, 1.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -605,7 +605,7 @@ pub fn seuclidean(u: &[f64], v: &[f64], variance: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::mahalanobis(&[0.0], &[2.0], &[vec![0.25]])?, 1.0);
+/// assert_eq!(sci_spatial::distance::mahalanobis(&[0.0], &[2.0], &[vec![0.25]])?, 1.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -644,7 +644,7 @@ pub fn mahalanobis(u: &[f64], v: &[f64], vi: &[Vec<f64>]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::jensenshannon(&[1.0,0.0], &[0.0,1.0], Some(2.0))?, 1.0);
+/// assert_eq!(sci_spatial::distance::jensenshannon(&[1.0,0.0], &[0.0,1.0], Some(2.0))?, 1.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -745,7 +745,7 @@ fn pairwise_bound(n: usize, m: usize, d: usize, metric: Metric<'_>) -> Result<()
 /// # Examples
 ///
 /// ```
-/// use sci_spatial::{cdist, Metric};
+/// use sci_spatial::{distance::cdist, distance::Metric};
 /// assert_eq!(cdist(&[vec![0.0]], &[vec![2.0]], Metric::Euclidean)?, vec![vec![2.0]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -817,7 +817,7 @@ fn validate_metric(metric: Metric<'_>, d: usize) -> Result<()> {
 /// # Examples
 ///
 /// ```
-/// use sci_spatial::{pdist, Metric};
+/// use sci_spatial::{distance::pdist, distance::Metric};
 /// assert_eq!(pdist(&[vec![0.0],vec![2.0],vec![5.0]],Metric::Euclidean)?,vec![2.0,5.0,3.0]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -881,7 +881,7 @@ fn observation_count(k: usize) -> Option<usize> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_spatial::is_valid_dm(&[vec![0.0,2.0],vec![2.0,0.0]],0.0));
+/// assert!(sci_spatial::distance::is_valid_dm(&[vec![0.0,2.0],vec![2.0,0.0]],0.0));
 /// ```
 /// # References
 ///
@@ -925,7 +925,7 @@ pub fn is_valid_dm(d: &[Vec<f64>], tol: f64) -> bool {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_spatial::is_valid_y(&[1.0,2.0,3.0]));
+/// assert!(sci_spatial::distance::is_valid_y(&[1.0,2.0,3.0]));
 /// ```
 /// # References
 ///
@@ -960,7 +960,7 @@ pub fn is_valid_y(y: &[f64]) -> bool {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::num_obs_dm(&[vec![0.0]])?,1);
+/// assert_eq!(sci_spatial::distance::num_obs_dm(&[vec![0.0]])?,1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -998,7 +998,7 @@ pub fn num_obs_dm(d: &[Vec<f64>]) -> Result<usize> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::num_obs_y(&[1.0,2.0,3.0])?,3);
+/// assert_eq!(sci_spatial::distance::num_obs_y(&[1.0,2.0,3.0])?,3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -1057,7 +1057,7 @@ pub enum DistanceOutput {
 /// # Examples
 ///
 /// ```
-/// use sci_spatial::{squareform, DistanceForm, DistanceOutput};
+/// use sci_spatial::{distance::squareform, distance::DistanceForm, distance::DistanceOutput};
 /// assert_eq!(squareform(DistanceForm::Condensed(&[2.0]))?,
 ///     DistanceOutput::Square(vec![vec![0.0,2.0],vec![2.0,0.0]]));
 /// # Ok::<(), sci_core::Error>(())
@@ -1137,7 +1137,7 @@ pub struct HausdorffResult {
 /// # Examples
 ///
 /// ```
-/// let r = sci_spatial::directed_hausdorff(&[vec![0.0],vec![3.0]], &[vec![1.0]])?;
+/// let r = sci_spatial::distance::directed_hausdorff(&[vec![0.0],vec![3.0]], &[vec![1.0]])?;
 /// assert_eq!((r.distance,r.index_u,r.index_v),(2.0,1,0));
 /// # Ok::<(), sci_core::Error>(())
 /// ```

@@ -55,7 +55,7 @@ pub struct LdlResult {
 /// # Examples
 ///
 /// ```
-/// let e = sci_linalg::eig(&[vec![0., -1.], vec![1., 0.]])?;
+/// let e = sci_linalg::eigen::eig(&[vec![0., -1.], vec![1., 0.]])?;
 /// assert_eq!(e.eigenvalues.len(), 2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -119,7 +119,7 @@ pub fn eig(a: &(impl super::MatrixInput + ?Sized)) -> Result<GeneralEigenResult>
 /// # Examples
 ///
 /// ```
-/// let f = sci_linalg::ldl(&[vec![0., 1.], vec![1., 0.]], true)?;
+/// let f = sci_linalg::decompositions::ldl(&[vec![0., 1.], vec![1., 0.]], true)?;
 /// assert_eq!(f.d.len(), 2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -197,7 +197,7 @@ pub fn ldl(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<LdlRes
 ///
 /// ```
 /// use sci_complex::Complex;
-/// let (d,v) = sci_linalg::cdf2rdf(&[Complex {re:2.,im:0.}],
+/// let (d,v) = sci_linalg::eigen::cdf2rdf(&[Complex {re:2.,im:0.}],
 ///     &[vec![Complex {re:1.,im:0.}]])?;
 /// assert_eq!(d,vec![vec![2.]]);
 /// assert_eq!(v,vec![vec![1.]]);
@@ -292,7 +292,7 @@ pub fn cdf2rdf(w: &[Complex], v: &[Vec<Complex>]) -> Result<(Matrix, Matrix)> {
 /// # Examples
 ///
 /// ```
-/// let y = sci_linalg::clarkson_woodruff_transform(
+/// let y = sci_linalg::subspaces::clarkson_woodruff_transform(
 ///     &[vec![1.,2.],vec![3.,4.]],1,&[0,0],&[1.,-1.])?;
 /// assert_eq!(y,vec![vec![-2.,-2.]]);
 /// # Ok::<(), sci_core::Error>(())
@@ -356,7 +356,7 @@ pub fn clarkson_woodruff_transform(
 /// # Examples
 ///
 /// ```
-/// let (b,t) = sci_linalg::matrix_balance(&[vec![1.,100.],vec![0.01,2.]],false,true)?;
+/// let (b,t) = sci_linalg::decompositions::matrix_balance(&[vec![1.,100.],vec![0.01,2.]],false,true)?;
 /// assert_eq!(b.len(),t.len());
 /// # Ok::<(), sci_core::Error>(())
 /// ```

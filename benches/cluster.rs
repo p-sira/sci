@@ -31,7 +31,7 @@ fn blobs(n: usize) -> Vec<Vec<f64>> {
 
 /// Condensed Euclidean distances between the observations.
 fn condensed() -> Vec<f64> {
-    spatial::pdist(&blobs(LEAVES), spatial::Metric::Euclidean).unwrap()
+    spatial::distance::pdist(&blobs(LEAVES), spatial::distance::Metric::Euclidean).unwrap()
 }
 
 /// Average-linkage tree of the observations.

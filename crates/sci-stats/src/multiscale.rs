@@ -241,7 +241,7 @@ fn permuted_distances(y: &RankedDistances, permutation: &[usize]) -> RankedDista
 /// ```
 /// let x: &[&[f64]] = &[&[0.],&[1.],&[2.],&[3.],&[4.]];
 /// let permutations: &[&[usize]] = &[&[4,3,2,1,0],&[1,3,0,4,2]];
-/// let r = sci_stats::multiscale_graphcorr(x,x,permutations)?;
+/// let r = sci_stats::association::multiscale_graphcorr(x,x,permutations)?;
 /// assert!((r.statistic-1.).abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

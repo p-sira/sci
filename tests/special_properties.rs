@@ -179,7 +179,7 @@ fn quadrature_composes_with_polynomial_evaluation_and_linalg() {
             0.0
         };
         finite_close(
-            linalg::dot(&weights, &values).unwrap(),
+            linalg::basic::dot(&weights, &values).unwrap(),
             expected,
             3e-14,
             3e-14,

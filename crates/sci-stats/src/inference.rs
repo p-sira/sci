@@ -161,7 +161,7 @@ pub(super) fn correlation(x: &[f64], y: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{ttest_1samp, Alternative};
+/// use sci_stats::{inference::ttest_1samp, inference::Alternative};
 /// assert_eq!(ttest_1samp(&[1., 2., 3.], 2., Alternative::TwoSided)?.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -209,7 +209,7 @@ pub fn ttest_1samp(values: &[f64], popmean: f64, alternative: Alternative) -> Re
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{ttest_rel, Alternative};
+/// use sci_stats::{inference::ttest_rel, inference::Alternative};
 /// assert!(ttest_rel(&[1., 3., 5.], &[0., 1., 2.], Alternative::Greater)?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -259,7 +259,7 @@ pub fn ttest_rel(first: &[f64], second: &[f64], alternative: Alternative) -> Res
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{ttest_ind_from_stats, Alternative};
+/// use sci_stats::{inference::ttest_ind_from_stats, inference::Alternative};
 /// assert_eq!(ttest_ind_from_stats(1., 1., 5, 1., 2., 6, false, Alternative::TwoSided)?.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -363,7 +363,7 @@ pub fn ttest_ind_from_stats(
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{ttest_ind, Alternative};
+/// use sci_stats::{inference::ttest_ind, inference::Alternative};
 /// assert_eq!(ttest_ind(&[1., 2., 3.], &[1., 2., 3.], false, Alternative::TwoSided)?.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -418,7 +418,7 @@ pub fn ttest_ind(
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{pearsonr, Alternative};
+/// use sci_stats::{association::pearsonr, inference::Alternative};
 /// assert!((pearsonr(&[1., 2., 3.], &[2., 4., 6.], Alternative::TwoSided)?.statistic - 1.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -480,7 +480,7 @@ pub fn pearsonr(first: &[f64], second: &[f64], alternative: Alternative) -> Resu
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{spearmanr, Alternative};
+/// use sci_stats::{association::spearmanr, inference::Alternative};
 /// assert!(spearmanr(&[1., 3., 2.], &[4., 6., 5.], Alternative::TwoSided)?.statistic > 0.99);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -535,7 +535,7 @@ pub fn spearmanr(first: &[f64], second: &[f64], alternative: Alternative) -> Res
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::pointbiserialr(&[0., 0., 1., 1.], &[1., 2., 3., 4.])?.statistic > 0.);
+/// assert!(sci_stats::association::pointbiserialr(&[0., 0., 1., 1.], &[1., 2., 3., 4.])?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -581,7 +581,7 @@ pub fn pointbiserialr(binary: &[f64], values: &[f64]) -> Result<TestResult> {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{linregress, Alternative};
+/// use sci_stats::{regression::linregress, inference::Alternative};
 /// assert!((linregress(&[1., 2., 3.], &[3., 5., 7.], Alternative::TwoSided)?.slope - 2.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -664,7 +664,7 @@ pub fn linregress(x: &[f64], y: &[f64], alternative: Alternative) -> Result<Regr
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::jarque_bera(&[1., 2., 3., 4.])?.statistic >= 0.);
+/// assert!(sci_stats::normality::jarque_bera(&[1., 2., 3., 4.])?.statistic >= 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -705,7 +705,7 @@ pub fn jarque_bera(values: &[f64]) -> Result<TestResult> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::power_divergence(&[10., 20.], &[15., 15.], 0, 0.)?.statistic > 0.);
+/// assert!(sci_stats::goodness::power_divergence(&[10., 20.], &[15., 15.], 0, 0.)?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -790,7 +790,7 @@ pub fn power_divergence(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::chisquare(&[5., 5.], &[5., 5.], 0)?.pvalue, 1.);
+/// assert_eq!(sci_stats::goodness::chisquare(&[5., 5.], &[5., 5.], 0)?.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -828,7 +828,7 @@ pub fn chisquare(observed: &[f64], expected: &[f64], ddof: usize) -> Result<Test
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{fisher_exact, Alternative};
+/// use sci_stats::{contingency::fisher_exact, inference::Alternative};
 /// assert!(fisher_exact(&[6., 2., 1., 4.], Alternative::TwoSided)?.pvalue < 0.2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -888,7 +888,7 @@ pub fn fisher_exact(table: &[f64; 4], alternative: Alternative) -> Result<TestRe
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::f_oneway(&[&[1., 2., 3.], &[4., 5., 6.]])?.statistic > 0.);
+/// assert!(sci_stats::inference::f_oneway(&[&[1., 2., 3.], &[4., 5., 6.]])?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -960,7 +960,7 @@ pub fn f_oneway(groups: &[&[f64]]) -> Result<TestResult> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::bartlett(&[&[1., 2., 3.], &[4., 5., 6.]])?.pvalue, 1.);
+/// assert_eq!(sci_stats::inference::bartlett(&[&[1., 2., 3.], &[4., 5., 6.]])?.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -1014,7 +1014,7 @@ pub fn bartlett(groups: &[&[f64]]) -> Result<TestResult> {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{levene, Center};
+/// use sci_stats::{inference::levene, inference::Center};
 /// assert!(levene(&[&[1., 2., 4.], &[2., 3., 8.]], Center::Median)?.pvalue >= 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1074,7 +1074,7 @@ pub enum Center {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::kruskal(&[&[1., 2., 3.], &[4., 5., 6.]])?.statistic > 0.);
+/// assert!(sci_stats::inference::kruskal(&[&[1., 2., 3.], &[4., 5., 6.]])?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -1134,7 +1134,7 @@ pub fn kruskal(groups: &[&[f64]]) -> Result<TestResult> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::friedmanchisquare(&[&[1., 2., 3.], &[2., 4., 5.], &[3., 5., 6.]])?.statistic > 0.);
+/// assert!(sci_stats::inference::friedmanchisquare(&[&[1., 2., 3.], &[2., 4., 5.], &[3., 5., 6.]])?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -1203,7 +1203,7 @@ pub fn friedmanchisquare(groups: &[&[f64]]) -> Result<TestResult> {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{ranksums, Alternative};
+/// use sci_stats::{inference::ranksums, inference::Alternative};
 /// assert!(ranksums(&[1., 2.], &[3., 4.], Alternative::Less)?.pvalue < 0.1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

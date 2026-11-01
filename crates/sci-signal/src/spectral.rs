@@ -4,6 +4,9 @@ use crate::{
     complex::{Complex, native, owned},
 };
 use num_complex::Complex64;
+/// Fundamental complex and real Fourier transforms.
+pub use sci_fft::fourier::{fft, ifft};
+pub use sci_fft::real::rfft;
 use std::f64::consts::TAU;
 
 /// Returns the analytic signal `x + i H(x)` by doubling positive DFT frequencies and removing negative frequencies.
@@ -33,7 +36,7 @@ use std::f64::consts::TAU;
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = hilbert(&[1.,2.,3.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -83,7 +86,7 @@ pub fn hilbert(x: &[f64]) -> Result<Vec<Complex>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = resample(&[1.,2.,3.],5)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -141,7 +144,7 @@ pub fn resample(x: &[f64], length: usize) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = czt_points(3,None,sci_complex::Complex{re:1.,im:0.})?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -192,7 +195,7 @@ pub fn czt_points(length: usize, w: Option<Complex>, a: Complex) -> Result<Vec<C
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = czt(&[sci_complex::Complex{re:1.,im:0.}],3,None,sci_complex::Complex{re:1.,im:0.})?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -251,7 +254,7 @@ pub fn czt(x: &[Complex], length: usize, w: Option<Complex>, a: Complex) -> Resu
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = zoom_fft(&[sci_complex::Complex{re:1.,im:0.}],0.,1.,3,2.,false)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -384,7 +387,7 @@ fn doubling(k: usize, nfft: usize) -> f64 {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = periodogram(&[1.,2.,3.],&[1.;3],3,1.,true,Scaling::Density)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -439,7 +442,7 @@ pub fn periodogram(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = csd(&[1.,2.,3.],&[3.,2.,1.],&[1.;3],0,3,1.,true,Scaling::Density)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -506,7 +509,7 @@ pub fn csd(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = welch(&[1.,2.,3.,4.],&[1.;2],1,2,1.,true,Scaling::Density)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -556,7 +559,7 @@ pub fn welch(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = coherence(&[1.,2.,3.,4.],&[4.,3.,2.,1.],&[1.;2],1,2,1.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -627,7 +630,7 @@ pub type ShortTimeSpectrum = (Vec<f64>, Vec<f64>, Vec<Vec<Complex>>);
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = spectrogram(&[1.,2.,3.,4.],&[1.;2],1,2,1.,true,Scaling::Density)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -689,7 +692,7 @@ pub fn spectrogram(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = stft(&[1.,2.,3.,4.],&[1.;2],1,2,1.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -776,7 +779,7 @@ pub fn stft(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = istft(&stft(&[1.,2.,3.,4.],&[1.;2],1,2,1.)?.2,&[1.;2],1,2,1.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -888,7 +891,7 @@ fn overlap_bins(window: &[f64], overlap: usize, squared: bool) -> Result<Vec<f64
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = check_cola(&[1.;4],2,1e-10)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -935,7 +938,7 @@ pub fn check_cola(window: &[f64], overlap: usize, tolerance: f64) -> Result<bool
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = check_nola(&[1.;4],2,1e-10)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -977,7 +980,7 @@ pub fn check_nola(window: &[f64], overlap: usize, tolerance: f64) -> Result<bool
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = lombscargle(&[0.,1.,2.],&[1.,2.,1.],&[1.],false,false)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

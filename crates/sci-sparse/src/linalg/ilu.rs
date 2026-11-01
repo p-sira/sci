@@ -25,7 +25,7 @@ impl SparseIlu {
     /// Two bounded sparse triangular solves; no residual refinement.
     /// # Examples
     /// ```
-    /// let lu=sci_sparse::linalg::spilu(&sci_sparse::identity(2)?,1e-4,2.)?;
+    /// let lu=sci_sparse::linalg::spilu(&sci_sparse::construct::identity(2)?,1e-4,2.)?;
     /// assert_eq!(lu.solve(&[2.,3.])?,[2.,3.]);
     /// # Ok::<(), sci_core::Error>(())
     /// ```
@@ -82,7 +82,7 @@ fn retain(row: &mut [f64], start: usize, end: usize, tol: f64, cap: usize) {
 /// Lower drop tolerances and larger fill generally improve approximation.
 /// # Examples
 /// ```
-/// let factor=sci_sparse::linalg::spilu(&sci_sparse::identity(3)?,0.,1.)?;
+/// let factor=sci_sparse::linalg::spilu(&sci_sparse::construct::identity(3)?,0.,1.)?;
 /// assert_eq!(factor.solve(&[1.,2.,3.])?,[1.,2.,3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

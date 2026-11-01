@@ -3,6 +3,9 @@
 //! Signal processing on one-dimensional real samples and shared complex values.
 //!
 //! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
+//! Numerical functions are grouped by family, including [`convolution`],
+//! [`filtering`], [`design`], [`spectral`], [`windows`], and [`systems`].
+//! The shared [`Mode`] type is available at the crate root.
 //!
 //! Functions use explicit parameters. Digital angular frequencies use
 //! radians/sample unless a sample rate is supplied; analog frequencies use
@@ -20,8 +23,8 @@
 //! # Example
 //!
 //! ```
-//! use sci_signal::{convolve, Mode};
-//! assert_eq!(convolve(&[1., 2.], &[1., -1.], Mode::Full)?, vec![1., 1., -2.]);
+//! use sci_signal::{convolution, Mode};
+//! assert_eq!(convolution::convolve(&[1., 2.], &[1., -1.], Mode::Full)?, vec![1., 1., -2.]);
 //! # Ok::<(), sci_core::Error>(())
 //! ```
 //!
@@ -33,7 +36,7 @@
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]
 
 use sci_core as error;
-pub use sci_core::{Error, Result};
+pub use sci_core::{Error, Mode, Result};
 mod complex {
     pub use sci_complex::*;
     pub(crate) fn native(z: Complex) -> num_complex::Complex64 {
@@ -46,4 +49,9 @@ mod complex {
 use sci_special as special;
 #[path = "mod.rs"]
 mod implementation;
-pub use implementation::*;
+// Public algorithms are organized by signal-processing family. Sibling
+// algorithms use private imports inside `implementation`.
+pub use implementation::{
+    advanced_design, convolution, design, filtering, fir, multidimensional, peaks, representations,
+    spectral, splines, systems, utilities, waveforms, windows,
+};

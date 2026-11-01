@@ -86,7 +86,7 @@ fn gcd(mut a: usize, mut b: usize) -> usize {
 /// ```
 /// let a: &[&[f64]] = &[&[0.,0.],&[1.,0.]];
 /// let b: &[&[f64]] = &[&[0.,1.],&[1.,1.]];
-/// assert_eq!(sci_stats::wasserstein_distance_nd(a,b)?,1.);
+/// assert_eq!(sci_stats::distances::wasserstein_distance_nd(a,b)?,1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

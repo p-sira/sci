@@ -32,7 +32,7 @@ mod vector_distance_benches {
             fn $name(bencher: Bencher) {
                 let u = values(N, 1);
                 let v = values(N, 2);
-                bencher.bench(|| spatial::$name(black_box(&u), black_box(&v), None).unwrap());
+                bencher.bench(|| spatial::distance::$name(black_box(&u), black_box(&v), None).unwrap());
             }
         )*};
     }
@@ -43,7 +43,7 @@ mod vector_distance_benches {
             fn $name(bencher: Bencher) {
                 let u = boolean(N, 1);
                 let v = boolean(N, 2);
-                bencher.bench(|| spatial::$name(black_box(&u), black_box(&v), None).unwrap());
+                bencher.bench(|| spatial::distance::$name(black_box(&u), black_box(&v), None).unwrap());
             }
         )*};
     }
@@ -66,7 +66,8 @@ mod vector_distance_benches {
         let u = values(N, 1);
         let v = values(N, 2);
         bencher.bench(|| {
-            spatial::minkowski(black_box(&u), black_box(&v), black_box(3.0), None).unwrap()
+            spatial::distance::minkowski(black_box(&u), black_box(&v), black_box(3.0), None)
+                .unwrap()
         });
     }
 
@@ -75,7 +76,8 @@ mod vector_distance_benches {
         let u = values(N, 1);
         let v = values(N, 2);
         bencher.bench(|| {
-            spatial::correlation(black_box(&u), black_box(&v), None, black_box(true)).unwrap()
+            spatial::distance::correlation(black_box(&u), black_box(&v), None, black_box(true))
+                .unwrap()
         });
     }
 
@@ -85,7 +87,8 @@ mod vector_distance_benches {
         let v = values(N, 2);
         let variance = positive_values(N, 3);
         bencher.bench(|| {
-            spatial::seuclidean(black_box(&u), black_box(&v), black_box(&variance)).unwrap()
+            spatial::distance::seuclidean(black_box(&u), black_box(&v), black_box(&variance))
+                .unwrap()
         });
     }
 
@@ -95,7 +98,7 @@ mod vector_distance_benches {
         let v = values(16, 2);
         let vi = spd_matrix(16);
         warm(bencher, || {
-            spatial::mahalanobis(black_box(&u), black_box(&v), black_box(&vi)).unwrap()
+            spatial::distance::mahalanobis(black_box(&u), black_box(&v), black_box(&vi)).unwrap()
         });
     }
 
@@ -104,7 +107,8 @@ mod vector_distance_benches {
         let p = positive_values(N, 1);
         let q = positive_values(N, 2);
         bencher.bench(|| {
-            spatial::jensenshannon(black_box(&p), black_box(&q), black_box(Some(2.0))).unwrap()
+            spatial::distance::jensenshannon(black_box(&p), black_box(&q), black_box(Some(2.0)))
+                .unwrap()
         });
     }
 
@@ -113,7 +117,8 @@ mod vector_distance_benches {
         let u = values(N, 1);
         let v = values(N, 2);
         bencher.bench(|| {
-            spatial::minkowski_distance(black_box(&u), black_box(&v), black_box(3.0)).unwrap()
+            spatial::distance::minkowski_distance(black_box(&u), black_box(&v), black_box(3.0))
+                .unwrap()
         });
     }
 
@@ -122,7 +127,8 @@ mod vector_distance_benches {
         let u = values(N, 1);
         let v = values(N, 2);
         bencher.bench(|| {
-            spatial::minkowski_distance_p(black_box(&u), black_box(&v), black_box(3.0)).unwrap()
+            spatial::distance::minkowski_distance_p(black_box(&u), black_box(&v), black_box(3.0))
+                .unwrap()
         });
     }
 }
@@ -133,7 +139,9 @@ mod pairwise_benches {
     #[divan::bench]
     fn pdist(bencher: Bencher) {
         let x = points(60, 3, 1);
-        bencher.bench(|| spatial::pdist(black_box(&x), spatial::Metric::Euclidean).unwrap());
+        bencher.bench(|| {
+            spatial::distance::pdist(black_box(&x), spatial::distance::Metric::Euclidean).unwrap()
+        });
     }
 
     #[divan::bench]
@@ -141,7 +149,12 @@ mod pairwise_benches {
         let x = points(40, 3, 1);
         let y = points(40, 3, 2);
         bencher.bench(|| {
-            spatial::cdist(black_box(&x), black_box(&y), spatial::Metric::Euclidean).unwrap()
+            spatial::distance::cdist(
+                black_box(&x),
+                black_box(&y),
+                spatial::distance::Metric::Euclidean,
+            )
+            .unwrap()
         });
     }
 
@@ -150,7 +163,8 @@ mod pairwise_benches {
         let x = points(40, 3, 1);
         let y = points(40, 3, 2);
         bencher.bench(|| {
-            spatial::distance_matrix(black_box(&x), black_box(&y), black_box(2.0)).unwrap()
+            spatial::distance::distance_matrix(black_box(&x), black_box(&y), black_box(2.0))
+                .unwrap()
         });
     }
 
@@ -158,7 +172,8 @@ mod pairwise_benches {
     fn directed_hausdorff(bencher: Bencher) {
         let u = points(50, 3, 1);
         let v = points(50, 3, 2);
-        bencher.bench(|| spatial::directed_hausdorff(black_box(&u), black_box(&v)).unwrap());
+        bencher
+            .bench(|| spatial::distance::directed_hausdorff(black_box(&u), black_box(&v)).unwrap());
     }
 }
 
@@ -166,51 +181,54 @@ mod distance_form_benches {
     use super::*;
 
     fn condensed() -> Vec<f64> {
-        spatial::pdist(&points(100, 3, 1), spatial::Metric::Euclidean).unwrap()
+        spatial::distance::pdist(&points(100, 3, 1), spatial::distance::Metric::Euclidean).unwrap()
     }
 
     fn square() -> Vec<Vec<f64>> {
         let x = points(100, 3, 1);
-        spatial::cdist(&x, &x, spatial::Metric::Euclidean).unwrap()
+        spatial::distance::cdist(&x, &x, spatial::distance::Metric::Euclidean).unwrap()
     }
 
     #[divan::bench]
     fn squareform_to_square(bencher: Bencher) {
         let y = condensed();
         bencher.bench(|| {
-            spatial::squareform(spatial::DistanceForm::Condensed(black_box(&y))).unwrap()
+            spatial::distance::squareform(spatial::distance::DistanceForm::Condensed(black_box(&y)))
+                .unwrap()
         });
     }
 
     #[divan::bench]
     fn squareform_to_condensed(bencher: Bencher) {
         let d = square();
-        bencher
-            .bench(|| spatial::squareform(spatial::DistanceForm::Square(black_box(&d))).unwrap());
+        bencher.bench(|| {
+            spatial::distance::squareform(spatial::distance::DistanceForm::Square(black_box(&d)))
+                .unwrap()
+        });
     }
 
     #[divan::bench]
     fn is_valid_dm(bencher: Bencher) {
         let d = square();
-        bencher.bench(|| spatial::is_valid_dm(black_box(&d), black_box(1e-12)));
+        bencher.bench(|| spatial::distance::is_valid_dm(black_box(&d), black_box(1e-12)));
     }
 
     #[divan::bench]
     fn is_valid_y(bencher: Bencher) {
         let y = condensed();
-        bencher.bench(|| spatial::is_valid_y(black_box(&y)));
+        bencher.bench(|| spatial::distance::is_valid_y(black_box(&y)));
     }
 
     #[divan::bench]
     fn num_obs_dm(bencher: Bencher) {
         let d = square();
-        bencher.bench(|| spatial::num_obs_dm(black_box(&d)).unwrap());
+        bencher.bench(|| spatial::distance::num_obs_dm(black_box(&d)).unwrap());
     }
 
     #[divan::bench]
     fn num_obs_y(bencher: Bencher) {
         let y = condensed();
-        bencher.bench(|| spatial::num_obs_y(black_box(&y)).unwrap());
+        bencher.bench(|| spatial::distance::num_obs_y(black_box(&y)).unwrap());
     }
 }
 
@@ -224,7 +242,7 @@ mod geometry_benches {
         let end = [0.0, s, s];
         let t = linspace(0.0, 1.0, 200);
         bencher.bench(|| {
-            spatial::geometric_slerp(
+            spatial::transform::geometric_slerp(
                 black_box(&start),
                 black_box(&end),
                 black_box(&t),
@@ -251,7 +269,7 @@ mod geometry_benches {
             })
             .collect();
         warm(bencher, || {
-            spatial::procrustes(black_box(&a), black_box(&b)).unwrap()
+            spatial::transform::procrustes(black_box(&a), black_box(&b)).unwrap()
         });
     }
 
@@ -277,7 +295,7 @@ mod geometry_benches {
             .map(|p| p.iter().map(|v| 0.5 * (v + 1.0)).collect())
             .collect();
         warm(bencher, || {
-            spatial::tsearch(
+            spatial::transform::tsearch(
                 black_box(&vertices),
                 black_box(&simplices),
                 black_box(&queries),
