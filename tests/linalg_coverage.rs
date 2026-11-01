@@ -238,6 +238,53 @@ fn principal_functions_validate_callbacks_and_singular_branches() {
 }
 
 #[test]
+fn principal_logarithm_matches_analytic_triangular_identities() {
+    // The off-diagonal logarithm of [[a,b],[0,d]] is the first divided
+    // difference b * (ln(a)-ln(d))/(a-d). Test without and with inverse scaling.
+    for (a, b, d) in [(1.1_f64, 0.075, 1.25), (4., 1.5, 9.)] {
+        let log = l::logm(&[[a, b], [0., d]]).unwrap();
+        let expected = [[a.ln(), b * (a.ln() - d.ln()) / (a - d)], [0., d.ln()]];
+        for i in 0..2 {
+            for j in 0..2 {
+                assert!(
+                    (log[i][j].re - expected[i][j]).abs() < 3e-11,
+                    "logm entry ({i}, {j}) for a={a}, d={d}: {:?}",
+                    log[i][j]
+                );
+                assert!(log[i][j].im.abs() < 3e-11);
+            }
+        }
+    }
+
+    // A = I + N with N^3 = 0: log(A) = N - N^2/2 and
+    // A^(1/2) = I + N/2 - N^2/8, independently of quadrature.
+    let jordan = [[1., 0.3, 0.], [0., 1., 0.2], [0., 0., 1.]];
+    let cases = [
+        (
+            l::logm(&jordan).unwrap(),
+            [[0., 0.3, -0.03], [0., 0., 0.2], [0., 0., 0.]],
+        ),
+        (
+            l::fractional_matrix_power(&jordan, 0.5).unwrap(),
+            [[1., 0.15, -0.0075], [0., 1., 0.1], [0., 0., 1.]],
+        ),
+    ];
+    for (actual, expected) in cases {
+        for i in 0..3 {
+            for j in 0..3 {
+                assert!(
+                    (actual[i][j].re - expected[i][j]).abs() < 3e-11,
+                    "entry ({i}, {j}): {:?} vs {}",
+                    actual[i][j],
+                    expected[i][j]
+                );
+                assert!(actual[i][j].im.abs() < 3e-11);
+            }
+        }
+    }
+}
+
+#[test]
 fn structured_work_limits_and_matrix_equation_overflow_are_explicit() {
     let long = vec![1.; 257];
     for result in [
