@@ -1,4 +1,5 @@
 use crate::{Error, Matrix, Result, SparseMatrix, VALUES, bounded_read};
+use sci_core::csr;
 use std::io::{Read, Write};
 
 /// A real Matrix Market matrix, with explicit dense shape or shared CSR storage.
@@ -170,14 +171,14 @@ pub fn mminfo(reader: impl Read) -> Result<MatrixMarketInfo> {
 /// Symmetric coordinates must lie in the lower triangle; skew diagonals are zero.
 /// # Returns
 /// [`MarketMatrix`]; off-diagonal triangular entries are reflected, negated for
-/// skew symmetry. Duplicate coordinates are summed in input order by Sci sparse.
+/// skew symmetry. Duplicate coordinates are summed in input order by shared CSR.
 /// # Errors
 /// Invalid/truncated/excess data, unsupported complex or large integer fields,
 /// invalid indices/symmetry, I/O failure, >64 MiB bytes, or more than 1,000,000
 /// dense cells, coordinate records, or expanded sparse entries.
 /// # Numerical behavior
 /// Real text is rounded to nearest f64; dense reordering is exact. Sparse duplicate
-/// addition follows [`sci_sparse::from_coo`]. Comments and blank lines are skipped.
+/// addition follows [`sci_core::csr::from_coo`]. Comments and blank lines are skipped.
 /// # Examples
 /// ```
 /// let a = sci_io::mmread(&b"%%MatrixMarket matrix coordinate real general\n1 1 1\n1 1 3\n"[..])?;
@@ -237,7 +238,7 @@ pub fn mmread(reader: impl Read) -> Result<MarketMatrix> {
         if records.next().is_some() {
             return Err(invalid());
         }
-        return Ok(MarketMatrix::Sparse(sci_sparse::from_coo(
+        return Ok(MarketMatrix::Sparse(csr::from_coo(
             h.rows,
             h.cols,
             &coordinates,
@@ -320,7 +321,7 @@ pub fn mmwrite(mut writer: impl Write, a: &MarketMatrix) -> Result<()> {
             }
         }
         MarketMatrix::Sparse(a) => {
-            sci_sparse::validate(a)?;
+            csr::validate(a)?;
             writeln!(
                 writer,
                 "%%MatrixMarket matrix coordinate real general\n{} {} {}",
@@ -358,7 +359,7 @@ impl MarketMatrix {
                         "shared rows cannot represent shape (0,n)",
                     ));
                 }
-                Ok(sci_sparse::to_dense(a)?)
+                Ok(csr::to_dense(a)?)
             }
             Self::Dense { rows, cols, data } => {
                 if *rows > VALUES
@@ -378,5 +379,141 @@ impl MarketMatrix {
                     .collect())
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn matrix_market_sparse_duplicates_sorting_and_bitwise_round_trip() {
+        // Reading coordinate input must preserve original duplicate order
+        // after stable sorting; 1e16 + (-1e16) + 1 differs from other orders.
+        let input = b"%%MatrixMarket matrix coordinate real general\n2 3 7\n2 3 -0\n1 2 10000000000000000\n1 3 5e-324\n1 2 -10000000000000000\n1 2 1\n2 1 -2\n2 1 2\n";
+        let MarketMatrix::Sparse(a) = mmread(input.as_slice()).unwrap() else {
+            panic!("expected sparse matrix");
+        };
+        assert_eq!((a.rows, a.cols), (2, 3));
+        assert_eq!(a.indptr, [0, 2, 4]);
+        assert_eq!(a.indices, [1, 2, 0, 2]);
+        assert_eq!(a.data, [1.0, f64::from_bits(1), 0.0, -0.0]);
+        assert_eq!(a.data[3].to_bits(), (-0.0f64).to_bits());
+        assert_eq!(a.data[1].to_bits(), 1);
+
+        let market = MarketMatrix::Sparse(a.clone());
+        let rows = market.to_matrix().unwrap();
+        assert_eq!(rows, [vec![0., 1., f64::from_bits(1)], vec![0., 0., -0.]]);
+        assert_eq!(rows[1][2].to_bits(), (-0.0f64).to_bits());
+        assert_eq!(rows[0][0].to_bits(), 0.0f64.to_bits());
+        let mut written = Vec::new();
+        mmwrite(&mut written, &market).unwrap();
+        let MarketMatrix::Sparse(reloaded) = mmread(written.as_slice()).unwrap() else {
+            panic!("expected sparse matrix");
+        };
+        assert_eq!(reloaded, a);
+        assert_eq!(
+            reloaded
+                .data
+                .iter()
+                .map(|v| v.to_bits())
+                .collect::<Vec<_>>(),
+            a.data.iter().map(|v| v.to_bits()).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn matrix_market_symmetry_and_dense_special_values() {
+        let skew = b"%%MatrixMarket matrix coordinate real skew-symmetric\n2 2 1\n2 1 -0\n";
+        let MarketMatrix::Sparse(a) = mmread(skew.as_slice()).unwrap() else {
+            panic!("expected sparse matrix");
+        };
+        assert_eq!(a.indptr, [0, 1, 2]);
+        assert_eq!(a.indices, [1, 0]);
+        assert_eq!(a.data[0].to_bits(), 0.0f64.to_bits());
+        assert_eq!(a.data[1].to_bits(), (-0.0f64).to_bits());
+
+        let symmetric =
+            b"%%MatrixMarket matrix coordinate integer symmetric\n2 2 1\n2 1 9007199254740992\n";
+        let MarketMatrix::Sparse(a) = mmread(symmetric.as_slice()).unwrap() else {
+            panic!("expected sparse matrix");
+        };
+        assert_eq!(a.data, [9_007_199_254_740_992.0; 2]);
+
+        let dense = b"%%MatrixMarket matrix array real general\n2 2\nnan\n-inf\n-0\ninf\n";
+        let MarketMatrix::Dense { rows, cols, data } = mmread(dense.as_slice()).unwrap() else {
+            panic!("expected dense matrix");
+        };
+        assert_eq!((rows, cols), (2, 2));
+        assert!(data[0].is_nan());
+        assert_eq!(data[1].to_bits(), (-0.0f64).to_bits());
+        assert_eq!(data[2], f64::NEG_INFINITY);
+        assert_eq!(data[3], f64::INFINITY);
+        let mut written = Vec::new();
+        mmwrite(&mut written, &MarketMatrix::Dense { rows, cols, data }).unwrap();
+        let MarketMatrix::Dense {
+            data: round_trip, ..
+        } = mmread(written.as_slice()).unwrap()
+        else {
+            panic!("expected dense matrix");
+        };
+        assert!(round_trip[0].is_nan());
+        assert_eq!(round_trip[1].to_bits(), (-0.0f64).to_bits());
+        assert_eq!(round_trip[2], f64::NEG_INFINITY);
+        assert_eq!(round_trip[3], f64::INFINITY);
+    }
+
+    #[test]
+    fn matrix_market_shared_csr_error_mapping_is_unchanged() {
+        let overflow =
+            b"%%MatrixMarket matrix coordinate real general\n1 1 2\n1 1 1e308\n1 1 1e308\n";
+        assert!(matches!(
+            mmread(overflow.as_slice()),
+            Err(Error::Numerical(sci_core::Error::NonFiniteEvaluation))
+        ));
+        for invalid in [
+            "%%MatrixMarket matrix coordinate real general\n1 1 1\n1 1 nan\n",
+            "%%MatrixMarket matrix coordinate real general\n1 1 1\n1 1 inf\n",
+        ] {
+            assert!(matches!(
+                mmread(invalid.as_bytes()),
+                Err(Error::Numerical(sci_core::Error::InvalidInput(
+                    "invalid sparse coordinate or nonfinite value"
+                )))
+            ));
+        }
+        let too_precise =
+            b"%%MatrixMarket matrix coordinate integer general\n1 1 1\n1 1 9007199254740993\n";
+        assert!(matches!(
+            mmread(too_precise.as_slice()),
+            Err(Error::Unsupported(
+                "Matrix Market integers outside ±2^53 require typed storage"
+            ))
+        ));
+
+        let invalid = SparseMatrix {
+            rows: 1,
+            cols: 2,
+            indptr: vec![0, 1],
+            indices: vec![1],
+            data: vec![f64::NAN],
+        };
+        let mut written = Vec::new();
+        assert!(matches!(
+            mmwrite(&mut written, &MarketMatrix::Sparse(invalid)),
+            Err(Error::Numerical(sci_core::Error::InvalidInput(
+                "coordinates must be finite"
+            )))
+        ));
+        assert!(written.is_empty());
+
+        let empty_rows = b"%%MatrixMarket matrix coordinate real general\n0 2 0\n";
+        let matrix = mmread(empty_rows.as_slice()).unwrap();
+        assert!(matches!(
+            matrix.to_matrix(),
+            Err(Error::Unsupported(
+                "shared rows cannot represent shape (0,n)"
+            ))
+        ));
     }
 }

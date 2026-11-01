@@ -12,12 +12,11 @@ include = ["/src/**", "/LICENSE"]
 
 [features]
 default = ["matrix-market", "wav", "matlab"]
-matrix-market = ["dep:sci-sparse"]
+matrix-market = []
 wav = ["dep:hound"]
 matlab = ["dep:flate2"]
 
 [dependencies]
 sci-core.workspace = true
-sci-sparse = { workspace = true, optional = true }
 hound = { workspace = true, optional = true }
 flate2 = { workspace = true, optional = true }

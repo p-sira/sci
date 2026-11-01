@@ -12,6 +12,9 @@
 
 use std::fmt;
 
+/// Bounded construction, validation, and conversion of shared CSR matrices.
+pub mod csr;
+
 /// Floating-point arithmetic bound, following the ellip convention.
 ///
 /// Implemented by `f32` and `f64`; generic algorithms compute in the selected
@@ -153,7 +156,7 @@ pub enum Mode {
 /// nondecreasing, has `rows + 1` entries, and ends at `data.len()`.
 /// `indices.len() == data.len()`, and every column is less than `cols`.
 /// Sparse numerical APIs validate these public fields, finite values, and
-/// their documented work limits before use. Use `sci_sparse::from_coo` or
+/// their documented work limits before use. Use [`csr::from_coo`] or
 /// `sci_sparse::from_csr` to construct canonical matrices.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SparseMatrix<T = f64> {

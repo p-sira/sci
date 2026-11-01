@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Read and write Matrix Market sparse matrices through shared `sci-core::csr`
+  operations, removing the `sci-sparse` dependency without changing the
+  canonical CSR representation, validation or error mapping.
+
 ## 0.2.0
 
 - Update shared Sci dependency requirements to the new minor versions.

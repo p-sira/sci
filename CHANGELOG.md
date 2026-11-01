@@ -2,6 +2,12 @@
 
 ## 0.3.0 (unreleased)
 
+- Remove the dependency of Matrix Market I/O on sparse solvers by sharing
+  canonical CSR construction, validation, and dense conversion in `sci-core`.
+  Remove `sci-cluster`'s dependencies on statistics and spatial backends by
+  preserving its bounded population standard deviation and Euclidean distance
+  operations locally. Public numerical behavior and formats remain unchanged.
+
 - Extend the pure Rust special-function backend with complex Lambert W branches,
   exponential integrals E₁/Ei, Spence/dilogarithm, stable `xlogy`/`xlog1py`,
   and bounded complex Riemann/Hurwitz zeta evaluation. Validate f32/f64

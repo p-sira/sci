@@ -23,6 +23,96 @@ fn shape(data: &[Vec<f64>]) -> Result<usize> {
     Ok(columns)
 }
 
+// Keep the sign-balanced compensated mean used by the shared statistics
+// implementation. Centering scaled deviations, rather than the observations,
+// avoids overflow and preserves differences at large common offsets.
+fn centered_mean(values: &[f64]) -> Result<f64> {
+    let mut positive = values.iter().copied().filter(|x| *x >= 0.0);
+    let mut negative = values.iter().copied().filter(|x| *x < 0.0);
+    let (mut sum, mut correction) = (0_f64, 0_f64);
+    loop {
+        let term = if sum >= 0.0 {
+            negative.next().or_else(|| positive.next())
+        } else {
+            positive.next().or_else(|| negative.next())
+        };
+        let Some(term) = term else {
+            let total = sum + correction;
+            return match if total.is_finite() {
+                total / values.len() as f64
+            } else {
+                sum / values.len() as f64 + correction / values.len() as f64
+            } {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            };
+        };
+        let next = sum + term;
+        if !next.is_finite() {
+            break;
+        }
+        correction += if sum.abs() >= term.abs() {
+            (sum - next) + term
+        } else {
+            (term - next) + sum
+        };
+        sum = next;
+    }
+    let scale = values.iter().fold(0_f64, |m, x| m.max(x.abs()));
+    if scale == 0.0 {
+        return Ok(0.0);
+    }
+    let n = values.len() as f64;
+    let (mut sum, mut correction) = (0_f64, 0_f64);
+    for &x in values {
+        let term = (x / scale) / n;
+        let next = sum + term;
+        correction += if sum.abs() >= term.abs() {
+            (sum - next) + term
+        } else {
+            (term - next) + sum
+        };
+        sum = next;
+    }
+    match (sum + correction).clamp(-1.0, 1.0) * scale {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
+}
+
+// Population standard deviation of an already validated column. Reuse the
+// deviation buffer across columns to avoid repeated allocation in `whiten`.
+fn population_std(values: &[f64], deviations: &mut Vec<f64>) -> Result<f64> {
+    let origin = values[0];
+    deviations.clear();
+    deviations.extend(values.iter().map(|&x| x - origin));
+    let mut scale = deviations.iter().fold(0_f64, |s, x| s.max(x.abs()));
+    if !scale.is_finite() {
+        scale = values.iter().fold(0_f64, |s, x| s.max(x.abs()));
+        for (y, x) in deviations.iter_mut().zip(values) {
+            *y = *x / scale;
+        }
+    } else if scale == 0.0 {
+        return Ok(0.0);
+    } else {
+        for y in deviations.iter_mut() {
+            *y /= scale;
+        }
+    }
+    let center = centered_mean(deviations)?;
+    for y in deviations.iter_mut() {
+        *y -= center;
+    }
+    let normalized = deviations
+        .iter()
+        .map(|x| x.powi(2) / values.len() as f64)
+        .fold(0.0, |a, b| a + b);
+    match normalized.sqrt() * scale {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
+}
+
 fn validate(obs: &[Vec<f64>], codes: &[Vec<f64>], iterations: usize) -> Result<()> {
     let d = shape(obs)?;
     if shape(codes)? != d {
@@ -152,7 +242,8 @@ pub fn vq(obs: &[Vec<f64>], code_book: &[Vec<f64>]) -> Result<(Vec<usize>, Vec<f
 /// Invalid/nonfinite inputs, ragged rows, or nonfinite numerical results.
 /// ## Numerical behavior
 ///
-/// Uses shared [`sci_stats::std`]; two passes per column plus scaling.
+/// Uses a private, scaled population variance with a compensated mean; two
+/// passes per column plus scaling, with scratch buffers reused between columns.
 /// Extreme finite inputs can overflow the variance calculation and return errors.
 /// # Examples
 ///
@@ -165,10 +256,13 @@ pub fn vq(obs: &[Vec<f64>], code_book: &[Vec<f64>]) -> Result<(Vec<usize>, Vec<f
 /// [SciPy whiten](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.vq.whiten.html).
 pub fn whiten(obs: &[Vec<f64>]) -> Result<Vec<Vec<f64>>> {
     let columns = shape(obs)?;
+    let mut column = Vec::with_capacity(obs.len());
+    let mut deviations = Vec::with_capacity(obs.len());
     let scales: Vec<f64> = (0..columns)
         .map(|j| {
-            let column: Vec<f64> = obs.iter().map(|row| row[j]).collect();
-            let scale = match crate::stats::std(&column, 0)? {
+            column.clear();
+            column.extend(obs.iter().map(|row| row[j]));
+            let scale = match population_std(&column, &mut deviations)? {
                 value if value.is_finite() => Ok(value),
                 _ => Err(Error::NonFiniteEvaluation),
             }?;
