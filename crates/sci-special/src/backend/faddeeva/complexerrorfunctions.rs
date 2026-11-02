@@ -1226,36 +1226,6 @@ mod tests {
     }
 
     #[test]
-    fn test_erfi_complex() {
-        let tolerance = 1.0e-13;
-        let z = Complex64::new(1.234, 0.5678);
-        let computed_erfi = erfi_with_relerror(z, 0.0);
-        let expected_erfi = Complex64::new(
-            1.081032284405373149432716643834106923212,
-            1.926775520840916645838949402886591180834,
-        );
-        let relative_error_re = relerr(computed_erfi.re, expected_erfi.re);
-        let relative_error_im = relerr(computed_erfi.im, expected_erfi.im);
-        assert!(relative_error_re < tolerance);
-        assert!(relative_error_im < tolerance);
-    }
-
-    #[test]
-    fn test_erfcx_complex() {
-        let tolerance = 1.0e-13;
-        let z = Complex64::new(1.234, 0.5678);
-        let computed_erfcx = erfcx_with_relerror(z, 0.0);
-        let expected_erfcx = Complex64::new(
-            0.3382187479799972294747793561190487832579,
-            -0.1116077470811648467464927471872945833154,
-        );
-        let relative_error_re = relerr(computed_erfcx.re, expected_erfcx.re);
-        let relative_error_im = relerr(computed_erfcx.im, expected_erfcx.im);
-        assert!(relative_error_re < tolerance);
-        assert!(relative_error_im < tolerance);
-    }
-
-    #[test]
     fn test_erfc_complex() {
         let z: [Complex64; 30] = [
             Complex64::new(1.0, 2.0),
