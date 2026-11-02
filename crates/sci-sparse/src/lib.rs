@@ -9,17 +9,18 @@
 //! 20,000,000 total input rows. Empty axes are supported.
 //!
 //! Shared [`SparseArray`] COO storage supports rank 1..32 and axis operations.
-//! Optional graph algorithms, iterative solves, spectral decompositions, matrix
-//! functions, random sampling, and NPZ interchange cover the modern SciPy function
+//! Optional iterative solves, spectral decompositions, matrix functions,
+//! random sampling, and NPZ interchange cover the modern SciPy function
 //! inventory through documented Rust adaptations. Spectral and iterative axes are bounded
 //! at 256; spectral routines use dense fallbacks. Python mutable storage classes,
 //! deprecated compatibility namespaces and legacy solver controls are excluded.
-//! Private faer, petgraph, lapjv, RNG and ZIP backends do not appear in the API.
+//! Private faer, RNG and ZIP backends do not appear in the API.
 //! See the repository's sparse coverage report for signature and work limits.
-//! Defaults enable `full` (the `solver`, `graph`, and `random` backends) and `npz`.
+//! Defaults enable `full` (the `solver` and `random` features) and `npz`.
 //! Disable defaults for lightweight CSR/COO construction and arithmetic with only
 //! `sci-core`; opt into each backend independently. The Sci facade's `sparse`
-//! feature retains the full API, and `sparse-npz` additionally enables NPZ I/O.
+//! feature enables sparse solvers and sampling, and `sparse-npz` adds NPZ I/O.
+//! Graph algorithms live exclusively in `sci-graph` (`sci::graph` in the facade).
 //!
 //! ```
 //! use sci_sparse::{construct::from_coo, operations::matvec};
@@ -37,9 +38,6 @@ pub use sci_core::{Error, Matrix, Result, SparseArray, SparseMatrix};
 pub mod array;
 /// Sparse matrix constructors and format conversion.
 pub mod construct;
-#[cfg(feature = "graph")]
-/// Algorithms for weighted graphs represented by CSR matrices.
-pub mod csgraph;
 #[cfg(feature = "npz")]
 /// Sparse NPZ serialization and deserialization.
 pub mod io;
@@ -49,7 +47,7 @@ pub mod linalg;
 /// CSR validation, arithmetic, structural transforms, and multiplication.
 pub mod operations;
 
-// Private names used by the existing in-crate graph, array, and solver backends.
+// Private names used by the array and solver implementations.
 use construct::from_coo;
 #[cfg(feature = "npz")]
 use construct::from_csr;

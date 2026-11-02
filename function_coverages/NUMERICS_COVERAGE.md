@@ -192,7 +192,7 @@ RUSTDOCFLAGS='-D warnings' cargo doc --no-deps
 ## Wider remaining scope
 
 Full public SciPy coverage remains incomplete. Entire namespaces still absent
-include `sparse` (including graph and sparse linear algebra), `ndimage`, `odr`,
+include `sparse` (including sparse linear algebra), `graph`, `ndimage`, `odr`,
 `io` and `datasets`. The ten distinct FFTPACK periodic operators live in `fft`;
 four lower-level kernel/cache names remain absent (see
 [FFT_COVERAGE.md](FFT_COVERAGE.md)). `optimize` has seven tested main-namespace names (see

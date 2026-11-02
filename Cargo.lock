@@ -1473,6 +1473,7 @@ dependencies = [
  "sci-differentiate",
  "sci-fft",
  "sci-filter",
+ "sci-graph",
  "sci-integrate",
  "sci-interpolate",
  "sci-io",
@@ -1554,6 +1555,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "sci-graph"
+version = "0.1.0"
+dependencies = [
+ "lapjv",
+ "ndarray 0.16.1",
+ "petgraph",
+ "sci-core",
+]
+
+[[package]]
 name = "sci-integrate"
 version = "0.3.0"
 dependencies = [
@@ -1628,9 +1639,6 @@ dependencies = [
  "dyn-stack",
  "faer",
  "flate2",
- "lapjv",
- "ndarray 0.16.1",
- "petgraph",
  "rand 0.9.5",
  "sci-complex",
  "sci-core",

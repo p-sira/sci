@@ -66,7 +66,7 @@ libclang is needed.
 | Area | Modules and Cargo features |
 | --- | --- |
 | Numerical methods | [`differentiate`](https://docs.rs/sci-differentiate), [`integrate`](https://docs.rs/sci-integrate), [`interpolate`](https://docs.rs/sci-interpolate), [`optimize`](https://docs.rs/sci-optimize) |
-| Data analysis | [`filter`](https://docs.rs/sci-filter), [`cluster`](https://docs.rs/sci-cluster), [`linalg`](https://docs.rs/sci-linalg), [`sparse`](https://docs.rs/sci-sparse), [`spatial`](https://docs.rs/sci-spatial), [`stats`](https://docs.rs/sci-stats) |
+| Data analysis | [`filter`](https://docs.rs/sci-filter), [`cluster`](https://docs.rs/sci-cluster), [`graph`](https://docs.rs/sci-graph), [`linalg`](https://docs.rs/sci-linalg), [`sparse`](https://docs.rs/sci-sparse), [`spatial`](https://docs.rs/sci-spatial), [`stats`](https://docs.rs/sci-stats) |
 | Transforms and signals | [`fft`](https://docs.rs/sci-fft), [`signal`](https://docs.rs/sci-signal) |
 | Scientific file formats | [`io`](https://docs.rs/sci-io) |
 | Mathematical functions | [`complex`](https://docs.rs/sci-complex), [`constants`](https://docs.rs/sci-constants), [`special`](https://docs.rs/sci-special) |
@@ -74,7 +74,7 @@ libclang is needed.
 Scientific I/O supports Matrix Market, WAV and a documented dense numeric MATLAB subset.
 
 Linear algebra accepts shared rows and faer, ndarray, or nalgebra storage.
-Sparse operations use shared CSR/COO storage, with graph algorithms, direct and iterative solves, spectral routines, and NPZ interchange.
+Sparse operations use shared CSR/COO storage, with direct and iterative solves, spectral routines, and NPZ interchange. Graph algorithms live in `sci-graph` and accept shared CSR adjacency matrices, without requiring `sci-sparse`.
 
 ## Documentation
 

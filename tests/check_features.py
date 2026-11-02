@@ -64,7 +64,7 @@ def check_isolation(label, args, excluded):
 
 def main(selected):
     modules, adapters = validate_features()
-    sparse_features = {"core": None, "solver": "solver", "graph": "graph", "random": "random", "npz": "npz"}
+    sparse_features = {"core": None, "solver": "solver", "random": "random", "npz": "npz"}
     sparse_labels = {f"crate-sparse-{feature}" for feature in sparse_features}
     available = {"default", "core", *modules, *adapters, *sparse_labels}
     unknown = set(selected) - available
@@ -85,16 +85,16 @@ def main(selected):
         "io-matlab": domains - {"sci-io"} | {"hound", "zip"},
         "fft": {"sci-special"},
         "fft-hankel": {"sci-special"},
-        "sparse": {"zip", "flate2"},  # NPZ is a separate opt-in feature.
+        "sparse": {"zip", "flate2", "sci-graph", "petgraph", "lapjv"},
+        "graph": {"sci-sparse", "faer", "zip", "flate2"},
     }
-    # One distinct backend per sparse family is enough to catch accidentally
-    # enabling optional solver/graph/random/archive subsystems.
+    # Enforce graph isolation from every sparse configuration; keep optional
+    # solver, random and archive backends independently selectable.
     sparse_excluded = {
-        "core": {"faer", "petgraph", "rand", "zip"},
-        "solver": {"petgraph", "rand", "zip"},
-        "graph": {"faer", "rand", "zip"},
-        "random": {"faer", "petgraph", "zip"},
-        "npz": {"faer", "petgraph", "rand"},
+        "core": {"faer", "sci-graph", "petgraph", "rand", "zip"},
+        "solver": {"sci-graph", "petgraph", "rand", "zip"},
+        "random": {"faer", "sci-graph", "petgraph", "zip"},
+        "npz": {"faer", "sci-graph", "petgraph", "rand"},
     }
 
     for label in selected:
