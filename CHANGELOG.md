@@ -2,6 +2,9 @@
 
 ## 0.3.0 (unreleased)
 
+- Fix `complex::powf` and `complex::powc` on exact real-axis integer powers:
+  return mathematically zero imaginary components, preserve signed-zero limits,
+  and avoid phase-rounding artifacts for nearby tiny imaginary inputs.
 - Correct three numerical discrepancies found by the independent
   `sci-testing` 0.3 accuracy snapshot: resolve binary64 Newton cycles in
   `special::gamma::digammainv`, avoid large-logarithm cancellation in nearby

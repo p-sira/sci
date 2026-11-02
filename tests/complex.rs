@@ -125,6 +125,79 @@ fn domains_and_signed_zero_conventions() {
     }
 }
 
+#[test]
+fn real_axis_integer_powers_have_exact_imaginary_zero() {
+    // The imaginary sign is determined by the one-sided derivative
+    // n*x^(n-1), even on the negative-real branch cut.
+    for (real, exponent, expected_real, reverse_zero) in [
+        (-2.0, 2.0, 4.0, true),
+        (-2.0, -2.0, 0.25, false),
+        (-2.0, 3.0, -8.0, false),
+        (-2.0, -3.0, -0.125, true),
+        (2.0, -3.0, 0.125, true),
+        (-1.0, 1e20, 1.0, true),
+    ] {
+        for imaginary in [0.0_f64, -0.0] {
+            let z = Complex {
+                re: real,
+                im: imaginary,
+            };
+            let expected_negative_zero = imaginary.is_sign_negative() != reverse_zero;
+            for output in [
+                c::powf(z, exponent),
+                c::powc(
+                    z,
+                    Complex {
+                        re: exponent,
+                        im: 0.0,
+                    },
+                ),
+            ] {
+                assert_eq!(output.re, expected_real);
+                assert_eq!(output.im, 0.0);
+                assert_eq!(output.im.is_sign_negative(), expected_negative_zero);
+            }
+        }
+    }
+    for output in [
+        c::powf(
+            Complex {
+                re: 1e200_f64,
+                im: -0.0,
+            },
+            2.0,
+        ),
+        c::powc(
+            Complex {
+                re: -1e200_f64,
+                im: -0.0,
+            },
+            Complex { re: 2.0, im: 0.0 },
+        ),
+    ] {
+        assert!(output.re.is_infinite());
+        assert_eq!(output.im, 0.0);
+    }
+
+    // A tiny nonzero imaginary part must survive instead of picking up
+    // the much larger sine-roundoff residue at an integer multiple of pi.
+    for imaginary in [1e-300_f64, -1e-300] {
+        let z = Complex {
+            re: -2.0,
+            im: imaginary,
+        };
+        let expected = -4.0 * imaginary;
+        assert_eq!(c::powf(z, 2.0).im, expected);
+        assert_eq!(c::powc(z, Complex { re: 2.0, im: 0.0 }).im, expected);
+    }
+    let z32 = Complex {
+        re: -2.0_f32,
+        im: -0.0_f32,
+    };
+    assert_eq!(c::powf(z32, 2.0).re, 4.0);
+    assert_eq!(c::powf(z32, 2.0).im, 0.0);
+}
+
 fn complex_close(a: Complex, b: Complex) {
     assert_nonzero_close(a.re, b.re, 3e-14, 1e-6, "identity real");
     assert_nonzero_close(a.im, b.im, 3e-14, 1e-6, "identity imaginary");

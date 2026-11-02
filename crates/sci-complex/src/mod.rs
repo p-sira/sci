@@ -1497,8 +1497,10 @@ pub fn atanh<T: Float>(z: Complex<T>) -> Complex<T> {
 /// An overflowing radial power uses the scaled logarithm and exponential to
 /// preserve representable components. Half powers reuse the principal square
 /// root; a first-order near-positive-axis limit preserves tiny imaginary parts.
-/// Exponent one returns the input exactly. Work is constant; phase reduction, rounding,
-/// true overflow, and underflow still limit accuracy.
+/// Exponent one returns the input exactly. Integer powers of real-axis inputs
+/// have an exactly zero imaginary component; a near-axis limit also avoids
+/// phase-rounding errors for tiny imaginary parts. Work is constant; phase
+/// reduction, rounding, true overflow, and underflow still limit accuracy.
 ///
 /// # Examples
 ///
@@ -1533,6 +1535,16 @@ pub fn powf<T: Float>(z: Complex<T>, exponent: T) -> Complex<T> {
         if exponent == -0.5 {
             return reciprocal(sqrt(z));
         }
+        if z.im == 0.0 && exponent == exponent.trunc() {
+            // sin(n*pi) is generally not zero in floating-point arithmetic.
+            // The imaginary signed zero follows the one-sided derivative
+            // n*x^(n-1), including the negative-real-axis branch banks.
+            let reverse_zero = (exponent < 0.0) != (z.re < 0.0 && exponent % 2.0 == 0.0);
+            return Complex {
+                re: z.re.powf(exponent),
+                im: if reverse_zero { -z.im } else { z.im },
+            };
+        }
         let magnitude = abs(z);
         let radius = if magnitude.is_finite() {
             magnitude.powf(exponent)
@@ -1553,13 +1565,16 @@ pub fn powf<T: Float>(z: Complex<T>, exponent: T) -> Complex<T> {
                 im: exponent * logarithm.im,
             })
         };
-        if z.re > 0.0 && z.im.abs() <= T::epsilon() * z.re / exponent.abs().max(1.0) {
+        if z.re != 0.0
+            && (z.re > 0.0 || exponent == exponent.trunc())
+            && z.im.abs() <= T::epsilon() * z.re.abs() / exponent.abs().max(1.0)
+        {
             // The phase may underflow even when the final component is finite.
-            // Bound the powered phase too; the first-order error is O(eps²).
+            // For integer powers, sin(n*pi) also has a rounding residue on
+            // the negative real axis. The first-order error is O(eps²).
             let derivative = z.re.powf(exponent - 1.0);
             let numerator = exponent * z.im;
             if derivative.is_finite()
-                && derivative > 0.0
                 && numerator.is_finite()
                 && (numerator != 0.0 || z.im == 0.0 || exponent == 0.0)
             {
