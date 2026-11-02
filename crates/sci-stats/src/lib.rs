@@ -36,7 +36,7 @@
 //!
 //! ## Acknowledgments
 //!
-//! We thank `nalgebra`, `statrs`, `basin`,
+//! We thank `nalgebra`, `statrs`,
 //! `lapjv`, `ndarray`, and SciPy (BSD-3-Clause) for their statistical and
 //! numerical building blocks.
 

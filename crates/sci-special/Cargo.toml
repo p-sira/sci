@@ -19,7 +19,6 @@ numeric_literals.workspace = true
 sci-core.workspace = true
 sci-complex.workspace = true
 ellip.workspace = true
-nalgebra.workspace = true
 num-complex.workspace = true
 complex-bessel.workspace = true
 lambert_w = { version = "2.1.2", default-features = false, features = ["std"] }

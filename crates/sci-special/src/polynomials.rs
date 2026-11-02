@@ -1,31 +1,140 @@
 //! Polynomial coefficients and Gaussian rules use the same three-term recurrence.
 
 use crate::{Error, Result};
-use nalgebra::{DMatrix, SymmetricEigen};
 
+// Implicit symmetric tridiagonal QL with Wilkinson shifts (EISPACK IMTQL2).
+// Quadrature needs only the first component of each eigenvector (Golub-Welsch),
+// while Lamé polynomials need the complete eigensystem. Keep the same shifted
+// iteration for both, but accumulate a single row for the quadrature case.
+// Scaling avoids overflow in shifts and Givens rotations; work is bounded.
 pub(super) fn eigensystem(diagonal: &[f64], off: &[f64]) -> Result<(Vec<f64>, Vec<Vec<f64>>)> {
+    let (values, rows) = tridiagonal_eigensystem(diagonal, off, true)?;
+    Ok((
+        values,
+        (0..diagonal.len())
+            .map(|i| rows.iter().map(|row| row[i]).collect())
+            .collect(),
+    ))
+}
+
+fn first_eigenvector_components(diagonal: &[f64], off: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
+    let (values, mut rows) = tridiagonal_eigensystem(diagonal, off, false)?;
+    Ok((values, rows.pop().unwrap()))
+}
+
+// Accumulate eigenvector rows, sorted consistently with the eigenvalues.
+// With all_vectors=false, only row zero is retained, avoiding unnecessary
+// O(n^3) eigenvector rotations and O(n^2) eigenvector storage.
+fn tridiagonal_eigensystem(
+    diagonal: &[f64],
+    off: &[f64],
+    all_vectors: bool,
+) -> Result<(Vec<f64>, Vec<Vec<f64>>)> {
     let n = diagonal.len();
-    let mut matrix = DMatrix::zeros(n, n);
-    for i in 0..n {
-        matrix[(i, i)] = diagonal[i];
-        if i + 1 < n {
-            matrix[(i, i + 1)] = off[i];
-            matrix[(i + 1, i)] = off[i];
-        }
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("tridiagonal order must be in 1..=256"));
     }
-    if !matrix.iter().all(|x| x.is_finite()) {
+    if off.len() != n - 1 {
+        return Err(Error::DimensionMismatch);
+    }
+    if diagonal.iter().chain(off).any(|x| !x.is_finite()) {
         return Err(Error::NonFiniteEvaluation);
     }
-    let eigen = SymmetricEigen::try_new(matrix, 1e-15, 100_000).ok_or(Error::NumericalFailure(
-        "symmetric eigensolver did not converge",
-    ))?;
+    let scale = diagonal
+        .iter()
+        .chain(off)
+        .fold(0.0_f64, |value, &x| value.max(x.abs()));
+    if scale == 0.0 {
+        let mut first = vec![0.0; n];
+        first[0] = 1.0;
+        if !all_vectors {
+            return Ok((vec![0.0; n], vec![first]));
+        }
+        let vectors = (0..n)
+            .map(|j| (0..n).map(|i| f64::from(i == j)).collect())
+            .collect();
+        return Ok((vec![0.0; n], vectors));
+    }
+    let mut d: Vec<_> = diagonal.iter().map(|&x| x / scale).collect();
+    let mut e: Vec<_> = off.iter().map(|&x| x / scale).collect();
+    e.push(0.0);
+    let mut vectors = vec![vec![0.0; n]; if all_vectors { n } else { 1 }];
+    for (i, row) in vectors.iter_mut().enumerate() {
+        row[i] = 1.0;
+    }
+
+    for l in 0..n {
+        let mut iterations = 0;
+        loop {
+            let mut m = l;
+            while m + 1 < n {
+                if e[m].abs() <= f64::EPSILON * (d[m].abs() + d[m + 1].abs()) {
+                    break;
+                }
+                m += 1;
+            }
+            if m == l {
+                break;
+            }
+            if iterations == 128 {
+                return Err(Error::NumericalFailure(
+                    "symmetric tridiagonal eigensolver did not converge",
+                ));
+            }
+            iterations += 1;
+
+            // Wilkinson shift, choosing the sign to avoid cancellation.
+            let shift = (d[l + 1] - d[l]) / (2.0 * e[l]);
+            let denominator = shift + shift.hypot(1.0).copysign(shift);
+            let mut g = d[m] - d[l] + e[l] / denominator;
+            let mut sine = 1.0;
+            let mut cosine = 1.0;
+            let mut correction = 0.0;
+            for i in (l..m).rev() {
+                let f = sine * e[i];
+                let b = cosine * e[i];
+                let radius = f.hypot(g);
+                if radius == 0.0 {
+                    e[i + 1] = 0.0;
+                    sine = 0.0;
+                    cosine = 1.0;
+                } else {
+                    e[i + 1] = radius;
+                    sine = f / radius;
+                    cosine = g / radius;
+                }
+                g = d[i + 1] - correction;
+                let rotation = (d[i] - g) * sine + 2.0 * cosine * b;
+                correction = sine * rotation;
+                d[i + 1] = g + correction;
+                g = cosine * rotation - b;
+                for row in &mut vectors {
+                    let f = row[i + 1];
+                    row[i + 1] = sine * row[i] + cosine * f;
+                    row[i] = cosine * row[i] - sine * f;
+                }
+            }
+            d[l] -= correction;
+            e[l] = g;
+            e[m] = 0.0;
+            if !d[l].is_finite() || !g.is_finite() {
+                return Err(Error::NonFiniteEvaluation);
+            }
+        }
+    }
+    for value in &mut d {
+        *value *= scale;
+    }
+    if d.iter().any(|x| !x.is_finite()) || vectors.iter().flatten().any(|x| !x.is_finite()) {
+        return Err(Error::NonFiniteEvaluation);
+    }
     let mut indices: Vec<_> = (0..n).collect();
-    indices.sort_by(|&a, &b| eigen.eigenvalues[a].total_cmp(&eigen.eigenvalues[b]));
+    indices.sort_by(|&a, &b| d[a].total_cmp(&d[b]));
     Ok((
-        indices.iter().map(|&i| eigen.eigenvalues[i]).collect(),
-        indices
+        indices.iter().map(|&i| d[i]).collect(),
+        vectors
             .iter()
-            .map(|&i| eigen.eigenvectors.column(i).iter().copied().collect())
+            .map(|row| indices.iter().map(|&i| row[i]).collect())
             .collect(),
     ))
 }
@@ -151,10 +260,10 @@ fn quadrature(
             });
         }
     }
-    let (nodes, vectors) = eigensystem(&diagonal, &off)?;
-    let weights: Vec<_> = vectors
+    let (nodes, first_components) = first_eigenvector_components(&diagonal, &off)?;
+    let weights: Vec<_> = first_components
         .iter()
-        .map(|v| v[0] * v[0] * mass * weight_scale)
+        .map(|v| v * v * mass * weight_scale)
         .collect();
     if weights.iter().any(|x| !x.is_finite()) {
         return Err(Error::NonFiniteEvaluation);
@@ -1088,4 +1197,116 @@ pub fn roots_sh_jacobi(n: usize, p: f64, q: f64) -> Result<(Vec<f64>, Vec<f64>)>
         0.5,
         2.0_f64.powf(-p),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn quadrature_first_components_match_full_eigensystem() {
+        // Both paths use identical shifts and sorting; the optimization skips
+        // unused eigenvector rows rather than changing eigenvalue algorithms.
+        for n in [1, 2, 3, 16, 64, 128, 256] {
+            let diagonal: Vec<_> = (0..n).map(|i| 0.15 * (i as f64).sin()).collect();
+            let off: Vec<_> = (0..n - 1).map(|i| 0.25 + 0.01 * ((i % 7) as f64)).collect();
+            let (full_values, full_vectors) = eigensystem(&diagonal, &off).unwrap();
+            let (first_values, first_components) =
+                first_eigenvector_components(&diagonal, &off).unwrap();
+            assert_eq!(first_values, full_values, "n={n}");
+            for (i, &component) in first_components.iter().enumerate() {
+                assert_eq!(component, full_vectors[i][0], "n={n}, i={i}");
+            }
+        }
+        let (values, first) = first_eigenvector_components(&[0.0; 3], &[0.0; 2]).unwrap();
+        assert_eq!(values, vec![0.0; 3]);
+        assert_eq!(first, vec![1.0, 0.0, 0.0]);
+    }
+
+    #[test]
+    fn shifted_tridiagonal_eigenpairs_have_small_residuals_and_are_orthogonal() {
+        // The Toeplitz tridiagonal spectrum is 2 - 2*cos(k*pi/(n+1)).
+        // In particular, the smallest eigenvalues of the 256-row case are
+        // much smaller than the entries of the matrix.
+        for n in [1, 2, 16, 64, 256] {
+            let diagonal = vec![2.0; n];
+            let off = vec![-1.0; n - 1];
+            let (values, vectors) = eigensystem(&diagonal, &off).unwrap();
+            assert_eq!(values.len(), n);
+            assert_eq!(vectors.len(), n);
+            assert!(values.windows(2).all(|pair| pair[0] <= pair[1]));
+            for (k, (&value, vector)) in values.iter().zip(&vectors).enumerate() {
+                let expected =
+                    2.0 - 2.0 * (((k + 1) as f64 * std::f64::consts::PI) / (n + 1) as f64).cos();
+                assert!(
+                    (value - expected).abs() < 3e-12,
+                    "n={n}, k={k}, eigenvalue={value}, expected={expected}"
+                );
+                let mut squared_norm = 0.0;
+                for i in 0..n {
+                    let left = if i > 0 { -vector[i - 1] } else { 0.0 };
+                    let right = if i + 1 < n { -vector[i + 1] } else { 0.0 };
+                    let residual = left + 2.0 * vector[i] + right - value * vector[i];
+                    assert!(
+                        residual.abs() < 3e-12,
+                        "n={n}, k={k}, i={i}, residual={residual:e}"
+                    );
+                    squared_norm += vector[i] * vector[i];
+                }
+                assert!((squared_norm - 1.0).abs() < 3e-12);
+            }
+            // Check the full basis at modest orders and representative
+            // separated/adjacent eigenpairs at the largest supported order.
+            let selected: Vec<_> = if n <= 64 {
+                (0..n).collect()
+            } else {
+                vec![0, 1, 63, 64, 127, 128, 254, 255]
+            };
+            for &i in &selected {
+                for &j in &selected {
+                    let dot = vectors[i]
+                        .iter()
+                        .zip(&vectors[j])
+                        .map(|(x, y)| x * y)
+                        .sum::<f64>();
+                    assert!(
+                        (dot - f64::from(i == j)).abs() < 3e-12,
+                        "n={n}, i={i}, j={j}, dot={dot}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn shifted_tridiagonal_handles_scaling_degeneracy_and_invalid_data() {
+        assert!(matches!(eigensystem(&[], &[]), Err(Error::InvalidInput(_))));
+        assert!(matches!(
+            eigensystem(&[1.], &[1.]),
+            Err(Error::DimensionMismatch)
+        ));
+        assert_eq!(eigensystem(&[5.], &[]).unwrap(), (vec![5.], vec![vec![1.]]));
+        assert!(matches!(
+            eigensystem(&[f64::NAN], &[]),
+            Err(Error::NonFiniteEvaluation)
+        ));
+        assert!(matches!(
+            eigensystem(&[1., 1.], &[f64::INFINITY]),
+            Err(Error::NonFiniteEvaluation)
+        ));
+        let (zero_values, zero_vectors) = eigensystem(&[0.; 4], &[0.; 3]).unwrap();
+        assert_eq!(zero_values, [0.; 4]);
+        for (i, vector) in zero_vectors.iter().enumerate() {
+            for (j, &entry) in vector.iter().enumerate() {
+                assert_eq!(entry, f64::from(i == j));
+            }
+        }
+        for scale in [1e-200, 1e200] {
+            let (values, vectors) = eigensystem(&[2.0 * scale; 2], &[scale]).unwrap();
+            for (value, expected) in values.iter().zip([1., 3.]) {
+                assert!((value / scale - expected).abs() < 3e-14);
+            }
+            assert!((vectors[0][0].abs() - std::f64::consts::FRAC_1_SQRT_2).abs() < 3e-14);
+        }
+    }
 }

@@ -2,6 +2,11 @@
 members = ["crates/*"]
 resolver = "3"
 
+# Keep source locations and readable backtraces in tests without generating
+# full debug information for every test binary and dependency.
+[profile.test]
+debug = "line-tables-only"
+
 [workspace.package]
 edition = "2024"
 authors = ["Sira Pornsiriprasert <code@psira.me>"]
@@ -297,6 +302,11 @@ path = "tests/core.rs"
 name = "numerical_accuracy"
 path = "tests/numerical_accuracy.rs"
 required-features = ["integrate", "linalg", "optimize", "special", "stats"]
+
+[[test]]
+name = "solver_regressions"
+path = "tests/solver_regressions.rs"
+required-features = ["integrate", "special"]
 
 [[test]]
 name = "statistics_coverage"

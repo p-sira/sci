@@ -26,6 +26,16 @@ python tests/check_features.py
 
 Documentation-only changes do not require fixture regeneration.
 
+The workspace's test profile uses `debug = "line-tables-only"`: test failures
+retain source locations and backtraces, but GDB/LLDB cannot reliably inspect
+local variables or Rust type layouts. The ordinary development profile is
+unchanged. To reproduce a failing test with full debug information, override
+the test profile for that invocation (this may trigger recompilation):
+
+```sh
+CARGO_PROFILE_TEST_DEBUG=full cargo test -p sci --no-default-features --test core
+```
+
 ## Benchmarks
 
 Benchmarks for representative functions of each module live in
@@ -56,9 +66,12 @@ the workspace disables domain defaults on shared dependencies to prevent
 signal processing or Matrix Market from enabling Hankel or NPZ transitively.
 Cargo still combines features requested elsewhere in a consumer's graph.
 
-`tests/check_features.py` checks each facade feature in isolation and asserts
-that reduced builds omit the expected backends. The FFT extended reference
-suite and benchmark require `fft-hankel`; sparse parity requires `sparse-npz`;
+`tests/check_features.py` compiles each facade feature and isolated sparse
+configuration, checking selected architectural dependency boundaries without
+freezing backend implementations. Documentation is tested separately by the
+regular CI documentation job, not regenerated for every feature combination.
+The FFT extended reference suite and benchmark require `fft-hankel`; sparse
+parity requires `sparse-npz`;
 the I/O integration suite requires all three format features. Numerical
 APIs retain their existing conventions. FFTLog now uses private Rust translations
 of SciPy/XSF's complex log-gamma and Cephes gamma-ratio algorithms, with the

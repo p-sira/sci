@@ -48,7 +48,7 @@
 //!
 //! ## Acknowledgments
 //!
-//! We thank `ellip`, `nalgebra`, `num-complex`, `complex-bessel`, and `lambert_w`
+//! We thank `ellip`, `num-complex`, `complex-bessel`, and `lambert_w`
 //! for their specialized numerical algorithms. Retained third-party license
 //! notices accompany the private translated kernels in `LICENSES`.
 

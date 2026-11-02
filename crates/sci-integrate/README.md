@@ -18,6 +18,5 @@ rules evaluate a bounded number of points on the requested finite interval;
 Gaussian rules use the documented fixed order and map the reference
 interval `[-1, 1]` to the integration interval.
 
-## Acknowledgments
-
-We thank `nalgebra` for its numerical linear algebra.
+The small, bounded quadrature solvers are implemented directly in Rust without
+the general-purpose linear algebra or special-function crates.

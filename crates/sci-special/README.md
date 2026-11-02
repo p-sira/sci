@@ -50,6 +50,6 @@ fn main() -> Result<(), sci_core::Error> {
 
 ## Acknowledgments
 
-We thank `ellip`, `nalgebra`, `num-complex`, `complex-bessel`, and `lambert_w`
+We thank `ellip`, `num-complex`, `complex-bessel`, and `lambert_w`
 for their specialized numerical algorithms. Third-party license notices are
 retained in `LICENSES`.

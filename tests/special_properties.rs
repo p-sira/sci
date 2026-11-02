@@ -193,6 +193,61 @@ fn quadrature_composes_with_polynomial_evaluation_and_linalg() {
 }
 
 #[test]
+fn high_order_gaussian_quadrature_preserves_symmetry_and_low_moments() {
+    // Independent moments of the Legendre, Laguerre and Hermite weights.
+    // Check n=256, the public upper limit, and n=128 to exercise repeated
+    // shifted tridiagonal QR/QL iterations beyond the former small fixtures.
+    for n in [64, 128, 256] {
+        let (nodes, weights) = s::orthogonal::roots_legendre(n).unwrap();
+        assert_eq!(nodes.len(), n);
+        assert_eq!(weights.len(), n);
+        assert!(nodes.windows(2).all(|pair| pair[0] < pair[1]));
+        assert!(weights.iter().all(|w| w.is_finite() && *w > 0.));
+        for i in 0..n / 2 {
+            finite_close(nodes[i], -nodes[n - 1 - i], 3e-13, 3e-13);
+            finite_close(weights[i], weights[n - 1 - i], 3e-13, 3e-13);
+        }
+        for degree in 0_i32..=24 {
+            let value = nodes
+                .iter()
+                .zip(&weights)
+                .map(|(x, weight)| weight * x.powi(degree))
+                .sum::<f64>();
+            let expected = if degree % 2 == 0 {
+                2.0 / f64::from(degree + 1)
+            } else {
+                0.0
+            };
+            finite_close(value, expected, 4e-12, 4e-12);
+        }
+    }
+    let (laguerre_nodes, laguerre_weights) = s::orthogonal::roots_laguerre(128).unwrap();
+    assert!(laguerre_nodes.windows(2).all(|pair| pair[0] < pair[1]));
+    assert!(laguerre_nodes.iter().all(|&x| x > 0. && x.is_finite()));
+    assert!(laguerre_weights.iter().all(|&w| w >= 0. && w.is_finite()));
+    for degree in 0_i32..=3 {
+        let value = laguerre_nodes
+            .iter()
+            .zip(&laguerre_weights)
+            .map(|(x, w)| w * x.powi(degree))
+            .sum::<f64>();
+        let expected = (1..=degree).map(f64::from).product::<f64>();
+        finite_close(value, expected, 5e-12, 5e-12);
+    }
+    let (hermite_nodes, hermite_weights) = s::orthogonal::roots_hermite(128).unwrap();
+    assert!(hermite_nodes.windows(2).all(|pair| pair[0] < pair[1]));
+    assert!(hermite_weights.iter().all(|&w| w >= 0. && w.is_finite()));
+    let mass = hermite_weights.iter().sum::<f64>();
+    let second = hermite_nodes
+        .iter()
+        .zip(&hermite_weights)
+        .map(|(x, weight)| weight * x * x)
+        .sum::<f64>();
+    finite_close(mass, std::f64::consts::PI.sqrt(), 5e-12, 5e-12);
+    finite_close(second, std::f64::consts::PI.sqrt() / 2.0, 5e-12, 5e-12);
+}
+
+#[test]
 fn elementary_limits_and_elliptic_conventions() {
     assert_eq!(s::elementary::kl_div(-1.0, 2.0), f64::INFINITY);
     assert_eq!(s::elementary::kl_div(0.0, f64::INFINITY), f64::INFINITY);

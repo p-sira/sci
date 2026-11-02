@@ -1557,10 +1557,8 @@ dependencies = [
 name = "sci-integrate"
 version = "0.3.0"
 dependencies = [
- "nalgebra",
  "numeric_literals",
  "sci-core",
- "sci-special",
 ]
 
 [[package]]
@@ -1656,7 +1654,6 @@ dependencies = [
  "complex-bessel",
  "ellip",
  "lambert_w",
- "nalgebra",
  "num-complex",
  "numeric_literals",
  "sci-complex",
@@ -1667,7 +1664,6 @@ dependencies = [
 name = "sci-stats"
 version = "0.3.0"
 dependencies = [
- "basin",
  "lapjv",
  "nalgebra",
  "ndarray 0.16.1",
