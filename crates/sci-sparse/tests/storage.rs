@@ -1,4 +1,4 @@
-//! Storage and arithmetic must work even without solver, graph, RNG, or NPZ features.
+//! Storage and arithmetic must work without solver, RNG, or NPZ features.
 
 use sci_sparse as sparse;
 
@@ -34,15 +34,6 @@ fn canonical_storage_arithmetic_and_arrays_work_without_backends() -> sparse::Re
 fn solver_feature_retains_public_solve() -> sparse::Result<()> {
     let a = sparse::construct::identity(2)?;
     assert_eq!(sparse::linalg::spsolve(&a, &[2.0, 3.0])?, [2.0, 3.0]);
-    Ok(())
-}
-
-#[cfg(feature = "graph")]
-#[test]
-fn graph_feature_retains_public_graph_algorithms() -> sparse::Result<()> {
-    let a = sparse::construct::identity(2)?;
-    let connected = sparse::csgraph::connected_components(&a, false, false)?;
-    assert_eq!(connected.count, 2);
     Ok(())
 }
 

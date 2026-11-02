@@ -1642,7 +1642,6 @@ dependencies = [
  "rand 0.9.5",
  "sci-complex",
  "sci-core",
- "sci-graph",
  "sci-linalg",
  "zip",
 ]

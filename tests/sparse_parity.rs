@@ -1,5 +1,8 @@
 use l::LinearMap;
-use sci::sparse::{self as s, csgraph as g, linalg as l};
+use sci::{
+    graph as g,
+    sparse::{self as s, linalg as l},
+};
 use std::collections::BTreeMap;
 
 fn nums(s: &str) -> Vec<f64> {

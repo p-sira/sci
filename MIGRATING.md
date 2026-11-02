@@ -163,17 +163,18 @@ Graph algorithms have moved from `sci-sparse` to the independent `sci-graph`
 crate. Use `sci::graph::dijkstra(&a, &options)` with the `graph` feature, or
 `sci_graph::dijkstra(&a, &options)` when depending on the crate directly.
 Both APIs accept the shared `sci_core::SparseMatrix` type. The old
-`sci::sparse::csgraph` and `sci_sparse::csgraph` paths remain available through
-`sci-sparse`'s `graph` feature as compatibility re-exports. `sci::graph` can be
-enabled independently, without enabling sparse solvers or NPZ support.
+`sci::sparse::csgraph` and `sci_sparse::csgraph` paths have been **removed**;
+they are not compatibility aliases. Use the independent `graph` feature on
+`sci` or depend directly on `sci-graph` to migrate. Graph algorithms no longer
+come from `sci-sparse`, including its `full` and default features.
 
 Direct `sci-sparse` consumers selecting `default-features = false` now receive
 only canonical CSR/COO storage, construction, arithmetic and array operations.
-Add `features = ["solver"]` for `linalg`, `features = ["graph"]` for `csgraph`,
+Add `features = ["solver"]` for `linalg`,
 `features = ["random"]` for `random` and `random_array`, or
 `features = ["npz"]` for `load_npz` and `save_npz`. Use `features = ["full"]`
-to restore all numerical backends without NPZ. Normal `sci-sparse` defaults
-and the facade `sci::sparse` API preserve the preexisting capabilities;
+to restore sparse solvers and random sampling without NPZ. Normal `sci-sparse`
+defaults and the facade `sci::sparse` API preserve sparse capabilities;
 `sci`'s `sparse-npz` feature continues to enable NPZ support.
 
 `issparse` is removed; use concrete types or traits. `get_index_dtype`,

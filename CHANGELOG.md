@@ -2,6 +2,10 @@
 
 ## 0.3.0 (unreleased)
 
+- **Breaking:** Move all 25 graph algorithms to the independent `sci-graph`
+  crate and `sci::graph` facade. Remove `sci::sparse::csgraph`, the corresponding
+  `sci_sparse::csgraph` re-export, and the `sci-sparse` `graph` feature.
+  Sparse construction and graph algorithms continue sharing `sci-core::SparseMatrix`.
 - Fix `complex::powf` and `complex::powc` on exact real-axis integer powers:
   return mathematically zero imaginary components, preserve signed-zero limits,
   and avoid phase-rounding artifacts for nearby tiny imaginary inputs.
@@ -32,10 +36,9 @@
   without changing algorithms or introducing new feature gates. See MIGRATING.md.
 
 - Isolate `sci-sparse`'s lightweight CSR/COO storage and arithmetic from optional
-  `solver`, `graph`, `random`, and `npz` backends. The `sci::sparse` feature
-  explicitly enables all numerical backends, preserving the existing facade
-  API; `sparse-npz` continues to provide NPZ interchange. Direct users of
-  `sci-sparse` with defaults disabled now select heavier capabilities explicitly.
+  `solver`, `random`, and `npz` backends. The `sci::sparse` feature enables sparse
+  solvers and sampling; `sparse-npz` continues to provide NPZ interchange. Direct
+  users of `sci-sparse` with defaults disabled select heavier capabilities explicitly.
 
 - Remove `sci-linalg`'s direct dependency on `sci-special` by storing the
   16-point Gauss–Legendre quadrature rule for the principal matrix logarithm;

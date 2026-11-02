@@ -18,16 +18,14 @@ include = ["/src/**", "/LICENSE", "/SCIPY_LICENSE.txt"]
 default = ["full", "npz"]
 # Default-compatible API. With defaults disabled, CSR/COO storage and arithmetic
 # require only sci-core; opt into expensive backends independently.
-full = ["solver", "graph", "random"]
+full = ["solver", "random"]
 solver = ["dep:faer", "dep:sci-linalg", "dep:sci-complex", "dep:dyn-stack"]
-graph = ["dep:sci-graph"]
 random = ["dep:rand"]
 # Select the same flate2 backend as MATLAB, including NPZ-only builds.
 npz = ["dep:zip", "dep:flate2"]
 
 [dependencies]
 sci-core.workspace = true
-sci-graph = { workspace = true, optional = true }
 faer = { workspace = true, optional = true }
 sci-linalg = { workspace = true, optional = true }
 sci-complex = { workspace = true, optional = true }

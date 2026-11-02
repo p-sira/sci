@@ -17,10 +17,11 @@ assert_eq!(paths.distances[0][1], 2.0);
 
 Algorithms include shortest paths, traversal, connected components, spanning
 trees, matching, flow, graph Laplacians, reorderings, and graph conversions.
-Their results and domain restrictions remain the same as the previous
-`sci-sparse::csgraph` implementation. A stored zero is an edge except where
-an algorithm explicitly treats it as absent. Algorithms typically support up to
-256 vertices and document additional work limits.
+Their results and domain restrictions remain the same as the original graph
+implementation. A stored zero is an edge except where an algorithm explicitly
+treats it as absent. Algorithms typically support up to 256 vertices and
+document additional work limits.
 
-`sci-sparse` retains an optional `graph` feature that re-exports this crate as
-`sci_sparse::csgraph` for source compatibility.
+Graph algorithms are exposed exclusively through `sci-graph` and `sci::graph`.
+The `sci-sparse` crate owns sparse-matrix construction, arithmetic, linear
+algebra and serialization; both crates share `sci-core::SparseMatrix`.

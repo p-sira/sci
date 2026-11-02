@@ -434,7 +434,7 @@ required-features = ["graph"]
 [[test]]
 name = "sparse_parity"
 path = "tests/sparse_parity.rs"
-required-features = ["sparse-npz", "sparse", "linalg"]
+required-features = ["sparse-npz", "sparse", "linalg", "graph"]
 
 [[test]]
 name = "io"

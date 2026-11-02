@@ -21,8 +21,8 @@
 //! With defaults disabled, `fft-hankel`, `sparse-npz`, `io-matrix-market`,
 //! `io-wav`, and `io-matlab` select extra transforms and file formats, enabling
 //! their parent modules. All FFT transforms avoid XSF; `graph` independently
-//! enables graph algorithms; `sparse` enables solvers, compatibility graph
-//! exports, and random sampling without ZIP/compression, and `io` supplies shared
+//! enables graph algorithms; `sparse` enables sparse solvers and random sampling
+//! without graph algorithms or ZIP/compression, and `io` supplies shared
 //! I/O types without format backends. All capabilities
 //! remain enabled in the default feature set.
 //!

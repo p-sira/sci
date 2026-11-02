@@ -26,8 +26,8 @@ for line in (ROOT/'function_coverages/scipy_function_list/scipy.sparse.md').read
 assert len(inventory) == 148
 base=ROOT/'crates/sci-sparse/src'
 sources={
- 'scipy.sparse':'\n'.join((base/f'{name}.rs').read_text() for name in ('lib','array','io')),
- 'scipy.sparse.csgraph':(base/'csgraph.rs').read_text(),
+ 'scipy.sparse':'\n'.join((base/f'{name}.rs').read_text() for name in ('lib','array','construct','operations','io')),
+ 'scipy.sparse.csgraph':(ROOT/'crates/sci-graph/src/algorithms.rs').read_text(),
  'scipy.sparse.linalg':(base/'linalg.rs').read_text()+'\n'+'\n'.join(p.read_text() for p in sorted((base/'linalg').glob('*.rs'))),
 }
 exports={ns:set(re.findall(r'pub fn (\w+)(?:<[^\n]*>)?\(',text))|set(re.findall(r'pub use \w+ as (\w+);',text)) for ns,text in sources.items()}
@@ -60,7 +60,7 @@ for ns,name in inventory:
         assert name in exports[ns],f'missing modern API: {ns}.{name}'
         assert name in fixtures,f'missing independent reference fixture: {ns}.{name}'
         status='Supported adaptation'
-        path='sparse::'+('linalg::' if ns.endswith('.linalg') else 'csgraph::' if ns.endswith('.csgraph') else '')+name
+        path=('graph::' if ns.endswith('.csgraph') else 'sparse::'+('linalg::' if ns.endswith('.linalg') else ''))+name
         target=f'`{path}`'
     rows.append(f'| `{ns}` | `{name}` | {status} | {target} |')
     if ns in PRIMARY:

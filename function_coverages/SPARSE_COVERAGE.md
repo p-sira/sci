@@ -1,11 +1,11 @@
 # Sparse coverage and numerical conventions
 
-The Rust API omits runtime type/dtype utilities and redundant aliases; see the disposition table below. The facade `sparse` feature retains compatibility graph exports alongside solvers and seeded sampling; the independent `graph` feature exposes `sci::graph`, and `sparse-npz` enables NPZ. With direct `sci-sparse` defaults disabled, canonical CSR/COO construction, arithmetic and array transforms require only `sci-core`; `solver`, `graph`, `random` and `npz` opt into their respective backends. The direct crate defaults enable `full` (solver, graph and random) and `npz`. NPZ uses the same flate2 Rust/miniz backend as MATLAB; numerical behavior and reference fixtures are unchanged.
+The Rust API omits runtime type/dtype utilities and redundant aliases; see the disposition table below. The facade `sparse` feature enables sparse solvers and seeded sampling; the independent `graph` feature exposes `sci::graph`, and `sparse-npz` enables NPZ. With direct `sci-sparse` defaults disabled, canonical CSR/COO construction, arithmetic and array transforms require only `sci-core`; `solver`, `random` and `npz` opt into their respective backends. The direct sparse-crate defaults enable `full` (solver and random) and `npz`. NPZ uses the same flate2 Rust/miniz backend as MATLAB; numerical behavior and reference fixtures are unchanged.
 
 `sci-sparse` is exposed as `sci::sparse` through the default-enabled `sparse`
 feature. The 25 graph algorithms are implemented by `sci-graph`, accepting the
-shared `sci-core` CSR type; the previous `sparse::csgraph` path is a compatibility
-re-export enabled by the `sci-sparse/graph` feature. New code uses `graph::`.
+shared `sci-core` CSR type; graph algorithms are exclusively available through
+`sci::graph` or `sci-graph`. The old `sparse::csgraph` path has been removed.
 The original modern inventory has **83 names**. Retained function-name coverage
 is **74/83**: construction/utilities **20/27**, graph algorithms **25/25**, and
 linear algebra **29/31**. Removed names and redesigned operations are recorded below.
