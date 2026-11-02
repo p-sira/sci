@@ -2,6 +2,12 @@
 
 ## 0.3.0 (unreleased)
 
+- Correct three numerical discrepancies found by the independent
+  `sci-testing` 0.3 accuracy snapshot: resolve binary64 Newton cycles in
+  `special::gamma::digammainv`, avoid large-logarithm cancellation in nearby
+  positive `special::gamma::gamma_ratio` arguments, and preserve the negative
+  imaginary signed-zero branch of scaled complex Airy functions. Add
+  high-precision regressions and branch-limit identities without changing APIs.
 - Replace the private bounded Brent optimization backend in `sci-stats`
   with a safeguarded scalar minimizer. Remove `basin` as a direct dependency
   of `sci-stats`, retaining interval, convergence, and finite-error behavior.

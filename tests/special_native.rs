@@ -108,6 +108,59 @@ fn native_apis_match_independent_references() {
 }
 
 #[test]
+fn digammainv_converges_when_newton_steps_reach_binary64_rounding() {
+    // Independent high-precision roots of digamma(x) = y, evaluated with
+    // mpmath at >100 decimal digits. These seven inputs previously exhausted
+    // 32 Newton iterations because adjacent steps cycled around the root.
+    let cases = [
+        (8.0_f64, 2981.457973064119_f64),
+        (5.235235235235237, 188.2730501410432),
+        (7.277277277277278, 1447.5427316219043),
+        (9.87987987987988, 19533.876167512903),
+        (5.003500624044797, 149.4333284274153),
+        (7.956149962882833, 2853.5673502837376),
+        (9.472703892225361, 13000.490321960406),
+    ];
+    for (y, expected) in cases {
+        let x = s::gamma::digammainv(y);
+        assert!(
+            x.is_finite() && (x - expected).abs() <= 4e-14 * expected,
+            "digammainv({y}) = {x}, reference = {expected}"
+        );
+        let reconstructed = s::gamma::digamma(x);
+        assert!(
+            (reconstructed - y).abs() <= 8e-15 * y.abs().max(1.0),
+            "digamma(digammainv({y})) = {reconstructed}"
+        );
+    }
+}
+
+#[test]
+fn digammainv_roundtrips_positive_x_across_scales() {
+    for x in [
+        1e-100_f64,
+        1e-12,
+        0.01,
+        0.5,
+        1.0,
+        1.4616321449683623,
+        2.0,
+        10.0,
+        100.0,
+        1e6,
+        1e12,
+        1e100,
+    ] {
+        let y = s::gamma::digamma(x);
+        let recovered = s::gamma::digammainv(y);
+        assert!(
+            recovered.is_finite() && (recovered / x - 1.0).abs() < 1e-12,
+            "digammainv(digamma({x})) = {recovered}, y = {y}"
+        );
+    }
+}
+
+#[test]
 fn scalar_domains_and_limits() {
     for x in [f64::NAN, -2.0, f64::NEG_INFINITY] {
         assert!(s::elementary::log1pmx(x).is_nan());

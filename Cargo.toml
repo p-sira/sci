@@ -205,6 +205,11 @@ path = "tests/special_extended.rs"
 required-features = ["complex", "special"]
 
 [[test]]
+name = "gamma_ratio_stability"
+path = "tests/gamma_ratio_stability.rs"
+required-features = ["special"]
+
+[[test]]
 name = "special_properties"
 path = "tests/special_properties.rs"
 required-features = ["linalg", "special"]
