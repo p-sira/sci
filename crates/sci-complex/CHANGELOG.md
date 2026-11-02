@@ -2,6 +2,10 @@
 
 ## 0.3.0
 
+- Avoid trigonometric rounding residues in the imaginary component of real-axis
+  integer `powf`/`powc` results; preserve signed-zero branch limits and tiny
+  nonzero imaginary components near the negative-real axis.
+
 - Support `Complex<T = f64>` and native generic arithmetic; derive binary scaling and overflow thresholds from the selected precision.
 
 - Update shared Sci dependency requirements to the new minor versions.
