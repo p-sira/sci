@@ -1,9 +1,12 @@
 # Sparse coverage and numerical conventions
 
-The Rust API omits runtime type/dtype utilities and redundant aliases; see the disposition table below. The facade `sparse` feature retains all numerical APIs (solvers, graphs and seeded sampling), and `sparse-npz` enables NPZ. With direct `sci-sparse` defaults disabled, canonical CSR/COO construction, arithmetic and array transforms require only `sci-core`; `solver`, `graph`, `random` and `npz` opt into their respective backends. The direct crate defaults enable `full` (solver, graph and random) and `npz`. NPZ uses the same flate2 Rust/miniz backend as MATLAB; numerical behavior and reference fixtures are unchanged.
+The Rust API omits runtime type/dtype utilities and redundant aliases; see the disposition table below. The facade `sparse` feature retains compatibility graph exports alongside solvers and seeded sampling; the independent `graph` feature exposes `sci::graph`, and `sparse-npz` enables NPZ. With direct `sci-sparse` defaults disabled, canonical CSR/COO construction, arithmetic and array transforms require only `sci-core`; `solver`, `graph`, `random` and `npz` opt into their respective backends. The direct crate defaults enable `full` (solver, graph and random) and `npz`. NPZ uses the same flate2 Rust/miniz backend as MATLAB; numerical behavior and reference fixtures are unchanged.
 
 `sci-sparse` is exposed as `sci::sparse` through the default-enabled `sparse`
-feature. The original modern inventory has **83 names**. Retained function-name coverage
+feature. The 25 graph algorithms are implemented by `sci-graph`, accepting the
+shared `sci-core` CSR type; the previous `sparse::csgraph` path is a compatibility
+re-export enabled by the `sci-sparse/graph` feature. New code uses `graph::`.
+The original modern inventory has **83 names**. Retained function-name coverage
 is **74/83**: construction/utilities **20/27**, graph algorithms **25/25**, and
 linear algebra **29/31**. Removed names and redesigned operations are recorded below.
 This is function-name coverage through the Rust adaptations below; it is not
@@ -81,9 +84,10 @@ All 148 inventory entries have explicit dispositions in the table below.
   Structural matching/rank include stored zeros. Full matching returns sorted
   row indices and errors if no full matching exists. Maximum flow accepts
   nonnegative integral f64 capacities and returns antisymmetric net flows.
-- Private petgraph kernels supply paths, SCC, MST, matching, flow and Yen spur
-  searches. Private lapjv supplies weighted assignment. Native bounded assembly
-  handles conversion, traversal, Laplacians, ordering and path reconstruction.
+- Private petgraph kernels in `sci-graph` supply paths, SCC, MST, matching, flow
+  and Yen spur searches. Private lapjv in `sci-graph` supplies weighted
+  assignment. Native bounded assembly handles conversion, traversal,
+  Laplacians, ordering and path reconstruction.
 
 ## Linear algebra conventions
 
@@ -240,31 +244,31 @@ tests, clippy, rustdoc, and `tests/check_features.py` as in `docs/development.md
 | `scipy.sparse` | `tril` | Supported adaptation | `sparse::tril` |
 | `scipy.sparse` | `triu` | Supported adaptation | `sparse::triu` |
 | `scipy.sparse` | `vstack` | Supported adaptation | `sparse::vstack` |
-| `scipy.sparse.csgraph` | `bellman_ford` | Supported adaptation | `sparse::csgraph::bellman_ford` |
-| `scipy.sparse.csgraph` | `breadth_first_order` | Supported adaptation | `sparse::csgraph::breadth_first_order` |
-| `scipy.sparse.csgraph` | `breadth_first_tree` | Supported adaptation | `sparse::csgraph::breadth_first_tree` |
-| `scipy.sparse.csgraph` | `connected_components` | Supported adaptation | `sparse::csgraph::connected_components` |
-| `scipy.sparse.csgraph` | `construct_dist_matrix` | Supported adaptation | `sparse::csgraph::construct_dist_matrix` |
-| `scipy.sparse.csgraph` | `csgraph_from_dense` | Supported adaptation | `sparse::csgraph::csgraph_from_dense` |
-| `scipy.sparse.csgraph` | `csgraph_from_masked` | Supported adaptation | `sparse::csgraph::csgraph_from_masked` |
-| `scipy.sparse.csgraph` | `csgraph_masked_from_dense` | Supported adaptation | `sparse::csgraph::csgraph_masked_from_dense` |
-| `scipy.sparse.csgraph` | `csgraph_to_dense` | Supported adaptation | `sparse::csgraph::csgraph_to_dense` |
-| `scipy.sparse.csgraph` | `csgraph_to_masked` | Supported adaptation | `sparse::csgraph::csgraph_to_masked` |
-| `scipy.sparse.csgraph` | `depth_first_order` | Supported adaptation | `sparse::csgraph::depth_first_order` |
-| `scipy.sparse.csgraph` | `depth_first_tree` | Supported adaptation | `sparse::csgraph::depth_first_tree` |
-| `scipy.sparse.csgraph` | `dijkstra` | Supported adaptation | `sparse::csgraph::dijkstra` |
-| `scipy.sparse.csgraph` | `floyd_warshall` | Supported adaptation | `sparse::csgraph::floyd_warshall` |
-| `scipy.sparse.csgraph` | `johnson` | Supported adaptation | `sparse::csgraph::johnson` |
-| `scipy.sparse.csgraph` | `laplacian` | Supported adaptation | `sparse::csgraph::laplacian` |
-| `scipy.sparse.csgraph` | `maximum_bipartite_matching` | Supported adaptation | `sparse::csgraph::maximum_bipartite_matching` |
-| `scipy.sparse.csgraph` | `maximum_flow` | Supported adaptation | `sparse::csgraph::maximum_flow` |
-| `scipy.sparse.csgraph` | `min_weight_full_bipartite_matching` | Supported adaptation | `sparse::csgraph::min_weight_full_bipartite_matching` |
-| `scipy.sparse.csgraph` | `minimum_spanning_tree` | Supported adaptation | `sparse::csgraph::minimum_spanning_tree` |
-| `scipy.sparse.csgraph` | `reconstruct_path` | Supported adaptation | `sparse::csgraph::reconstruct_path` |
-| `scipy.sparse.csgraph` | `reverse_cuthill_mckee` | Supported adaptation | `sparse::csgraph::reverse_cuthill_mckee` |
-| `scipy.sparse.csgraph` | `shortest_path` | Supported adaptation | `sparse::csgraph::shortest_path` |
-| `scipy.sparse.csgraph` | `structural_rank` | Supported adaptation | `sparse::csgraph::structural_rank` |
-| `scipy.sparse.csgraph` | `yen` | Supported adaptation | `sparse::csgraph::yen` |
+| `scipy.sparse.csgraph` | `bellman_ford` | Supported adaptation | `graph::bellman_ford` |
+| `scipy.sparse.csgraph` | `breadth_first_order` | Supported adaptation | `graph::breadth_first_order` |
+| `scipy.sparse.csgraph` | `breadth_first_tree` | Supported adaptation | `graph::breadth_first_tree` |
+| `scipy.sparse.csgraph` | `connected_components` | Supported adaptation | `graph::connected_components` |
+| `scipy.sparse.csgraph` | `construct_dist_matrix` | Supported adaptation | `graph::construct_dist_matrix` |
+| `scipy.sparse.csgraph` | `csgraph_from_dense` | Supported adaptation | `graph::csgraph_from_dense` |
+| `scipy.sparse.csgraph` | `csgraph_from_masked` | Supported adaptation | `graph::csgraph_from_masked` |
+| `scipy.sparse.csgraph` | `csgraph_masked_from_dense` | Supported adaptation | `graph::csgraph_masked_from_dense` |
+| `scipy.sparse.csgraph` | `csgraph_to_dense` | Supported adaptation | `graph::csgraph_to_dense` |
+| `scipy.sparse.csgraph` | `csgraph_to_masked` | Supported adaptation | `graph::csgraph_to_masked` |
+| `scipy.sparse.csgraph` | `depth_first_order` | Supported adaptation | `graph::depth_first_order` |
+| `scipy.sparse.csgraph` | `depth_first_tree` | Supported adaptation | `graph::depth_first_tree` |
+| `scipy.sparse.csgraph` | `dijkstra` | Supported adaptation | `graph::dijkstra` |
+| `scipy.sparse.csgraph` | `floyd_warshall` | Supported adaptation | `graph::floyd_warshall` |
+| `scipy.sparse.csgraph` | `johnson` | Supported adaptation | `graph::johnson` |
+| `scipy.sparse.csgraph` | `laplacian` | Supported adaptation | `graph::laplacian` |
+| `scipy.sparse.csgraph` | `maximum_bipartite_matching` | Supported adaptation | `graph::maximum_bipartite_matching` |
+| `scipy.sparse.csgraph` | `maximum_flow` | Supported adaptation | `graph::maximum_flow` |
+| `scipy.sparse.csgraph` | `min_weight_full_bipartite_matching` | Supported adaptation | `graph::min_weight_full_bipartite_matching` |
+| `scipy.sparse.csgraph` | `minimum_spanning_tree` | Supported adaptation | `graph::minimum_spanning_tree` |
+| `scipy.sparse.csgraph` | `reconstruct_path` | Supported adaptation | `graph::reconstruct_path` |
+| `scipy.sparse.csgraph` | `reverse_cuthill_mckee` | Supported adaptation | `graph::reverse_cuthill_mckee` |
+| `scipy.sparse.csgraph` | `shortest_path` | Supported adaptation | `graph::shortest_path` |
+| `scipy.sparse.csgraph` | `structural_rank` | Supported adaptation | `graph::structural_rank` |
+| `scipy.sparse.csgraph` | `yen` | Supported adaptation | `graph::yen` |
 | `scipy.sparse.linalg` | `aslinearoperator` | Removed or redesigned for Rust | `LinearOperator::try_from` |
 | `scipy.sparse.linalg` | `bicg` | Supported adaptation | `sparse::linalg::bicg` |
 | `scipy.sparse.linalg` | `bicgstab` | Supported adaptation | `sparse::linalg::bicgstab` |

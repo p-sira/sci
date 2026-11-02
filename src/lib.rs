@@ -20,8 +20,9 @@
 //! dependencies compile without exposing additional modules through this facade.
 //! With defaults disabled, `fft-hankel`, `sparse-npz`, `io-matrix-market`,
 //! `io-wav`, and `io-matlab` select extra transforms and file formats, enabling
-//! their parent modules. All FFT transforms avoid XSF; `sparse` enables solvers,
-//! graphs, and random sampling without ZIP/compression, and `io` supplies shared
+//! their parent modules. All FFT transforms avoid XSF; `graph` independently
+//! enables graph algorithms; `sparse` enables solvers, compatibility graph
+//! exports, and random sampling without ZIP/compression, and `io` supplies shared
 //! I/O types without format backends. All capabilities
 //! remain enabled in the default feature set.
 //!
@@ -57,6 +58,10 @@ pub use sci_differentiate as differentiate;
 /// Bayesian state estimation; requires the `filter` feature.
 #[cfg(feature = "filter")]
 pub use sci_filter as filter;
+
+/// Graph algorithms on shared CSR adjacency matrices; requires the `graph` feature.
+#[cfg(feature = "graph")]
+pub use sci_graph as graph;
 
 /// Fourier, cosine, sine, and Hankel transforms; requires the `fft` feature.
 #[cfg(feature = "fft")]
@@ -94,7 +99,7 @@ pub use sci_special as special;
 #[cfg(feature = "stats")]
 pub use sci_stats as stats;
 
-/// Sparse arrays, graphs, linear algebra and NPZ interchange; requires the `sparse` feature.
+/// Sparse arrays, sparse linear algebra and NPZ interchange; requires the `sparse` feature.
 #[cfg(feature = "sparse")]
 pub use sci_sparse as sparse;
 

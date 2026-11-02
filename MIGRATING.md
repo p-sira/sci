@@ -159,6 +159,14 @@ Stable special functions such as `exprel`, `xlogy`, and `log_expit` remain.
 
 ## Sparse types and ownership
 
+Graph algorithms have moved from `sci-sparse` to the independent `sci-graph`
+crate. Use `sci::graph::dijkstra(&a, &options)` with the `graph` feature, or
+`sci_graph::dijkstra(&a, &options)` when depending on the crate directly.
+Both APIs accept the shared `sci_core::SparseMatrix` type. The old
+`sci::sparse::csgraph` and `sci_sparse::csgraph` paths remain available through
+`sci-sparse`'s `graph` feature as compatibility re-exports. `sci::graph` can be
+enabled independently, without enabling sparse solvers or NPZ support.
+
 Direct `sci-sparse` consumers selecting `default-features = false` now receive
 only canonical CSR/COO storage, construction, arithmetic and array operations.
 Add `features = ["solver"]` for `linalg`, `features = ["graph"]` for `csgraph`,

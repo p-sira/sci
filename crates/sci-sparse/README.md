@@ -1,19 +1,22 @@
 # Sci-Sparse
 
-By default, `full` enables sparse solvers, graph algorithms, and seeded random
-sampling; `npz` enables `load_npz` and `save_npz`. To use only canonical sparse
-storage, construction, arithmetic, and array transforms, disable defaults:
+By default, `full` enables sparse solvers, compatibility exports for `sci-graph`,
+and seeded random sampling; `npz` enables `load_npz` and `save_npz`. To use only
+canonical sparse storage, construction, arithmetic, and array transforms,
+disable defaults:
 
 ```toml
-sci-sparse = { version = "0.3", default-features = false }
+sci-sparse = { version = "0.2", default-features = false }
 ```
 
 Enable independent backends with `features = ["solver"]`, `features = ["graph"]`,
-`features = ["random"]`, or `features = ["npz"]`. `full` selects the first three
-and enables the solver, graph, and random namespaces. The Sci facade selects
-`full` with `sparse` and NPZ with `sparse-npz`.
+`features = ["random"]`, or `features = ["npz"]`. `full` selects the first three.
+The `graph` feature re-exports the independent `sci-graph` crate under
+`sci_sparse::csgraph` for compatibility. New code should use `sci-graph` or
+`sci::graph`. The Sci facade selects `full` with `sparse` and NPZ with
+`sparse-npz`.
 
-Real sparse arrays, graph algorithms, and linear algebra using shared Sci records
+Real sparse arrays and linear algebra using shared Sci records
 and private numerical backends. Numerical operations use Rust signatures and
 explicit inventory dispositions. Runtime type/dtype utilities, redundant aliases,
 deprecated compatibility namespaces, legacy matrix predicates, `rand`, and
@@ -33,7 +36,8 @@ COO. Construction canonicalizes duplicates and retains explicit zeros. Graphs
 interpret stored zeros as edges. APIs validate public storage and bound work.
 
 The API includes construction/arithmetic, axis operations, seeded random sampling,
-NPZ persistence, all 25 graph functions, operators, direct and iterative solves,
+NPZ persistence, optional compatibility exports for all 25 graph functions,
+operators, direct and iterative solves,
 incomplete LU, partial spectra, SVD, matrix functions, norms and bandwidths.
 Spectral routines use dense Sci/faer fallbacks with axes <=256; graph and iterative
 axes are also bounded at 256. Primary function coverage does not imply Python
@@ -41,10 +45,11 @@ signature, unrestricted-domain or large-scale algorithm performance parity.
 See [coverage and conventions](../../function_coverages/SPARSE_COVERAGE.md) for
 supported options, omitted Python controls, accuracy limitations and work bounds.
 
-Private backends include faer, petgraph, lapjv, rand and ZIP compression. QMR and
-TFQMR adaptations retain SciPy's BSD notice in `SCIPY_LICENSE.txt`.
+Private backends include faer, rand and ZIP compression. The `sci-graph` crate
+owns petgraph and lapjv. QMR and TFQMR adaptations retain SciPy's BSD notice in
+`SCIPY_LICENSE.txt`.
 
 Public numerical functions are grouped under `construct`, `operations`,
-`array`, `linalg`, `csgraph`, and `io` (when their corresponding backends are
-enabled). `SparseMatrix`, `SparseArray`, `Matrix`, `Error`, and `Result` remain
-available at the crate root.
+`array`, `linalg`, and `io` (when their corresponding backends are
+enabled); `csgraph` is an optional re-export. `SparseMatrix`, `SparseArray`,
+`Matrix`, `Error`, and `Result` remain available at the crate root.

@@ -53,6 +53,7 @@ sci-complex = { version = "0.3.0", path = "crates/sci-complex" }
 sci-constants = { version = "0.3.0", path = "crates/sci-constants" }
 sci-differentiate = { version = "0.3.0", path = "crates/sci-differentiate" }
 sci-fft = { version = "0.3.0", path = "crates/sci-fft", default-features = false }
+sci-graph = { version = "0.1.0", path = "crates/sci-graph" }
 sci-filter = { version = "0.3.0", path = "crates/sci-filter" }
 sci-integrate = { version = "0.3.0", path = "crates/sci-integrate" }
 sci-interpolate = { version = "0.3.0", path = "crates/sci-interpolate" }
@@ -82,12 +83,13 @@ include = ["/src/**", "/LICENSE"]
 autotests = false
 
 [features]
-default = ["fft-hankel", "io-matrix-market", "io-wav", "io-matlab", "sparse-npz", "cluster", "complex", "constants", "differentiate", "filter", "fft", "integrate", "interpolate", "io", "linalg", "linalg-faer", "linalg-nalgebra", "linalg-ndarray", "optimize", "signal", "sparse", "spatial", "special", "stats"]
+default = ["fft-hankel", "io-matrix-market", "io-wav", "io-matlab", "sparse-npz", "cluster", "complex", "constants", "differentiate", "filter", "fft", "graph", "integrate", "interpolate", "io", "linalg", "linalg-faer", "linalg-nalgebra", "linalg-ndarray", "optimize", "signal", "sparse", "spatial", "special", "stats"]
 cluster = ["dep:sci-cluster"]
 complex = ["dep:sci-complex"]
 constants = ["dep:sci-constants"]
 differentiate = ["dep:sci-differentiate"]
 filter = ["dep:sci-filter"]
+graph = ["dep:sci-graph"]
 fft = ["dep:sci-fft"]
 fft-hankel = ["fft", "sci-fft/hankel"]
 io = ["dep:sci-io"]
@@ -111,6 +113,7 @@ stats = ["dep:sci-stats"]
 [dependencies]
 sci-io = { workspace = true, optional = true }
 sci-filter = { workspace = true, optional = true }
+sci-graph = { workspace = true, optional = true }
 sci-core.workspace = true
 sci-cluster = { workspace = true, optional = true }
 sci-complex = { workspace = true, optional = true }
@@ -422,6 +425,11 @@ required-features = ["filter"]
 name = "sparse"
 path = "tests/sparse.rs"
 required-features = ["sparse", "linalg"]
+
+[[test]]
+name = "graph"
+path = "tests/graph.rs"
+required-features = ["graph"]
 
 [[test]]
 name = "sparse_parity"
