@@ -62,8 +62,11 @@ pub fn log1pmx<T: Float>(x: T) -> T {
 ///
 /// ## Numerical behavior
 /// Reuses Sci's digamma and trigamma in binary64. Minka's initial estimate is
-/// refined with at most 32 positivity-preserving Newton steps. Extreme inputs
-/// use the leading asymptotic inverse; convergence failure returns NaN.
+/// refined with at most 32 positivity-preserving Newton steps. At binary64
+/// precision, adjacent Newton iterates can oscillate because digamma is rounded;
+/// the best residual is returned once the step reaches the rounding scale.
+/// Extreme inputs use the leading asymptotic inverse; convergence failure
+/// returns NaN.
 /// No arbitrary-precision or correctly-rounded guarantee is provided.
 ///
 /// ## Examples
@@ -84,11 +87,24 @@ pub fn digammainv<T: Float>(y: T) -> T {
     if !y.is_finite() || x < 1e-150 || y > 36.0 {
         return T::from(x).unwrap_or(T::nan());
     }
+    let mut best_x = x;
+    let mut best_residual = f64::INFINITY;
     for _ in 0..32 {
-        let step = (crate::gamma::digamma(x) - y) / crate::gamma::trigamma(x);
+        let residual = crate::gamma::digamma(x) - y;
+        if residual.abs() < best_residual {
+            best_x = x;
+            best_residual = residual.abs();
+        }
+        let step = residual / crate::gamma::trigamma(x);
+        // The forward digamma evaluation itself is rounded to roughly one
+        // ulp. Newton steps smaller than a few ulps of x may therefore cycle
+        // forever around the representable root instead of approaching it.
+        if step.abs() <= 16.0 * f64::EPSILON * x {
+            return T::from(best_x).unwrap_or(T::nan());
+        }
         let next = if step < x { x - step } else { x * 0.5 };
         if next == x || (next - x).abs() <= 4.0 * f64::EPSILON * x {
-            return T::from(next).unwrap_or(T::nan());
+            return T::from(best_x).unwrap_or(T::nan());
         }
         x = next;
     }
@@ -109,14 +125,15 @@ pub fn digammainv<T: Float>(y: T) -> T {
 /// The positive ratio, converted from binary64 to the requested float type.
 ///
 /// ## Numerical behavior
-/// Reuses [`crate::combinatorics::poch`] for representable argument differences up to 10,000
-/// where recurrence cannot cross a tiny argument (bounded
+/// For arguments at least eight and separated by at most one, uses a
+/// cancellation-free Stirling log-ratio with `ln_1p` and six correction terms.
+/// Otherwise reuses [`crate::combinatorics::poch`] for representable differences
+/// up to 10,000 where recurrence cannot cross a tiny argument (bounded
 /// product/reciprocal recurrence), and log-beta and log-gamma otherwise through
 /// `Γ(b+d)/Γ(b) = Γ(d)/B(b,d)`.
-/// This avoids overflowing either gamma value and avoids subtracting two large
-/// log-gamma values for nearby arguments. Logarithmic cancellation can still
-/// limit relative accuracy for extreme parameters. Recurrence work is at most
-/// 10,000 steps; larger differences use the existing bounded kernels.
+/// This avoids overflowing either gamma value. Logarithmic cancellation can
+/// still limit relative accuracy for extreme parameters. Recurrence work is
+/// at most 10,000 steps; larger differences use the existing bounded kernels.
 ///
 /// ## Examples
 /// ```
@@ -136,7 +153,32 @@ pub fn gamma_ratio<T: Float>(a: T, b: T) -> T {
     if a == b {
         return T::one();
     }
-    let d = (a - b).abs();
+    let delta = a - b;
+    if a >= 8.0 && b >= 8.0 && delta.abs() <= 1.0 {
+        // Stirling's expansion of ln Γ(a) − ln Γ(b), rearranged so the
+        // large (x − 1/2) ln(x) terms never have to be subtracted.
+        // In this range the omitted O(x^-13) correction to the *difference*
+        // is below binary64 roundoff for the tested near-unit shifts.
+        let correction = |x: f64| {
+            let inverse = 1.0 / x;
+            let inverse_squared = inverse * inverse;
+            inverse
+                * (1.0 / 12.0
+                    + inverse_squared
+                        * (-1.0 / 360.0
+                            + inverse_squared
+                                * (1.0 / 1260.0
+                                    + inverse_squared
+                                        * (-1.0 / 1680.0
+                                            + inverse_squared
+                                                * (1.0 / 1188.0
+                                                    - inverse_squared * (691.0 / 360360.0))))))
+        };
+        let log_ratio = delta * (b.ln() - 1.0) + (a - 0.5) * (delta / b).ln_1p() + correction(a)
+            - correction(b);
+        return T::from(log_ratio.exp()).unwrap_or(T::nan());
+    }
+    let d = delta.abs();
     if d <= 10000.0 && b + (a - b) == a && ((a >= 1.0 && b >= 1.0) || d < 1.0) {
         return T::from(crate::combinatorics::poch(b, a - b)).unwrap_or(T::nan());
     }

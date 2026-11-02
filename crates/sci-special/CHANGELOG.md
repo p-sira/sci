@@ -1,5 +1,18 @@
 # Changelog
 
+## Sci-testing 0.3 numerical accuracy follow-up
+
+- Resolve seven finite-input `digammainv` failures caused by oscillating
+  binary64 Newton iterates by retaining the minimum-residual iterate and
+  detecting the roundoff floor; retain the iteration limit and invalid-domain
+  conventions.
+- Evaluate `gamma_ratio(a,b)` with a stable Stirling log-ratio for positive
+  nearby arguments `a,b >= 8` with `|a-b| <= 1`, avoiding cancellation in
+  differences of large `lgamma` values.
+- Preserve the exact lower side of the negative-real scaled-complex-Airy
+  branch for a signed `-0.0` imaginary input, avoiding the backend's ambiguous
+  comparison against zero. Add independent high-precision regression tests.
+
 ## Real modified Bessel performance follow-up
 
 - Port Cephes' real `iv` kernel with internally scaled `ive`, replacing complex AMOS dispatch for real arguments. Bound Temme iterations and large-order asymptotics; preserve finite overflow-adjacent and subnormal values with exponential and recurrence scaling.

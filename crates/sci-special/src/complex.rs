@@ -1291,20 +1291,32 @@ pub fn airy<T: Float>(z: Complex<T>) -> Result<[Complex<T>; 4]> {
 /// [NIST DLMF §9.2](https://dlmf.nist.gov/9.2).
 pub fn airye<T: Float>(z: Complex<T>) -> Result<[Complex<T>; 4]> {
     let z = input(z)?;
+    // The AMOS continuation chooses the cut bank using `im < 0`, which does
+    // not distinguish -0.0 from +0.0. Airy functions are entire, while their
+    // scaling uses the bank-sensitive principal power z^(3/2). Evaluate the
+    // upper bank and conjugate to obtain the exact lower-bank limit.
+    let lower_cut = z.re < 0.0 && z.im == 0.0 && z.im.is_sign_negative();
+    let z = if lower_cut {
+        num_complex::Complex64::new(z.re, 0.0)
+    } else {
+        z
+    };
+    let finish =
+        |value: num_complex::Complex64| output(if lower_cut { value.conj() } else { value });
     Ok([
-        output(
+        finish(
             complex_bessel::airy_scaled(z)
                 .map_err(|e| Error::NumericalFailure(crate::backend::bessel::backend_error(e)))?,
         )?,
-        output(
+        finish(
             complex_bessel::airyprime_scaled(z)
                 .map_err(|e| Error::NumericalFailure(crate::backend::bessel::backend_error(e)))?,
         )?,
-        output(
+        finish(
             complex_bessel::biry_scaled(z)
                 .map_err(|e| Error::NumericalFailure(crate::backend::bessel::backend_error(e)))?,
         )?,
-        output(
+        finish(
             complex_bessel::biryprime_scaled(z)
                 .map_err(|e| Error::NumericalFailure(crate::backend::bessel::backend_error(e)))?,
         )?,

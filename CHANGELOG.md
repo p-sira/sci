@@ -2,6 +2,13 @@
 
 ## 0.3.0 (unreleased)
 
+- Correct three numerical discrepancies found by the independent
+  `sci-testing` 0.3 accuracy snapshot: resolve binary64 Newton cycles in
+  `special::gamma::digammainv`, avoid large-logarithm cancellation in nearby
+  positive `special::gamma::gamma_ratio` arguments, and preserve the negative
+  imaginary signed-zero branch of scaled complex Airy functions. Add
+  high-precision regressions and branch-limit identities without changing APIs.
+
 - **Breaking:** Group numerical functions in public mathematical-family modules
   throughout the Sci workspace, following the `sci-special` 0.3.0 API design.
   Keep shared errors and foundational types at crate roots; keep `sci-core`
