@@ -48,7 +48,7 @@ pub fn eval_jacobi<T: sci_core::Float>(n: i32, alpha: T, beta: T, x: T) -> T {
     if !(0..=4096).contains(&n) {
         return T::nan();
     }
-    crate::backend::eval_jacobi(n, alpha, beta, x).unwrap_or(T::nan())
+    ::orthogonal::eval_jacobi(n, alpha, beta, x)
 }
 
 /// Evaluates the classical polynomial `P_n(x)`.
@@ -99,7 +99,7 @@ pub fn eval_legendre<T: sci_core::Float>(n: i32, x: T) -> T {
     if !(0..=4096).contains(&n) {
         return T::nan();
     }
-    crate::backend::eval_legendre(n, x).unwrap_or(T::nan())
+    ::orthogonal::eval_legendre(n, x)
 }
 
 /// Evaluates the classical polynomial `C_n^alpha(x)`.
@@ -150,7 +150,7 @@ pub fn eval_gegenbauer<T: sci_core::Float>(n: i32, alpha: T, x: T) -> T {
     if !(0..=4096).contains(&n) {
         return T::nan();
     }
-    crate::backend::eval_gegenbauer(n, alpha, x).unwrap_or(T::nan())
+    ::orthogonal::eval_gegenbauer(n, alpha, x)
 }
 
 /// Evaluates the classical polynomial `L_n^alpha(x)`.
@@ -201,7 +201,7 @@ pub fn eval_genlaguerre<T: sci_core::Float>(n: i32, alpha: T, x: T) -> T {
     if !(0..=4096).contains(&n) {
         return T::nan();
     }
-    crate::backend::eval_genlaguerre(n, alpha, x).unwrap_or(T::nan())
+    ::orthogonal::eval_genlaguerre(n, alpha, x)
 }
 
 /// Evaluates the classical polynomial `L_n(x)`.
@@ -252,7 +252,7 @@ pub fn eval_laguerre<T: sci_core::Float>(n: i32, x: T) -> T {
     if !(0..=4096).contains(&n) {
         return T::nan();
     }
-    crate::backend::eval_laguerre(n, x).unwrap_or(T::nan())
+    ::orthogonal::eval_laguerre(n, x)
 }
 
 /// Evaluates the classical polynomial `T_n(x)`.
@@ -305,7 +305,7 @@ pub fn eval_chebyt<T: sci_core::Float>(n: i32, x: T) -> T {
     if !(0..=4096).contains(&n) {
         return T::nan();
     }
-    crate::backend::eval_chebyt(n, x).unwrap_or(T::nan())
+    ::orthogonal::eval_chebyt(n, x)
 }
 
 /// Evaluates the classical polynomial `U_n(x)`.
@@ -358,7 +358,7 @@ pub fn eval_chebyu<T: sci_core::Float>(n: i32, x: T) -> T {
     if !(0..=4096).contains(&n) {
         return T::nan();
     }
-    crate::backend::eval_chebyu(n, x).unwrap_or(T::nan())
+    ::orthogonal::eval_chebyu(n, x)
 }
 
 /// Evaluates the classical polynomial `H_n(x)`.
@@ -409,7 +409,7 @@ pub fn eval_hermite<T: sci_core::Float>(n: i32, x: T) -> T {
     if !(0..=4096).contains(&n) {
         return T::nan();
     }
-    crate::backend::eval_hermite(n, x).unwrap_or(T::nan())
+    ::orthogonal::eval_hermite(n, x)
 }
 
 /// Evaluates the classical polynomial `He_n(x)`.
@@ -460,7 +460,7 @@ pub fn eval_hermitenorm<T: sci_core::Float>(n: i32, x: T) -> T {
     if !(0..=4096).contains(&n) {
         return T::nan();
     }
-    crate::backend::eval_hermitenorm(n, x).unwrap_or(T::nan())
+    ::orthogonal::eval_hermitenorm(n, x)
 }
 
 /// Computes the prolate spheroidal characteristic value `lambda_mn(c)`.

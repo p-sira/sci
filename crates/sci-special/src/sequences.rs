@@ -33,7 +33,7 @@ use crate::{Error, Result, complex::Complex};
 ///
 /// - [SciPy hankel1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hankel1.html).
 pub fn hankel1(v: f64, x: f64) -> Complex {
-    crate::complex::owned(crate::backend::legacy::hankel_1(v, x))
+    crate::complex::owned(::bessel::hankel1(v, x))
 }
 
 /// Scaled first-kind Hankel function `exp(−i*x) H_v^(1)(x)`.
@@ -67,7 +67,7 @@ pub fn hankel1(v: f64, x: f64) -> Complex {
 ///
 /// - [SciPy hankel1e](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hankel1e.html).
 pub fn hankel1e(v: f64, x: f64) -> Complex {
-    crate::complex::owned(crate::backend::legacy::hankel_1e(v, x))
+    crate::complex::owned(::bessel::hankel1e(v, x))
 }
 
 /// Second-kind Hankel function `H_v^(2)(x) = J_v(x) − i Y_v(x)`.
@@ -101,7 +101,7 @@ pub fn hankel1e(v: f64, x: f64) -> Complex {
 ///
 /// - [SciPy hankel2](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hankel2.html).
 pub fn hankel2(v: f64, x: f64) -> Complex {
-    crate::complex::owned(crate::backend::legacy::hankel_2(v, x))
+    crate::complex::owned(::bessel::hankel2(v, x))
 }
 
 /// Scaled second-kind Hankel function `exp(i*x) H_v^(2)(x)`.
@@ -135,7 +135,7 @@ pub fn hankel2(v: f64, x: f64) -> Complex {
 ///
 /// - [SciPy hankel2e](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hankel2e.html).
 pub fn hankel2e(v: f64, x: f64) -> Complex {
-    crate::complex::owned(crate::backend::legacy::hankel_2e(v, x))
+    crate::complex::owned(::bessel::hankel2e(v, x))
 }
 
 /// Faddeeva function w(z)=exp(−z²) erfc(−iz).
@@ -185,7 +185,7 @@ pub fn wofz(z: Complex) -> Complex {
 ///
 /// - [SciPy kelvin](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kelvin.html).
 pub fn kelvin(x: f64) -> [Complex; 4] {
-    crate::backend::legacy::kelvin(x).map(crate::complex::owned)
+    ::bessel::kelvin(x).map(crate::complex::owned)
 }
 
 /// Modified Fresnel integrals (F,K), with the plus/minus phase convention of SciPy.
@@ -381,7 +381,7 @@ pub fn sph_harm_y(n: usize, m: isize, theta: f64, phi: f64) -> Complex {
         }
     } else {
         crate::complex::owned(
-            crate::backend::sph_harm_y(n as u32, m as i32, theta, phi)
+            ::orthogonal::sph_harm_y(n as i32, m as i32, theta, phi)
                 .unwrap_or(num_complex::Complex64::new(f64::NAN, f64::NAN)),
         )
     }
@@ -418,7 +418,20 @@ pub fn sph_harm_y_all(n: usize, m: usize, theta: f64, phi: f64) -> Result<Vec<Ve
             "sequence arguments exceed the supported domain",
         ));
     }
-    Ok(crate::backend::legacy::sph_harm_y_all(n, m, theta, phi)
+    if !(0.0..=std::f64::consts::PI).contains(&theta) || !phi.is_finite() {
+        return Ok(vec![
+            vec![
+                Complex {
+                    re: f64::NAN,
+                    im: f64::NAN
+                };
+                2 * m + 1
+            ];
+            n + 1
+        ]);
+    }
+    Ok(::orthogonal::sph_harm_y_all(n, m, theta, phi)
+        .map_err(super::polynomials::external_orthogonal_error)?
         .into_iter()
         .map(|row| row.into_iter().map(crate::complex::owned).collect())
         .collect())
@@ -456,7 +469,13 @@ pub fn legendre_p_all(n: usize, x: f64) -> Result<Vec<f64>> {
             "sequence arguments exceed the supported domain",
         ));
     }
-    Ok(crate::backend::legacy::legendre_p_all(n, x))
+    if !x.is_finite() {
+        // Keep Sci's per-degree IEEE behavior for NaN and infinities.
+        return Ok((0..=n)
+            .map(|degree| ::orthogonal::eval_legendre(degree as i32, x))
+            .collect());
+    }
+    ::orthogonal::legendre_p_all(n, x).map_err(super::polynomials::external_orthogonal_error)
 }
 
 /// All Legendre P values through degree n and order magnitude m.
@@ -490,7 +509,11 @@ pub fn assoc_legendre_p_all(n: usize, m: usize, x: f64) -> Result<Vec<Vec<f64>>>
             "sequence arguments exceed the supported domain",
         ));
     }
-    Ok(crate::backend::legacy::assoc_legendre_p_all(n, m, x))
+    if !(-1.0..=1.0).contains(&x) {
+        return Ok(vec![vec![f64::NAN; 2 * m + 1]; n + 1]);
+    }
+    ::orthogonal::assoc_legendre_p_all(n, m, x)
+        .map_err(super::polynomials::external_orthogonal_error)
 }
 
 /// All spherical-normalized Legendre P values through degree n and order magnitude m.
@@ -524,7 +547,10 @@ pub fn sph_legendre_p_all(n: usize, m: usize, x: f64) -> Result<Vec<Vec<f64>>> {
             "sequence arguments exceed the supported domain",
         ));
     }
-    Ok(crate::backend::legacy::sph_legendre_p_all(n, m, x))
+    if !(0.0..=std::f64::consts::PI).contains(&x) {
+        return Ok(vec![vec![f64::NAN; 2 * m + 1]; n + 1]);
+    }
+    ::orthogonal::sph_legendre_p_all(n, m, x).map_err(super::polynomials::external_orthogonal_error)
 }
 
 /// Even Mathieu Fourier coefficients, in increasing harmonic order.

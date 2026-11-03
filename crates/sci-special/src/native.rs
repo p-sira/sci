@@ -333,11 +333,7 @@ pub fn normalized_gen_harmonic<T: Float>(j: u32, k: u32, n: u32, a: T) -> Result
 /// ## References
 /// [Gautschi and Slavik, modified Bessel function ratios (1978)](https://doi.org/10.1090/S0025-5718-1978-0470267-9).
 pub fn iv_ratio<T: Float>(v: T, x: T) -> T {
-    let pair = crate::backend::iv_ratio_pair(
-        v.to_f64().unwrap_or(f64::NAN),
-        x.to_f64().unwrap_or(f64::NAN),
-    );
-    T::from(pair.0).unwrap_or(T::nan())
+    ::bessel::iv_ratio(v, x)
 }
 
 /// Computes `1 − I_v(x)/I_(v−1)(x)` without subtracting a rounded ratio.
@@ -367,11 +363,7 @@ pub fn iv_ratio<T: Float>(v: T, x: T) -> T {
 /// ## References
 /// [Gautschi and Slavik (1978)](https://doi.org/10.1090/S0025-5718-1978-0470267-9).
 pub fn iv_ratio_c<T: Float>(v: T, x: T) -> T {
-    let pair = crate::backend::iv_ratio_pair(
-        v.to_f64().unwrap_or(f64::NAN),
-        x.to_f64().unwrap_or(f64::NAN),
-    );
-    T::from(pair.1).unwrap_or(T::nan())
+    ::bessel::iv_ratio_c(v, x)
 }
 
 /// Solves `I_v(x)/I_(v−1)(x) = r` for nonnegative `x`.
@@ -403,46 +395,5 @@ pub fn iv_ratio_c<T: Float>(v: T, x: T) -> T {
 /// ## References
 /// [NIST DLMF §10.41](https://dlmf.nist.gov/10.41).
 pub fn iv_ratioinv<T: Float>(v: T, r: T) -> T {
-    let (v, r) = (
-        v.to_f64().unwrap_or(f64::NAN),
-        r.to_f64().unwrap_or(f64::NAN),
-    );
-    if !v.is_finite() || v < 0.5 || !(0.0..=1.0).contains(&r) {
-        return T::nan();
-    }
-    if r == 0.0 {
-        return T::zero();
-    }
-    if r == 1.0 {
-        return T::infinity();
-    }
-    if v == 0.5 {
-        return T::from(r.atanh()).unwrap_or(T::nan());
-    }
-    let mut high = (v * r) / (1.0 - r) * (2.0 / (1.0 + r));
-    if high.is_infinite() {
-        return T::infinity();
-    }
-    let mut low = 0.0;
-    for _ in 0..128 {
-        let mid = low + (high - low) * 0.5;
-        let (value, complement) = crate::backend::iv_ratio_pair(v, mid);
-        if value.is_nan() {
-            return T::nan();
-        }
-        let residual = if r > 0.5 {
-            (1.0 - r) - complement
-        } else {
-            value - r
-        };
-        if residual == 0.0 || high - low <= 4.0 * f64::EPSILON * mid {
-            return T::from(mid).unwrap_or(T::nan());
-        }
-        if residual < 0.0 {
-            low = mid;
-        } else {
-            high = mid;
-        }
-    }
-    T::nan()
+    ::bessel::iv_ratioinv(v, r)
 }

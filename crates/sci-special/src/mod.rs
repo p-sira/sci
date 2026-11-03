@@ -451,6 +451,14 @@ pub fn lambertwm1<T: sci_core::Float>(x: T) -> T {
 pub mod elliptic;
 
 // Implementation modules remain private behind the public family namespaces.
+pub(crate) fn external_bessel_error(error: ::bessel::Error) -> crate::Error {
+    match error {
+        ::bessel::Error::InvalidInput(message) => crate::Error::InvalidInput(message),
+        ::bessel::Error::NumericalFailure(message) => crate::Error::NumericalFailure(message),
+        ::bessel::Error::NonFiniteEvaluation => crate::Error::NonFiniteEvaluation,
+    }
+}
+
 mod scipy;
 pub use scipy::*;
 mod waves;

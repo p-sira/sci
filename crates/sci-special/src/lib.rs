@@ -13,8 +13,9 @@
 //! are organized into public mathematical-family modules. For example,
 //! [`gamma::gamma`] computes the gamma function and [`bessel::jv`] computes a
 //! cylindrical Bessel function. No numerical functions are exported at the
-//! crate root. Specialized algorithms use private pure Rust kernels and ellip
-//! backends; elementary formulas use the standard library.
+//! crate root. Specialized algorithms use the published `bessel`, `orthogonal`,
+//! `hypergeometric`, and `ellip` crates, as well as private pure Rust kernels
+//! for other special-function families; elementary formulas use the standard library.
 //! Use `value.is_finite()` to check scalar results for NaN and infinity.
 //! Complex gamma (including log-gamma, reciprocal gamma and digamma),
 //! error/Bessel/Hankel/Airy/Fresnel APIs are available under
@@ -48,7 +49,8 @@
 //!
 //! ## Acknowledgments
 //!
-//! We thank `ellip`, `num-complex`, `complex-bessel`, and `lambert_w`
+//! We thank `ellip`, `orthogonal`, `bessel`, `hypergeometric`, `num-complex`,
+//! `complex-bessel`, and `lambert_w`
 //! for their specialized numerical algorithms. Retained third-party license
 //! notices accompany the private translated kernels in `LICENSES`.
 
@@ -56,6 +58,10 @@
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]
 
 pub use sci_core::{Error, Result};
+// Remaining private numerical translations also serve wave, Airy-integral,
+// Lamé, and other non-extracted APIs. Several old entry points are deliberately
+// unused after delegation to the standalone crates.
+#[allow(dead_code)]
 mod backend;
 
 pub mod complex;

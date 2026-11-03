@@ -30,6 +30,9 @@ rand = { version = "0.9.2", default-features = false, features = ["std", "std_rn
 smelly = "=0.2.0"
 basin = { version = "1.15.1", default-features = false }
 ellip = "1.2.2"
+orthogonal = "0.2.0"
+bessel = "0.1.0"
+hypergeometric = "0.1.0"
 ndarray = "0.16.1"
 nalgebra = { version = "0.35", default-features = false, features = ["std"] }
 num-complex = "0.4.6"

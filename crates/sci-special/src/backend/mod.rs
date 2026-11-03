@@ -30,9 +30,7 @@ pub use bessel::{
 };
 #[allow(dead_code)] // Private trait methods are also used by the independent unit tests.
 mod faddeeva;
-mod spherical;
 pub use complex::wofz;
-pub use spherical::*;
 
 mod lambert;
 pub use lambert::*;
@@ -41,9 +39,6 @@ pub use orthogonal::*;
 
 mod distributions;
 pub use distributions::*;
-
-mod wright;
-pub use wright::wrightomega;
 
 mod kelvin;
 pub use kelvin::*;
@@ -56,8 +51,6 @@ mod legendre;
 pub use legendre::*;
 
 mod double_double;
-mod ratios;
-pub(crate) use ratios::iv_ratio_pair;
 mod hypergeometric;
 pub use hypergeometric::hyp0f1;
 

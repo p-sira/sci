@@ -125,19 +125,6 @@ pub fn log_softmax<T: Float>(values: &[T]) -> Vec<T> {
     shifted.into_iter().map(|x| x - logsum).collect()
 }
 
-fn derivative(v: f64, x: f64, n: u32, function: fn(f64, f64) -> f64, phase: f64) -> f64 {
-    if n > 1024 {
-        return f64::NAN;
-    }
-    let mut weight = 2.0_f64.powi(-(n as i32));
-    let mut sum = weight * function(v - f64::from(n), x);
-    for i in 1..=n {
-        weight *= phase * f64::from(n - i + 1) / f64::from(i);
-        sum += weight * function(v - f64::from(n) + 2.0 * f64::from(i), x);
-    }
-    sum
-}
-
 fn bernoulli_numbers(n: usize) -> Vec<f64> {
     let mut values = vec![1.0];
     for m in 1..=n {
@@ -181,7 +168,7 @@ fn bernoulli_numbers(n: usize) -> Vec<f64> {
 ///
 /// - [SciPy jvp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jvp.html).
 pub fn jvp(v: f64, x: f64, n: u32) -> f64 {
-    derivative(v, x, n, super::jv, -1.0)
+    ::bessel::jvp(v, x, n)
 }
 
 /// Order-n derivative of yv(v,x) with respect to x, computed by the adjacent-order recurrence.
@@ -202,7 +189,7 @@ pub fn jvp(v: f64, x: f64, n: u32) -> f64 {
 ///
 /// - [SciPy yvp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.yvp.html).
 pub fn yvp(v: f64, x: f64, n: u32) -> f64 {
-    derivative(v, x, n, super::yv, -1.0)
+    ::bessel::yvp(v, x, n)
 }
 
 /// Order-n derivative of iv(v,x) with respect to x, computed by the adjacent-order recurrence.
@@ -223,7 +210,7 @@ pub fn yvp(v: f64, x: f64, n: u32) -> f64 {
 ///
 /// - [SciPy ivp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ivp.html).
 pub fn ivp(v: f64, x: f64, n: u32) -> f64 {
-    derivative(v, x, n, super::iv, 1.0)
+    ::bessel::ivp(v, x, n)
 }
 
 /// Order-n derivative of kv(v,x) with respect to x, computed by the adjacent-order recurrence.
@@ -244,7 +231,7 @@ pub fn ivp(v: f64, x: f64, n: u32) -> f64 {
 ///
 /// - [SciPy kvp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kvp.html).
 pub fn kvp(v: f64, x: f64, n: u32) -> f64 {
-    derivative(v, x, n, super::kv, 1.0) * if n.is_multiple_of(2) { 1.0 } else { -1.0 }
+    ::bessel::kvp(v, x, n)
 }
 
 /// Order-n derivative of a Hankel function J_v(x) ± iY_v(x).
@@ -265,10 +252,7 @@ pub fn kvp(v: f64, x: f64, n: u32) -> f64 {
 ///
 /// - [SciPy h1vp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.h1vp.html).
 pub fn h1vp(v: f64, x: f64, n: u32) -> Complex {
-    Complex {
-        re: jvp(v, x, n),
-        im: 1.0 * yvp(v, x, n),
-    }
+    crate::complex::owned(::bessel::h1vp(v, x, n))
 }
 
 /// Order-n derivative of a Hankel function J_v(x) ± iY_v(x).
@@ -289,10 +273,7 @@ pub fn h1vp(v: f64, x: f64, n: u32) -> Complex {
 ///
 /// - [SciPy h2vp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.h2vp.html).
 pub fn h2vp(v: f64, x: f64, n: u32) -> Complex {
-    Complex {
-        re: jvp(v, x, n),
-        im: -yvp(v, x, n),
-    }
+    crate::complex::owned(::bessel::h2vp(v, x, n))
 }
 
 /// Spherical Bessel jn and optionally its first derivative.
@@ -321,13 +302,7 @@ pub fn h2vp(v: f64, x: f64, n: u32) -> Complex {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn spherical_jn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
-    if !(0..=4096).contains(&n) {
-        T::nan()
-    } else if derivative {
-        crate::backend::sph_bessel_j_jac(n as i32, x).unwrap_or(T::nan())
-    } else {
-        crate::backend::sph_bessel_j(n as i32, x).unwrap_or(T::nan())
-    }
+    ::bessel::spherical_jn(n, x, derivative)
 }
 
 /// Spherical Bessel yn and optionally its first derivative.
@@ -356,13 +331,7 @@ pub fn spherical_jn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn spherical_yn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
-    if !(0..=4096).contains(&n) {
-        T::nan()
-    } else if derivative {
-        crate::backend::sph_bessel_y_jac(n as i32, x).unwrap_or(T::nan())
-    } else {
-        crate::backend::sph_bessel_y(n as i32, x).unwrap_or(T::nan())
-    }
+    ::bessel::spherical_yn(n, x, derivative)
 }
 
 /// Spherical Bessel in and optionally its first derivative.
@@ -391,13 +360,7 @@ pub fn spherical_yn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn spherical_in<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
-    if !(0..=4096).contains(&n) {
-        T::nan()
-    } else if derivative {
-        crate::backend::sph_bessel_i_jac(n as i32, x).unwrap_or(T::nan())
-    } else {
-        crate::backend::sph_bessel_i(n as i32, x).unwrap_or(T::nan())
-    }
+    ::bessel::spherical_in(n, x, derivative)
 }
 
 /// Spherical Bessel kn and optionally its first derivative.
@@ -426,13 +389,7 @@ pub fn spherical_in<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn spherical_kn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
-    if !(0..=4096).contains(&n) {
-        T::nan()
-    } else if derivative {
-        crate::backend::sph_bessel_k_jac(n as i32, x).unwrap_or(T::nan())
-    } else {
-        crate::backend::sph_bessel_k(n as i32, x).unwrap_or(T::nan())
-    }
+    ::bessel::spherical_kn(n, x, derivative)
 }
 
 /// Scaled or shifted orthogonal polynomial, using its standard three-term recurrence.
@@ -454,7 +411,10 @@ pub fn spherical_kn<T: sci_core::Float>(n: i64, x: T, derivative: bool) -> T {
 /// - [SciPy eval_chebyc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_chebyc.html).
 #[inline]
 pub fn eval_chebyc(n: i32, x: f64) -> f64 {
-    2.0 * super::eval_chebyt(n, x / 2.0)
+    if !(0..=4096).contains(&n) {
+        return f64::NAN;
+    }
+    ::orthogonal::eval_chebyc(n, x)
 }
 
 /// Scaled or shifted orthogonal polynomial, using its standard three-term recurrence.
@@ -476,7 +436,10 @@ pub fn eval_chebyc(n: i32, x: f64) -> f64 {
 /// - [SciPy eval_chebys](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_chebys.html).
 #[inline]
 pub fn eval_chebys(n: i32, x: f64) -> f64 {
-    super::eval_chebyu(n, x / 2.0)
+    if !(0..=4096).contains(&n) {
+        return f64::NAN;
+    }
+    ::orthogonal::eval_chebys(n, x)
 }
 
 /// Scaled or shifted orthogonal polynomial, using its standard three-term recurrence.
@@ -498,7 +461,10 @@ pub fn eval_chebys(n: i32, x: f64) -> f64 {
 /// - [SciPy eval_sh_chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_sh_chebyt.html).
 #[inline]
 pub fn eval_sh_chebyt(n: i32, x: f64) -> f64 {
-    super::eval_chebyt(n, 2.0 * x - 1.0)
+    if !(0..=4096).contains(&n) {
+        return f64::NAN;
+    }
+    ::orthogonal::eval_sh_chebyt(n, x)
 }
 
 /// Scaled or shifted orthogonal polynomial, using its standard three-term recurrence.
@@ -520,7 +486,10 @@ pub fn eval_sh_chebyt(n: i32, x: f64) -> f64 {
 /// - [SciPy eval_sh_chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_sh_chebyu.html).
 #[inline]
 pub fn eval_sh_chebyu(n: i32, x: f64) -> f64 {
-    super::eval_chebyu(n, 2.0 * x - 1.0)
+    if !(0..=4096).contains(&n) {
+        return f64::NAN;
+    }
+    ::orthogonal::eval_sh_chebyu(n, x)
 }
 
 /// Scaled or shifted orthogonal polynomial, using its standard three-term recurrence.
@@ -541,7 +510,10 @@ pub fn eval_sh_chebyu(n: i32, x: f64) -> f64 {
 ///
 /// - [SciPy eval_sh_legendre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_sh_legendre.html).
 pub fn eval_sh_legendre(n: i32, x: f64) -> f64 {
-    super::eval_legendre(n, 2.0 * x - 1.0)
+    if !(0..=4096).contains(&n) {
+        return f64::NAN;
+    }
+    ::orthogonal::eval_sh_legendre(n, x)
 }
 
 /// Shifted Jacobi G_n^(p,q)(x) = n! Γ(n+p)/Γ(2n+p) P_n^(p−q,q−1)(2x−1).
@@ -562,9 +534,10 @@ pub fn eval_sh_legendre(n: i32, x: f64) -> f64 {
 ///
 /// - [SciPy eval_sh_jacobi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.eval_sh_jacobi.html).
 pub fn eval_sh_jacobi(n: i32, p: f64, q: f64, x: f64) -> f64 {
-    let nf = f64::from(n);
-    (super::gammaln(nf + 1.0) + super::gammaln(nf + p) - super::gammaln(2.0 * nf + p)).exp()
-        * super::eval_jacobi(n, p - q, q - 1.0, 2.0 * x - 1.0)
+    if !(0..=4096).contains(&n) {
+        return f64::NAN;
+    }
+    ::orthogonal::eval_sh_jacobi(n, p, q, x)
 }
 
 /// Periodic sinc sin(nx/2)/(n sin(x/2)), with the continuous limiting value at multiples of 2π.
@@ -1009,20 +982,7 @@ pub fn pbdn_seq(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy riccati_jn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.riccati_jn.html).
 pub fn riccati_jn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
-    if n > 4096 || !x.is_finite() || x <= 0.0 {
-        return Err(Error::InvalidInput(
-            "Riccati sequence requires positive finite x and degree at most 4096",
-        ));
-    }
-    Ok((0..=n)
-        .map(|i| {
-            let value = super::spherical_jn(i as i64, x, false);
-            (
-                x * value,
-                value + x * super::spherical_jn(i as i64, x, true),
-            )
-        })
-        .unzip())
+    ::bessel::riccati_jn(n, x).map_err(super::external_bessel_error)
 }
 
 /// Riccati–Bessel values x*y_i(x) and derivatives through order n.
@@ -1044,20 +1004,7 @@ pub fn riccati_jn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy riccati_yn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.riccati_yn.html).
 pub fn riccati_yn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
-    if n > 4096 || !x.is_finite() || x <= 0.0 {
-        return Err(Error::InvalidInput(
-            "Riccati sequence requires positive finite x and degree at most 4096",
-        ));
-    }
-    Ok((0..=n)
-        .map(|i| {
-            let value = super::spherical_yn(i as i64, x, false);
-            (
-                x * value,
-                value + x * super::spherical_yn(i as i64, x, true),
-            )
-        })
-        .unzip())
+    ::bessel::riccati_yn(n, x).map_err(super::external_bessel_error)
 }
 
 /// Jahnke–Emden Lambda function Γ(v+1)(2/x)^v J_v(x) and its derivative sequence.
