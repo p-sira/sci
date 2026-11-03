@@ -104,9 +104,11 @@ pub fn airy(x: f64) -> [f64; 4] {
 /// - [SciPy airye](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.airye.html).
 pub fn airye(x: f64) -> [f64; 4] {
     if x < 0.0 {
-        // Sci's real scaled Airy convention retains unscaled Bi/Bi' for
-        // negative x, while bessel::airye rejects the whole quartet.
-        return crate::backend::legacy::airy_scaled(x);
+        // The scaled Ai values are nonreal on the negative real axis, but
+        // the Bi factor is exp(-|zeta|) = 1 there. The old private scaled
+        // backend rejected the whole quartet and silently lost real Bi/Bi'.
+        let unscaled = airy(x);
+        return [f64::NAN, f64::NAN, unscaled[2], unscaled[3]];
     }
     match ::bessel::airye(x) {
         Ok((ai, aip, bi, bip)) => [ai, aip, bi, bip],

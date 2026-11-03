@@ -459,6 +459,28 @@ pub(crate) fn external_bessel_error(error: ::bessel::Error) -> crate::Error {
     }
 }
 
+#[cfg(test)]
+mod bessel_adapter_error_tests {
+    use super::external_bessel_error;
+    use crate::Error;
+
+    #[test]
+    fn maps_all_standalone_error_variants_to_sci_errors() {
+        assert!(matches!(
+            external_bessel_error(::bessel::Error::InvalidInput("bad input")),
+            Error::InvalidInput("bad input")
+        ));
+        assert!(matches!(
+            external_bessel_error(::bessel::Error::NumericalFailure("no convergence")),
+            Error::NumericalFailure("no convergence")
+        ));
+        assert!(matches!(
+            external_bessel_error(::bessel::Error::NonFiniteEvaluation),
+            Error::NonFiniteEvaluation
+        ));
+    }
+}
+
 mod scipy;
 pub use scipy::*;
 mod waves;

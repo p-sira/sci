@@ -1070,6 +1070,26 @@ mod tests {
     use super::*;
 
     #[test]
+    fn maps_all_standalone_orthogonal_error_variants_to_sci_errors() {
+        assert!(matches!(
+            external_orthogonal_error(::orthogonal::Error::InvalidInput("bad input")),
+            Error::InvalidInput("bad input")
+        ));
+        assert!(matches!(
+            external_orthogonal_error(::orthogonal::Error::DimensionMismatch),
+            Error::DimensionMismatch
+        ));
+        assert!(matches!(
+            external_orthogonal_error(::orthogonal::Error::NonFiniteEvaluation),
+            Error::NonFiniteEvaluation
+        ));
+        assert!(matches!(
+            external_orthogonal_error(::orthogonal::Error::NumericalFailure("no convergence")),
+            Error::NumericalFailure("no convergence")
+        ));
+    }
+
+    #[test]
     fn quadrature_first_components_match_full_eigensystem() {
         // Both paths use identical shifts and sorting; the optimization skips
         // unused eigenvector rows rather than changing eigenvalue algorithms.
