@@ -74,6 +74,7 @@ fn pair_slope(xi: f64, xj: f64, yi: f64, yj: f64) -> Result<f64> {
 }
 
 fn median_in_place(values: &mut [f64]) -> f64 {
+    // Theil–Sen uses the *sorted* slopes again for its CI rank bounds.
     values.sort_by(f64::total_cmp);
     interpolate(values, 0.5)
 }
@@ -87,7 +88,7 @@ fn line_intercept(x: &[f64], y: &[f64], slope: f64) -> Result<f64> {
             _ => Err(crate::Error::NonFiniteEvaluation),
         })
         .collect::<Result<Vec<_>>>()?;
-    Ok(median_in_place(&mut residuals))
+    Ok(median_select_in_place(&mut residuals))
 }
 
 /// Theil–Sen slope `median((y_j−y_i)/(x_j−x_i))`, omitting equal-x pairs.
@@ -218,7 +219,7 @@ pub fn theilslopes(
 ///
 /// ## Numerical behavior
 ///
-/// Native repeated medians take O(n² log n) work and O(n) memory, with at most
+/// Native repeated medians take expected O(n²) work and O(n) memory, with at most
 /// 4,192,256 ordered pair evaluations. Difference scaling and fused multiply-add
 /// reduce overflow and cancellation; binary64 rounding remains. No external
 /// backend is used. The estimator has asymptotic breakdown point 50%.
@@ -257,15 +258,160 @@ pub fn siegelslopes(x: &[f64], y: &[f64], method: SiegelMethod) -> Result<Robust
                 }?);
             }
         }
-        slopes.push(median_in_place(&mut pairs));
+        slopes.push(median_select_in_place(&mut pairs));
         if method == SiegelMethod::Separate {
-            intercepts.push(median_in_place(&mut pair_intercepts));
+            intercepts.push(median_select_in_place(&mut pair_intercepts));
         }
     }
-    let slope = median_in_place(&mut slopes);
+    let slope = median_select_in_place(&mut slopes);
     let intercept = match method {
         SiegelMethod::Hierarchical => line_intercept(x, y, slope)?,
-        SiegelMethod::Separate => median_in_place(&mut intercepts),
+        SiegelMethod::Separate => median_select_in_place(&mut intercepts),
     };
     Ok(RobustRegression { slope, intercept })
+}
+
+#[cfg(test)]
+mod median_regression_tests {
+    use super::*;
+
+    // Keep the pre-selection computation here as an independent oracle for
+    // both Siegel intercept conventions, including signed-zero results.
+    fn siegel_with_sorted_medians(
+        x: &[f64],
+        y: &[f64],
+        method: SiegelMethod,
+    ) -> Result<RobustRegression> {
+        validate(x, y)?;
+        let mut slopes = Vec::with_capacity(x.len());
+        let mut intercepts = Vec::with_capacity(x.len());
+        let mut pairs = Vec::with_capacity(x.len() - 1);
+        let mut pair_intercepts = Vec::with_capacity(x.len() - 1);
+        for i in 0..x.len() {
+            pairs.clear();
+            pair_intercepts.clear();
+            for j in 0..x.len() {
+                if x[i] == x[j] {
+                    continue;
+                }
+                let slope = pair_slope(x[i], x[j], y[i], y[j])?;
+                pairs.push(slope);
+                if method == SiegelMethod::Separate {
+                    pair_intercepts.push(match (-slope).mul_add(x[i], y[i]) {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(crate::Error::NonFiniteEvaluation),
+                    }?);
+                }
+            }
+            slopes.push(median_in_place(&mut pairs));
+            if method == SiegelMethod::Separate {
+                intercepts.push(median_in_place(&mut pair_intercepts));
+            }
+        }
+        let slope = median_in_place(&mut slopes);
+        let intercept = match method {
+            SiegelMethod::Hierarchical => {
+                let mut residuals = x
+                    .iter()
+                    .zip(y)
+                    .map(|(a, b)| match (-slope).mul_add(*a, *b) {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(crate::Error::NonFiniteEvaluation),
+                    })
+                    .collect::<Result<Vec<_>>>()?;
+                median_in_place(&mut residuals)
+            }
+            SiegelMethod::Separate => median_in_place(&mut intercepts),
+        };
+        Ok(RobustRegression { slope, intercept })
+    }
+
+    #[test]
+    fn siegel_medians_match_full_sort_for_both_intercepts() -> Result<()> {
+        let cases: &[(&[f64], &[f64])] = &[
+            (&[0., 1., 2., 3., 4.], &[1., 3., 5., 7., 999.]),
+            (&[0., 0., 1., 2., 3., 4.], &[1., 1., 3., 4., 7., 8.]),
+            (&[0., 1., 2., 3., 4., 5.], &[2., 5., 5., 8., 8., 9.]),
+            (&[-0., 1., 2., 3.], &[0., -0., 0., 0.]),
+            (&[-f64::MAX, f64::MAX], &[-f64::MAX, f64::MAX]),
+        ];
+        for &(x, y) in cases {
+            for method in [SiegelMethod::Hierarchical, SiegelMethod::Separate] {
+                let reference = siegel_with_sorted_medians(x, y, method)?;
+                let actual = siegelslopes(x, y, method)?;
+                assert_eq!(actual.slope.to_bits(), reference.slope.to_bits());
+                assert_eq!(actual.intercept.to_bits(), reference.intercept.to_bits());
+                let reversed_x = x.iter().rev().copied().collect::<Vec<_>>();
+                let reversed_y = y.iter().rev().copied().collect::<Vec<_>>();
+                let reversed_reference =
+                    siegel_with_sorted_medians(&reversed_x, &reversed_y, method)?;
+                let reversed_actual = siegelslopes(&reversed_x, &reversed_y, method)?;
+                assert_eq!(
+                    reversed_actual.slope.to_bits(),
+                    reversed_reference.slope.to_bits()
+                );
+                assert_eq!(
+                    reversed_actual.intercept.to_bits(),
+                    reversed_reference.intercept.to_bits()
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn theil_slope_ci_indices_remain_sorted() -> Result<()> {
+        let x = [0., 0., 1., 2., 3., 4., 5.];
+        let y = [1., 1., 3., 4., 7., 8., 9.];
+        let mut sorted_slopes = Vec::new();
+        for i in 0..x.len() {
+            for j in i + 1..x.len() {
+                if x[i] != x[j] {
+                    sorted_slopes.push(pair_slope(x[i], x[j], y[i], y[j])?);
+                }
+            }
+        }
+        sorted_slopes.sort_by(f64::total_cmp);
+        let slope = interpolate(&sorted_slopes, 0.5);
+        let n = x.len() as f64;
+        let variance = (n * (n - 1.) * (2. * n + 5.)
+            - ranking::tie_counts(&x).variance_term
+            - ranking::tie_counts(&y).variance_term)
+            / 18.;
+        for confidence in [0.1_f64, 0.9, 0.95, 0.999] {
+            let z = normal_ppf(confidence.min(1. - confidence) / 2., 0., 1.)?;
+            let count = sorted_slopes.len() as f64;
+            let lower = (((count + z * variance.sqrt()) / 2.).round_ties_even() - 1.)
+                .clamp(0., count - 1.) as usize;
+            let upper = ((count - z * variance.sqrt()) / 2.)
+                .round_ties_even()
+                .clamp(0., count - 1.) as usize;
+            for method in [TheilMethod::Joint, TheilMethod::Separate] {
+                let result = theilslopes(&x, &y, confidence, method)?;
+                assert_eq!(result.slope.to_bits(), slope.to_bits());
+                assert_eq!(result.low_slope.to_bits(), sorted_slopes[lower].to_bits());
+                assert_eq!(result.high_slope.to_bits(), sorted_slopes[upper].to_bits());
+                let expected_intercept = match method {
+                    TheilMethod::Joint => {
+                        let mut residuals = x
+                            .iter()
+                            .zip(y.iter())
+                            .map(|(&a, &b)| (-slope).mul_add(a, b))
+                            .collect::<Vec<_>>();
+                        median_in_place(&mut residuals)
+                    }
+                    TheilMethod::Separate => {
+                        let mut ordered_x = x.to_vec();
+                        let mut ordered_y = y.to_vec();
+                        (-slope).mul_add(
+                            median_in_place(&mut ordered_x),
+                            median_in_place(&mut ordered_y),
+                        )
+                    }
+                };
+                assert_eq!(result.intercept.to_bits(), expected_intercept.to_bits());
+            }
+        }
+        Ok(())
+    }
 }
