@@ -147,7 +147,7 @@ fn euclidean_pairwise_keeps_large_and_subnormal_distances() {
     assert!((actual / 1e300 - 2.0_f64.sqrt()).abs() < 5e-15);
     assert_same(Ok(actual), distance::euclidean(&large[0], &large[1], None));
 
-    let tiny = vec![vec![1e-300, 0.0], vec![0.0, 1e-300]];
+    let tiny = [vec![1e-300, 0.0], vec![0.0, 1e-300]];
     let actual = distance::cdist(&tiny[..1], &tiny[1..], Metric::Euclidean).unwrap()[0][0];
     assert!((actual / 1e-300 - 2.0_f64.sqrt()).abs() < 5e-15);
     assert_same(Ok(actual), distance::euclidean(&tiny[0], &tiny[1], None));
@@ -197,7 +197,11 @@ fn moderate_euclidean_fast_path_stays_within_two_ulps() {
                     b.push(y * scale);
                 }
                 let expected = distance::euclidean(&a, &b, None);
-                let cross = distance::cdist(&[a.clone()], &[b.clone()], Metric::Euclidean);
+                let cross = distance::cdist(
+                    std::slice::from_ref(&a),
+                    std::slice::from_ref(&b),
+                    Metric::Euclidean,
+                );
                 assert_pairwise_same(cross.map(|rows| rows[0][0]), expected, Metric::Euclidean);
                 let within = distance::pdist(&[a.clone(), b.clone()], Metric::Minkowski(2.0));
                 assert_pairwise_same(
@@ -227,8 +231,12 @@ fn euclidean_fallback_handles_cancellation_and_extreme_exponents() {
     ];
     for (a, b) in cases {
         let expected = distance::euclidean(&a, &b, None);
-        let got =
-            distance::cdist(&[a.clone()], &[b.clone()], Metric::Euclidean).map(|rows| rows[0][0]);
+        let got = distance::cdist(
+            std::slice::from_ref(&a),
+            std::slice::from_ref(&b),
+            Metric::Euclidean,
+        )
+        .map(|rows| rows[0][0]);
         assert_same(got, expected);
         let expected = distance::minkowski(&a, &b, 2.0, None);
         let got = distance::pdist(&[a.clone(), b.clone()], Metric::Minkowski(2.0))
@@ -243,7 +251,12 @@ fn near_equal_large_coordinates_follow_rounded_differences() {
     let a = vec![start + 2.0, start + 4.0, start + 8.0];
     let b = vec![start, start + 2.0, start + 4.0];
     let expected = (4.0_f64 + 4.0 + 16.0).sqrt();
-    let actual = distance::cdist(&[a.clone()], &[b.clone()], Metric::Euclidean).unwrap()[0][0];
+    let actual = distance::cdist(
+        std::slice::from_ref(&a),
+        std::slice::from_ref(&b),
+        Metric::Euclidean,
+    )
+    .unwrap()[0][0];
     assert_eq!(actual.to_bits(), expected.to_bits());
     assert_pairwise_same(
         Ok(actual),
