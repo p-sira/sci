@@ -372,9 +372,10 @@ pub fn procrustes(data1: &[Vec<f64>], data2: &[Vec<f64>]) -> Result<ProcrustesRe
 ///
 /// ## Numerical behavior
 ///
-/// Uses private nalgebra LU inverses and exhaustive barycentric tests. Nearly
-/// singular simplices and distant coordinates can lose accuracy. Supplied cells
-/// need not be Delaunay and are not checked for overlap or tessellation validity.
+/// Uses private nalgebra LU inverses and exhaustive barycentric tests, reusing
+/// two scratch vectors for every query and simplex. Nearly singular simplices
+/// and distant coordinates can lose accuracy. Supplied cells need not be
+/// Delaunay and are not checked for overlap or tessellation validity.
 ///
 /// # Examples
 ///
@@ -431,12 +432,19 @@ pub fn tsearch(
         }
         cells.push((origin, inverse));
     }
+    // The original query loop allocated two dynamic vectors for each simplex
+    // candidate. Reuse the scratch storage while keeping nalgebra's matrix-
+    // vector multiplication and barycentric accumulation unchanged.
+    let mut delta = DVector::zeros(d);
+    let mut bary = DVector::zeros(d);
     queries
         .iter()
         .map(|q| {
             for (i, (origin, inverse)) in cells.iter().enumerate() {
-                let delta = DVector::from_iterator(d, q.iter().zip(*origin).map(|(&x, &a)| x - a));
-                let bary = inverse * delta;
+                for (component, (&x, &a)) in delta.iter_mut().zip(q.iter().zip(*origin)) {
+                    *component = x - a;
+                }
+                inverse.mul_to(&delta, &mut bary);
                 if bary.iter().any(|x| !x.is_finite()) {
                     return Err(Error::NonFiniteEvaluation);
                 }
