@@ -382,18 +382,24 @@ pub fn cramervonmises_2samp(x: &[f64], y: &[f64], method: CvmMethod) -> Result<T
             let mut partition = (0..x.len()).collect::<Vec<_>>();
             let (mut extreme, mut partitions) = (0_u64, 0_u64);
             loop {
-                let mut first = Vec::with_capacity(x.len());
-                let mut second = Vec::with_capacity(y.len());
-                let mut i = 0;
+                // The ranks of each selected group are already ascending.
+                // Accumulate the same U statistic directly instead of allocating
+                // two rank vectors for every partition. All differences here
+                // are small integers (count <= 20), so their squares and sums
+                // are exactly representable in f64.
+                let (mut first_sum, mut second_sum) = (0., 0.);
+                let (mut first_count, mut second_count) = (0, 0);
                 for r in 0..count {
-                    if i < partition.len() && partition[i] == r {
-                        first.push((r + 1) as f64);
-                        i += 1;
+                    let rank = (r + 1) as f64;
+                    if first_count < partition.len() && partition[first_count] == r {
+                        first_sum += (rank - (first_count + 1) as f64).powi(2);
+                        first_count += 1;
                     } else {
-                        second.push((r + 1) as f64);
+                        second_sum += (rank - (second_count + 1) as f64).powi(2);
+                        second_count += 1;
                     }
                 }
-                extreme += u64::from(cvm_rank_u(&first, &second) >= u);
+                extreme += u64::from(n * first_sum + m * second_sum >= u);
                 partitions += 1;
                 let Some(i) = (0..partition.len())
                     .rev()
@@ -410,6 +416,69 @@ pub fn cramervonmises_2samp(x: &[f64], y: &[f64], method: CvmMethod) -> Result<T
         }
     };
     Ok(TestResult { statistic, pvalue })
+}
+
+#[cfg(test)]
+mod exact_partition_tests {
+    use super::*;
+
+    // Reference enumeration with a separate rank vector for each group,
+    // retaining the original floating-point accumulation order.
+    fn reference_tail(x: &[f64], y: &[f64]) -> Result<f64> {
+        let a = sorted(x)?;
+        let b = sorted(y)?;
+        let count = a.len() + b.len();
+        let pooled = a.iter().chain(&b).copied().collect::<Vec<_>>();
+        let ranks = rankdata(&pooled, RankMethod::Average)?;
+        let observed = cvm_rank_u(&ranks[..a.len()], &ranks[a.len()..]);
+        let mut selected = (0..a.len()).collect::<Vec<_>>();
+        let (mut extreme, mut partitions) = (0_u64, 0_u64);
+        loop {
+            let mut first = Vec::with_capacity(a.len());
+            let mut second = Vec::with_capacity(b.len());
+            let mut i = 0;
+            for r in 0..count {
+                if i < selected.len() && selected[i] == r {
+                    first.push((r + 1) as f64);
+                    i += 1;
+                } else {
+                    second.push((r + 1) as f64);
+                }
+            }
+            extreme += u64::from(cvm_rank_u(&first, &second) >= observed);
+            partitions += 1;
+            let Some(i) = (0..selected.len())
+                .rev()
+                .find(|&i| selected[i] < count - selected.len() + i)
+            else {
+                break;
+            };
+            selected[i] += 1;
+            for j in i + 1..selected.len() {
+                selected[j] = selected[j - 1] + 1;
+            }
+        }
+        Ok(extreme as f64 / partitions as f64)
+    }
+
+    #[test]
+    fn exact_tail_preserves_untied_tied_and_unequal_groups() -> Result<()> {
+        let cases: &[(&[f64], &[f64])] = &[
+            (&[1., 2., 3.], &[4., 5., 6.]),
+            (&[0., 0., 1., 2.], &[0., 1., 1.]),
+            (&[-1., 2.], &[3., 3., 5., 7., 11., 13.]),
+            (&[1., 1., 1., 1.], &[1., 1., 1., 1.]),
+            (
+                &[0., 1., 2., 3., 4., 5., 6.],
+                &[0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5],
+            ),
+        ];
+        for &(x, y) in cases {
+            let result = cramervonmises_2samp(x, y, CvmMethod::Exact)?;
+            assert_eq!(result.pvalue, reference_tail(x, y)?);
+        }
+        Ok(())
+    }
 }
 
 /// Empirical-CDF convention for multi-sample Anderson–Darling tests.

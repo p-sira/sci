@@ -151,6 +151,57 @@ pub(crate) fn design(x: &[f64], t: &[f64], k: usize) -> DMatrix<f64> {
     a
 }
 
+// A square B-spline collocation matrix has only k+1 neighboring entries per
+// row. For the well-conditioned case pivoted LU is much cheaper than SVD.
+// Preserve SVD's numerical rank check when the LU factors look suspicious.
+pub(crate) fn interpolate(a: DMatrix<f64>, b: DVector<f64>) -> Result<Vec<f64>> {
+    if a.nrows() != a.ncols() || b.len() != a.nrows() {
+        return Err(Error::DimensionMismatch);
+    }
+    bound(&[a.nrows(), a.ncols(), a.ncols()])?;
+    is_finite_slice(a.as_slice())?;
+    is_finite_slice(b.as_slice())?;
+
+    let largest_entry = a
+        .iter()
+        .fold(0.0_f64, |largest, value| largest.max(value.abs()));
+    let lu = a.clone().lu();
+    let upper = lu.u();
+    // Small pivots relative to the original matrix can amplify roundoff even
+    // if the computed residual is tiny. Reject those cases conservatively.
+    let pivot_floor = f64::EPSILON.sqrt() * largest_entry;
+    let reliable_pivots = largest_entry > 0.0
+        && (0..a.nrows()).all(|i| {
+            let pivot = upper[(i, i)].abs();
+            pivot.is_finite() && pivot > pivot_floor
+        });
+    if reliable_pivots
+        && let Some(coefficients) = lu.solve(&b)
+        && is_finite_slice(coefficients.as_slice()).is_ok()
+        && accurate_interpolation(&a, &b, &coefficients)
+    {
+        return Ok(coefficients.as_slice().to_vec());
+    }
+
+    // Rank-deficient or poorly scaled fits retain the original SVD behavior.
+    least_squares(a, b)
+}
+
+fn accurate_interpolation(a: &DMatrix<f64>, b: &DVector<f64>, c: &DVector<f64>) -> bool {
+    let tolerance = 32.0 * (a.ncols() as f64) * f64::EPSILON;
+    (0..a.nrows()).all(|i| {
+        let mut fitted = 0.0;
+        let mut scale = b[i].abs();
+        for j in 0..a.ncols() {
+            let term = a[(i, j)] * c[j];
+            fitted += term;
+            scale += term.abs();
+        }
+        let error = (fitted - b[i]).abs();
+        error.is_finite() && scale.is_finite() && error <= tolerance * scale
+    })
+}
+
 pub(crate) fn least_squares(a: DMatrix<f64>, b: DVector<f64>) -> Result<Vec<f64>> {
     bound(&[a.nrows(), a.ncols(), a.ncols()])?;
     if a.nrows() < a.ncols() {
@@ -329,4 +380,23 @@ pub(crate) fn polynomial_roots(coefficients: &[f64]) -> Result<Vec<f64>> {
         }
     }
     Ok(roots)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{interpolate, least_squares};
+    use nalgebra::{DMatrix, DVector};
+
+    #[test]
+    fn interpolation_falls_back_for_small_pivots_and_singular_systems() {
+        let a = DMatrix::from_diagonal(&DVector::from_vec(vec![1.0, 1e-10, 1.0]));
+        let b = DVector::from_vec(vec![2.0, 3e-10, 4.0]);
+        let svd = least_squares(a.clone(), b.clone()).unwrap();
+        assert_eq!(interpolate(a, b).unwrap(), svd);
+
+        let singular = DMatrix::from_row_slice(2, 2, &[1.0, 1.0, 1.0, 1.0]);
+        let values = DVector::from_vec(vec![1.0, 1.0]);
+        assert!(least_squares(singular.clone(), values.clone()).is_err());
+        assert!(interpolate(singular, values).is_err());
+    }
 }
