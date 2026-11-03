@@ -276,7 +276,14 @@ fn hyp1f1_continuation_identities_and_work_limits() {
     for x in [-20.0_f64, -100.0, -1000.0] {
         let scale = (x * 0.5).exp();
         let expected = ((1.0 + x) * scale) * scale;
-        assert_eq!(s::hypergeometric::hyp1f1(2.0, 1.0, x), expected);
+        let actual = s::hypergeometric::hyp1f1(2.0, 1.0, x);
+        if expected == 0.0 {
+            assert_eq!(actual, 0.0);
+        } else {
+            // The published positive-term dispatcher and the identity differ
+            // by final-rounding error; nonzero values need relative accuracy.
+            assert!((actual - expected).abs() <= 5e-15 * expected.abs());
+        }
     }
     assert!(s::hypergeometric::hyp1f1(100000.0, 0.2, -1000.0).is_nan()); // Continuation step budget.
     assert!(s::hypergeometric::hyp1f1(65.1, -3.0, -20.0).is_infinite()); // Denominator pole unchanged.

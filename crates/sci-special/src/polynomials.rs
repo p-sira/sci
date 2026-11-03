@@ -2,6 +2,16 @@
 
 use crate::{Error, Result};
 
+// Keep Sci's error type stable while using the standalone polynomial kernels.
+pub(super) fn external_orthogonal_error(error: ::orthogonal::Error) -> Error {
+    match error {
+        ::orthogonal::Error::InvalidInput(message) => Error::InvalidInput(message),
+        ::orthogonal::Error::DimensionMismatch => Error::DimensionMismatch,
+        ::orthogonal::Error::NonFiniteEvaluation => Error::NonFiniteEvaluation,
+        ::orthogonal::Error::NumericalFailure(message) => Error::NumericalFailure(message),
+    }
+}
+
 // Implicit symmetric tridiagonal QL with Wilkinson shifts (EISPACK IMTQL2).
 // Quadrature needs only the first component of each eigenvector (Golub-Welsch),
 // while Lamé polynomials need the complete eigensystem. Keep the same shifted
@@ -17,6 +27,7 @@ pub(super) fn eigensystem(diagonal: &[f64], off: &[f64]) -> Result<(Vec<f64>, Ve
     ))
 }
 
+#[cfg(test)]
 fn first_eigenvector_components(diagonal: &[f64], off: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
     let (values, mut rows) = tridiagonal_eigensystem(diagonal, off, false)?;
     Ok((values, rows.pop().unwrap()))
@@ -139,141 +150,6 @@ fn tridiagonal_eigensystem(
     ))
 }
 
-// Coefficients are ascending internally. The public representation is descending.
-fn advance(previous: &[f64], before: &[f64], x: f64, constant: f64, subtract: f64) -> Vec<f64> {
-    let mut out = vec![0.0; previous.len() + 1];
-    for (i, &value) in previous.iter().enumerate() {
-        out[i] += constant * value;
-        out[i + 1] += x * value;
-    }
-    for (i, &value) in before.iter().enumerate() {
-        out[i] -= subtract * value;
-    }
-    out
-}
-
-#[derive(Clone, Copy)]
-enum Family {
-    Jacobi(f64, f64),
-    Laguerre(f64),
-    Hermite(bool),
-    Chebyt,
-    Chebyu,
-    Gegenbauer(f64),
-}
-
-fn coefficients(
-    n: usize,
-    family: Family,
-    monic: bool,
-    scale: f64,
-    shift: f64,
-    factor: f64,
-) -> Result<Vec<f64>> {
-    if n > 256 {
-        return Err(Error::InvalidInput("polynomial degree must not exceed 256"));
-    }
-    let mut prev = vec![1.0];
-    let mut before = vec![];
-    for k in 1..=n {
-        let kf = k as f64;
-        let (x, c, b) = match family {
-            Family::Jacobi(a, b) if k == 1 => ((a + b + 2.0) / 2.0, (a - b) / 2.0, 0.0),
-            Family::Jacobi(a, b) => {
-                let t = 2.0 * kf + a + b;
-                let denominator = 2.0 * kf * (kf + a + b) * (t - 2.0);
-                (
-                    (t - 1.0) * t * (t - 2.0) / denominator,
-                    (t - 1.0) * (a * a - b * b) / denominator,
-                    2.0 * (kf + a - 1.0) * (kf + b - 1.0) * t / denominator,
-                )
-            }
-            Family::Laguerre(a) => (-1.0 / kf, (2.0 * kf - 1.0 + a) / kf, (kf - 1.0 + a) / kf),
-            Family::Hermite(true) => (1.0, 0.0, kf - 1.0),
-            Family::Hermite(false) => (2.0, 0.0, 2.0 * (kf - 1.0)),
-            Family::Chebyt if k == 1 => (1.0, 0.0, 0.0),
-            Family::Chebyt | Family::Chebyu => (2.0, 0.0, 1.0),
-            Family::Gegenbauer(a) => (2.0 * (kf - 1.0 + a) / kf, 0.0, (kf - 2.0 + 2.0 * a) / kf),
-        };
-        let next = advance(&prev, &before, x, c, b);
-        before = prev;
-        prev = next;
-    }
-    // Horner composition evaluates p(scale*x+shift) symbolically.
-    let mut composed = vec![0.0];
-    for &coefficient in prev.iter().rev() {
-        composed = advance(&composed, &[], scale, shift, 0.0);
-        composed[0] += coefficient;
-    }
-    composed.truncate(n + 1);
-    let divisor = if monic { composed[n] } else { 1.0 / factor };
-    for c in &mut composed {
-        *c /= divisor;
-    }
-    if composed.iter().any(|x| !x.is_finite()) {
-        return Err(Error::NonFiniteEvaluation);
-    }
-    composed.reverse();
-    Ok(composed)
-}
-
-fn quadrature(
-    n: usize,
-    family: Family,
-    scale: f64,
-    shift: f64,
-    weight_scale: f64,
-) -> Result<(Vec<f64>, Vec<f64>)> {
-    if n == 0 || n > 256 {
-        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
-    }
-    let mut diagonal = Vec::with_capacity(n);
-    let mut off = Vec::with_capacity(n - 1);
-    let mass = match family {
-        Family::Jacobi(a, b) => (2.0_f64).powf(a + b + 1.0) * super::beta(a + 1.0, b + 1.0),
-        Family::Laguerre(a) => super::gamma(a + 1.0),
-        Family::Hermite(true) => (2.0 * std::f64::consts::PI).sqrt(),
-        Family::Hermite(false) => std::f64::consts::PI.sqrt(),
-        _ => unreachable!(),
-    };
-    for i in 0..n {
-        let k = i as f64;
-        diagonal.push(match family {
-            Family::Jacobi(a, b) if i == 0 => (b - a) / (a + b + 2.0),
-            Family::Jacobi(a, b) => (b * b - a * a) / ((2.0 * k + a + b) * (2.0 * k + a + b + 2.0)),
-            Family::Laguerre(a) => 2.0 * k + a + 1.0,
-            _ => 0.0,
-        });
-        if i > 0 {
-            off.push(match family {
-                Family::Jacobi(a, b) if i == 1 => {
-                    (4.0 * (1.0 + a) * (1.0 + b) / ((a + b + 2.0).powi(2) * (a + b + 3.0))).sqrt()
-                }
-                Family::Jacobi(a, b) => {
-                    let t = 2.0 * k + a + b;
-                    (4.0 * k * (k + a) * (k + b) * (k + a + b) / (t * t * (t * t - 1.0))).sqrt()
-                }
-                Family::Laguerre(a) => (k * (k + a)).sqrt(),
-                Family::Hermite(true) => k.sqrt(),
-                Family::Hermite(false) => (k / 2.0).sqrt(),
-                _ => unreachable!(),
-            });
-        }
-    }
-    let (nodes, first_components) = first_eigenvector_components(&diagonal, &off)?;
-    let weights: Vec<_> = first_components
-        .iter()
-        .map(|v| v * v * mass * weight_scale)
-        .collect();
-    if weights.iter().any(|x| !x.is_finite()) {
-        return Err(Error::NonFiniteEvaluation);
-    }
-    Ok((
-        nodes.into_iter().map(|x| scale * x + shift).collect(),
-        weights,
-    ))
-}
-
 /// Returns coefficients of the Jacobi P_n^(alpha,beta) polynomial in descending powers.
 ///
 /// ## Parameters and domain
@@ -300,12 +176,7 @@ fn quadrature(
 ///
 /// - [SciPy jacobi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jacobi.html).
 pub fn jacobi(n: usize, alpha: f64, beta: f64, monic: bool) -> Result<Vec<f64>> {
-    if !(alpha.is_finite() && beta.is_finite() && alpha > -1.0 && beta > -1.0) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
-    coefficients(n, Family::Jacobi(alpha, beta), monic, 1.0, 0.0, 1.0)
+    ::orthogonal::jacobi(n, alpha, beta, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for (1−x)^alpha(1+x)^beta on `[−1,1]`.
@@ -334,12 +205,10 @@ pub fn jacobi(n: usize, alpha: f64, beta: f64, monic: bool) -> Result<Vec<f64>> 
 ///
 /// - [SciPy roots_jacobi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_jacobi.html).
 pub fn roots_jacobi(n: usize, alpha: f64, beta: f64) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(alpha.is_finite() && beta.is_finite() && alpha > -1.0 && beta > -1.0) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
     }
-    quadrature(n, Family::Jacobi(alpha, beta), 1.0, 0.0, 1.0)
+    ::orthogonal::roots_jacobi(n, alpha, beta).map_err(external_orthogonal_error)
 }
 
 /// Returns coefficients of the Legendre P_n polynomial in descending powers.
@@ -368,7 +237,7 @@ pub fn roots_jacobi(n: usize, alpha: f64, beta: f64) -> Result<(Vec<f64>, Vec<f6
 ///
 /// - [SciPy legendre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.legendre.html).
 pub fn legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
-    coefficients(n, Family::Jacobi(0.0, 0.0), monic, 1.0, 0.0, 1.0)
+    ::orthogonal::legendre(n, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for unit weight on `[−1,1]`.
@@ -397,7 +266,10 @@ pub fn legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_legendre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_legendre.html).
 pub fn roots_legendre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    quadrature(n, Family::Jacobi(0.0, 0.0), 1.0, 0.0, 1.0)
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
+    }
+    ::orthogonal::roots_legendre(n).map_err(external_orthogonal_error)
 }
 
 /// Returns coefficients of the Gegenbauer C_n^alpha polynomial in descending powers.
@@ -426,12 +298,7 @@ pub fn roots_legendre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy gegenbauer](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.gegenbauer.html).
 pub fn gegenbauer(n: usize, alpha: f64, monic: bool) -> Result<Vec<f64>> {
-    if !(alpha.is_finite() && alpha > -0.5) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
-    coefficients(n, Family::Gegenbauer(alpha), monic, 1.0, 0.0, 1.0)
+    ::orthogonal::gegenbauer(n, alpha, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for (1−x²)^(alpha−1/2) on `[−1,1]`.
@@ -460,12 +327,10 @@ pub fn gegenbauer(n: usize, alpha: f64, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_gegenbauer](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_gegenbauer.html).
 pub fn roots_gegenbauer(n: usize, alpha: f64) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(alpha.is_finite() && alpha > -0.5) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
     }
-    quadrature(n, Family::Jacobi(alpha - 0.5, alpha - 0.5), 1.0, 0.0, 1.0)
+    ::orthogonal::roots_gegenbauer(n, alpha).map_err(external_orthogonal_error)
 }
 
 /// Returns coefficients of the generalized Laguerre L_n^alpha polynomial in descending powers.
@@ -494,12 +359,7 @@ pub fn roots_gegenbauer(n: usize, alpha: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy genlaguerre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.genlaguerre.html).
 pub fn genlaguerre(n: usize, alpha: f64, monic: bool) -> Result<Vec<f64>> {
-    if !(alpha.is_finite() && alpha > -1.0) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
-    coefficients(n, Family::Laguerre(alpha), monic, 1.0, 0.0, 1.0)
+    ::orthogonal::genlaguerre(n, alpha, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for x^alpha exp(−x) on [0,∞).
@@ -528,12 +388,10 @@ pub fn genlaguerre(n: usize, alpha: f64, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_genlaguerre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_genlaguerre.html).
 pub fn roots_genlaguerre(n: usize, alpha: f64) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(alpha.is_finite() && alpha > -1.0) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
     }
-    quadrature(n, Family::Laguerre(alpha), 1.0, 0.0, 1.0)
+    ::orthogonal::roots_genlaguerre(n, alpha).map_err(external_orthogonal_error)
 }
 
 /// Returns coefficients of the Laguerre L_n polynomial in descending powers.
@@ -562,7 +420,7 @@ pub fn roots_genlaguerre(n: usize, alpha: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy laguerre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.laguerre.html).
 pub fn laguerre(n: usize, monic: bool) -> Result<Vec<f64>> {
-    coefficients(n, Family::Laguerre(0.0), monic, 1.0, 0.0, 1.0)
+    ::orthogonal::laguerre(n, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for exp(−x) on [0,∞).
@@ -591,7 +449,10 @@ pub fn laguerre(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_laguerre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_laguerre.html).
 pub fn roots_laguerre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    quadrature(n, Family::Laguerre(0.0), 1.0, 0.0, 1.0)
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
+    }
+    ::orthogonal::roots_laguerre(n).map_err(external_orthogonal_error)
 }
 
 /// Returns coefficients of the physicists' Hermite H_n polynomial in descending powers.
@@ -620,7 +481,7 @@ pub fn roots_laguerre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy hermite](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hermite.html).
 pub fn hermite(n: usize, monic: bool) -> Result<Vec<f64>> {
-    coefficients(n, Family::Hermite(false), monic, 1.0, 0.0, 1.0)
+    ::orthogonal::hermite(n, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for exp(−x²) on (−∞,∞).
@@ -649,7 +510,10 @@ pub fn hermite(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_hermite](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_hermite.html).
 pub fn roots_hermite(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    quadrature(n, Family::Hermite(false), 1.0, 0.0, 1.0)
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
+    }
+    ::orthogonal::roots_hermite(n).map_err(external_orthogonal_error)
 }
 
 /// Returns coefficients of the probabilists' Hermite He_n polynomial in descending powers.
@@ -678,7 +542,7 @@ pub fn roots_hermite(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy hermitenorm](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hermitenorm.html).
 pub fn hermitenorm(n: usize, monic: bool) -> Result<Vec<f64>> {
-    coefficients(n, Family::Hermite(true), monic, 1.0, 0.0, 1.0)
+    ::orthogonal::hermitenorm(n, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for exp(−x²/2) on (−∞,∞).
@@ -707,7 +571,10 @@ pub fn hermitenorm(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_hermitenorm](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_hermitenorm.html).
 pub fn roots_hermitenorm(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    quadrature(n, Family::Hermite(true), 1.0, 0.0, 1.0)
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
+    }
+    ::orthogonal::roots_hermitenorm(n).map_err(external_orthogonal_error)
 }
 
 /// Returns coefficients of the Chebyshev T_n polynomial in descending powers.
@@ -736,7 +603,7 @@ pub fn roots_hermitenorm(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chebyt.html).
 pub fn chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
-    coefficients(n, Family::Chebyt, monic, 1.0, 0.0, 1.0)
+    ::orthogonal::chebyt(n, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for (1−x²)^(-1/2) on `[−1,1]`.
@@ -765,7 +632,10 @@ pub fn chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_chebyt.html).
 pub fn roots_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    quadrature(n, Family::Jacobi(-0.5, -0.5), 1.0, 0.0, 1.0)
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
+    }
+    ::orthogonal::roots_chebyt(n).map_err(external_orthogonal_error)
 }
 
 /// Returns coefficients of the Chebyshev U_n polynomial in descending powers.
@@ -794,7 +664,7 @@ pub fn roots_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chebyu.html).
 pub fn chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
-    coefficients(n, Family::Chebyu, monic, 1.0, 0.0, 1.0)
+    ::orthogonal::chebyu(n, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for √(1−x²) on `[−1,1]`.
@@ -823,7 +693,10 @@ pub fn chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_chebyu.html).
 pub fn roots_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    quadrature(n, Family::Jacobi(0.5, 0.5), 1.0, 0.0, 1.0)
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
+    }
+    ::orthogonal::roots_chebyu(n).map_err(external_orthogonal_error)
 }
 
 /// Returns coefficients of the scaled Chebyshev 2T_n(x/2) polynomial in descending powers.
@@ -852,7 +725,7 @@ pub fn roots_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy chebyc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chebyc.html).
 pub fn chebyc(n: usize, monic: bool) -> Result<Vec<f64>> {
-    coefficients(n, Family::Chebyt, monic, 0.5, 0.0, 2.0)
+    ::orthogonal::chebyc(n, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for (1−x²/4)^(-1/2) on `[−2,2]`.
@@ -881,7 +754,10 @@ pub fn chebyc(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_chebyc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_chebyc.html).
 pub fn roots_chebyc(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    quadrature(n, Family::Jacobi(-0.5, -0.5), 2.0, 0.0, 2.0)
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
+    }
+    ::orthogonal::roots_chebyc(n).map_err(external_orthogonal_error)
 }
 
 /// Returns coefficients of the scaled Chebyshev U_n(x/2) polynomial in descending powers.
@@ -910,7 +786,7 @@ pub fn roots_chebyc(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy chebys](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chebys.html).
 pub fn chebys(n: usize, monic: bool) -> Result<Vec<f64>> {
-    coefficients(n, Family::Chebyu, monic, 0.5, 0.0, 1.0)
+    ::orthogonal::chebys(n, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for √(1−x²/4) on `[−2,2]`.
@@ -939,7 +815,10 @@ pub fn chebys(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_chebys](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_chebys.html).
 pub fn roots_chebys(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    quadrature(n, Family::Jacobi(0.5, 0.5), 2.0, 0.0, 2.0)
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
+    }
+    ::orthogonal::roots_chebys(n).map_err(external_orthogonal_error)
 }
 
 /// Returns coefficients of the shifted Chebyshev T_n(2x−1) polynomial in descending powers.
@@ -968,7 +847,7 @@ pub fn roots_chebys(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy sh_chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sh_chebyt.html).
 pub fn sh_chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
-    coefficients(n, Family::Chebyt, monic, 2.0, -1.0, 1.0)
+    ::orthogonal::sh_chebyt(n, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for (x(1−x))^(-1/2) on `[0,1]`.
@@ -997,7 +876,10 @@ pub fn sh_chebyt(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_sh_chebyt](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_sh_chebyt.html).
 pub fn roots_sh_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    quadrature(n, Family::Jacobi(-0.5, -0.5), 0.5, 0.5, 1.0)
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
+    }
+    ::orthogonal::roots_sh_chebyt(n).map_err(external_orthogonal_error)
 }
 
 /// Returns coefficients of the shifted Chebyshev U_n(2x−1) polynomial in descending powers.
@@ -1026,7 +908,7 @@ pub fn roots_sh_chebyt(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy sh_chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sh_chebyu.html).
 pub fn sh_chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
-    coefficients(n, Family::Chebyu, monic, 2.0, -1.0, 1.0)
+    ::orthogonal::sh_chebyu(n, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for √(x(1−x)) on `[0,1]`.
@@ -1055,7 +937,10 @@ pub fn sh_chebyu(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_sh_chebyu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_sh_chebyu.html).
 pub fn roots_sh_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    quadrature(n, Family::Jacobi(0.5, 0.5), 0.5, 0.5, 0.25)
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
+    }
+    ::orthogonal::roots_sh_chebyu(n).map_err(external_orthogonal_error)
 }
 
 /// Returns coefficients of the shifted Legendre P_n(2x−1) polynomial in descending powers.
@@ -1084,7 +969,7 @@ pub fn roots_sh_chebyu(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy sh_legendre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sh_legendre.html).
 pub fn sh_legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
-    coefficients(n, Family::Jacobi(0.0, 0.0), monic, 2.0, -1.0, 1.0)
+    ::orthogonal::sh_legendre(n, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for unit weight on `[0,1]`.
@@ -1113,7 +998,10 @@ pub fn sh_legendre(n: usize, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_sh_legendre](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_sh_legendre.html).
 pub fn roots_sh_legendre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    quadrature(n, Family::Jacobi(0.0, 0.0), 0.5, 0.5, 0.5)
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
+    }
+    ::orthogonal::roots_sh_legendre(n).map_err(external_orthogonal_error)
 }
 
 /// Returns coefficients of the shifted Jacobi G_n^(p,q) polynomial in descending powers.
@@ -1142,21 +1030,7 @@ pub fn roots_sh_legendre(n: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy sh_jacobi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sh_jacobi.html).
 pub fn sh_jacobi(n: usize, p: f64, q: f64, monic: bool) -> Result<Vec<f64>> {
-    if !(p.is_finite() && q.is_finite() && q > 0.0 && p - q > -1.0) {
-        return Err(Error::InvalidInput(
-            "orthogonal polynomial parameters are outside the domain",
-        ));
-    }
-    coefficients(
-        n,
-        Family::Jacobi(p - q, q - 1.0),
-        monic,
-        2.0,
-        -1.0,
-        (super::gammaln(n as f64 + 1.0) + super::gammaln(n as f64 + p)
-            - super::gammaln(2.0 * n as f64 + p))
-        .exp(),
-    )
+    ::orthogonal::sh_jacobi(n, p, q, monic).map_err(external_orthogonal_error)
 }
 
 /// Gaussian nodes and weights for (1−x)^(p−q) x^(q−1) on `[0,1]`.
@@ -1185,23 +1059,35 @@ pub fn sh_jacobi(n: usize, p: f64, q: f64, monic: bool) -> Result<Vec<f64>> {
 ///
 /// - [SciPy roots_sh_jacobi](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.roots_sh_jacobi.html).
 pub fn roots_sh_jacobi(n: usize, p: f64, q: f64) -> Result<(Vec<f64>, Vec<f64>)> {
-    if !(p.is_finite() && q.is_finite() && q > 0.0 && p - q > -1.0) {
-        return Err(Error::InvalidInput(
-            "quadrature parameters are outside the domain",
-        ));
+    if n == 0 || n > 256 {
+        return Err(Error::InvalidInput("quadrature order must be in 1..=256"));
     }
-    quadrature(
-        n,
-        Family::Jacobi(p - q, q - 1.0),
-        0.5,
-        0.5,
-        2.0_f64.powf(-p),
-    )
+    ::orthogonal::roots_sh_jacobi(n, p, q).map_err(external_orthogonal_error)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn maps_all_standalone_orthogonal_error_variants_to_sci_errors() {
+        assert!(matches!(
+            external_orthogonal_error(::orthogonal::Error::InvalidInput("bad input")),
+            Error::InvalidInput("bad input")
+        ));
+        assert!(matches!(
+            external_orthogonal_error(::orthogonal::Error::DimensionMismatch),
+            Error::DimensionMismatch
+        ));
+        assert!(matches!(
+            external_orthogonal_error(::orthogonal::Error::NonFiniteEvaluation),
+            Error::NonFiniteEvaluation
+        ));
+        assert!(matches!(
+            external_orthogonal_error(::orthogonal::Error::NumericalFailure("no convergence")),
+            Error::NumericalFailure("no convergence")
+        ));
+    }
 
     #[test]
     fn quadrature_first_components_match_full_eigensystem() {

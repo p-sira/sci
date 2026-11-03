@@ -122,7 +122,15 @@ fn cylindrical_j_large_order_turning_point_and_domain_edges() {
         2e-6,
         1e-12,
     );
-    assert!(s::bessel::jv(-600.5_f64, 550.0).is_nan());
+    // The published Bessel kernel evaluates this negative noninteger order
+    // instead of rejecting it. Independent mpmath (90-digit) reference:
+    // J_{-600.5}(550) = 89196.07184932482965230188008786188255...
+    close(
+        s::bessel::jv(-600.5_f64, 550.0),
+        89_196.071_849_324_83,
+        5e-13,
+        0.0,
+    );
     assert!(s::bessel::jv(0.5_f64, -2.0).is_nan());
     assert!(s::bessel::jv(f64::INFINITY, 1.0).is_nan());
     assert!(s::bessel::jv(1.0, f64::NAN).is_nan());

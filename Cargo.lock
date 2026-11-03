@@ -67,6 +67,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "bessel"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "686055b68710834f2ea06e044bda582a380c9930108f457db99f6bec45ef7477"
+dependencies = [
+ "num-complex",
+ "num-traits",
+]
+
+[[package]]
 name = "bitflags"
 version = "2.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -742,6 +752,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "62adaabb884c94955b19907d60019f4e145d091c75345379e70d1ee696f7854f"
 
 [[package]]
+name = "hypergeometric"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ca04ea0406f1ae7d0856bf45b7e3f69af78755f48fdd99c7c32dad85d15a087"
+dependencies = [
+ "bessel",
+ "num-traits",
+]
+
+[[package]]
 name = "indexmap"
 version = "2.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1098,6 +1118,16 @@ name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
+
+[[package]]
+name = "orthogonal"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d86cedbf71688af63a886e85dc0e1b055ffb008c43cece47cb81fc23df9723b1"
+dependencies = [
+ "num-complex",
+ "num-traits",
+]
 
 [[package]]
 name = "paste"
@@ -1659,11 +1689,14 @@ dependencies = [
 name = "sci-special"
 version = "0.3.0"
 dependencies = [
+ "bessel",
  "complex-bessel",
  "ellip",
+ "hypergeometric",
  "lambert_w",
  "num-complex",
  "numeric_literals",
+ "orthogonal",
  "sci-complex",
  "sci-core",
 ]

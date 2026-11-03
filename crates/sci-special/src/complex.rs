@@ -743,7 +743,7 @@ pub fn dawsn<T: Float>(z: Complex<T>) -> Result<Complex<T>> {
 /// ## References
 /// [NIST DLMF, Bessel functions](https://dlmf.nist.gov/10).
 pub fn jv<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
-    bessel(v, z, complex_bessel::besselj, complex_bessel::besselj)
+    external_bessel(v, z, ::bessel::complex::jv)
 }
 
 /// Computes exp(−|Im z|) J_v(z).
@@ -781,12 +781,7 @@ pub fn jv<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
 /// ## References
 /// [NIST DLMF, Bessel functions](https://dlmf.nist.gov/10).
 pub fn jve<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
-    bessel(
-        v,
-        z,
-        complex_bessel::besselj_scaled,
-        complex_bessel::besselj_scaled,
-    )
+    external_bessel(v, z, ::bessel::complex::jve)
 }
 
 /// Computes Y_v(z), the second cylindrical Bessel solution.
@@ -824,7 +819,7 @@ pub fn jve<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
 /// ## References
 /// [NIST DLMF, Bessel functions](https://dlmf.nist.gov/10).
 pub fn yv<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
-    bessel(v, z, complex_bessel::bessely, complex_bessel::bessely)
+    external_bessel(v, z, ::bessel::complex::yv)
 }
 
 /// Computes exp(−|Im z|) Y_v(z).
@@ -862,12 +857,7 @@ pub fn yv<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
 /// ## References
 /// [NIST DLMF, Bessel functions](https://dlmf.nist.gov/10).
 pub fn yve<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
-    bessel(
-        v,
-        z,
-        complex_bessel::bessely_scaled,
-        complex_bessel::bessely_scaled,
-    )
+    external_bessel(v, z, ::bessel::complex::yve)
 }
 
 /// Computes I_v(z), solving z²w″+zw′−(z²+v²)w=0.
@@ -905,7 +895,7 @@ pub fn yve<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
 /// ## References
 /// [NIST DLMF, Bessel functions](https://dlmf.nist.gov/10).
 pub fn iv<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
-    bessel(v, z, complex_bessel::besseli, complex_bessel::besseli)
+    external_bessel(v, z, ::bessel::complex::iv)
 }
 
 /// Computes exp(−|Re z|) I_v(z).
@@ -943,12 +933,7 @@ pub fn iv<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
 /// ## References
 /// [NIST DLMF, Bessel functions](https://dlmf.nist.gov/10).
 pub fn ive<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
-    bessel(
-        v,
-        z,
-        complex_bessel::besseli_scaled,
-        complex_bessel::besseli_scaled,
-    )
+    external_bessel(v, z, ::bessel::complex::ive)
 }
 
 /// Computes K_v(z), the decaying modified Bessel solution.
@@ -986,7 +971,7 @@ pub fn ive<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
 /// ## References
 /// [NIST DLMF, Bessel functions](https://dlmf.nist.gov/10).
 pub fn kv<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
-    bessel(v, z, complex_bessel::besselk, complex_bessel::besselk)
+    external_bessel(v, z, ::bessel::complex::kv)
 }
 
 /// Computes exp(z) K_v(z).
@@ -1024,12 +1009,7 @@ pub fn kv<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
 /// ## References
 /// [NIST DLMF, Bessel functions](https://dlmf.nist.gov/10).
 pub fn kve<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
-    bessel(
-        v,
-        z,
-        complex_bessel::besselk_scaled,
-        complex_bessel::besselk_scaled,
-    )
+    external_bessel(v, z, ::bessel::complex::kve)
 }
 
 /// Computes H_v⁽¹⁾(z) = J_v(z) + i Y_v(z).
@@ -1067,7 +1047,7 @@ pub fn kve<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
 /// ## References
 /// [NIST DLMF, Bessel functions](https://dlmf.nist.gov/10).
 pub fn hankel1<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
-    bessel(v, z, complex_bessel::hankel1, complex_bessel::hankel2)
+    external_bessel(v, z, ::bessel::complex::hankel1)
 }
 
 /// Computes exp(−iz) H_v⁽¹⁾(z).
@@ -1105,12 +1085,7 @@ pub fn hankel1<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
 /// ## References
 /// [NIST DLMF, Bessel functions](https://dlmf.nist.gov/10).
 pub fn hankel1e<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
-    bessel(
-        v,
-        z,
-        complex_bessel::hankel1_scaled,
-        complex_bessel::hankel2_scaled,
-    )
+    external_bessel(v, z, ::bessel::complex::hankel1e)
 }
 
 /// Computes H_v⁽²⁾(z) = J_v(z) − i Y_v(z).
@@ -1148,7 +1123,7 @@ pub fn hankel1e<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
 /// ## References
 /// [NIST DLMF, Bessel functions](https://dlmf.nist.gov/10).
 pub fn hankel2<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
-    bessel(v, z, complex_bessel::hankel2, complex_bessel::hankel1)
+    external_bessel(v, z, ::bessel::complex::hankel2)
 }
 
 /// Computes exp(iz) H_v⁽²⁾(z).
@@ -1186,12 +1161,7 @@ pub fn hankel2<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
 /// ## References
 /// [NIST DLMF, Bessel functions](https://dlmf.nist.gov/10).
 pub fn hankel2e<T: Float>(v: T, z: Complex<T>) -> Result<Complex<T>> {
-    bessel(
-        v,
-        z,
-        complex_bessel::hankel2_scaled,
-        complex_bessel::hankel1_scaled,
-    )
+    external_bessel(v, z, ::bessel::complex::hankel2e)
 }
 
 /// Computes complex Airy functions and derivatives.
@@ -1359,34 +1329,16 @@ pub fn fresnel<T: Float>(z: Complex<T>) -> Result<(Complex<T>, Complex<T>)> {
     Ok((output(s)?, output(c)?))
 }
 
-type BesselKernel = fn(
-    f64,
-    num_complex::Complex64,
-) -> core::result::Result<num_complex::Complex64, complex_bessel::Error>;
-fn bessel<T: Float>(
+// Retain Sci's shared complex and error types at the public boundary.
+fn external_bessel<T: Float>(
     v: T,
     z: Complex<T>,
-    kernel: BesselKernel,
-    reflected: BesselKernel,
+    evaluate: impl FnOnce(T, num_complex::Complex<T>) -> ::bessel::Result<num_complex::Complex<T>>,
 ) -> Result<Complex<T>> {
-    if !v.is_finite() {
-        return Err(Error::InvalidInput("Bessel order must be finite"));
-    }
-    let mut z = input(z)?;
-    // AMOS treats either zero sign as the upper bank. Schwarz reflection
-    // restores the lower bank, interchanging Hankel kinds where necessary.
-    let lower = z.re < 0.0 && z.im == 0.0 && z.im.is_sign_negative();
-    let kernel = if lower {
-        z.im = 0.0;
-        reflected
-    } else {
-        kernel
-    };
-    let v = v
-        .to_f64()
-        .filter(|v| v.is_finite())
-        .ok_or(Error::NonFiniteEvaluation)?;
-    let value = kernel(v, z)
-        .map_err(|e| Error::NumericalFailure(crate::backend::bessel::backend_error(e)))?;
-    output(if lower { value.conj() } else { value })
+    let value = evaluate(v, num_complex::Complex::new(z.re, z.im))
+        .map_err(crate::implementation::external_bessel_error)?;
+    Ok(Complex {
+        re: value.re,
+        im: value.im,
+    })
 }

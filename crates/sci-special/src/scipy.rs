@@ -1,5 +1,7 @@
 //! Private adapters for the broad SciPy special-function families.
 
+// `Error` is referenced by the rustdoc links in these public API adapters.
+#[allow(unused_imports)]
 use crate::{Error, Result};
 
 /// Row-major value and derivative matrices, sharing the linear-algebra representation.
@@ -66,7 +68,10 @@ pub fn agm<T: sci_core::Float>(a: T, b: T) -> T {
 ///
 /// - [SciPy airy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.airy.html).
 pub fn airy(x: f64) -> [f64; 4] {
-    crate::backend::legacy::airy(x)
+    match ::bessel::airy(x) {
+        Ok((ai, aip, bi, bip)) => [ai, aip, bi, bip],
+        Err(_) => [f64::NAN; 4],
+    }
 }
 
 /// Scaled Airy values `[Ai exp(ζ),Ai′ exp(ζ),Bi exp(−abs(ζ)),Bi′ exp(−abs(ζ))]`, ζ=2x^(3/2)/3.
@@ -98,7 +103,17 @@ pub fn airy(x: f64) -> [f64; 4] {
 ///
 /// - [SciPy airye](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.airye.html).
 pub fn airye(x: f64) -> [f64; 4] {
-    crate::backend::legacy::airy_scaled(x)
+    if x < 0.0 {
+        // The scaled Ai values are nonreal on the negative real axis, but
+        // the Bi factor is exp(-|zeta|) = 1 there. The old private scaled
+        // backend rejected the whole quartet and silently lost real Bi/Bi'.
+        let unscaled = airy(x);
+        return [f64::NAN, f64::NAN, unscaled[2], unscaled[3]];
+    }
+    match ::bessel::airye(x) {
+        Ok((ai, aip, bi, bip)) => [ai, aip, bi, bip],
+        Err(_) => [f64::NAN; 4],
+    }
 }
 
 /// Integrals from 0 to x of Ai(t), Bi(t), Ai(−t), and Bi(−t), in that order.
@@ -606,7 +621,7 @@ pub fn multigammaln(a: f64, d: u32) -> f64 {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn jv<T: sci_core::Float>(v: T, x: T) -> T {
-    crate::backend::cyl_bessel_j(v, x).unwrap_or(T::nan())
+    ::bessel::jv(v, x)
 }
 
 /// Exponentially scaled J_v(x); for real x this equals J_v(x).
@@ -638,7 +653,7 @@ pub fn jv<T: sci_core::Float>(v: T, x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn jve<T: sci_core::Float>(v: T, x: T) -> T {
-    crate::backend::cyl_bessel_je(v, x).unwrap_or(T::nan())
+    ::bessel::jve(v, x)
 }
 
 /// Cylindrical Bessel function Y_v(x), the second real Bessel solution.
@@ -670,7 +685,7 @@ pub fn jve<T: sci_core::Float>(v: T, x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn yv<T: sci_core::Float>(v: T, x: T) -> T {
-    crate::backend::cyl_bessel_y(v, x).unwrap_or(T::nan())
+    ::bessel::yv(v, x)
 }
 
 /// Exponentially scaled Y_v(x); real positive x leaves the value unchanged.
@@ -702,7 +717,7 @@ pub fn yv<T: sci_core::Float>(v: T, x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn yve<T: sci_core::Float>(v: T, x: T) -> T {
-    crate::backend::cyl_bessel_ye(v, x).unwrap_or(T::nan())
+    ::bessel::yve(v, x)
 }
 
 /// Modified Bessel function I_v(x), solving x²y″+xy′−(x²+v²)y=0.
@@ -757,7 +772,7 @@ pub fn yve<T: sci_core::Float>(v: T, x: T) -> T {
 /// Domain violations or failure to converge within the work limit return NaN.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn iv<T: sci_core::Float>(v: T, x: T) -> T {
-    crate::backend::cyl_bessel_i(v, x).unwrap_or(T::nan())
+    ::bessel::iv(v, x)
 }
 
 /// Scaled modified Bessel function exp(−abs(x)) I_v(x).
@@ -807,7 +822,7 @@ pub fn iv<T: sci_core::Float>(v: T, x: T) -> T {
 /// Domain violations or failure to converge within the work limit return NaN.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ive<T: sci_core::Float>(v: T, x: T) -> T {
-    crate::backend::cyl_bessel_ie(v, x).unwrap_or(T::nan())
+    ::bessel::ive(v, x)
 }
 
 /// Modified Bessel function K_v(x), decaying on the positive real axis.
@@ -839,7 +854,7 @@ pub fn ive<T: sci_core::Float>(v: T, x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn kv<T: sci_core::Float>(v: T, x: T) -> T {
-    crate::backend::cyl_bessel_k(v, x).unwrap_or(T::nan())
+    ::bessel::kv(v, x)
 }
 
 /// Scaled modified Bessel function exp(x) K_v(x).
@@ -871,7 +886,7 @@ pub fn kv<T: sci_core::Float>(v: T, x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn kve<T: sci_core::Float>(v: T, x: T) -> T {
-    crate::backend::cyl_bessel_ke(v, x).unwrap_or(T::nan())
+    ::bessel::kve(v, x)
 }
 
 /// Bessel function J₀(x).
@@ -903,7 +918,7 @@ pub fn kve<T: sci_core::Float>(v: T, x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn j0<T: sci_core::Float>(x: T) -> T {
-    crate::backend::cyl_bessel_j0(x).unwrap_or(T::nan())
+    ::bessel::j0(x)
 }
 
 /// Bessel function J₁(x).
@@ -935,7 +950,7 @@ pub fn j0<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn j1<T: sci_core::Float>(x: T) -> T {
-    crate::backend::cyl_bessel_j1(x).unwrap_or(T::nan())
+    ::bessel::j1(x)
 }
 
 /// Bessel function Y₀(x).
@@ -967,7 +982,7 @@ pub fn j1<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn y0<T: sci_core::Float>(x: T) -> T {
-    crate::backend::cyl_bessel_y0(x).unwrap_or(T::nan())
+    ::bessel::y0(x)
 }
 
 /// Bessel function Y₁(x).
@@ -999,7 +1014,7 @@ pub fn y0<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn y1<T: sci_core::Float>(x: T) -> T {
-    crate::backend::cyl_bessel_y1(x).unwrap_or(T::nan())
+    ::bessel::y1(x)
 }
 
 /// Modified Bessel function I₀(x).
@@ -1031,7 +1046,10 @@ pub fn y1<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn i0<T: sci_core::Float>(x: T) -> T {
-    crate::backend::cyl_bessel_i0(x).unwrap_or(T::nan())
+    if x.is_infinite() {
+        return T::infinity();
+    }
+    ::bessel::i0(x)
 }
 
 /// Modified Bessel function I₁(x).
@@ -1063,7 +1081,10 @@ pub fn i0<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn i1<T: sci_core::Float>(x: T) -> T {
-    crate::backend::cyl_bessel_i1(x).unwrap_or(T::nan())
+    if x.is_infinite() {
+        return x;
+    }
+    ::bessel::i1(x)
 }
 
 /// Scaled modified Bessel function exp(−abs(x)) I₀(x).
@@ -1095,7 +1116,10 @@ pub fn i1<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn i0e<T: sci_core::Float>(x: T) -> T {
-    crate::backend::cyl_bessel_i0e(x).unwrap_or(T::nan())
+    if x.is_infinite() {
+        return T::zero();
+    }
+    ::bessel::i0e(x)
 }
 
 /// Scaled modified Bessel function exp(−abs(x)) I₁(x).
@@ -1127,7 +1151,10 @@ pub fn i0e<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn i1e<T: sci_core::Float>(x: T) -> T {
-    crate::backend::cyl_bessel_i1e(x).unwrap_or(T::nan())
+    if x.is_infinite() {
+        return T::zero().copysign(x);
+    }
+    ::bessel::i1e(x)
 }
 
 /// Modified Bessel function K₀(x).
@@ -1159,7 +1186,7 @@ pub fn i1e<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn k0<T: sci_core::Float>(x: T) -> T {
-    crate::backend::cyl_bessel_k0(x).unwrap_or(T::nan())
+    ::bessel::k0(x)
 }
 
 /// Modified Bessel function K₁(x).
@@ -1191,7 +1218,7 @@ pub fn k0<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn k1<T: sci_core::Float>(x: T) -> T {
-    crate::backend::cyl_bessel_k1(x).unwrap_or(T::nan())
+    ::bessel::k1(x)
 }
 
 /// Scaled modified Bessel function exp(x) K₀(x).
@@ -1223,7 +1250,7 @@ pub fn k1<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn k0e<T: sci_core::Float>(x: T) -> T {
-    crate::backend::cyl_bessel_k0e(x).unwrap_or(T::nan())
+    ::bessel::k0e(x)
 }
 
 /// Scaled modified Bessel function exp(x) K₁(x).
@@ -1255,7 +1282,7 @@ pub fn k0e<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn k1e<T: sci_core::Float>(x: T) -> T {
-    crate::backend::cyl_bessel_k1e(x).unwrap_or(T::nan())
+    ::bessel::k1e(x)
 }
 
 /// Weighted Bessel integral ∫₀¹ x^lambda J_v(2ax) dx.
@@ -1279,7 +1306,7 @@ pub fn k1e<T: sci_core::Float>(x: T) -> T {
 ///
 /// - [SciPy besselpoly](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.besselpoly.html).
 pub fn besselpoly(a: f64, lambda: f64, v: f64) -> f64 {
-    crate::backend::legacy::besselpoly(a, lambda, v)
+    ::bessel::besselpoly(a, lambda, v)
 }
 
 /// Integrals (∫₀ˣ J₀(t)dt, ∫₀ˣ Y₀(t)dt).
@@ -1304,7 +1331,7 @@ pub fn besselpoly(a: f64, lambda: f64, v: f64) -> f64 {
 ///
 /// - [SciPy itj0y0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.itj0y0.html).
 pub fn itj0y0(x: f64) -> (f64, f64) {
-    crate::backend::legacy::it1j0y0(x)
+    ::bessel::itj0y0(x)
 }
 
 /// Integrals (∫₀ˣ (1−J₀(t))/t dt, ∫ₓ^∞ Y₀(t)/t dt).
@@ -1329,7 +1356,7 @@ pub fn itj0y0(x: f64) -> (f64, f64) {
 ///
 /// - [SciPy it2j0y0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.it2j0y0.html).
 pub fn it2j0y0(x: f64) -> (f64, f64) {
-    crate::backend::legacy::it2j0y0(x)
+    ::bessel::it2j0y0(x)
 }
 
 /// Integrals (∫₀ˣ I₀(t)dt, ∫₀ˣ K₀(t)dt).
@@ -1354,7 +1381,7 @@ pub fn it2j0y0(x: f64) -> (f64, f64) {
 ///
 /// - [SciPy iti0k0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.iti0k0.html).
 pub fn iti0k0(x: f64) -> (f64, f64) {
-    crate::backend::legacy::it1i0k0(x)
+    ::bessel::iti0k0(x)
 }
 
 /// Integrals (∫₀ˣ (I₀(t)−1)/t dt, ∫ₓ^∞ K₀(t)/t dt).
@@ -1388,7 +1415,7 @@ pub fn iti0k0(x: f64) -> (f64, f64) {
 /// Smaller arguments use a series. Quadrature error remains, and true
 /// underflow returns zero.
 pub fn it2i0k0(x: f64) -> (f64, f64) {
-    crate::backend::legacy::it2i0k0(x)
+    ::bessel::it2i0k0(x)
 }
 
 /// Struve function H_v(x), the inhomogeneous Bessel solution.
@@ -1420,7 +1447,7 @@ pub fn it2i0k0(x: f64) -> (f64, f64) {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn struve<T: sci_core::Float>(v: T, x: T) -> T {
-    crate::backend::struve_h(v, x).unwrap_or(T::nan())
+    ::bessel::struve(v, x)
 }
 
 /// Modified Struve function L_v(x).
@@ -1452,7 +1479,7 @@ pub fn struve<T: sci_core::Float>(v: T, x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn modstruve<T: sci_core::Float>(v: T, x: T) -> T {
-    crate::backend::struve_l(v, x).unwrap_or(T::nan())
+    ::bessel::modstruve(v, x)
 }
 
 /// Integral ∫₀ˣ H₀(t) dt.
@@ -1487,7 +1514,10 @@ pub fn modstruve<T: sci_core::Float>(v: T, x: T) -> T {
 /// - [SciPy itstruve0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.itstruve0.html).
 ///
 pub fn itstruve0(x: f64) -> f64 {
-    crate::backend::legacy::itstruve0(x)
+    if !x.is_finite() {
+        return f64::NAN;
+    }
+    ::bessel::itstruve0(x)
 }
 
 /// Integral ∫ₓ^∞ H₀(t)/t dt.
@@ -1511,7 +1541,10 @@ pub fn itstruve0(x: f64) -> f64 {
 ///
 /// - [SciPy it2struve0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.it2struve0.html).
 pub fn it2struve0(x: f64) -> f64 {
-    crate::backend::legacy::it2struve0(x)
+    if !x.is_finite() {
+        return f64::NAN;
+    }
+    ::bessel::it2struve0(x)
 }
 
 /// Integral ∫₀ˣ L₀(t) dt.
@@ -1535,7 +1568,10 @@ pub fn it2struve0(x: f64) -> f64 {
 ///
 /// - [SciPy itmodstruve0](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.itmodstruve0.html).
 pub fn itmodstruve0(x: f64) -> f64 {
-    crate::backend::legacy::itmodstruve0(x)
+    if !x.is_finite() {
+        return f64::NAN;
+    }
+    ::bessel::itmodstruve0(x)
 }
 
 /// Confluent hypergeometric limit function Σₖ x^k/((b)ₖ k!).
@@ -1571,7 +1607,7 @@ pub fn itmodstruve0(x: f64) -> f64 {
 /// with scaled Bessel evaluation outside the series region.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn hyp0f1<T: sci_core::Float>(b: T, x: T) -> T {
-    crate::backend::hyp0f1(b, x).unwrap_or(T::nan())
+    ::hypergeometric::hyp0f1(b, x)
 }
 
 /// Kummer function ₁F₁(a;b;x)=Σₖ (a)ₖ x^k/((b)ₖ k!).
@@ -1620,7 +1656,7 @@ pub fn hyp0f1<T: sci_core::Float>(b: T, x: T) -> T {
 /// [NIST DLMF §13.29(ii)](https://dlmf.nist.gov/13.29#ii) describes outward
 /// integration; [§13.2](https://dlmf.nist.gov/13.2) gives the defining equation.
 pub fn hyp1f1(a: f64, b: f64, x: f64) -> f64 {
-    crate::backend::legacy::hyp1f1(a, b, x)
+    ::hypergeometric::hyp1f1(a, b, x)
 }
 
 /// Gauss function `₂F₁(a,b;c;x) = Σₖ (a)ₖ(b)ₖ xᵏ / [(c)ₖ k!]`.
@@ -1657,7 +1693,7 @@ pub fn hyp1f1(a: f64, b: f64, x: f64) -> f64 {
 /// Finite real inputs with `abs(a), abs(b), abs(c) <= 100000`. Series and continuation
 /// iterations are bounded; unsupported real continuations return NaN.
 pub fn hyp2f1(a: f64, b: f64, c: f64, x: f64) -> f64 {
-    crate::backend::legacy::hyp2f1(a, b, c, x)
+    ::hypergeometric::hyp2f1(a, b, c, x)
 }
 
 /// Tricomi function `U(a,b,x)`, solving `x y″ + (b−x)y′ − a y = 0`.
@@ -1700,7 +1736,7 @@ pub fn hyp2f1(a: f64, b: f64, c: f64, x: f64) -> f64 {
 /// Some remaining legacy integral paths supply about nine digits; parameter
 /// bounds alone do not imply machine precision throughout the domain.
 pub fn hyperu(a: f64, b: f64, x: f64) -> f64 {
-    crate::backend::legacy::hypu(a, b, x)
+    ::hypergeometric::hyperu(a, b, x)
 }
 
 /// Exponential integral E₁(x)=∫ₓ^∞ exp(−t)/t dt.
@@ -1996,7 +2032,7 @@ pub fn zetac<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn wrightomega<T: sci_core::Float>(x: T) -> T {
-    crate::backend::wrightomega(x).unwrap_or(T::nan())
+    ::hypergeometric::wrightomega(x)
 }
 
 /// Wright generalized Bessel function Σₖ x^k/(k! Γ(ak+b)).
@@ -2026,7 +2062,7 @@ pub fn wrightomega<T: sci_core::Float>(x: T) -> T {
 /// nonnegative parameters are required; failure to converge within the budget returns NaN.
 /// True overflow returns infinity.
 pub fn wright_bessel(a: f64, b: f64, x: f64) -> f64 {
-    crate::backend::legacy::wright_bessel(a, b, x)
+    ::hypergeometric::wright_bessel(a, b, x)
 }
 
 /// Natural logarithm of the Wright generalized Bessel function, evaluated in scaled form.
@@ -2056,7 +2092,7 @@ pub fn wright_bessel(a: f64, b: f64, x: f64) -> f64 {
 /// nonnegative parameters are required; failure to converge within the budget returns NaN.
 /// Summation retains large logarithms without exponentiating the final result.
 pub fn log_wright_bessel(a: f64, b: f64, x: f64) -> f64 {
-    crate::backend::legacy::log_wright_bessel(a, b, x)
+    ::hypergeometric::log_wright_bessel(a, b, x)
 }
 
 /// Convolution of a normal density with standard deviation sigma and a Cauchy density with half-width gamma.
@@ -3549,7 +3585,7 @@ pub fn mathieu_modsem2(m: u32, q: f64, x: f64) -> (f64, f64) {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ber<T: sci_core::Float>(x: T) -> T {
-    crate::backend::ber(x).unwrap_or(T::nan())
+    ::bessel::ber(x)
 }
 
 /// Imaginary part of J₀(x exp(3πi/4)), the Kelvin bei function.
@@ -3581,7 +3617,7 @@ pub fn ber<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn bei<T: sci_core::Float>(x: T) -> T {
-    crate::backend::bei(x).unwrap_or(T::nan())
+    ::bessel::bei(x)
 }
 
 /// Real part of K₀(x exp(πi/4)), the Kelvin ker function.
@@ -3613,7 +3649,7 @@ pub fn bei<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ker<T: sci_core::Float>(x: T) -> T {
-    crate::backend::ker(x).unwrap_or(T::nan())
+    ::bessel::ker(x)
 }
 
 /// Imaginary part of K₀(x exp(πi/4)), the Kelvin kei function.
@@ -3645,7 +3681,7 @@ pub fn ker<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn kei<T: sci_core::Float>(x: T) -> T {
-    crate::backend::kei(x).unwrap_or(T::nan())
+    ::bessel::kei(x)
 }
 
 /// Derivative of the Kelvin ber function with respect to x.
@@ -3677,7 +3713,7 @@ pub fn kei<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn berp<T: sci_core::Float>(x: T) -> T {
-    crate::backend::berp(x).unwrap_or(T::nan())
+    ::bessel::berp(x)
 }
 
 /// Derivative of the Kelvin bei function with respect to x.
@@ -3709,7 +3745,7 @@ pub fn berp<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn beip<T: sci_core::Float>(x: T) -> T {
-    crate::backend::beip(x).unwrap_or(T::nan())
+    ::bessel::beip(x)
 }
 
 /// Derivative of the Kelvin ker function with respect to x.
@@ -3741,7 +3777,7 @@ pub fn beip<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn kerp<T: sci_core::Float>(x: T) -> T {
-    crate::backend::kerp(x).unwrap_or(T::nan())
+    ::bessel::kerp(x)
 }
 
 /// Derivative of the Kelvin kei function with respect to x.
@@ -3773,7 +3809,7 @@ pub fn kerp<T: sci_core::Float>(x: T) -> T {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn keip<T: sci_core::Float>(x: T) -> T {
-    crate::backend::keip(x).unwrap_or(T::nan())
+    ::bessel::keip(x)
 }
 
 /// First nt positive zeros of ber in ascending order.
@@ -3802,12 +3838,7 @@ pub fn keip<T: sci_core::Float>(x: T) -> T {
 ///
 /// - [SciPy ber_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ber_zeros.html).
 pub fn ber_zeros(nt: usize) -> Result<Vec<f64>> {
-    if !(nt <= 4096 && nt > 0) {
-        return Err(Error::InvalidInput(
-            "requested special-function sequence is too large or empty",
-        ));
-    }
-    crate::backend::legacy::ber_zeros(nt).map_err(Error::NumericalFailure)
+    ::bessel::ber_zeros(nt).map_err(super::external_bessel_error)
 }
 
 /// First nt positive zeros of bei in ascending order.
@@ -3836,12 +3867,7 @@ pub fn ber_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// - [SciPy bei_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bei_zeros.html).
 pub fn bei_zeros(nt: usize) -> Result<Vec<f64>> {
-    if !(nt <= 4096 && nt > 0) {
-        return Err(Error::InvalidInput(
-            "requested special-function sequence is too large or empty",
-        ));
-    }
-    crate::backend::legacy::bei_zeros(nt).map_err(Error::NumericalFailure)
+    ::bessel::bei_zeros(nt).map_err(super::external_bessel_error)
 }
 
 /// First nt positive zeros of ker in ascending order.
@@ -3870,12 +3896,7 @@ pub fn bei_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// - [SciPy ker_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ker_zeros.html).
 pub fn ker_zeros(nt: usize) -> Result<Vec<f64>> {
-    if !(nt <= 4096 && nt > 0) {
-        return Err(Error::InvalidInput(
-            "requested special-function sequence is too large or empty",
-        ));
-    }
-    crate::backend::legacy::ker_zeros(nt).map_err(Error::NumericalFailure)
+    ::bessel::ker_zeros(nt).map_err(super::external_bessel_error)
 }
 
 /// First nt positive zeros of kei in ascending order.
@@ -3904,12 +3925,7 @@ pub fn ker_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// - [SciPy kei_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kei_zeros.html).
 pub fn kei_zeros(nt: usize) -> Result<Vec<f64>> {
-    if !(nt <= 4096 && nt > 0) {
-        return Err(Error::InvalidInput(
-            "requested special-function sequence is too large or empty",
-        ));
-    }
-    crate::backend::legacy::kei_zeros(nt).map_err(Error::NumericalFailure)
+    ::bessel::kei_zeros(nt).map_err(super::external_bessel_error)
 }
 
 /// First nt positive zeros of berp in ascending order.
@@ -3938,12 +3954,7 @@ pub fn kei_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// - [SciPy berp_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.berp_zeros.html).
 pub fn berp_zeros(nt: usize) -> Result<Vec<f64>> {
-    if !(nt <= 4096 && nt > 0) {
-        return Err(Error::InvalidInput(
-            "requested special-function sequence is too large or empty",
-        ));
-    }
-    crate::backend::legacy::berp_zeros(nt).map_err(Error::NumericalFailure)
+    ::bessel::berp_zeros(nt).map_err(super::external_bessel_error)
 }
 
 /// First nt positive zeros of beip in ascending order.
@@ -3972,12 +3983,7 @@ pub fn berp_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// - [SciPy beip_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.beip_zeros.html).
 pub fn beip_zeros(nt: usize) -> Result<Vec<f64>> {
-    if !(nt <= 4096 && nt > 0) {
-        return Err(Error::InvalidInput(
-            "requested special-function sequence is too large or empty",
-        ));
-    }
-    crate::backend::legacy::beip_zeros(nt).map_err(Error::NumericalFailure)
+    ::bessel::beip_zeros(nt).map_err(super::external_bessel_error)
 }
 
 /// First nt positive zeros of kerp in ascending order.
@@ -4006,12 +4012,7 @@ pub fn beip_zeros(nt: usize) -> Result<Vec<f64>> {
 ///
 /// - [SciPy kerp_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kerp_zeros.html).
 pub fn kerp_zeros(nt: usize) -> Result<Vec<f64>> {
-    if !(nt <= 4096 && nt > 0) {
-        return Err(Error::InvalidInput(
-            "requested special-function sequence is too large or empty",
-        ));
-    }
-    crate::backend::legacy::kerp_zeros(nt).map_err(Error::NumericalFailure)
+    ::bessel::kerp_zeros(nt).map_err(super::external_bessel_error)
 }
 
 // kei'(x) = Im[-a K_1(a x)], a = exp(i pi/4). Removing the
@@ -4054,12 +4055,7 @@ pub fn kerp_zeros(nt: usize) -> Result<Vec<f64>> {
 /// - [DLMF Bessel K derivatives, §10.29](https://dlmf.nist.gov/10.29).
 /// - [SciPy keip_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.keip_zeros.html).
 pub fn keip_zeros(nt: usize) -> Result<Vec<f64>> {
-    if !(nt <= 4096 && nt > 0) {
-        return Err(Error::InvalidInput(
-            "requested special-function sequence is too large or empty",
-        ));
-    }
-    crate::backend::legacy::keip_zeros(nt).map_err(Error::NumericalFailure)
+    ::bessel::keip_zeros(nt).map_err(super::external_bessel_error)
 }
 
 /// First nt positive zeros of ber,bei,ker,kei,berp,beip,kerp,keip, in that order.
@@ -4100,21 +4096,7 @@ pub fn keip_zeros(nt: usize) -> Result<Vec<f64>> {
 /// - [DLMF Bessel K derivatives, §10.29](https://dlmf.nist.gov/10.29).
 /// - [SciPy kelvin_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kelvin_zeros.html).
 pub fn kelvin_zeros(nt: usize) -> Result<[Vec<f64>; 8]> {
-    if !(nt <= 4096 && nt > 0) {
-        return Err(Error::InvalidInput(
-            "requested special-function sequence is too large or empty",
-        ));
-    }
-    Ok([
-        crate::backend::legacy::ber_zeros(nt).map_err(Error::NumericalFailure)?,
-        crate::backend::legacy::bei_zeros(nt).map_err(Error::NumericalFailure)?,
-        crate::backend::legacy::ker_zeros(nt).map_err(Error::NumericalFailure)?,
-        crate::backend::legacy::kei_zeros(nt).map_err(Error::NumericalFailure)?,
-        crate::backend::legacy::berp_zeros(nt).map_err(Error::NumericalFailure)?,
-        crate::backend::legacy::beip_zeros(nt).map_err(Error::NumericalFailure)?,
-        crate::backend::legacy::kerp_zeros(nt).map_err(Error::NumericalFailure)?,
-        crate::backend::legacy::keip_zeros(nt).map_err(Error::NumericalFailure)?,
-    ])
+    ::bessel::kelvin_zeros(nt).map_err(super::external_bessel_error)
 }
 
 /// Associated Legendre function P_v^m(x), including the Condon–Shortley phase (−1)^m.
@@ -4143,7 +4125,33 @@ pub fn kelvin_zeros(nt: usize) -> Result<[Vec<f64>; 8]> {
 /// Finite real inputs with `abs(v) <= 100000`, `abs(m) <= 4096`, and `x` in `[-1,1]`.
 /// Larger orders or degrees return NaN before recurrence work.
 pub fn lpmv(m: i32, v: f64, x: f64) -> f64 {
-    crate::backend::legacy::pmv(m, v, x)
+    if !v.is_finite()
+        || !x.is_finite()
+        || v.abs() > 100_000.0
+        || m.unsigned_abs() > 4096
+        || x.abs() > 1.0
+    {
+        return f64::NAN;
+    }
+    if x == -1.0 && v.is_finite() && v != v.trunc() {
+        // Preserve Sci's historical ±1 endpoint convention for noninteger
+        // degrees; the standalone library uses a different Ferrers sign.
+        return if m == 0 && (v * std::f64::consts::PI).sin() / (v * std::f64::consts::PI) > 0.0 {
+            f64::NEG_INFINITY
+        } else {
+            f64::INFINITY
+        };
+    }
+    // SciPy's integer-degree convention rejects negative orders whose
+    // magnitude exceeds the reflected polynomial degree, even where the
+    // standalone Ferrers continuation evaluates to a removable zero.
+    if m < 0 && v.is_finite() && v == v.trunc() {
+        let degree = if v < 0.0 { -v - 1.0 } else { v };
+        if degree >= 0.0 && (m.unsigned_abs() as f64) > degree {
+            return f64::NAN;
+        }
+    }
+    ::orthogonal::lpmv(m, v, x)
 }
 
 /// Legendre polynomial P_n(x), using value-only semantics (no derivative axis).
@@ -4175,7 +4183,7 @@ pub fn lpmv(m: i32, v: f64, x: f64) -> f64 {
 /// the private algorithm; correct rounding is not guaranteed.
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn legendre_p<T: sci_core::Float>(n: i32, x: T) -> T {
-    crate::backend::eval_legendre(n, x).unwrap_or(T::nan())
+    ::orthogonal::legendre_p(n, x)
 }
 
 /// Unnormalized associated Legendre P_n^m(x) with branch-cut convention 2 and Condon–Shortley phase.
@@ -4199,7 +4207,7 @@ pub fn legendre_p<T: sci_core::Float>(n: i32, x: T) -> T {
 ///
 /// - [SciPy assoc_legendre_p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.assoc_legendre_p.html).
 pub fn assoc_legendre_p(n: i32, m: i32, x: f64) -> f64 {
-    crate::backend::legacy::assoc_legendre_p(n, m, x)
+    ::orthogonal::assoc_legendre_p(n, m, x).unwrap_or(f64::NAN)
 }
 
 /// Spherical-normalized associated Legendre value, the theta factor in a spherical harmonic.
@@ -4223,7 +4231,7 @@ pub fn assoc_legendre_p(n: i32, m: i32, x: f64) -> f64 {
 ///
 /// - [SciPy sph_legendre_p](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sph_legendre_p.html).
 pub fn sph_legendre_p(n: i32, m: i32, theta: f64) -> f64 {
-    crate::backend::legacy::sph_legendre_p(n, m, theta)
+    ::orthogonal::sph_legendre_p(n, m, theta).unwrap_or(f64::NAN)
 }
 
 /// Legendre functions Q₀ through Q_n and their derivatives, as two vectors.
@@ -4255,15 +4263,13 @@ pub fn sph_legendre_p(n: i32, m: i32, theta: f64) -> f64 {
 ///
 /// - [SciPy lqn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.lqn.html).
 pub fn lqn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
-    if n > 4096 {
-        return Err(Error::InvalidInput(
-            "requested special-function sequence is too large or empty",
-        ));
+    // Sci's long-standing sequence API represents singular/nonfinite input
+    // elementwise, rather than raising a domain error as orthogonal does.
+    if n <= 4096 && (!x.is_finite() || x.abs() == 1.0) {
+        let value = if x.abs() == 1.0 { 1e300 } else { f64::NAN };
+        return Ok((vec![value; n + 1], vec![value; n + 1]));
     }
-    let (mut values, mut derivatives) = crate::backend::legacy::legendre_q_all(n.max(1), x);
-    values.truncate(n + 1);
-    derivatives.truncate(n + 1);
-    Ok((values, derivatives))
+    ::orthogonal::lqn(n, x).map_err(super::polynomials::external_orthogonal_error)
 }
 
 /// Associated Legendre Q_m^n and derivatives, as order-major matrices.
@@ -4297,23 +4303,16 @@ pub fn lqn(n: usize, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy lqmn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.lqmn.html).
 pub fn lqmn(m: usize, n: usize, x: f64) -> Result<ValueDerivativeMatrices> {
-    if !(m <= 4096 && n <= 4096 && (m + 1) * (n + 1) <= 1_048_576) {
-        return Err(Error::InvalidInput(
-            "requested special-function sequence is too large or empty",
-        ));
+    if m <= 4096
+        && n <= 4096
+        && (m + 1) * (n + 1) <= 1_048_576
+        && (!x.is_finite() || x.abs() == 1.0)
+    {
+        let value = if x.abs() == 1.0 { 1e300 } else { f64::NAN };
+        let matrix = vec![vec![value; n + 1]; m + 1];
+        return Ok((matrix.clone(), matrix));
     }
-    let (values, derivatives) = crate::backend::legacy::assoc_legendre_q_all(n.max(1), m.max(1), x);
-    let crop = |mut matrix: Vec<Vec<f64>>| -> Result<Vec<Vec<f64>>> {
-        if matrix.len() < m + 1 || matrix.iter().take(m + 1).any(|row| row.len() < n + 1) {
-            return Err(Error::DimensionMismatch);
-        }
-        matrix.truncate(m + 1);
-        for row in &mut matrix {
-            row.truncate(n + 1);
-        }
-        Ok(matrix)
-    };
-    Ok((crop(values)?, crop(derivatives)?))
+    ::orthogonal::lqmn(m, n, x).map_err(super::polynomials::external_orthogonal_error)
 }
 
 /// Logistic sigmoid 1/(1+exp(−x)), evaluated without overflow.
@@ -5153,7 +5152,7 @@ pub fn chdtriv(p: f64, x: f64) -> f64 {
 ///
 /// - [SciPy jn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jn.html).
 pub fn jn(n: i32, x: f64) -> f64 {
-    jv(f64::from(n), x)
+    ::bessel::jn(n, x)
 }
 
 /// Integer-order Bessel function Y_n(x).
@@ -5173,7 +5172,7 @@ pub fn jn(n: i32, x: f64) -> f64 {
 ///
 /// - [SciPy yn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.yn.html).
 pub fn yn(n: i32, x: f64) -> f64 {
-    yv(f64::from(n), x)
+    ::bessel::yn(n, x)
 }
 
 /// Integer-order modified Bessel function K_n(x).
@@ -5193,5 +5192,5 @@ pub fn yn(n: i32, x: f64) -> f64 {
 ///
 /// - [SciPy kn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kn.html).
 pub fn kn(n: i32, x: f64) -> f64 {
-    kv(f64::from(n), x)
+    ::bessel::kn(n, x)
 }

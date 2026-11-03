@@ -451,6 +451,36 @@ pub fn lambertwm1<T: sci_core::Float>(x: T) -> T {
 pub mod elliptic;
 
 // Implementation modules remain private behind the public family namespaces.
+pub(crate) fn external_bessel_error(error: ::bessel::Error) -> crate::Error {
+    match error {
+        ::bessel::Error::InvalidInput(message) => crate::Error::InvalidInput(message),
+        ::bessel::Error::NumericalFailure(message) => crate::Error::NumericalFailure(message),
+        ::bessel::Error::NonFiniteEvaluation => crate::Error::NonFiniteEvaluation,
+    }
+}
+
+#[cfg(test)]
+mod bessel_adapter_error_tests {
+    use super::external_bessel_error;
+    use crate::Error;
+
+    #[test]
+    fn maps_all_standalone_error_variants_to_sci_errors() {
+        assert!(matches!(
+            external_bessel_error(::bessel::Error::InvalidInput("bad input")),
+            Error::InvalidInput("bad input")
+        ));
+        assert!(matches!(
+            external_bessel_error(::bessel::Error::NumericalFailure("no convergence")),
+            Error::NumericalFailure("no convergence")
+        ));
+        assert!(matches!(
+            external_bessel_error(::bessel::Error::NonFiniteEvaluation),
+            Error::NonFiniteEvaluation
+        ));
+    }
+}
+
 mod scipy;
 pub use scipy::*;
 mod waves;

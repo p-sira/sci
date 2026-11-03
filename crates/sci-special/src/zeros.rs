@@ -34,42 +34,6 @@ fn root(function: &impl Fn(f64) -> f64, mut a: f64, mut b: f64) -> Result<f64> {
     Err(Error::NumericalFailure("zero refinement did not converge"))
 }
 
-fn bessel_roots(n: u32, nt: usize, kind: u8) -> Result<Vec<f64>> {
-    count(nt)?;
-    if n > 256 {
-        return Err(Error::InvalidInput("Bessel order must not exceed 256"));
-    }
-    let v = f64::from(n);
-    let f = |x| match kind {
-        0 => super::jv(v, x),
-        1 => super::jvp(v, x, 1),
-        2 => super::yv(v, x),
-        _ => super::yvp(v, x, 1),
-    };
-    let mut a = v.max(0.01);
-    let mut fa = f(a);
-    let mut zeros = Vec::with_capacity(nt);
-    for _ in 0..(nt + 256) * 32 {
-        let b = a + std::f64::consts::FRAC_PI_4;
-        let fb = f(b);
-        if fa.is_finite()
-            && fb.is_finite()
-            && fa != 0.0
-            && fa.is_sign_positive() != fb.is_sign_positive()
-        {
-            zeros.push(root(&f, a, b)?);
-            if zeros.len() == nt {
-                return Ok(zeros);
-            }
-        }
-        a = b;
-        fa = fb;
-    }
-    Err(Error::NumericalFailure(
-        "unable to bracket requested Bessel zeros",
-    ))
-}
-
 fn airy_roots(nt: usize, component: usize) -> Result<Vec<f64>> {
     count(nt)?;
     let f = |x: f64| super::airy(x)[component];
@@ -114,7 +78,11 @@ fn airy_roots(nt: usize, component: usize) -> Result<Vec<f64>> {
 ///
 /// - [SciPy jn_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jn_zeros.html).
 pub fn jn_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
-    bessel_roots(n, nt, 0)
+    count(nt)?;
+    if n > 256 {
+        return Err(Error::InvalidInput("Bessel order must not exceed 256"));
+    }
+    ::bessel::jn_zeros(n, nt).map_err(super::external_bessel_error)
 }
 
 /// First nt positive zeros of J_n′(x), ascending.
@@ -141,7 +109,11 @@ pub fn jn_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 ///
 /// - [SciPy jnp_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jnp_zeros.html).
 pub fn jnp_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
-    bessel_roots(n, nt, 1)
+    count(nt)?;
+    if n > 256 {
+        return Err(Error::InvalidInput("Bessel order must not exceed 256"));
+    }
+    ::bessel::jnp_zeros(n, nt).map_err(super::external_bessel_error)
 }
 
 /// First nt positive zeros of Y_n(x), ascending.
@@ -168,7 +140,11 @@ pub fn jnp_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 ///
 /// - [SciPy yn_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.yn_zeros.html).
 pub fn yn_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
-    bessel_roots(n, nt, 2)
+    count(nt)?;
+    if n > 256 {
+        return Err(Error::InvalidInput("Bessel order must not exceed 256"));
+    }
+    ::bessel::yn_zeros(n, nt).map_err(super::external_bessel_error)
 }
 
 /// First nt positive zeros of Y_n′(x), ascending.
@@ -195,7 +171,11 @@ pub fn yn_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 ///
 /// - [SciPy ynp_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ynp_zeros.html).
 pub fn ynp_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
-    bessel_roots(n, nt, 3)
+    count(nt)?;
+    if n > 256 {
+        return Err(Error::InvalidInput("Bessel order must not exceed 256"));
+    }
+    ::bessel::ynp_zeros(n, nt).map_err(super::external_bessel_error)
 }
 
 /// First nt positive zeros of J_n, J_n′, Y_n, and Y_n′, in that order.
@@ -222,12 +202,11 @@ pub fn ynp_zeros(n: u32, nt: usize) -> Result<Vec<f64>> {
 ///
 /// - [SciPy jnyn_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jnyn_zeros.html).
 pub fn jnyn_zeros(n: u32, nt: usize) -> Result<[Vec<f64>; 4]> {
-    Ok([
-        bessel_roots(n, nt, 0)?,
-        bessel_roots(n, nt, 1)?,
-        bessel_roots(n, nt, 2)?,
-        bessel_roots(n, nt, 3)?,
-    ])
+    count(nt)?;
+    if n > 256 {
+        return Err(Error::InvalidInput("Bessel order must not exceed 256"));
+    }
+    ::bessel::jnyn_zeros(n, nt).map_err(super::external_bessel_error)
 }
 
 /// Positive real Y₀ zeros and Y₁ values at the zeros.
@@ -254,9 +233,8 @@ pub fn jnyn_zeros(n: u32, nt: usize) -> Result<[Vec<f64>; 4]> {
 ///
 /// - [SciPy y0_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.y0_zeros.html).
 pub fn y0_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    let zeros = bessel_roots(0, nt, 2)?;
-    let values = zeros.iter().map(|&x| super::yv(1.0, x)).collect();
-    Ok((zeros, values))
+    count(nt)?;
+    ::bessel::y0_zeros(nt).map_err(super::external_bessel_error)
 }
 
 /// Positive real Y1 zeros and derivatives at the zeros.
@@ -283,9 +261,8 @@ pub fn y0_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy y1_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.y1_zeros.html).
 pub fn y1_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    let zeros = bessel_roots(1, nt, 2)?;
-    let values = zeros.iter().map(|&x| super::yvp(1.0, x, 1)).collect();
-    Ok((zeros, values))
+    count(nt)?;
+    ::bessel::y1_zeros(nt).map_err(super::external_bessel_error)
 }
 
 /// Positive real Y₁′ zeros and Y₁ values at the zeros.
@@ -312,9 +289,8 @@ pub fn y1_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// - [SciPy y1p_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.y1p_zeros.html).
 pub fn y1p_zeros(nt: usize) -> Result<(Vec<f64>, Vec<f64>)> {
-    let zeros = bessel_roots(1, nt, 3)?;
-    let values = zeros.iter().map(|&x| super::yv(1.0, x)).collect();
-    Ok((zeros, values))
+    count(nt)?;
+    ::bessel::y1p_zeros(nt).map_err(super::external_bessel_error)
 }
 
 /// Negative real Ai zeros, derivative zeros, values at derivative zeros, and derivative values at zeros.
@@ -459,36 +435,5 @@ pub fn erf_zeros(nt: usize) -> Result<Vec<Complex>> {
 /// - [SciPy jnjnp_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jnjnp_zeros.html).
 pub fn jnjnp_zeros(nt: usize) -> Result<[Vec<f64>; 4]> {
     count(nt)?;
-    if nt > 128 {
-        return Err(Error::InvalidInput("merged zero count must not exceed 128"));
-    }
-    let mut entries = vec![(0.0, 0.0, 0.0, 1.0)];
-    let cutoff = (nt as f64 * 8.0).sqrt() + 4.0;
-    for n in 0..=cutoff.ceil() as u32 {
-        for kind in 0..=1 {
-            let roots = bessel_roots(n, nt, kind)?;
-            for (index, x) in roots.into_iter().enumerate() {
-                entries.push((x, f64::from(n), (index + 1) as f64, f64::from(kind)));
-            }
-        }
-    }
-    entries.sort_by(|a, b| a.0.total_cmp(&b.0).then_with(|| b.3.total_cmp(&a.3)));
-    // J₀′ = −J₁: sort these analytically identical roots by function first.
-    let mut start = 0;
-    while start < entries.len() {
-        let mut end = start + 1;
-        while end < entries.len() && (entries[end].0 - entries[start].0).abs() <= 1e-12 {
-            end += 1;
-        }
-        entries[start..end].sort_by(|a, b| a.3.total_cmp(&b.3));
-        start = end;
-    }
-    let mut out: [Vec<f64>; 4] = std::array::from_fn(|_| Vec::with_capacity(nt));
-    for (x, n, index, flag) in entries.into_iter().take(nt) {
-        out[0].push(x);
-        out[1].push(n);
-        out[2].push(index);
-        out[3].push(flag);
-    }
-    Ok(out)
+    ::bessel::jnjnp_zeros(nt).map_err(super::external_bessel_error)
 }
