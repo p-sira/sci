@@ -36,6 +36,34 @@ fn eigenvalues_only_paths_preserve_order_trace_and_validation() {
 }
 
 #[test]
+fn eigenvalues_only_paths_reject_unrepresentable_eigenvalues_and_bands() {
+    // Every entry is finite, but the 2x2 spectrum is {0, 2 * f64::MAX}.
+    // Computing on a scaled matrix must not silently return +infinity.
+    let huge = f64::MAX;
+    assert_eq!(
+        l::eigen::eigvalsh_tridiagonal(&[huge, huge], &[huge]),
+        Err(Error::NonFiniteEvaluation)
+    );
+    for lower in [false, true] {
+        let band = if lower {
+            [[huge, huge], [huge, 0.0]]
+        } else {
+            [[0.0, huge], [huge, huge]]
+        };
+        assert_eq!(
+            l::eigen::eigvals_banded(&band, lower),
+            Err(Error::NonFiniteEvaluation)
+        );
+
+        // A 2-column band cannot have half-bandwidth 2 or more.
+        assert_eq!(
+            l::eigen::eigvals_banded(&[[1., 2.], [0., 0.], [0., 0.]], lower),
+            Err(Error::DimensionMismatch)
+        );
+    }
+}
+
+#[test]
 fn eigenvalues_only_paths_scale_extreme_inputs_without_losing_relative_accuracy() {
     // A symmetric 2x2 matrix with diagonal 2s and off-diagonal s has
     // eigenvalues s and 3s. Normalize before comparing to test tiny scales.
@@ -56,6 +84,155 @@ fn eigenvalues_only_paths_scale_extreme_inputs_without_losing_relative_accuracy(
                     assert!((value / scale - expected).abs() < 2e-14);
                 }
             }
+        }
+    }
+}
+
+#[test]
+fn banded_eigenvalues_fast_paths_preserve_order_and_storage_layout() {
+    let diagonal = [3.0, -1.0, 8.0, 2.0, 0.5];
+    let off_diagonal = [-0.25, 1.5, -0.75, 2.0];
+    let n = diagonal.len();
+    let dense: Vec<Vec<f64>> = (0..n)
+        .map(|i| {
+            (0..n)
+                .map(|j| {
+                    if i == j {
+                        diagonal[i]
+                    } else if i.abs_diff(j) == 1 {
+                        off_diagonal[i.min(j)]
+                    } else {
+                        0.0
+                    }
+                })
+                .collect()
+        })
+        .collect();
+    let expected = l::eigen::eigvalsh(&dense, true).unwrap();
+
+    for lower in [false, true] {
+        // The first upper-band entry and last lower-band entry are padding.
+        // Neither is part of the mathematical matrix or its eigenvalue scale.
+        let band = if lower {
+            vec![diagonal.to_vec(), vec![-0.25, 1.5, -0.75, 2.0, -1.0e290]]
+        } else {
+            vec![vec![1.0e290, -0.25, 1.5, -0.75, 2.0], diagonal.to_vec()]
+        };
+        let values = l::eigen::eigvals_banded(&band, lower).unwrap();
+        let tridiagonal = l::eigen::eigvalsh_tridiagonal(&diagonal, &off_diagonal).unwrap();
+        assert!(values.windows(2).all(|w| w[0] <= w[1]));
+        for ((value, expected), tridiagonal) in values.iter().zip(&expected).zip(&tridiagonal) {
+            assert!((value - expected).abs() < 2e-12, "lower={lower}");
+            assert!((value - tridiagonal).abs() < 2e-12, "lower={lower}");
+        }
+        let mut invalid_padding = band;
+        invalid_padding[if lower { 1 } else { 0 }][if lower { n - 1 } else { 0 }] = f64::NAN;
+        assert!(l::eigen::eigvals_banded(&invalid_padding, lower).is_err());
+    }
+
+    // Diagonal-only storage is the same for upper and lower layouts. Sorting
+    // requires no eigenvector construction or floating-point arithmetic.
+    let diagonal = [1.0e307, -7.0, 0.0, -0.0, 1.0e-320, -7.0];
+    let expected: [f64; 6] = [-7.0, -7.0, -0.0, 0.0, 1.0e-320, 1.0e307];
+    for lower in [false, true] {
+        let values = l::eigen::eigvals_banded(&[diagonal], lower).unwrap();
+        assert_eq!(values.len(), expected.len());
+        for (&value, &want) in values.iter().zip(&expected) {
+            assert_eq!(value.to_bits(), want.to_bits());
+        }
+    }
+}
+
+#[test]
+fn tridiagonal_banded_eigenvalues_scale_and_reach_order_limit() {
+    for scale in [1e-320, 1e-200, 1.0, 1e200, 1e307] {
+        let n = 4;
+        let diagonal = vec![2.0 * scale; n];
+        let off_diagonal = vec![scale; n - 1];
+        let tolerance = if scale < f64::MIN_POSITIVE {
+            3e-3
+        } else {
+            2e-12
+        };
+        for values in [
+            l::eigen::eigvalsh_tridiagonal(&diagonal, &off_diagonal).unwrap(),
+            l::eigen::eigvals_banded(&[diagonal.clone(), vec![scale, scale, scale, 0.0]], true)
+                .unwrap(),
+            l::eigen::eigvals_banded(&[vec![0.0, scale, scale, scale], diagonal.clone()], false)
+                .unwrap(),
+        ] {
+            for (i, value) in values.iter().enumerate() {
+                let expected =
+                    2.0 - 2.0 * (((i + 1) as f64 * std::f64::consts::PI) / (n + 1) as f64).cos();
+                assert!(((value / scale) - expected).abs() < tolerance);
+            }
+        }
+    }
+
+    let n = 256;
+    let diagonal = vec![2.0; n];
+    let off_diagonal = vec![-1.0; n - 1];
+    let upper = vec![
+        std::iter::once(0.0)
+            .chain(off_diagonal.iter().copied())
+            .collect::<Vec<_>>(),
+        diagonal.clone(),
+    ];
+    let lower = vec![
+        diagonal.clone(),
+        off_diagonal
+            .iter()
+            .copied()
+            .chain(std::iter::once(0.0))
+            .collect::<Vec<_>>(),
+    ];
+    for values in [
+        l::eigen::eigvalsh_tridiagonal(&diagonal, &off_diagonal).unwrap(),
+        l::eigen::eigvals_banded(&upper, false).unwrap(),
+        l::eigen::eigvals_banded(&lower, true).unwrap(),
+    ] {
+        assert_eq!(values.len(), n);
+        assert!(values.windows(2).all(|w| w[0] <= w[1]));
+        for (i, &value) in values.iter().enumerate() {
+            let angle = ((i + 1) as f64 * std::f64::consts::PI) / (n + 1) as f64;
+            assert!((value - (2.0 - 2.0 * angle.cos())).abs() < 2e-12);
+        }
+    }
+}
+
+#[test]
+fn eigvals_banded_wider_band_retains_dense_semantics() {
+    let diagonal = [4.0, 3.0, 2.0, 7.0, 6.0];
+    let first = [-1.0, 0.5, -0.25, 2.0];
+    let second = [0.75, -0.5, 1.25];
+    let n = diagonal.len();
+    let dense: Vec<Vec<f64>> = (0..n)
+        .map(|i| {
+            (0..n)
+                .map(|j| match i.abs_diff(j) {
+                    0 => diagonal[i],
+                    1 => first[i.min(j)],
+                    2 => second[i.min(j)],
+                    _ => 0.0,
+                })
+                .collect()
+        })
+        .collect();
+    let expected = l::eigen::eigvalsh(&dense, true).unwrap();
+    let lower = vec![
+        diagonal.to_vec(),
+        vec![-1.0, 0.5, -0.25, 2.0, 0.0],
+        vec![0.75, -0.5, 1.25, 0.0, 0.0],
+    ];
+    let upper = vec![
+        vec![0.0, 0.0, 0.75, -0.5, 1.25],
+        vec![0.0, -1.0, 0.5, -0.25, 2.0],
+        diagonal.to_vec(),
+    ];
+    for (band, lower) in [(&lower, true), (&upper, false)] {
+        let values = l::eigen::eigvals_banded(band, lower).unwrap();
+        for (&value, &want) in values.iter().zip(&expected) {
+            assert!((value - want).abs() < 2e-12);
         }
     }
 }

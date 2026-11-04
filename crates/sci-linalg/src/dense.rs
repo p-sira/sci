@@ -2,6 +2,8 @@
 use super::backend::*;
 use super::structured_impl::{circulant, toeplitz};
 use crate::{Error, Result};
+use dyn_stack::{MemBuffer, MemStack, StackReq};
+use faer::diag::{DiagMut, DiagRef};
 use faer::prelude::Solve;
 use faer::{Mat, Scale};
 
@@ -1512,6 +1514,60 @@ fn tridiagonal(d: &[f64], e: &[f64]) -> Result<Mat<f64>> {
         }
     }))
 }
+
+/// Eigenvalues of a symmetric tridiagonal matrix without dense reduction.
+/// Also serves the zero- and one-off-diagonal banded matrix paths.
+pub(super) fn tridiagonal_eigenvalues(d: &[f64], e: &[f64]) -> Result<Vec<f64>> {
+    let n = d.len();
+    if n == 0 || n > MAX_DIM {
+        return Err(Error::InvalidInput("tridiagonal order must be 1..=256"));
+    }
+    if e.len() != n - 1 {
+        return Err(Error::DimensionMismatch);
+    }
+    crate::error::is_finite_slice(d)?;
+    crate::error::is_finite_slice(e)?;
+
+    // A diagonal matrix has an exact spectrum, including repeated values and
+    // signed zeros; no eigensolver or floating-point scaling is needed.
+    if e.iter().all(|&value| value == 0.0) {
+        let mut values = d.to_vec();
+        values.sort_by(f64::total_cmp);
+        return Ok(values);
+    }
+
+    // Normalize both diagonals by the same finite scale, as in eigenvalues().
+    // This avoids overflow in QR steps and preserves subnormal inputs.
+    let scale = d
+        .iter()
+        .chain(e)
+        .fold(0.0_f64, |max, &value| max.max(value.abs()));
+    let diagonal: Vec<f64> = d.iter().map(|&value| value / scale).collect();
+    let off_diagonal: Vec<f64> = e.iter().map(|&value| value / scale).collect();
+    let mut values = vec![0.0; n];
+    let req = StackReq::all_of(&[
+        faer::linalg::temp_mat_scratch::<f64>(n, 1),
+        faer::linalg::temp_mat_scratch::<f64>(n, 1),
+    ]);
+    let mut memory = MemBuffer::new(req);
+    faer::linalg::evd::tridiagonal_self_adjoint_evd(
+        DiagRef::from_slice(&diagonal),
+        DiagRef::from_slice(&off_diagonal),
+        DiagMut::from_slice_mut(&mut values),
+        None,
+        faer::Par::Seq,
+        MemStack::new(&mut memory),
+        faer::Spec::<faer::linalg::evd::SelfAdjointEvdParams, f64>::default(),
+    )
+    .map_err(|_| Error::NumericalFailure("symmetric eigensolver did not converge"))?;
+    for value in &mut values {
+        *value = match *value * scale {
+            finite if finite.is_finite() => Ok(finite),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
+    }
+    Ok(values)
+}
 /// Computes ascending eigenvalues of T with diagonal d and off-diagonal e.
 ///
 /// ## Parameters
@@ -1532,10 +1588,11 @@ fn tridiagonal(d: &[f64], e: &[f64]) -> Result<Mat<f64>> {
 ///
 /// ## Numerical behavior
 ///
-/// Expands to a dense matrix and uses the scaled O(n³) faer eigenvalues-only
-/// solver without computing eigenvectors. Backend sweep limits bound iteration.
-/// Results can differ from [`eigh_tridiagonal`] by roundoff, especially near zero
-/// or repeated eigenvalues. Tridiagonal inputs retain dense storage and work costs.
+/// Uses faer's symmetric tridiagonal QR eigensolver directly, without dense
+/// expansion or eigenvector computation. The eigenvalues are sorted ascending;
+/// iteration is bounded by the backend. The O(n²) QR work and O(n) temporary
+/// storage improve on the dense reduction. Results can differ from
+/// [`eigh_tridiagonal`] by roundoff, especially near zero or repeated eigenvalues.
 ///
 /// # Examples
 ///
@@ -1555,7 +1612,7 @@ pub fn eigvalsh_tridiagonal(
     let d = d_input.as_ref();
     let e_input = super::input::vector_slice(e)?;
     let e = e_input.as_ref();
-    eigenvalues(tridiagonal(d, e)?)
+    tridiagonal_eigenvalues(d, e)
 }
 /// Computes `A=Q H Qᵀ`, where H is upper Hessenberg (zero below the first subdiagonal).
 ///

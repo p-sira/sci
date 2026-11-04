@@ -23,7 +23,9 @@ use nalgebra::{DMatrix, DVector};
 ///
 /// ## Numerical behavior
 ///
-/// Bounded dense collocation delegates to private nalgebra SVD with a rank check. Ill-conditioned finite fits can lose accuracy; no condition estimate is exposed.
+/// Bounded square collocation uses pivoted LU when its pivots and interpolation
+/// residual are well behaved, and otherwise falls back to rank-checked SVD.
+/// Ill-conditioned finite fits can lose accuracy; no condition estimate is exposed.
 ///
 /// # Examples
 ///
@@ -42,7 +44,17 @@ pub fn make_interp_spline(x: &[f64], y: &[f64], degree: usize) -> Result<Spline>
     if degree == 0 {
         return Err(Error::InvalidInput("interpolation degree must be in 1..=5"));
     }
-    make_lsq_spline(x, y, &backend::knots(x, degree), degree, None)
+    let knots = backend::knots(x, degree);
+    let mut spline = Spline {
+        coefficients: vec![0.0; knots.len() - degree - 1],
+        knots,
+        degree,
+    };
+    backend::validate(&spline)?;
+    let a = backend::design(x, &spline.knots, degree);
+    let b = DVector::from_column_slice(y);
+    spline.coefficients = backend::interpolate(a, b)?;
+    Ok(spline)
 }
 
 /// Minimizes `Σ_j (w[j](S(x[j])-y[j]))²` on a supplied B-spline knot vector.

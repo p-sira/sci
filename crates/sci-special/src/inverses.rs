@@ -198,7 +198,7 @@ fn positive_inverse(function: impl Fn(f64) -> f64, probability: f64) -> f64 {
     f64::NAN
 }
 
-fn poisson_mixture(lambda: f64, function: impl Fn(usize) -> f64) -> f64 {
+fn poisson_mixture(lambda: f64, mut function: impl FnMut(usize) -> f64) -> f64 {
     if !lambda.is_finite() || !(0.0..=10_000.0).contains(&lambda) {
         return f64::NAN;
     }
@@ -851,10 +851,48 @@ pub fn nctdtr(df: f64, nc: f64, t: f64) -> f64 {
     }
     let x = 1.0 / (1.0 + df / (t * t));
     let b = df / 2.0;
-    let series = poisson_mixture(nc * nc / 2.0, |j| {
+    let lambda = nc * nc / 2.0;
+    let center = lambda.floor() as usize;
+    // The mixture visits center, center-1, ... and then center+1, ... .
+    // R_j = Gamma(j+1)/Gamma(j+3/2) satisfies
+    // R_(j-1) = R_j*(j+1/2)/j and R_(j+1) = R_j*(j+1)/(j+3/2).
+    // Anchor both directions periodically to bound accumulated roundoff.
+    let gamma_ratio = |j: usize| {
         let j = j as f64;
-        let ratio = nc / std::f64::consts::SQRT_2 * (gammaln(j + 1.0) - gammaln(j + 1.5)).exp();
-        0.5 * (betainc(j + 0.5, b, x) + ratio * betainc(j + 1.0, b, x))
+        (gammaln(j + 1.0) - gammaln(j + 1.5)).exp()
+    };
+    let center_ratio = gamma_ratio(center);
+    let (mut lower_index, mut upper_index) = (center, center);
+    let (mut lower_ratio, mut upper_ratio) = (center_ratio, center_ratio);
+    let series = poisson_mixture(lambda, |j| {
+        let ratio = if j < center {
+            if j + 1 == lower_index && !(center - j).is_multiple_of(64) {
+                lower_ratio *= (j as f64 + 1.5) / (j as f64 + 1.0);
+            } else {
+                lower_ratio = gamma_ratio(j);
+            }
+            if !lower_ratio.is_finite() || lower_ratio <= 0.0 {
+                lower_ratio = gamma_ratio(j);
+            }
+            lower_index = j;
+            lower_ratio
+        } else if j > center {
+            if j == upper_index + 1 && !(j - center).is_multiple_of(64) {
+                upper_ratio *= j as f64 / (j as f64 + 0.5);
+            } else {
+                upper_ratio = gamma_ratio(j);
+            }
+            if !upper_ratio.is_finite() || upper_ratio <= 0.0 {
+                upper_ratio = gamma_ratio(j);
+            }
+            upper_index = j;
+            upper_ratio
+        } else {
+            center_ratio
+        };
+        let j = j as f64;
+        let signed_ratio = nc / std::f64::consts::SQRT_2 * ratio;
+        0.5 * (betainc(j + 0.5, b, x) + signed_ratio * betainc(j + 1.0, b, x))
     });
     (ndtr(-nc) + series).clamp(0.0, 1.0)
 }

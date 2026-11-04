@@ -177,6 +177,13 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
             }
         }
     }
+    calculate_validated(u, v, metric, &w)
+}
+
+// The caller has checked the coordinates and prepared any weight normalization.
+// Pairwise distances share their unit weights rather than allocating a vector
+// and rechecking already validated coordinates for every observation pair.
+fn calculate_validated(u: &[f64], v: &[f64], metric: Metric<'_>, w: &[f64]) -> Result<f64> {
     let sum = |f: &dyn Fn(f64, f64) -> f64| -> f64 {
         u.iter()
             .zip(v)
@@ -186,14 +193,14 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
             .sum()
     };
     let value = match metric {
-        Metric::Euclidean => return lp(u, v, 2.0, &w),
-        Metric::Minkowski(p) => return lp(u, v, p, &w),
-        Metric::Chebyshev => return lp(u, v, f64::INFINITY, &w),
+        Metric::Euclidean => return lp(u, v, 2.0, w),
+        Metric::Minkowski(p) => return lp(u, v, p, w),
+        Metric::Chebyshev => return lp(u, v, f64::INFINITY, w),
         Metric::SqEuclidean => {
-            let d = lp(u, v, 2.0, &w)?;
+            let d = lp(u, v, 2.0, w)?;
             d * d
         }
-        Metric::Cityblock => return lp(u, v, 1.0, &w),
+        Metric::Cityblock => return lp(u, v, 1.0, w),
         Metric::Canberra => sum(&|a, b| {
             let den = a.abs() + b.abs();
             if den == 0.0 {
@@ -205,7 +212,7 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
             }
         }),
         Metric::Braycurtis => {
-            let scale = active_scale(u, &w).max(active_scale(v, &w));
+            let scale = active_scale(u, w).max(active_scale(v, w));
             if scale == 0.0 {
                 f64::NAN
             } else {
@@ -215,8 +222,8 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
         }
         Metric::Hamming => sum(&|a, b| f64::from(a != b)) / w.iter().sum::<f64>(),
         Metric::Cosine | Metric::Correlation => {
-            let su = active_scale(u, &w);
-            let sv = active_scale(v, &w);
+            let su = active_scale(u, w);
+            let sv = active_scale(v, w);
             if su == 0.0 || sv == 0.0 {
                 return Ok(f64::NAN);
             }
@@ -262,7 +269,7 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
         | Metric::Russellrao
         | Metric::Sokalsneath
         | Metric::Yule => {
-            let [ff, ft, tf, tt] = boolean_counts(u, v, &w, matches!(metric, Metric::Jaccard))?;
+            let [ff, ft, tf, tt] = boolean_counts(u, v, w, matches!(metric, Metric::Jaccard))?;
             let unequal = ft + tf;
             match metric {
                 Metric::Jaccard => {
@@ -342,6 +349,53 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
         }
     };
     evaluated(value)
+}
+
+// Validated input only: preserve the vector kernel's hypot sequence for
+// extreme values and long vectors, including nonfinite differences.
+fn euclidean_hypot_validated(u: &[f64], v: &[f64]) -> Result<f64> {
+    let mut norm = 0.0_f64;
+    for (&a, &b) in u.iter().zip(v) {
+        let term = (a - b).abs();
+        norm = if norm == 0.0 { term } else { norm.hypot(term) };
+    }
+    evaluated(norm)
+}
+
+// For short, moderately scaled vectors, one sqrt is substantially cheaper
+// than a hypot call per coordinate. The conservative component bounds ensure
+// all squares and their sum remain normal and finite for up to three terms.
+// Outside this range, or if subtraction overflows, retain the hypot kernel.
+// Both paths operate on the already-rounded difference a-b; large nearly
+// equal coordinates therefore need no special cancellation handling.
+fn euclidean_validated(u: &[f64], v: &[f64]) -> Result<f64> {
+    if u.len() > 3 {
+        return euclidean_hypot_validated(u, v);
+    }
+    let mut squared = 0.0_f64;
+    for (&a, &b) in u.iter().zip(v) {
+        let delta = a - b;
+        let absolute = delta.abs();
+        if !delta.is_finite() || absolute > 1e150 || (absolute != 0.0 && absolute < 1e-150) {
+            return euclidean_hypot_validated(u, v);
+        }
+        squared += delta * delta;
+    }
+    evaluated(squared.sqrt())
+}
+
+fn is_pairwise_euclidean(metric: Metric<'_>) -> bool {
+    matches!(metric, Metric::Euclidean) || matches!(metric, Metric::Minkowski(p) if p == 2.0)
+}
+
+fn calculate_pairwise(u: &[f64], v: &[f64], metric: Metric<'_>, ones: &[f64]) -> Result<f64> {
+    match metric {
+        Metric::SqEuclidean => {
+            let distance = euclidean_hypot_validated(u, v)?;
+            evaluated(distance * distance)
+        }
+        _ => calculate_validated(u, v, metric, ones),
+    }
 }
 
 macro_rules! vector_distance {
@@ -712,6 +766,24 @@ fn pairwise_bound(n: usize, m: usize, d: usize, metric: Metric<'_>) -> Result<()
     bound(work, MAX_WORK)
 }
 
+fn pairwise_unit_weights(metric: Metric<'_>, d: usize, has_pairs: bool) -> Vec<f64> {
+    if !has_pairs
+        || matches!(
+            metric,
+            Metric::Euclidean
+                | Metric::SqEuclidean
+                | Metric::Mahalanobis(_)
+                | Metric::Seuclidean(_)
+                | Metric::JensenShannon(_)
+        )
+        || is_pairwise_euclidean(metric)
+    {
+        Vec::new()
+    } else {
+        vec![1.0; d]
+    }
+}
+
 /// Computes cross distances `D[i][j] = metric(x[i], y[j])`.
 ///
 /// ## Parameters
@@ -738,7 +810,12 @@ fn pairwise_bound(n: usize, m: usize, d: usize, metric: Metric<'_>) -> Result<()
 ///
 /// ## Numerical behavior
 ///
-/// Evaluates the same kernels as the vector functions; no parallelism or approximation.
+/// Validates coordinates once and shares unit weights across pairs.
+/// Euclidean distances of up to three moderately scaled coordinates use a
+/// sum of squares and one sqrt, which can differ from sequential `hypot`
+/// by a few final rounding bits. Extreme or longer vectors use `hypot` to
+/// avoid overflow and underflow in squared differences.
+/// No parallelism or approximate neighbor search is used.
 /// Mahalanobis distances share one Cholesky factor per batch, using
 /// O(d³ + pairs*d²) work and O(d²) additional storage.
 ///
@@ -760,12 +837,19 @@ pub fn cdist(x: &[Vec<f64>], y: &[Vec<f64>], metric: Metric<'_>) -> Result<Vec<V
     let d = dx.max(dy);
     pairwise_bound(x.len(), y.len(), d, metric)?;
     let factor = prepare_metric(metric, d)?;
+    if is_pairwise_euclidean(metric) {
+        return x
+            .iter()
+            .map(|a| y.iter().map(|b| euclidean_validated(a, b)).collect())
+            .collect();
+    }
+    let ones = pairwise_unit_weights(metric, d, !x.is_empty() && !y.is_empty());
     x.iter()
         .map(|a| {
             y.iter()
                 .map(|b| match &factor {
                     Some(factor) => mahalanobis_distance(a, b, factor),
-                    None => calculate(a, b, metric, None),
+                    None => calculate_pairwise(a, b, metric, &ones),
                 })
                 .collect()
         })
@@ -810,7 +894,10 @@ fn validate_metric(metric: Metric<'_>, d: usize) -> Result<()> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses the public vector kernels without approximate neighbor searches.
+/// Validates coordinates once and reuses unit weights for every pair.
+/// Short, moderately scaled Euclidean vectors use one sqrt on a sum of
+/// squares (potentially differing by a few final rounding bits); extreme
+/// or longer vectors use the same `hypot` accumulation as scalar distances.
 /// Mahalanobis batches share one Cholesky factor and require O(d³ + pairs*d²)
 /// work, with O(d²) additional storage.
 ///
@@ -833,12 +920,22 @@ pub fn pdist(x: &[Vec<f64>], metric: Metric<'_>) -> Result<Vec<f64>> {
     bound(count, MAX_ENTRIES)?;
     pairwise_bound(count.unwrap(), 1, d, metric)?;
     let factor = prepare_metric(metric, d)?;
+    if is_pairwise_euclidean(metric) {
+        let mut result = Vec::with_capacity(count.unwrap());
+        for i in 0..x.len() {
+            for j in i + 1..x.len() {
+                result.push(euclidean_validated(&x[i], &x[j])?);
+            }
+        }
+        return Ok(result);
+    }
+    let ones = pairwise_unit_weights(metric, d, count.unwrap() > 0);
     let mut result = Vec::with_capacity(count.unwrap());
     for i in 0..x.len() {
         for j in i + 1..x.len() {
             result.push(match &factor {
                 Some(factor) => mahalanobis_distance(&x[i], &x[j], factor)?,
-                None => calculate(&x[i], &x[j], metric, None)?,
+                None => calculate_pairwise(&x[i], &x[j], metric, &ones)?,
             });
         }
     }

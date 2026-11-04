@@ -659,7 +659,12 @@ pub fn spline_filter(x: &[Vec<f64>], lambda: f64) -> Result<Vec<Vec<f64>>> {
 ///
 /// ## Numerical behavior
 ///
-/// Delegates a dense positive-definite solve to private nalgebra Cholesky, bounded to 256 samples. Large penalties can make the system ill conditioned; no automatic penalty selection is performed.
+/// Solves the positive-definite normal equations with a banded Cholesky
+/// factorization, using O(n * order^2) work and O(n * order) storage. The
+/// equations are scaled before factorization to avoid overflow when weights
+/// or the penalty are large. Numerically doubtful pivots fall back to a dense
+/// Cholesky solve. Extreme penalty-to-weight ratios can still be ill
+/// conditioned; no automatic penalty selection is performed.
 ///
 /// # Examples
 ///
@@ -702,27 +707,100 @@ pub fn whittaker_henderson(
         ));
     }
     let n = y.len();
-    let mut matrix = DMatrix::from_diagonal(&DVector::from_column_slice(weights));
-    let mut diff = vec![1.; order + 1];
+    // The normal matrix W + lambda D^T D has half-bandwidth `order`.
+    // Scale both sides before assembling it: lambda * diff[i] * diff[j]
+    // and weight[i] * y[i] could overflow even when the answer is finite.
+    let scale = lambda.max(weights.iter().copied().fold(0., f64::max));
+    let penalty = lambda / scale;
+    let mut band = vec![[0.; 9]; n];
+    let mut rhs = vec![0.; n];
+    for i in 0..n {
+        let weight = weights[i] / scale;
+        band[i][0] = weight;
+        rhs[i] = weight * y[i];
+    }
+    let mut diff = [0.; 9];
+    diff[0] = 1.;
     for k in 1..=order {
         diff[k] = diff[k - 1] * (order - k + 1) as f64 / k as f64;
     }
-    for (k, v) in diff.iter_mut().enumerate() {
+    for (k, v) in diff[..=order].iter_mut().enumerate() {
         if (order - k) % 2 == 1 {
             *v = -*v;
         }
     }
     for row in 0..n - order {
         for i in 0..=order {
-            for j in 0..=order {
-                matrix[(row + i, row + j)] += lambda * diff[i] * diff[j];
+            for j in 0..=i {
+                band[row + i][i - j] += penalty * diff[i] * diff[j];
             }
         }
     }
-    let rhs = DVector::from_iterator(n, y.iter().zip(weights).map(|(y, w)| y * w));
+
+    // Store L[i,j] in factor[i][i-j], with its diagonal at offset zero.
+    // Only entries within the band are ever read or written.
+    let mut factor = band.clone();
+    for i in 0..n {
+        for j in i.saturating_sub(order)..i {
+            let mut value = band[i][i - j];
+            for k in i.saturating_sub(order).max(j.saturating_sub(order))..j {
+                value -= factor[i][i - k] * factor[j][j - k];
+            }
+            value /= factor[j][0];
+            if !value.is_finite() {
+                return whittaker_dense_fallback(&band, &rhs, order);
+            }
+            factor[i][i - j] = value;
+        }
+        let mut pivot = band[i][0];
+        for j in i.saturating_sub(order)..i {
+            pivot -= factor[i][i - j] * factor[i][i - j];
+        }
+        // A vanishing pivot is particularly susceptible to cancellation
+        // between the polynomial nullspace and a small set of weights.
+        if !pivot.is_finite() || pivot <= f64::EPSILON * band[i][0].abs() {
+            return whittaker_dense_fallback(&band, &rhs, order);
+        }
+        factor[i][0] = pivot.sqrt();
+    }
+
+    // Forward substitution (L z = rhs), then backward (L^T x = z).
+    let mut out = rhs.clone();
+    for i in 0..n {
+        for j in i.saturating_sub(order)..i {
+            out[i] -= factor[i][i - j] * out[j];
+        }
+        out[i] /= factor[i][0];
+    }
+    for i in (0..n).rev() {
+        for j in i + 1..(i + order + 1).min(n) {
+            out[i] -= factor[j][j - i] * out[j];
+        }
+        out[i] /= factor[i][0];
+    }
+    if out.iter().any(|value| !value.is_finite()) {
+        return whittaker_dense_fallback(&band, &rhs, order);
+    }
+    Ok(out)
+}
+
+fn whittaker_dense_fallback(band: &[[f64; 9]], rhs: &[f64], order: usize) -> Result<Vec<f64>> {
+    let n = rhs.len();
+    let mut matrix = DMatrix::zeros(n, n);
+    for i in 0..n {
+        for j in i.saturating_sub(order)..=i {
+            let value = band[i][i - j];
+            matrix[(i, j)] = value;
+            matrix[(j, i)] = value;
+        }
+    }
     let out = matrix
         .cholesky()
         .ok_or(Error::NumericalFailure("singular smoothing system"))?
-        .solve(&rhs);
+        .solve(&DVector::from_column_slice(rhs));
     checked(out.as_slice().to_vec())
 }
+
+#[cfg(test)]
+#[path = "tests/whittaker_smoothing.rs"]
+mod whittaker_smoothing_tests;
