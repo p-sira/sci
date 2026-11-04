@@ -650,6 +650,61 @@ pub fn taylor(
     })
 }
 
+fn dpss_orient(mut v: Vec<f64>, order: usize, m: usize) -> Result<Vec<f64>> {
+    // Apply SciPy's parity-dependent sign convention before truncating a
+    // periodic (m+1)-sample taper to m samples.
+    let sign = if order.is_multiple_of(2) {
+        v.iter().sum::<f64>()
+    } else {
+        v.iter().copied().find(|v| v.abs() > 1e-7).unwrap_or(1.)
+    };
+    if sign < 0. {
+        v.iter_mut().for_each(|x| *x = -*x);
+    }
+    v.truncate(m);
+    checked(v)
+}
+
+// For n < faer's default divide-and-conquer threshold (128), U=Some uses the
+// direct tridiagonal QR eigensolver with two n-by-1 scratch arrays. Preserve the
+// original dense nalgebra path for larger sizes and as a numerical fallback.
+fn dpss_tridiagonal_qr(d: &[f64], e: &[f64], k: usize, m: usize) -> Option<Vec<Vec<f64>>> {
+    let n = d.len();
+    let mut eigenvalues = vec![0.0; n];
+    let mut eigenvectors = faer::Mat::<f64>::zeros(n, n);
+    let scratch = dyn_stack::StackReq::all_of(&[
+        faer::linalg::temp_mat_scratch::<f64>(n, 1),
+        faer::linalg::temp_mat_scratch::<f64>(n, 1),
+    ]);
+    let mut buffer = dyn_stack::MemBuffer::new(scratch);
+    faer::linalg::evd::tridiagonal_self_adjoint_evd(
+        faer::diag::DiagRef::from_slice(d),
+        faer::diag::DiagRef::from_slice(e),
+        faer::diag::DiagMut::from_slice_mut(&mut eigenvalues),
+        Some(eigenvectors.as_mut()),
+        faer::Par::Seq,
+        dyn_stack::MemStack::new(&mut buffer),
+        faer::Spec::default(),
+    )
+    .ok()?;
+    if !eigenvalues.iter().all(|x| x.is_finite()) {
+        return None;
+    }
+
+    let mut tapers = Vec::with_capacity(k);
+    for order in 0..k {
+        // faer sorts ascending; DPSS returns the largest eigenvalues first.
+        let col = n - 1 - order;
+        let v: Vec<_> = (0..n).map(|i| eigenvectors[(i, col)]).collect();
+        let norm2 = v.iter().map(|x| x * x).sum::<f64>();
+        if !norm2.is_finite() || (norm2 - 1.0).abs() > 5e-11 {
+            return None;
+        }
+        tapers.push(dpss_orient(v, order, m).ok()?);
+    }
+    Some(tapers)
+}
+
 /// Computes the highest eigenvectors of the Slepian tridiagonal matrix with diagonal `((n-1-2i)/2)² cos(2π NW/n)` and off-diagonal `i(n-i)/2`.
 ///
 /// ## Parameters
@@ -672,7 +727,9 @@ pub fn taylor(
 ///
 /// ## Numerical behavior
 ///
-/// Uses f64 arithmetic. Cancellation and poorly conditioned filters or polynomial fits can reduce accuracy; no uniform relative-error guarantee is made. FFT routines use RustFFT, polynomial fits and DPSS use bounded private nalgebra solvers.
+/// Uses f64 arithmetic and bounded symmetric tridiagonal QR for orders below
+/// 128, retaining the original dense solver as a fallback and for larger orders.
+/// Eigenvectors in nearly repeated eigenspaces can differ by roundoff.
 ///
 /// # Examples
 ///
@@ -699,11 +756,24 @@ pub fn dpss(m: usize, nw: f64, k: usize, symmetric: bool) -> Result<Vec<Vec<f64>
     }
     let n = length(m, symmetric)?;
     let w = nw / n as f64;
+    let c = (TAU * w).cos();
+    let diagonal: Vec<_> = (0..n)
+        .map(|i| ((n as f64 - 1. - 2. * i as f64) / 2.).powi(2) * c)
+        .collect();
+    let off_diagonal: Vec<_> = (1..n).map(|i| (i * (n - i)) as f64 / 2.).collect();
+    if n < 128
+        && let Some(tapers) = dpss_tridiagonal_qr(&diagonal, &off_diagonal, k, m)
+    {
+        return Ok(tapers);
+    }
+
+    // Preserve the original numerical backend when faer's QR fails, or when
+    // the order reaches the divide-and-conquer branch requiring more scratch.
     let mut matrix = nalgebra::DMatrix::zeros(n, n);
     for i in 0..n {
-        matrix[(i, i)] = ((n as f64 - 1. - 2. * i as f64) / 2.).powi(2) * (TAU * w).cos();
+        matrix[(i, i)] = diagonal[i];
         if i > 0 {
-            let v = (i * (n - i)) as f64 / 2.;
+            let v = off_diagonal[i - 1];
             matrix[(i, i - 1)] = v;
             matrix[(i - 1, i)] = v;
         }
@@ -717,17 +787,11 @@ pub fn dpss(m: usize, nw: f64, k: usize, symmetric: bool) -> Result<Vec<Vec<f64>
         .take(k)
         .enumerate()
         .map(|(order, j)| {
-            let mut v: Vec<_> = eig.eigenvectors.column(j).iter().copied().collect();
-            let sign = if order.is_multiple_of(2) {
-                v.iter().sum::<f64>()
-            } else {
-                v.iter().copied().find(|v| v.abs() > 1e-7).unwrap_or(1.)
-            };
-            if sign < 0. {
-                v.iter_mut().for_each(|x| *x = -*x);
-            }
-            v.truncate(m);
-            checked(v)
+            dpss_orient(
+                eig.eigenvectors.column(j).iter().copied().collect(),
+                order,
+                m,
+            )
         })
         .collect()
 }

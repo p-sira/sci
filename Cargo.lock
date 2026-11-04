@@ -1652,6 +1652,8 @@ name = "sci-signal"
 version = "0.3.0"
 dependencies = [
  "complex-bessel",
+ "dyn-stack",
+ "faer",
  "nalgebra",
  "num-complex",
  "pm-remez",
