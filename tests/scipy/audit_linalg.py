@@ -52,15 +52,16 @@ assert [c["id"] for c in inputs]==[c["id"] for c in expected]
 assert [c["id"] for c in inputs]==list(map(str,range(len(cases))))
 tests=(ROOT/"tests/linalg.rs").read_text()
 for name in added:
-    assert re.search(rf"\bl::{name}\(",tests),(name,"missing public test dispatch")
+    assert re.search(rf"\bl::[a-z_]+::{name}\(",tests),(name,"missing public test dispatch")
 for name in interpolative:
     assert re.search(rf"\bl::interpolative::{name}\(",tests),(name,"missing public test dispatch")
 assert "pub use sci_linalg as linalg;" in (ROOT/"src/lib.rs").read_text()
-assert "pub use dense::*;" in source and "pub use structured::*;" in source
+assert "pub use dense::*;" in source and "pub use structured_impl::*;" in source
 module=(ROOT/"crates/sci-linalg/src/mod.rs").read_text()
 for path in (ROOT/"crates/sci-linalg/src").glob("*.rs"):
     if path.stem not in {"mod","lib","backend","interpolative","input"}:
-        assert f"pub use {path.stem}::*;" in module,(path,"missing module export")
+        module_name = "structured_impl" if path.stem == "structured" else path.stem
+        assert f"pub use {module_name}::*;" in module,(path,"missing module export")
 assert "pub mod interpolative;" in module
 assert "pub use input::{MatrixInput, VectorInput};" in module
 for library in ("ndarray", "nalgebra", "faer"):

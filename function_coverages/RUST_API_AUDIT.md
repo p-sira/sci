@@ -12,7 +12,8 @@ SciPy inventories supply numerical definitions rather than export requirements.
 | `stats::kstest` | Remove the two-sample-only forwarding alias. `ks_1samp` and `ks_2samp` make the supported input explicit without Python overload dispatch. |
 | `special::psi` | Remove the synonym of `gamma::digamma`; signature and implementation were identical. |
 | `special::assoc_laguerre` | Remove the argument-order wrapper; use `orthogonal::eval_genlaguerre(n, k, x)`. |
-| `special::ellipf` | Prefer Ellip’s `elliptic::ellipf(phi, m)` notation for `F(phi, m)`; retain `elliptic::ellipkinc` as a qualified compatibility alias. Parameter convention remains `m=k²`. No root-level numerical alias is retained. |
+| `special::ellipf` | Remove this spelling entirely in Sci 0.3.0; use `elliptic::ellipkinc(phi, m)` for `F(phi, m)`. Parameter convention remains `m=k²`, and no root-level numerical alias is retained. |
+| `linalg::ishermitian` | Remove this real-only synonym. Use `basic::issymmetric`, which also describes Hermitian symmetry for supported real matrices. |
 | `signal::choose_conv_method`, `ConvolutionMethod` | Remove the SciPy-calibrated timing model. Sci uses different kernels and work limits; numerical parity cannot validate a performance recommendation. Explicit direct, FFT, and overlap-add functions remain available. |
 | `signal::closest_STFT_dual_window` | Rename to `closest_stft_dual_window`; retain its numerical definition, signature, and independent fixtures. |
 
@@ -25,8 +26,8 @@ regenerated with the pinned Python environment.
 
 - Integer-order Bessel functions `jn`, `yn`, and `kn` express a useful typed
   domain. Their `i32` order distinguishes them from real-order functions.
-- `ishermitian` names a mathematical property even though its current real
-  scalar domain makes it equivalent to `issymmetric`.
+- `issymmetric` remains the real matrix symmetry predicate; Sci does not
+  expose a distinct complex Hermitian predicate.
 - `identity`, `median`, `std`, specialized clustering methods, and scalar
   distribution helpers express useful mathematical operations with narrower
   inputs or conventions. A short implementation alone does not justify removal.

@@ -680,7 +680,6 @@ fn special_families_match_scipy() {
                 let (a, b) = parsed_call!(special::elliptic::ellipke; args[0]).unwrap();
                 vec![a, b]
             }
-            "ellipf" => vec![parsed_call!(special::elliptic::ellipf; args[0], args[1]).unwrap()],
             "ellippi" => vec![parsed_call!(special::elliptic::ellippi; args[0], args[1]).unwrap()],
             "ellippiinc" => {
                 vec![

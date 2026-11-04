@@ -1,10 +1,10 @@
 # `linalg` coverage and SciPy adaptations
 
-The `linalg` namespace exports **92 of 96** top-level
+The `linalg` namespace exports **91 of 96** top-level
 `scipy.linalg` inventory function names. The nine
 `scipy.linalg.interpolative` names are also exported in their own namespace.
-Every retained name has at least two independent reference cases, for **576 cases**
-total across 102 qualified reference labels (including the removed solve_lyapunov spelling, tested through solve_continuous_lyapunov). These APIs have documented functional
+Every retained name has at least two independent reference cases, for **572 cases**
+total across 101 qualified reference labels (including the removed solve_lyapunov spelling, tested through solve_continuous_lyapunov). These APIs have documented functional
 signatures and limitations; name coverage does not establish full SciPy
 behavioral parity. There are no placeholder implementations.
 
@@ -61,7 +61,7 @@ logical shapes directly. Shared output rows retain this representation limit.
 Input conversions and basic helpers bound each axis and entry count at
 1,000,000; numerical algorithms retain their existing tighter bounds.
 
-All **576 cases** run through shared, ndarray, nalgebra, and faer storage.
+All **572 cases** run through shared, ndarray, nalgebra, and faer storage.
 Additional independently generated SciPy BLAS fixtures test basic products,
 transpose, and dot products. Rust tests exercise mixed libraries, strided and
 mutable views, fixed storage, empty axes, IEEE conversion, cross-module results,
@@ -95,7 +95,7 @@ repeated eigenvalues. References are generated with NumPy 2.5.4 and SciPy 1.18.1
 | Structured matrices | `toeplitz`, `hankel`, `circulant`, `hilbert`, `invhilbert`, `pascal`, `invpascal`, `hadamard`, `helmert`, `fiedler`, `companion`, `fiedler_companion`, `leslie`, `block_diag`, `convolution_matrix`, `dft`, `khatri_rao` |
 | Sketching | `clarkson_woodruff_transform` |
 | Removed compatibility dispatch | `find_best_blas_type`, `get_blas_funcs`, `get_lapack_funcs`; call numerical APIs directly |
-| Norms and structure | `norm`, `bandwidth`, `issymmetric`, `ishermitian` |
+| Norms and structure | `norm`, `bandwidth`, `issymmetric` |
 
 The existing `dot`, `matvec`, `matmul`, and `transpose` helpers remain available
 and are exercised by interoperability and reconstruction tests. They are not
@@ -223,7 +223,9 @@ can be severely ill-conditioned. Fiedler and coefficient-ratio overflow is an er
 Structure predicates are deliberate IEEE exceptions: exact symmetry ignores the
 diagonal, equal infinities compare true, and off-diagonal NaN compares false.
 Providing either tolerance activates allclose semantics including the diagonal.
-`ishermitian` is the real-valued alias of `issymmetric`; complex Hermitian inputs
+`issymmetric` is the sole public predicate for real matrix symmetry, which
+coincides with Hermitian symmetry for real scalars. The previous
+`ishermitian` spelling is removed in Sci 0.3.0; complex Hermitian inputs
 are unsupported. `bandwidth` tests exact nonzero finite entries.
 
 SciPy-derived companion layouts and principal-angle identities retain their
@@ -235,7 +237,7 @@ Input-only cases live in `tests/scipy/linalg_cases.jsonl`. The generator pins
 **SciPy 1.18.1 / NumPy 2.5.4**, uses their public APIs, and writes separate
 checked-in input/expected CSVs. Normal Rust tests require no Python.
 
-The **576** cases exercise all 102 qualified reference labels (including the removed solve_lyapunov spelling, tested through solve_continuous_lyapunov), shapes, output ordering, triangle/band
+The **572** cases exercise all 101 qualified reference labels (including the removed solve_lyapunov spelling, tested through solve_continuous_lyapunov), shapes, output ordering, triangle/band
 layouts, normalization, rectangular and rank-deficient systems, explicit cutoffs,
 zero-rank spaces, and near-zero subspace angles. Well-conditioned small systems
 use **3e-11 absolute plus 3e-11 relative** tolerances for different dense

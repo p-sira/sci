@@ -44,7 +44,9 @@ available at the crate root. Numerical functions are organized by family:
 | `interpolative` | Interpolative decomposition and rank estimation |
 
 For example, use `sci_linalg::decompositions::svd` for SVD and
-`sci_linalg::solvers::solve` for a linear system. This organization replaces
+`sci_linalg::solvers::solve` for a linear system. Real matrix symmetry uses
+`sci_linalg::basic::issymmetric`; the older `ishermitian` spelling was removed
+in Sci 0.3. This organization replaces
 flat numerical function exports in Sci 0.3.
 
 ## Input conventions
@@ -84,6 +86,9 @@ fn main() -> Result<(), sci_core::Error> {
     )?;
     let direction = linalg::basic::matvec(&jacobian, &[1.0, 0.0])?;
     assert!((direction[0] - 3.0).abs() < 1e-8);
+    assert!(linalg::basic::issymmetric(
+        &[vec![1.0, 2.0], vec![2.0, 3.0]], None, None,
+    )?);
     Ok(())
 }
 ```

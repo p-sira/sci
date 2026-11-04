@@ -199,7 +199,7 @@ def evaluate(api, args):
         return [r]
     if api == "block_diag":
         return [la.block_diag(*x) if x else np.empty((0,0))]
-    if api in {"issymmetric", "ishermitian", "bandwidth"}:
+    if api in {"issymmetric", "bandwidth"}:
         x=np.asarray(x,dtype=float).reshape((0,0)) if not x else np.asarray(x,dtype=float)
         r=getattr(la,api)(x,*args[1:])
         return list(r) if isinstance(r,tuple) else [r]

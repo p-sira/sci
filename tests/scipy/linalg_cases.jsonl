@@ -279,10 +279,6 @@
 {"api": "issymmetric", "args": [[[1.0, 2.0], [2.0, 3.0]], null, null]}
 {"api": "issymmetric", "args": [[[1.0, 2.0], [3.0, 4.0]], null, null]}
 {"api": "issymmetric", "args": [[[1.0, 2.0], [2.00001, 3.0]], 0.0001, 0.0]}
-{"api": "ishermitian", "args": [[], null, null]}
-{"api": "ishermitian", "args": [[[1.0, 2.0], [2.0, 3.0]], null, null]}
-{"api": "ishermitian", "args": [[[1.0, 2.0], [3.0, 4.0]], null, null]}
-{"api": "ishermitian", "args": [[[1.0, 2.0], [2.00001, 3.0]], 0.0001, 0.0]}
 {"api": "expm", "args": [[[0.0]]]}
 {"api": "expm", "args": [[[0.2, 0.3], [0.0, -0.4]]]}
 {"api": "expm", "args": [[[0.0, -1.0], [1.0, 0.0]]]}

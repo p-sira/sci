@@ -294,8 +294,6 @@ def reference(name, args):
         return special.lambertw(*args, -1).real
     if name == "ellipke":
         return special.ellipk(*args), special.ellipe(*args)
-    if name == "ellipf":
-        return special.ellipkinc(*args)
     if name.startswith("cel"):
         kc = args[0]
         if name == "cel":

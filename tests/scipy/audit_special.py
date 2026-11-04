@@ -103,8 +103,8 @@ def audit():
             assert ALIASES[alias] in public & references, alias
         print(f"{namespace}: {len(names)} names, {len(direct)} direct, "
               f"{len(names & ALIASES.keys())} aliases, {len(names & NATIVE)} native replacements")
-    assert len(public) == 362, len(public)
-    print(f"Public family numerical exports (including ellipkinc alias): {len(public)} "
+    assert len(public) == 361, len(public)
+    print(f"Public family numerical exports: {len(public)} "
           f"across {len(set(families.values()))} families; none at the root.")
 
 

@@ -2,6 +2,12 @@
 
 ## 0.3.0 (unreleased)
 
+- **Breaking:** Remove `special::elliptic::ellipf` and
+  `linalg::basic::ishermitian`. Use `special::elliptic::ellipkinc(phi, m)`
+  for the incomplete first-kind elliptic integral and
+  `linalg::basic::issymmetric(&a, atol, rtol)` for real matrix symmetry.
+  These are the sole public spellings in their respective modules; see
+  MIGRATING.md for the earlier root-level import paths.
 - Speed up CodSpeed-profiled numerical hot paths across `sci-cluster`,
   `sci-interpolate`, `sci-linalg`, `sci-signal`, `sci-spatial`, `sci-special`,
   and `sci-stats`. Use banded/specialized solvers, reuse work buffers,

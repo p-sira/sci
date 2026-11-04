@@ -110,7 +110,3 @@ pub fn issymmetric(
     }
     Ok(true)
 }
-/// Real-valued alias of [`issymmetric`]: Hermitian symmetry is `A=Aᵀ`.
-/// Parameters, IEEE special values, errors, work limits, and conventions are identical.
-/// Complex input is unsupported; SciPy's complex Hermitian test is not reproduced.
-pub use issymmetric as ishermitian;

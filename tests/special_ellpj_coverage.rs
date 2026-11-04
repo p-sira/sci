@@ -113,12 +113,12 @@ fn jacobi_unit_parameter_remains_finite_far_beyond_hyperbolic_overflow() {
 
 #[test]
 fn jacobi_amplitude_inverts_an_independent_elliptic_integral() {
-    // ellipf comes from the independent Ellip implementation, not Cephes'
+    // ellipkinc uses the independent Ellip implementation, not Cephes'
     // AGM Jacobi kernel. This checks the unwrapped amplitude quantitatively.
     for m in [0.2, 0.5, 0.9, 0.99] {
         for u in [-3.4_f64, -1.3, -0.2, 0.0, 0.2, 1.3, 3.4] {
             let actual = s::elliptic::ellipj(u, m);
-            finite_close(elliptic::ellipf(actual.3, m).unwrap(), u, 3e-11, 3e-11);
+            finite_close(elliptic::ellipkinc(actual.3, m).unwrap(), u, 3e-11, 3e-11);
             jacobi_relations(actual, m, 3e-12);
         }
     }

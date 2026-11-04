@@ -18,7 +18,7 @@ def third_kind(phi, n, m):
 
 def extended_reference(name, x):
     """Return (handled, result); ordinary cases stay in their existing generator."""
-    if name in {"ellipf", "ellipkinc", "ellipeinc", "ellipdinc"} and x[1] >= 1:
+    if name in {"ellipkinc", "ellipeinc", "ellipdinc"} and x[1] >= 1:
         phi, m = x
         numerator = (lambda t: np.sin(t)**2) if name == "ellipdinc" else (lambda t: 1.)
         f = ((lambda t: np.sqrt(1-m*np.sin(t)**2)) if name == "ellipeinc"
