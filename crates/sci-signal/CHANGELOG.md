@@ -2,10 +2,12 @@
 
 ## 0.3.0
 
-- Use a scaled banded Cholesky solve for Whittaker–Henderson smoothing,
-  retaining a dense Cholesky fallback for doubtful pivots or nonfinite
-  intermediate results. Reduce normal-equation work to O(n · order²) and
-  memory to O(n · order); the native smoothing benchmark improved about 16×.
+- Solve DPSS windows of order below 128 directly from their symmetric
+  tridiagonal matrix with Faer QR eigenvectors rather than a redundant dense
+  eigendecomposition. Keep the original nalgebra solver for larger windows
+  and numerical fallback, including periodic length 256; preserve ordering,
+  parity, normalization, and truncation. The native DPSS benchmark improved
+  approximately 1.45×.
 - Remove choose_conv_method and ConvolutionMethod (SciPy timing calibration); rename closest_STFT_dual_window to closest_stft_dual_window.
 
 - Remove freqresp, dfreqresp, sosfreqz, check_COLA and check_NOLA aliases; use freqs, freqz, freqz_sos, check_cola and check_nola.
@@ -16,6 +18,11 @@
   failure. Preserve symmetric taps, sample-rate units, and gain/weight scaling.
 - Document that the nalgebra backend does not expose an eigenvalue iteration
   limit; exchange iterations remain capped at 100 with degree-24 proxies.
+
+- Use a scaled banded Cholesky solve for Whittaker–Henderson smoothing,
+  retaining a dense Cholesky fallback for doubtful pivots or nonfinite
+  intermediate results. Reduce normal-equation work to O(n · order²) and
+  memory to O(n · order); the native smoothing benchmark improved about 16×.
 
 ## 0.2.0
 
