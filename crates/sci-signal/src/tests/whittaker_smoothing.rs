@@ -1,4 +1,4 @@
-use super::whittaker_henderson;
+use super::{whittaker_dense_fallback, whittaker_henderson};
 use crate::Error;
 use nalgebra::{DMatrix, DVector};
 
@@ -163,5 +163,38 @@ fn smoothing_preserves_validation_and_singular_semantics() {
         Err(Error::InvalidInput(
             "positive weights must anchor every unpenalized polynomial degree"
         ))
+    ));
+}
+
+#[test]
+fn dense_fallback_reconstructs_a_banded_penalty_system() {
+    // W + D^T D for four unit-weight samples and second differences.
+    // The vector of ones is in the nullspace of D, so A * 1 = W * 1.
+    // Check the fallback independently, including its symmetric band expansion.
+    let mut band = vec![[0.0; 9]; 4];
+    band[0][0] = 2.0;
+    band[1][..=1].copy_from_slice(&[6.0, -2.0]);
+    band[2][..=2].copy_from_slice(&[6.0, -4.0, 1.0]);
+    band[3][..=2].copy_from_slice(&[2.0, -2.0, 1.0]);
+    let out = whittaker_dense_fallback(&band, &[1.0; 4], 2).unwrap();
+    close(&out, &[1.0; 4], 2e-14);
+
+    // With no positive weights, the penalty has an unanchored linear
+    // nullspace. Its dense Cholesky factorization must reject the system.
+    assert!(matches!(
+        whittaker_dense_fallback(&[[0.0; 9]; 4], &[0.0; 4], 2),
+        Err(Error::NumericalFailure("singular smoothing system"))
+    ));
+}
+
+#[test]
+fn smoothing_rejects_numerically_singular_anchor_weights() {
+    // Two positive weights meet the shape/domain requirement, but at this
+    // scale they vanish beside D^T D in f64 arithmetic. The banded pivot
+    // check must use the dense fallback and report its singular solve.
+    let y = [1.0, -1.0, 2.0, 4.0];
+    assert!(matches!(
+        whittaker_henderson(&y, 1.0, 2, &[1e-30, 1e-30, 0.0, 0.0]),
+        Err(Error::NumericalFailure("singular smoothing system"))
     ));
 }

@@ -36,6 +36,34 @@ fn eigenvalues_only_paths_preserve_order_trace_and_validation() {
 }
 
 #[test]
+fn eigenvalues_only_paths_reject_unrepresentable_eigenvalues_and_bands() {
+    // Every entry is finite, but the 2x2 spectrum is {0, 2 * f64::MAX}.
+    // Computing on a scaled matrix must not silently return +infinity.
+    let huge = f64::MAX;
+    assert_eq!(
+        l::eigen::eigvalsh_tridiagonal(&[huge, huge], &[huge]),
+        Err(Error::NonFiniteEvaluation)
+    );
+    for lower in [false, true] {
+        let band = if lower {
+            [[huge, huge], [huge, 0.0]]
+        } else {
+            [[0.0, huge], [huge, huge]]
+        };
+        assert_eq!(
+            l::eigen::eigvals_banded(&band, lower),
+            Err(Error::NonFiniteEvaluation)
+        );
+
+        // A 2-column band cannot have half-bandwidth 2 or more.
+        assert_eq!(
+            l::eigen::eigvals_banded(&[[1., 2.], [0., 0.], [0., 0.]], lower),
+            Err(Error::DimensionMismatch)
+        );
+    }
+}
+
+#[test]
 fn eigenvalues_only_paths_scale_extreme_inputs_without_losing_relative_accuracy() {
     // A symmetric 2x2 matrix with diagonal 2s and off-diagonal s has
     // eigenvalues s and 3s. Normalize before comparing to test tiny scales.

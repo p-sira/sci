@@ -385,6 +385,7 @@ pub(crate) fn polynomial_roots(coefficients: &[f64]) -> Result<Vec<f64>> {
 #[cfg(test)]
 mod tests {
     use super::{interpolate, least_squares};
+    use crate::Error;
     use nalgebra::{DMatrix, DVector};
 
     #[test]
@@ -398,5 +399,18 @@ mod tests {
         let values = DVector::from_vec(vec![1.0, 1.0]);
         assert!(least_squares(singular.clone(), values.clone()).is_err());
         assert!(interpolate(singular, values).is_err());
+    }
+
+    #[test]
+    fn interpolation_rejects_nonsquare_and_misaligned_inputs() {
+        let nonsquare = DMatrix::from_row_slice(2, 3, &[1., 0., 0., 0., 1., 0.]);
+        assert!(matches!(
+            interpolate(nonsquare, DVector::from_vec(vec![2., 3.])),
+            Err(Error::DimensionMismatch)
+        ));
+        assert!(matches!(
+            interpolate(DMatrix::identity(2, 2), DVector::from_vec(vec![2.])),
+            Err(Error::DimensionMismatch)
+        ));
     }
 }
