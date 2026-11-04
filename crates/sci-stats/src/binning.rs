@@ -101,14 +101,57 @@ pub fn binned_statistic_dd(
     if d == 0 || d > 16 || points.len() != values.len() {
         return Err(Error::DimensionMismatch);
     }
+    let edge_refs = edges.iter().map(Vec::as_slice).collect::<Vec<_>>();
+    let (statistic, shape, bin_numbers) = binned_core(
+        points.len(),
+        |i, j| points[i][j],
+        values,
+        &edge_refs,
+        statistic,
+        || {
+            for row in points {
+                if row.len() != d {
+                    return Err(Error::DimensionMismatch);
+                }
+                sample(row, d)?;
+            }
+            Ok(())
+        },
+    )?;
+    Ok(BinnedStatistic {
+        statistic,
+        shape,
+        edges: edges.to_vec(),
+        bin_numbers,
+    })
+}
+/// Statistic, shape and bin numbers produced by [`binned_core`].
+type BinnedParts = (Vec<f64>, Vec<usize>, Vec<usize>);
+/// Shared Cartesian binning kernel.
+///
+/// Coordinates are read through `coord(observation, dimension)` so callers do
+/// not need to materialize one row vector per observation. Validation order
+/// matches the public `binned_statistic_dd` contract: values, coordinate
+/// limit, edges, then rows via `validate_rows`. Values are grouped per bin with
+/// a stable counting sort, so every reduction sees exactly the same values in
+/// the same observation order as a per-bin vector would.
+fn binned_core(
+    n: usize,
+    coord: impl Fn(usize, usize) -> f64,
+    values: &[f64],
+    edges: &[&[f64]],
+    statistic: BinStatistic,
+    validate_rows: impl FnOnce() -> Result<()>,
+) -> Result<BinnedParts> {
+    let d = edges.len();
     sample(values, 0)?;
-    if points.len().checked_mul(d).is_none_or(|n| n > MAX_SAMPLES) {
+    if n.checked_mul(d).is_none_or(|n| n > MAX_SAMPLES) {
         return Err(Error::InvalidInput("sample coordinates exceed limit"));
     }
     let mut shape = Vec::with_capacity(d);
     let mut cells = 1_usize;
     let mut full_cells = 1_usize;
-    for edge in edges {
+    for &edge in edges {
         sample(edge, 2)?;
         if edge.windows(2).any(|w| w[0] >= w[1]) {
             return Err(Error::InvalidInput("bin edges must strictly increase"));
@@ -125,18 +168,17 @@ pub fn binned_statistic_dd(
             ));
         }
     }
-    let mut buckets = vec![Vec::new(); cells];
-    let mut bin_numbers = Vec::with_capacity(points.len());
-    for (row, &value) in points.iter().zip(values) {
-        if row.len() != d {
-            return Err(Error::DimensionMismatch);
-        }
-        sample(row, d)?;
+    validate_rows()?;
+    const OUTSIDE: usize = usize::MAX;
+    let mut counts = vec![0_usize; cells];
+    let mut flats = Vec::with_capacity(n);
+    let mut bin_numbers = Vec::with_capacity(n);
+    for i in 0..n {
         let mut flat = 0;
         let mut inside = true;
         let mut number = 0;
         for j in 0..d {
-            let k = bin(row[j], &edges[j]);
+            let k = bin(coord(i, j), edges[j]);
             number = number * (shape[j] + 2) + k;
             if k == 0 || k == shape[j] + 1 {
                 inside = false;
@@ -147,17 +189,45 @@ pub fn binned_statistic_dd(
         }
         bin_numbers.push(number);
         if inside {
-            buckets[flat].push(value);
+            counts[flat] += 1;
+            flats.push(flat);
+        } else {
+            flats.push(OUTSIDE);
+        }
+    }
+    let empty = if matches!(statistic, BinStatistic::Count | BinStatistic::Sum) {
+        0.
+    } else {
+        f64::NAN
+    };
+    if statistic == BinStatistic::Count {
+        let out = counts
+            .iter()
+            .map(|&c| if c == 0 { empty } else { c as f64 })
+            .collect();
+        return Ok((out, shape, bin_numbers));
+    }
+    // Stable counting sort of in-range values into contiguous per-bin runs.
+    let mut starts = Vec::with_capacity(cells + 1);
+    let mut total = 0;
+    starts.push(0);
+    for &c in &counts {
+        total += c;
+        starts.push(total);
+    }
+    let mut cursor = starts[..cells].to_vec();
+    let mut grouped = vec![0.; total];
+    for (&flat, &value) in flats.iter().zip(values) {
+        if flat != OUTSIDE {
+            grouped[cursor[flat]] = value;
+            cursor[flat] += 1;
         }
     }
     let mut out = Vec::with_capacity(cells);
-    for b in buckets {
+    for cell in 0..cells {
+        let b = &grouped[starts[cell]..starts[cell + 1]];
         out.push(if b.is_empty() {
-            if matches!(statistic, BinStatistic::Count | BinStatistic::Sum) {
-                0.
-            } else {
-                f64::NAN
-            }
+            empty
         } else {
             match statistic {
                 BinStatistic::Count => b.len() as f64,
@@ -165,20 +235,15 @@ pub fn binned_statistic_dd(
                     value if value.is_finite() => Ok(value),
                     _ => Err(crate::Error::NonFiniteEvaluation),
                 }?,
-                BinStatistic::Mean => mean(&b)?,
-                BinStatistic::Std => std(&b, 0)?,
-                BinStatistic::Median => median(&b)?,
+                BinStatistic::Mean => mean(b)?,
+                BinStatistic::Std => std(b, 0)?,
+                BinStatistic::Median => median(b)?,
                 BinStatistic::Min => b.iter().copied().fold(f64::INFINITY, f64::min),
                 BinStatistic::Max => b.iter().copied().fold(f64::NEG_INFINITY, f64::max),
             }
         });
     }
-    Ok(BinnedStatistic {
-        statistic: out,
-        shape,
-        edges: edges.to_vec(),
-        bin_numbers,
-    })
+    Ok((out, shape, bin_numbers))
 }
 /// One-dimensional binned reduction on intervals of explicit edges.
 ///
@@ -223,8 +288,24 @@ pub fn binned_statistic(
     statistic: BinStatistic,
 ) -> Result<BinnedStatistic> {
     sample(coordinates, 0)?;
-    let points = coordinates.iter().map(|&x| vec![x]).collect::<Vec<_>>();
-    binned_statistic_dd(&points, values, &[edges.to_vec()], statistic)
+    if coordinates.len() != values.len() {
+        return Err(Error::DimensionMismatch);
+    }
+    // Coordinates were validated above, so the per-row checks are no-ops.
+    let (statistic, shape, bin_numbers) = binned_core(
+        coordinates.len(),
+        |i, _| coordinates[i],
+        values,
+        &[edges],
+        statistic,
+        || Ok(()),
+    )?;
+    Ok(BinnedStatistic {
+        statistic,
+        shape,
+        edges: vec![edges.to_vec()],
+        bin_numbers,
+    })
 }
 /// Two-dimensional Cartesian binned reduction.
 ///
@@ -275,17 +356,24 @@ pub fn binned_statistic_2d(
     }
     sample(x, 0)?;
     sample(y, 0)?;
-    let points = x
-        .iter()
-        .zip(y)
-        .map(|(&a, &b)| vec![a, b])
-        .collect::<Vec<_>>();
-    binned_statistic_dd(
-        &points,
+    if x.len() != values.len() {
+        return Err(Error::DimensionMismatch);
+    }
+    // Coordinates were validated above, so the per-row checks are no-ops.
+    let (statistic, shape, bin_numbers) = binned_core(
+        x.len(),
+        |i, j| if j == 0 { x[i] } else { y[i] },
         values,
-        &[x_edges.to_vec(), y_edges.to_vec()],
+        &[x_edges, y_edges],
         statistic,
-    )
+        || Ok(()),
+    )?;
+    Ok(BinnedStatistic {
+        statistic,
+        shape,
+        edges: vec![x_edges.to_vec(), y_edges.to_vec()],
+        bin_numbers,
+    })
 }
 /// Cumulative uniform-bin frequencies `C_j=Σ_{k≤j}count(bin_k)`.
 ///
@@ -438,4 +526,140 @@ pub fn relfreq(values: &[f64], bins: usize, lower: f64, upper: f64) -> Result<Fr
         bin_size: width,
         extra_points,
     })
+}
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Previous per-observation/per-bin vector implementation, kept as an oracle.
+    fn reference(
+        points: &[Vec<f64>],
+        values: &[f64],
+        edges: &[Vec<f64>],
+        statistic: BinStatistic,
+    ) -> (Vec<f64>, Vec<usize>) {
+        let shape = edges.iter().map(|e| e.len() - 1).collect::<Vec<_>>();
+        let cells = shape.iter().product();
+        let mut buckets = vec![Vec::new(); cells];
+        let mut numbers = Vec::new();
+        for (row, &value) in points.iter().zip(values) {
+            let (mut flat, mut inside, mut number) = (0, true, 0);
+            for j in 0..edges.len() {
+                let k = bin(row[j], &edges[j]);
+                number = number * (shape[j] + 2) + k;
+                inside &= k != 0 && k != shape[j] + 1;
+                if k > 0 {
+                    flat = flat * shape[j] + k - 1;
+                }
+            }
+            numbers.push(number);
+            if inside {
+                buckets[flat].push(value);
+            }
+        }
+        let out = buckets
+            .iter()
+            .map(|b| match (b.is_empty(), statistic) {
+                (true, BinStatistic::Count | BinStatistic::Sum) => 0.,
+                (true, _) => f64::NAN,
+                (false, BinStatistic::Count) => b.len() as f64,
+                (false, BinStatistic::Sum) => b.iter().sum(),
+                (false, BinStatistic::Mean) => mean(b).unwrap(),
+                (false, BinStatistic::Std) => std(b, 0).unwrap(),
+                (false, BinStatistic::Median) => median(b).unwrap(),
+                (false, BinStatistic::Min) => b.iter().copied().fold(f64::INFINITY, f64::min),
+                (false, BinStatistic::Max) => b.iter().copied().fold(f64::NEG_INFINITY, f64::max),
+            })
+            .collect();
+        (out, numbers)
+    }
+
+    fn same_bits(a: &[f64], b: &[f64]) -> bool {
+        a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.to_bits() == y.to_bits())
+    }
+
+    #[test]
+    fn grouped_kernel_matches_per_bin_vectors_bit_for_bit() {
+        let n = 257;
+        let x = (0..n)
+            .map(|i| ((i * 37 % 101) as f64 - 50.) / 23.)
+            .collect::<Vec<_>>();
+        let y = (0..n)
+            .map(|i| ((i * 53 % 89) as f64 - 44.) / 17.)
+            .collect::<Vec<_>>();
+        let v = (0..n)
+            .map(|i| ((i * 29 % 61) as f64).sin() * 1e3 + 0.1 * i as f64)
+            .collect::<Vec<_>>();
+        let ex = vec![-1.5, -0.7, 0., 0.3, 1.0, 1.5];
+        let ey = vec![-2., -1., 0., 1., 2.];
+        let stats = [
+            BinStatistic::Count,
+            BinStatistic::Sum,
+            BinStatistic::Mean,
+            BinStatistic::Std,
+            BinStatistic::Median,
+            BinStatistic::Min,
+            BinStatistic::Max,
+        ];
+        let p1 = x.iter().map(|&a| vec![a]).collect::<Vec<_>>();
+        let p2 = x
+            .iter()
+            .zip(&y)
+            .map(|(&a, &b)| vec![a, b])
+            .collect::<Vec<_>>();
+        let p3 = (0..n)
+            .map(|i| vec![x[i], y[i], v[i] / 1e3])
+            .collect::<Vec<_>>();
+        let e3 = vec![ex.clone(), ey.clone(), vec![-1., -0.25, 0.5, 1.]];
+        for s in stats {
+            let (want, nums) = reference(&p1, &v, std::slice::from_ref(&ex), s);
+            let got = binned_statistic(&x, &v, &ex, s).unwrap();
+            assert!(same_bits(&got.statistic, &want), "{s:?} 1d");
+            assert_eq!(got.bin_numbers, nums);
+            assert_eq!(got.edges, vec![ex.clone()]);
+            let dd = binned_statistic_dd(&p1, &v, std::slice::from_ref(&ex), s).unwrap();
+            assert_eq!(dd.bin_numbers, got.bin_numbers);
+            assert!(same_bits(&dd.statistic, &got.statistic));
+
+            let edges2 = vec![ex.clone(), ey.clone()];
+            let (want, nums) = reference(&p2, &v, &edges2, s);
+            let got = binned_statistic_2d(&x, &y, &v, &ex, &ey, s).unwrap();
+            assert!(same_bits(&got.statistic, &want), "{s:?} 2d");
+            assert_eq!(got.bin_numbers, nums);
+            assert_eq!(got.shape, vec![5, 4]);
+            assert_eq!(got.edges, edges2);
+
+            let (want, nums) = reference(&p3, &v, &e3, s);
+            let got = binned_statistic_dd(&p3, &v, &e3, s).unwrap();
+            assert!(same_bits(&got.statistic, &want), "{s:?} 3d");
+            assert_eq!(got.bin_numbers, nums);
+        }
+    }
+
+    #[test]
+    fn wrappers_keep_validation_errors() {
+        let e = [0., 1.];
+        assert!(matches!(
+            binned_statistic(&[0.5], &[1., 2.], &e, BinStatistic::Sum),
+            Err(Error::DimensionMismatch)
+        ));
+        assert!(binned_statistic(&[f64::NAN], &[1.], &e, BinStatistic::Sum).is_err());
+        assert!(binned_statistic(&[0.5], &[1.], &[1., 0.], BinStatistic::Sum).is_err());
+        assert!(matches!(
+            binned_statistic_2d(&[0.5], &[0.5], &[1., 2.], &e, &e, BinStatistic::Sum),
+            Err(Error::DimensionMismatch)
+        ));
+        assert!(matches!(
+            binned_statistic_dd(
+                &[vec![0.5]],
+                &[1.],
+                &[e.to_vec(), e.to_vec()],
+                BinStatistic::Sum
+            ),
+            Err(Error::DimensionMismatch)
+        ));
+        assert!(
+            binned_statistic(&[0.5, 0.5], &[f64::MAX, f64::MAX], &e, BinStatistic::Sum).is_err()
+        );
+    }
 }
