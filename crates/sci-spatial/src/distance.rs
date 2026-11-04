@@ -1109,6 +1109,18 @@ pub struct HausdorffResult {
     pub index_v: usize,
 }
 
+// Hausdorff validates both point sets with points() before entering its pair
+// loop. For unit weights this is the same sequential hypot calculation as
+// lp(u, v, 2.0, &ones), without allocating weights or checking each pair again.
+// Do not skip the initial hypot(0, term): keep scalar Euclidean's exact rounding.
+fn hausdorff_euclidean_validated(u: &[f64], v: &[f64]) -> Result<f64> {
+    let mut norm = 0.0_f64;
+    for (&a, &b) in u.iter().zip(v) {
+        norm = norm.hypot((a - b).abs());
+    }
+    evaluated(norm)
+}
+
 /// Computes the directed Hausdorff distance `max_i min_j ||u[i]-v[j]||₂`.
 ///
 /// ## Parameters
@@ -1131,7 +1143,9 @@ pub struct HausdorffResult {
 ///
 /// ## Numerical behavior
 ///
-/// Exact exhaustive nearest-distance search with scaled L2 kernels; O(nmd) work.
+/// Exact exhaustive nearest-distance search with a prevalidated sequential
+/// `hypot` L2 kernel, avoiding per-pair allocations; O(nmd) work. Every pair
+/// is evaluated, including losing pairs that could overflow.
 /// Witness indices can differ from SciPy when the maximizing pair is tied.
 ///
 /// # Examples
@@ -1164,7 +1178,7 @@ pub fn directed_hausdorff(u: &[Vec<f64>], v: &[Vec<f64>]) -> Result<HausdorffRes
     for (i, a) in u.iter().enumerate() {
         let (mut nearest, mut index) = (f64::INFINITY, 0);
         for (j, b) in v.iter().enumerate() {
-            let d = euclidean(a, b, None)?;
+            let d = hausdorff_euclidean_validated(a, b)?;
             if d < nearest {
                 nearest = d;
                 index = j;
