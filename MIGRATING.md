@@ -26,6 +26,8 @@ complex, constants, and differentiation retain their existing public APIs.
 | `sci::signal::convolve(&x, &h, mode)` | `sci::signal::convolution::convolve(&x, &h, mode)` |
 | `sci::linalg::solve(&a, &b)` | `sci::linalg::solvers::solve(&a, &b)` |
 | `sci::linalg::svd(&a)` | `sci::linalg::decompositions::svd(&a)` |
+| `sci::linalg::issymmetric(&a, atol, rtol)` | `sci::linalg::basic::issymmetric(&a, atol, rtol)` |
+| `sci::linalg::ishermitian(&a, atol, rtol)` | `sci::linalg::basic::issymmetric(&a, atol, rtol)` |
 | `sci::sparse::identity(n)` | `sci::sparse::construct::identity(n)` |
 | `sci::sparse::matvec(&a, &x)` | `sci::sparse::operations::matvec(&a, &x)` |
 | `sci::filter::kalman_predict(&prior, &f, &q)` | `sci::filter::kalman::kalman_predict(&prior, &f, &q)` |
@@ -65,7 +67,8 @@ Import the relevant family module or use a fully qualified function path.
 | `sci::special::ndtr(x)` | `sci::special::probability::ndtr(x)` |
 | `sci::special::logsumexp(&values)` | `sci::special::elementary::logsumexp(&values)` |
 | `sci::special::comb(n, k)` | `sci::special::combinatorics::comb(n, k)` |
-| `sci::special::ellipf(phi, m)` | `sci::special::elliptic::ellipf(phi, m)` |
+| `sci::special::ellipf(phi, m)` | `sci::special::elliptic::ellipkinc(phi, m)` |
+| `sci::special::ellipkinc(phi, m)` | `sci::special::elliptic::ellipkinc(phi, m)` |
 | `sci::special::ellipj(u, m)` | `sci::special::elliptic::ellipj(u, m)` |
 
 For example, an existing `use sci::special::{gamma, jv};` import must be
@@ -81,10 +84,10 @@ assert!(j.is_finite());
 ```
 
 The existing `special::complex` and `special::elliptic` family paths remain
-available. `ellipkinc` remains a compatibility name **inside** `elliptic`,
-without a root-level alias. Types and error handling use their documented
-module paths; the module move does not change numerical definitions, argument
-order or domain.
+available. `elliptic::ellipkinc(phi, m)` is now the sole public spelling for
+`F(phi, m)`; `ellipf` has been removed, including inside `elliptic`.
+Types and error handling use their documented module paths; the change does
+not alter numerical definitions, argument order, or domain.
 The same path migration applies when using the `sci-special` crate directly:
 replace `sci::special` above with `sci_special`.
 
@@ -224,7 +227,8 @@ the old spelling while Rust tests call the canonical API.
 | `stats::kstest(x, y, alternative)` | `stats::ks_2samp(x, y, alternative)`; use `ks_1samp` for a continuous null |
 | `special::psi(x)` | `special::gamma::digamma(x)` |
 | `special::assoc_laguerre(x, n, k)` | `special::orthogonal::eval_genlaguerre(n, k, x)` (arguments reordered) |
-| `special::ellipkinc(phi, m)` | Prefer `special::elliptic::ellipf(phi, m)` (Ellip notation); `elliptic::ellipkinc` remains an alias. |
+| `special::ellipf(phi, m)` | `special::elliptic::ellipkinc(phi, m)` |
+| `linalg::ishermitian(&a, atol, rtol)` | `linalg::basic::issymmetric(&a, atol, rtol)` for real matrices |
 | `signal::closest_STFT_dual_window` | `signal::closest_stft_dual_window` |
 | `c_roots` | `roots_chebyc` |
 | `cg_roots` | `roots_gegenbauer` |
@@ -257,8 +261,9 @@ the old spelling while Rust tests call the canonical API.
 | `eye_array` | `eye` |
 | `matrix_transpose` | `transpose` |
 
-`ishermitian` remains a mathematical predicate for real input, equivalent to
-`issymmetric` in the supported scalar domain. The similarly named `spl*`,
+`issymmetric` tests real matrix symmetry (equivalent to Hermitian symmetry
+over real scalars). SciPy separately lists `ishermitian` in its inventory,
+but Sci 0.3.0 no longer exports that name. The similarly named `spl*`,
 `bispl*`, factorization, and transform functions that perform distinct
 mathematical operations remain available.
 
@@ -269,7 +274,8 @@ signature, domain, or special-value parity. Sci uses coherent Rust APIs and the
 supported mathematical domains of its selected algorithms. Inventory audits
 record dispositions; a matching name does not certify every overload or domain.
 
-Elliptic integrals follow Ellip: `F(phi, m)` (`ellipf`), `E(phi, m)`, and
+Elliptic integrals use Ellip's amplitude and parameter conventions:
+`F(phi, m)` (`elliptic::ellipkinc`), `E(phi, m)`, and
 `Π(phi, n, m)`, with radians, parameter `m = k²`, and characteristic `n`.
 Carlson `R_C` with negative `y` and `R_J` with negative `p`, and supported
 Legendre/Bulirsch third-kind cases, return Cauchy principal values. Incomplete

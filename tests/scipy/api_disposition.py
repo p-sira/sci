@@ -14,7 +14,7 @@ ALIASES = {
     'sparse': {'bmat': 'block_array', 'diags_array': 'diags', 'eye_array': 'eye',
                'matrix_transpose': 'transpose', 'factorized': 'splu'},
     'special': {
-        'ellipf': 'ellipkinc', 'psi': 'digamma', 'assoc_laguerre': 'eval_genlaguerre',
+        'psi': 'digamma', 'assoc_laguerre': 'eval_genlaguerre',
         'c_roots': 'roots_chebyc', 'cg_roots': 'roots_gegenbauer',
         'h_roots': 'roots_hermite', 'he_roots': 'roots_hermitenorm',
         'j_roots': 'roots_jacobi', 'js_roots': 'roots_sh_jacobi',
@@ -27,7 +27,7 @@ ALIASES = {
 }
 EXCLUDED = {
     'signal': {'choose_conv_method'},
-    'linalg': {'find_best_blas_type', 'get_blas_funcs', 'get_lapack_funcs'},
+    'linalg': {'find_best_blas_type', 'get_blas_funcs', 'get_lapack_funcs', 'ishermitian'},
     'special': {'geterr', 'seterr', 'cbrt', 'exp2', 'exp10', 'expm1', 'log1p', 'round'},
     'stats': {'abs', 'exp', 'log'},
     'sparse': {'issparse', 'get_index_dtype', 'safely_cast_index_arrays', 'aslinearoperator'},

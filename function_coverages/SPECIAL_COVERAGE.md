@@ -2,14 +2,17 @@
 
 Audited against [the SciPy 1.18.1 inventory](scipy_function_list/scipy.special.md).
 Run `python tests/scipy/audit_special.py` to reproduce the namespace/name audit.
-All **353 existing public numerical functions** are retained. The native API
-follow-up adds **eight scalar and 33 qualified complex APIs**; see
+The previous audit baseline counted **353 public numerical functions**;
+Sci 0.3.0 removes the `ellipf` spelling while retaining its numerical operation
+through `ellipkinc`. The native API follow-up adds **eight scalar and
+33 qualified complex APIs**; see
 [SPECIAL_NATIVE_COVERAGE.md](SPECIAL_NATIVE_COVERAGE.md) for the XSF source
 audit, Rust adaptations, deliberate exclusions and remaining numerical gaps.
 No numerical
 function family was removed in the pure Rust backend migration.
-In the unreleased Sci 0.3.0, all 362 formerly root-exported numerical functions
+In the unreleased Sci 0.3.0, the formerly root-exported numerical functions
 are assigned to mathematical-family modules, including `elliptic::ellipj`.
+The former `ellipf` spelling is removed in favor of `elliptic::ellipkinc`.
 The inventory counts above refer to algorithms, not root-level Rust exports. See
 [the migration guide](../MIGRATING.md#special-function-family-modules-breaking)
 for paths. `sci::special` has no root-level numerical functions or aliases;
@@ -263,8 +266,8 @@ remote Codecov and CodSpeed gate results require fresh CI analysis.
 
 ## Elliptic conventions and dependency follow-up
 
-Elliptic integrals follow Ellip's notation and argument order: `F(phi, m)` is
-`ellipf`, with `ellipkinc` retained as an alias; `Π(phi, n, m)` takes amplitude,
+Elliptic integrals follow Ellip's argument order: `F(phi, m)` uses the sole
+Sci API `elliptic::ellipkinc(phi, m)`; `Π(phi, n, m)` takes amplitude,
 characteristic, then parameter. `m = k²`, `kc² = 1−m`, and Bulirsch's `p = 1−n`
 are distinct conventions. Amplitudes use radians; Bulirsch's `x` is a tangent.
 The wrappers admit supported finite real `m >= 1` incomplete cases and Cauchy

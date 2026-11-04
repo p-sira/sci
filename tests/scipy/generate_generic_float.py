@@ -34,8 +34,6 @@ def elliptic(name, x):
     if handled:
         return value
     direct = {"ellipk", "ellipe", "ellipkinc", "ellipeinc", "elliprf", "elliprd", "elliprg", "elliprj", "elliprc", "ellipkm1"}
-    if name in {"ellipf", "ellipkinc"}:
-        return special.ellipkinc(*x)
     if name in direct:
         return getattr(special, name)(*x)
     if name == "ellipke":

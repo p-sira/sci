@@ -28,13 +28,18 @@
 
 ## Ellip notation and documentation follow-up
 
-- Prefer `ellipf(phi, m)` for `F(phi, m)` and retain `ellipkinc` as an alias.
+- Document the amplitude and parameter conventions of Ellip's `F(phi, m)`;
+  Sci 0.3.0 exports this operation as `elliptic::ellipkinc(phi, m)`.
 - Admit Ellip-supported finite real incomplete cases and principal values; document Sci's finite-input/result restrictions separately.
 - Document elliptic definitions, wave equations, output ordering, derivative units, work bounds, and numerical limitations. SciPy parity is not a design requirement.
 - Update `lambert_w` to 2.0.8 and remove the superseded near-zero Taylor workaround; retain the branch-point Puiseux correction, verified against new independent 90-digit references.
 
 ## 0.3.0
 
+- **Breaking:** Remove `elliptic::ellipf` and retain
+  `elliptic::ellipkinc(phi, m)` as the only public name for `F(phi, m)`.
+  Update former root-level `ellipf` and `ellipkinc` imports to the
+  qualified `elliptic::ellipkinc` path.
 - Reuse gamma-ratio terms through the noncentral-t Poisson recurrence in
   `nctdtrinc`, with periodic direct reanchoring to control numerical drift.
   Preserve domain and inverse-root behavior; the native benchmark improved
@@ -62,7 +67,9 @@
 
 - Make all elliptic wrappers and logsumexp/softmax reductions generic, with private backend dispatch for Bulirsch precision.
 
-- Consolidate psi, assoc_laguerre and ellipf on digamma, eval_genlaguerre and ellipkinc; see MIGRATING.md for argument order.
+- Consolidate `psi`, `assoc_laguerre`, and `ellipf` on `digamma`,
+  `eval_genlaguerre`, and `ellipkinc`, respectively; see MIGRATING.md
+  for argument order and qualified paths.
 
 - Remove geterr, seterr, ErrorPolicy, abbreviated quadrature-root aliases, and scalar wrappers cbrt, exp2, exp10, expm1, log1p and round. Use standard f64 methods; round maps to round_ties_even.
 - Avoid principal Lambert W cancellation near zero with a bounded Taylor expansion, preserving signed zero and the relative accuracy of tiny inputs.

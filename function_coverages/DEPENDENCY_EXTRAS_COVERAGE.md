@@ -33,13 +33,15 @@ Binary64 coefficients are approximate rather than exact integer arithmetic.
 
 ## Existing coverage and remaining candidates
 
-Ellip 1.2.2's **24 stable numerical functions** are exported from
+Ellip 1.2.2's **24 stable numerical operations** are available from
 `special::elliptic`, with public-API CSV comparisons in
 `tests/special_extended.rs`. This includes `ellipke`, all seven Bulirsch
 functions (`cel`, `cel1`, `cel2`, `cel3`, `el1`, `el2`, `el3`), the additional
 Legendre integrals, `ellippiinc_bulirsch`, Jacobi zeta, and Heuman lambda.
-`ellipf` also has SciPy's `ellipkinc` alias; `ellipkm1` uses the Carlson identity.
-There are no missing stable Ellip numerical names. Unstable precision-control
+`elliptic::ellipkinc` exposes Ellip's `ellipf` operation using SciPy's
+name, and `ellipkm1` uses the Carlson identity. All stable Ellip numerical
+operations remain represented, although Sci does not export Ellip's
+`ellipf` spelling. Unstable precision-control
 and unchecked backend APIs, test assertions and backend types stay private.
 Finite-input/result restrictions and singularities are documented separately;
 supported real principal-value branches are available through the Ellip-style

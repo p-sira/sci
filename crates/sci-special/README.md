@@ -12,7 +12,7 @@ Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing lib
 Gamma, Bessel, elliptic, probability, polynomial, and combinatorial functions
 are organized into public mathematical-family modules. For example,
 `gamma::gamma`, `bessel::jv`, `orthogonal::eval_legendre`, and
-`elliptic::ellipf` live in their respective modules. There are no root-level
+`elliptic::ellipkinc` live in their respective modules. There are no root-level
 numerical functions. Specialized algorithms use private pure Rust kernels and
 ellip backends; elementary formulas use the standard library.
 Use `value.is_finite()` to check scalar results for NaN and infinity.
@@ -26,7 +26,8 @@ output ordering, and bounded order/size limits.
 Scalar functions return documented IEEE values; fallible integrals and
 sequences return the shared `sci_special::Result`.
 
-Elliptic integrals use Ellip's notation: `ellipf(phi, m)` computes `F(phi, m)`,
+Elliptic integrals follow Ellip's argument conventions:
+`elliptic::ellipkinc(phi, m)` computes `F(phi, m)`,
 with radians and elliptic parameter `m = k²`; incomplete third-kind arguments
 are `(phi, n, m)`. Supported principal values are documented per function.
 SciPy is an independent reference; complete SciPy parity is not required.
@@ -39,6 +40,8 @@ fn main() -> Result<(), sci_core::Error> {
     assert_eq!(special::gamma::gamma(5.0), 24.0);
     let k = special::elliptic::ellipk(0.5_f64)?;
     assert!((k - 1.8540746773013719).abs() < 1e-14);
+    let f = special::elliptic::ellipkinc(0.5_f64, 0.0)?;
+    assert!((f - 0.5).abs() < 1e-14);
     Ok(())
 }
 ```

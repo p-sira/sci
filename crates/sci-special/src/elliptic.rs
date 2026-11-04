@@ -7,8 +7,8 @@
 //!
 //! `m` is the elliptic parameter (`m = k²`), `n` is the third-kind characteristic,
 //! and `phi` is an amplitude in radians. The incomplete Legendre integrals are
-//! `F(phi, m)`, `E(phi, m)`, `Π(phi, n, m)`, and `D(phi, m)`; [`ellipf`] evaluates
-//! `F`. [`ellipkinc`] remains an alias. Carlson arguments are `x`, `y`, `z`, and
+//! `F(phi, m)`, `E(phi, m)`, `Π(phi, n, m)`, and `D(phi, m)`; [`ellipkinc`] evaluates
+//! `F`. Carlson arguments are `x`, `y`, `z`, and
 //! `p`. Bulirsch uses the complementary modulus `kc`, with `kc² = 1 − m`, the
 //! tangent amplitude `x = tan(phi)`, and `p = 1 − n`. These parameters are
 //! dimensionless. Negative `m` is supported even though it has no real modulus.
@@ -299,10 +299,10 @@ pub fn ellipd<T: Float>(m: T) -> Result<T> {
 ///
 /// ```
 /// let phi = 0.5_f64;
-/// let value = sci_special::elliptic::ellipf(phi, 1.0)?;
+/// let value = sci_special::elliptic::ellipkinc(phi, 1.0)?;
 /// assert!((value - phi.sin().atanh()).abs() < 1e-14);
 /// // A restricted real path also exists for m > 1.
-/// assert!(sci_special::elliptic::ellipf(0.4_f64, 2.0)?.is_finite());
+/// assert!(sci_special::elliptic::ellipkinc(0.4_f64, 2.0)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -311,7 +311,7 @@ pub fn ellipd<T: Float>(m: T) -> Result<T> {
 /// - [Ellip `ellipf`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipf.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
-pub fn ellipf<T: Float>(phi: T, m: T) -> Result<T> {
+pub fn ellipkinc<T: Float>(phi: T, m: T) -> Result<T> {
     if !(phi.is_finite() && m.is_finite()) {
         return Err(Error::InvalidInput(
             "elliptic integral arguments are outside the real domain",
@@ -323,10 +323,6 @@ pub fn ellipf<T: Float>(phi: T, m: T) -> Result<T> {
         _ => Err(Error::NonFiniteEvaluation),
     }
 }
-
-/// Compatibility name for [`ellipf`], with identical arguments, domain, and errors.
-/// The mathematical notation is `F(phi, m)`.
-pub use ellipf as ellipkinc;
 
 /// Computes E(phi, m) = ∫₀^phi √(1 − m sin²θ) dθ.
 ///

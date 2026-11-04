@@ -348,7 +348,6 @@
 {"name": "trigamma", "args": [2.5]}
 {"name": "lambertwm1", "args": [-0.1]}
 {"name": "ellipke", "args": [0.5]}
-{"name": "ellipf", "args": [0.3, 0.5]}
 {"name": "ellippi", "args": [0.2, 0.5]}
 {"name": "ellippiinc", "args": [0.3, 0.2, 0.5]}
 {"name": "ellipd", "args": [0.5]}
@@ -4547,11 +4546,6 @@
 {"name": "obl_ang1", "args": [3, 6, 10, 0.5]}
 {"name": "obl_ang1", "args": [3, 6, 30, -0.5]}
 {"name": "obl_ang1", "args": [3, 6, 30, 0.5]}
-{"name": "ellipf", "args": [0.4, 1.0]}
-{"name": "ellipf", "args": [-0.4, 1.0]}
-{"name": "ellipf", "args": [0.4, 2.0]}
-{"name": "ellipf", "args": [-0.4, 2.0]}
-{"name": "ellipf", "args": [0.2, 8.0]}
 {"name": "ellipkinc", "args": [0.4, 1.0]}
 {"name": "ellipkinc", "args": [-0.4, 1.0]}
 {"name": "ellipkinc", "args": [0.4, 2.0]}

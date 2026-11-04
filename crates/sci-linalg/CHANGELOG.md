@@ -2,6 +2,9 @@
 
 ## 0.3.0
 
+- **Breaking:** Remove `basic::ishermitian`; call
+  `basic::issymmetric(&a, atol, rtol)` for real-valued matrices.
+  The same numerical behavior remains available through the canonical name.
 - Compute eigenvalues directly from symmetric tridiagonal and narrow-banded
   inputs in `eigvalsh_tridiagonal` and `eigvals_banded`, avoiding redundant
   dense reduction and eigenvector construction. Preserve ordering, scaling,

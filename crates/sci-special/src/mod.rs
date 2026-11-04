@@ -445,7 +445,7 @@ pub fn lambertwm1<T: sci_core::Float>(x: T) -> T {
 /// Elliptic integral functions with explicit domain errors.
 ///
 /// Legendre integrals follow Ellip: `F(phi, m)`, `E(phi, m)`, and `Π(phi, n, m)`.
-/// The elliptic parameter is `m = k²`; [`elliptic::ellipf`] evaluates `F`.
+/// The elliptic parameter is `m = k²`; [`elliptic::ellipkinc`] evaluates `F`.
 /// Angles are radians. Each function forwards numerical evaluation to ellip
 /// and maps its errors into [`crate::Error`].
 pub mod elliptic;

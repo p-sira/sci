@@ -34,8 +34,8 @@ pub use structured_impl::*;
 /// [`crate::MatrixInput`] and [`crate::VectorInput`] adapters.
 pub mod basic {
     pub use super::{
-        MatrixNorm, bandwidth, det, dot, inv, ishermitian, issymmetric, khatri_rao, matmul, matvec,
-        norm, pinv, pinvh, transpose,
+        MatrixNorm, bandwidth, det, dot, inv, issymmetric, khatri_rao, matmul, matvec, norm, pinv,
+        pinvh, transpose,
     };
 }
 

@@ -966,14 +966,10 @@ fn check_scipy_references<M: l::MatrixInput, V: l::VectorInput>(
                     .unwrap(),
                 boolean(e[1])
             ),
-            "ishermitian" => assert_eq!(
-                l::basic::ishermitian(&a(), optional(c[3]), optional(c[4])).unwrap(),
-                boolean(e[1])
-            ),
             _ => panic!("missing dispatcher {}", c[1]),
         }
     }
-    assert_eq!(covered.len(), 102);
+    assert_eq!(covered.len(), 101);
 }
 
 #[test]
@@ -1027,7 +1023,7 @@ fn invalid_shapes_domains_and_work_limits_are_explicit() {
         assert!(l::subspaces::null_space(&positive, Some(invalid)).is_err());
         assert!(l::solvers::lstsq(&positive, &[1., 2.], Some(invalid)).is_err());
         assert!(l::basic::issymmetric(&positive, Some(invalid), None).is_err());
-        assert!(l::basic::ishermitian(&positive, None, Some(invalid)).is_err());
+        assert!(l::basic::issymmetric(&positive, None, Some(invalid)).is_err());
     }
     assert!(l::subspaces::orthogonal_procrustes(&positive, &[vec![1.]]).is_err());
     assert!(l::subspaces::subspace_angles(&positive, &[vec![1.]]).is_err());
@@ -1127,16 +1123,12 @@ fn ieee_values_overflow_and_stable_scaling() {
     let nan = f64::NAN;
     let inf = f64::INFINITY;
     type Predicate = fn(&[Vec<f64>], Option<f64>, Option<f64>) -> sci::Result<bool>;
-    for predicate in [
-        l::basic::issymmetric as Predicate,
-        l::basic::ishermitian as Predicate,
-    ] {
-        assert!(predicate(&[vec![nan, inf], vec![inf, nan]], None, None).unwrap());
-        assert!(!predicate(&[vec![nan, inf], vec![inf, nan]], Some(0.), None).unwrap());
-        assert!(!predicate(&[vec![1., nan], vec![nan, 2.]], None, None).unwrap());
-        assert!(!predicate(&[vec![1., inf], vec![-inf, 2.]], Some(1.), Some(1.)).unwrap());
-        assert!(predicate(&[vec![inf]], Some(0.), Some(0.)).unwrap());
-    }
+    let predicate = l::basic::issymmetric as Predicate;
+    assert!(predicate(&[vec![nan, inf], vec![inf, nan]], None, None).unwrap());
+    assert!(!predicate(&[vec![nan, inf], vec![inf, nan]], Some(0.), None).unwrap());
+    assert!(!predicate(&[vec![1., nan], vec![nan, 2.]], None, None).unwrap());
+    assert!(!predicate(&[vec![1., inf], vec![-inf, 2.]], Some(1.), Some(1.)).unwrap());
+    assert!(predicate(&[vec![inf]], Some(0.), Some(0.)).unwrap());
     let t = l::structured::toeplitz(&[-0.], None).unwrap();
     assert!(t[0][0].is_sign_negative());
     let h = l::structured::hankel(&[-0.], None).unwrap();

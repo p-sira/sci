@@ -194,7 +194,6 @@ mod basic_benches {
         warm(bencher, || linalg::basic::bandwidth(black_box(&a)).unwrap());
     }
 
-    /// Also covers the `ishermitian` alias.
     #[divan::bench]
     fn issymmetric(bencher: Bencher) {
         let a = symmetric_matrix(N);
