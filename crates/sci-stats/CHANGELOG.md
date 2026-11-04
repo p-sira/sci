@@ -24,6 +24,12 @@
 - Disable unused statrs sampling features while retaining multivariate distributions.
 - Reuse sorted sample storage in one-sided and two-sided trimming.
 
+- Eliminate temporary partition allocations in exact two-sample
+  Cramér–von Mises and reuse permutation-invariant covariance and beta
+  thresholds in multiscale graph correlation. Preserve exact-test outcomes
+  and bounds; native benchmarks improved approximately 1.9× and 2.2×,
+  respectively.
+
 ## 0.2.0
 
 Changes since the repository tag `v0.1.0`.

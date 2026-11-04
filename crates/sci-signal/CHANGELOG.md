@@ -19,6 +19,11 @@
 - Document that the nalgebra backend does not expose an eigenvalue iteration
   limit; exchange iterations remain capped at 100 with degree-24 proxies.
 
+- Use a scaled banded Cholesky solve for Whittaker–Henderson smoothing,
+  retaining a dense Cholesky fallback for doubtful pivots or nonfinite
+  intermediate results. Reduce normal-equation work to O(n · order²) and
+  memory to O(n · order); the native smoothing benchmark improved about 16×.
+
 ## 0.2.0
 
 Changes since the repository tag `v0.1.0`.

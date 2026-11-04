@@ -2,6 +2,11 @@
 
 ## 0.3.0
 
+- Compute eigenvalues directly from symmetric tridiagonal and narrow-banded
+  inputs in `eigvalsh_tridiagonal` and `eigvals_banded`, avoiding redundant
+  dense reduction and eigenvector construction. Preserve ordering, scaling,
+  bounds, and finite-result checks; the native 256-element benchmarks improved
+  approximately 2.3×.
 - Remove the direct `sci-special` dependency by embedding the validated fixed
   16-point Gauss–Legendre rule used by the principal matrix logarithm. Preserve
   the inverse-scaling limit, quadrature order, public results, and error behavior.
