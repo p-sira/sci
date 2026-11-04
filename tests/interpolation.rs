@@ -402,6 +402,73 @@ fn spline_calculus_and_refinement_preserve_identities() {
 }
 
 #[test]
+fn interpolation_square_solver_matches_svd_for_degrees_and_nonuniform_nodes() {
+    for degree in 1..=5 {
+        for n in [degree + 1, 12, 100, 128] {
+            for stretched in [false, true] {
+                let x: Vec<f64> = (0..n)
+                    .map(|i| {
+                        let u = i as f64 / (n - 1) as f64;
+                        if stretched {
+                            3.0 * u.powf(1.5)
+                        } else {
+                            3.0 * u
+                        }
+                    })
+                    .collect();
+                let y: Vec<f64> = x
+                    .iter()
+                    .map(|&v| 1.0 + 0.25 * v - 0.1 * v * v + 0.03 * v.sin())
+                    .collect();
+                let spline = p::fitting::make_interp_spline(&x, &y, degree).unwrap();
+                let svd = p::fitting::make_lsq_spline(&x, &y, &spline.knots, degree, None).unwrap();
+                assert_eq!(spline.knots, svd.knots);
+                for (&actual, &expected) in spline.coefficients.iter().zip(&svd.coefficients) {
+                    close(actual, expected, 5e-9, 5e-9);
+                }
+                let evaluated =
+                    p::spline::splev(&x, &spline, 0, p::spline::SplineExtension::Error).unwrap();
+                for (&actual, &expected) in evaluated.iter().zip(&y) {
+                    close(actual, expected, 5e-10, 5e-10);
+                }
+            }
+        }
+    }
+
+    // Match the 100-point CodSpeed cubic interpolation workload exactly.
+    let x: Vec<_> = (0..100).map(|i| i as f64 * 0.2).collect();
+    let y: Vec<_> = x.iter().map(|v| v.sin()).collect();
+    let spline = p::fitting::make_interp_spline(&x, &y, 3).unwrap();
+    let svd = p::fitting::make_lsq_spline(&x, &y, &spline.knots, 3, None).unwrap();
+    for (&actual, &expected) in spline.coefficients.iter().zip(&svd.coefficients) {
+        close(actual, expected, 5e-10, 5e-10);
+    }
+}
+
+#[test]
+fn clustered_interpolation_retains_svd_rank_behavior() {
+    // Nearly coincident nodes can make the not-a-knot collocation system
+    // ill-conditioned even though the nodes are strictly increasing.
+    for delta in [1e-5, 1e-12] {
+        let x: [f64; 8] = [0.0, delta, 2.0 * delta, 0.7, 1.2, 1.7, 2.1, 2.6];
+        let y = x.map(|v| 1.0 + 0.25 * v + v.sin());
+        let knots = [vec![x[0]; 4], x[2..x.len() - 2].to_vec(), vec![x[7]; 4]].concat();
+        let svd = p::fitting::make_lsq_spline(&x, &y, &knots, 3, None);
+        let interpolated = p::fitting::make_interp_spline(&x, &y, 3);
+        match svd {
+            Ok(reference) => {
+                let result = interpolated.unwrap();
+                for (&actual, &expected) in result.coefficients.iter().zip(&reference.coefficients)
+                {
+                    close(actual, expected, 5e-9, 5e-9);
+                }
+            }
+            Err(_) => assert!(interpolated.is_err()),
+        }
+    }
+}
+
+#[test]
 fn invalid_shapes_domains_and_work_limits_are_errors() {
     let x = [0., 1., 2., 3., 4.];
     let y = [0., 1., 2., 3., 4.];

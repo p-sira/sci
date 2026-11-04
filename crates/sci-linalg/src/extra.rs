@@ -437,10 +437,10 @@ pub fn eig_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> Resul
 ///
 /// ## Numerical behavior
 ///
-/// Expands to a dense matrix and uses the scaled O(n³) faer eigenvalues-only
-/// solver without computing eigenvectors. Backend sweep limits bound iteration.
-/// Results can differ from [`eig_banded`] by roundoff, especially near zero or
-/// repeated eigenvalues. Banded inputs retain dense storage and work costs.
+/// Diagonal and tridiagonal bands use sorted diagonal values or faer's scaled
+/// symmetric tridiagonal QR eigensolver, respectively. Wider bands retain the
+/// dense O(n³) eigenvalues-only path. Backend sweep limits bound iteration;
+/// results can differ from [`eig_banded`] by roundoff near repeated eigenvalues.
 ///
 /// # Examples
 ///
@@ -454,6 +454,31 @@ pub fn eig_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> Resul
 ///
 /// [SciPy `eigvals_banded`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigvals_banded.html).
 pub fn eigvals_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<Vec<f64>> {
+    let input = dense_ref(ab)?;
+    let input = input.as_ref();
+    let (k, n) = (input.nrows() - 1, input.ncols());
+    if k >= n {
+        return Err(Error::DimensionMismatch);
+    }
+    if k <= 1 {
+        let diagonal: Vec<f64> = (0..n)
+            .map(|i| input[(if lower { 0 } else { k }, i)])
+            .collect();
+        let off_diagonal: Vec<f64> = if k == 0 {
+            vec![0.0; n - 1]
+        } else {
+            (0..n - 1)
+                .map(|i| {
+                    if lower {
+                        input[(1, i)]
+                    } else {
+                        input[(0, i + 1)]
+                    }
+                })
+                .collect()
+        };
+        return tridiagonal_eigenvalues(&diagonal, &off_diagonal);
+    }
     eigvalsh(&symmetric_band(ab, lower)?, lower)
 }
 /// Computes principal angles between column spaces: `cos(θi)=si(QAᵀ QB)`.

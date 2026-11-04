@@ -103,10 +103,8 @@ fn local_covariance(x: &RankedDistances, y: &RankedDistances) -> Matrix {
     }
     covariance
 }
-fn mgc_map(x: &RankedDistances, y: &RankedDistances) -> Matrix {
+fn mgc_map(x: &RankedDistances, y: &RankedDistances, vx: &Matrix, vy: &Matrix) -> Matrix {
     let mut covariance = local_covariance(x, y);
-    let vx = local_covariance(x, x);
-    let vy = local_covariance(y, y);
     for i in 0..x.scales {
         for j in 0..y.scales {
             covariance[i][j] = if vx[i][i] <= 0. || vy[j][j] <= 0. {
@@ -118,17 +116,14 @@ fn mgc_map(x: &RankedDistances, y: &RankedDistances) -> Matrix {
     }
     covariance
 }
-fn smoothed_maximum(map: &Matrix, observations: usize) -> Result<(f64, (usize, usize))> {
+fn smoothed_maximum(map: &Matrix, beta_threshold: f64) -> Result<(f64, (usize, usize))> {
     let rows = map.len();
     let columns = map[0].len();
     let global = map[rows - 1][columns - 1];
     if rows == 1 || columns == 1 {
         return Ok((global, (rows, columns)));
     }
-    let n = (observations - 1) as f64;
-    let shape = n * (n - 3.) / 4. - 0.5;
-    let threshold =
-        (2. * ppf(Distribution::Beta { a: shape, b: shape }, 1. - 0.02 / n)? - 1.).max(global);
+    let threshold = beta_threshold.max(global);
     let mut visited = vec![false; rows * columns];
     let mut largest = Vec::new();
     for index in 0..visited.len() {
@@ -282,16 +277,31 @@ pub fn multiscale_graphcorr(
     }
     let x = ranked_distances(x)?;
     let y = ranked_distances(y)?;
-    let map = mgc_map(&x, &y);
-    let (statistic, optimal_scale) = smoothed_maximum(&map, n)?;
+    // Each null permutation relabels both rows and columns of y. Its local
+    // variance at every rank is therefore unchanged, as is x's variance.
+    // Compute the two self-covariance maps once for all observed/null maps.
+    let vx = local_covariance(&x, &x);
+    let vy = local_covariance(&y, &y);
+    let map = mgc_map(&x, &y, &vx, &vy);
+    // The beta cutoff depends only on the sample count, not on the
+    // permutation. Single-scale maps return their global statistic without
+    // evaluating the cutoff, as before.
+    let beta_threshold = if x.scales == 1 || y.scales == 1 {
+        0.
+    } else {
+        let n = (n - 1) as f64;
+        let shape = n * (n - 3.) / 4. - 0.5;
+        2. * ppf(Distribution::Beta { a: shape, b: shape }, 1. - 0.02 / n)? - 1.
+    };
+    let (statistic, optimal_scale) = smoothed_maximum(&map, beta_threshold)?;
     if !statistic.is_finite() {
         return Err(crate::Error::NonFiniteEvaluation);
     }
     let mut null_distribution = Vec::with_capacity(permutations.len());
     for permutation in permutations {
         let permuted = permuted_distances(&y, permutation);
-        let local = mgc_map(&x, &permuted);
-        null_distribution.push(match smoothed_maximum(&local, n)?.0 {
+        let local = mgc_map(&x, &permuted, &vx, &vy);
+        null_distribution.push(match smoothed_maximum(&local, beta_threshold)?.0 {
             value if value.is_finite() => Ok(value),
             _ => Err(crate::Error::NonFiniteEvaluation),
         }?);
@@ -309,4 +319,91 @@ pub fn multiscale_graphcorr(
         optimal_scale,
         null_distribution,
     })
+}
+
+#[cfg(test)]
+mod permutation_reuse_tests {
+    use super::*;
+
+    // Reproduce the original computation: each permuted sample has its own
+    // variance maps and beta quantile, even though these are invariant.
+    fn uncached_maximum(map: &Matrix, observations: usize) -> Result<(f64, (usize, usize))> {
+        if map.len() == 1 || map[0].len() == 1 {
+            let rows = map.len();
+            let columns = map[0].len();
+            return Ok((map[rows - 1][columns - 1], (rows, columns)));
+        }
+        let n = (observations - 1) as f64;
+        let shape = n * (n - 3.) / 4. - 0.5;
+        let beta_threshold =
+            2. * ppf(Distribution::Beta { a: shape, b: shape }, 1. - 0.02 / n)? - 1.;
+        smoothed_maximum(map, beta_threshold)
+    }
+
+    fn verify_reuse(x: &[&[f64]], y: &[&[f64]], permutations: &[&[usize]]) -> Result<()> {
+        let result = multiscale_graphcorr(x, y, permutations)?;
+        let ranked_x = ranked_distances(x)?;
+        let ranked_y = ranked_distances(y)?;
+        let reference_map = mgc_map(
+            &ranked_x,
+            &ranked_y,
+            &local_covariance(&ranked_x, &ranked_x),
+            &local_covariance(&ranked_y, &ranked_y),
+        );
+        let (statistic, scale) = uncached_maximum(&reference_map, x.len())?;
+        assert!((result.statistic - statistic).abs() <= 1e-12);
+        assert_eq!(result.optimal_scale, scale);
+        for (got, expected) in result.mgc_map.iter().zip(&reference_map) {
+            for (&a, &b) in got.iter().zip(expected) {
+                assert!((a - b).abs() <= 1e-12);
+            }
+        }
+
+        let mut reference_null = Vec::with_capacity(permutations.len());
+        for permutation in permutations {
+            let permuted = permuted_distances(&ranked_y, permutation);
+            let local_map = mgc_map(
+                &ranked_x,
+                &permuted,
+                &local_covariance(&ranked_x, &ranked_x),
+                &local_covariance(&permuted, &permuted),
+            );
+            reference_null.push(uncached_maximum(&local_map, x.len())?.0);
+        }
+        for (&got, &expected) in result.null_distribution.iter().zip(&reference_null) {
+            assert!((got - expected).abs() <= 1e-12);
+        }
+        let tolerance = 100. * f64::EPSILON * statistic.abs();
+        let extreme = reference_null
+            .iter()
+            .filter(|&&v| v >= statistic - tolerance)
+            .count();
+        assert_eq!(
+            result.pvalue,
+            (extreme + 1) as f64 / (permutations.len() + 1) as f64
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn cached_covariances_preserve_permutation_statistics_with_ties() -> Result<()> {
+        let x: &[&[f64]] = &[
+            &[0., 0.],
+            &[1., 0.],
+            &[1., 0.],
+            &[0., 2.],
+            &[3., 1.],
+            &[2., 4.],
+        ];
+        let y: &[&[f64]] = &[&[1.], &[2.], &[4.], &[1.], &[3.], &[5.]];
+        let permutations: &[&[usize]] = &[
+            &[0, 1, 2, 3, 4, 5],
+            &[5, 4, 3, 2, 1, 0],
+            &[2, 0, 4, 3, 5, 1],
+        ];
+        verify_reuse(x, y, permutations)?;
+        let constant: &[&[f64]] = &[&[2.], &[2.], &[2.], &[2.], &[2.], &[2.]];
+        verify_reuse(x, constant, permutations)?;
+        Ok(())
+    }
 }
