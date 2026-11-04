@@ -2,6 +2,11 @@
 
 ## 0.3.0
 
+- Eliminate temporary partition allocations in exact two-sample
+  Cramér–von Mises and reuse permutation-invariant covariance and beta
+  thresholds in multiscale graph correlation. Preserve exact-test outcomes
+  and bounds; native benchmarks improved approximately 1.9× and 2.2×,
+  respectively.
 - Replace private `basin` bounded scalar minimization in transform and PPCC
   parameter searches with a safeguarded Brent implementation. Preserve closed
   bounds, finite objective validation, and bounded iteration; remove the direct

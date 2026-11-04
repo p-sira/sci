@@ -35,6 +35,10 @@
 
 ## 0.3.0
 
+- Reuse gamma-ratio terms through the noncentral-t Poisson recurrence in
+  `nctdtrinc`, with periodic direct reanchoring to control numerical drift.
+  Preserve domain and inverse-root behavior; the native benchmark improved
+  approximately 1.13×.
 - Replace dense `nalgebra` symmetric eigendecomposition of Jacobi and Lamé
   tridiagonal matrices with a scaled, shifted implicit QL eigensolver. Retain
   ordered eigenpairs and Gaussian weight/eigenvector normalization, add

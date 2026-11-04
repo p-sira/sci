@@ -2,6 +2,13 @@
 
 ## 0.3.0 (unreleased)
 
+- Speed up CodSpeed-profiled numerical hot paths across `sci-cluster`,
+  `sci-interpolate`, `sci-linalg`, `sci-signal`, `sci-spatial`, `sci-special`,
+  and `sci-stats`. Use banded/specialized solvers, reuse work buffers,
+  avoid repeated distance allocations, and cache statistical recurrence work.
+  Representative same-machine release benchmarks improved by about 1.1–16×;
+  numerical safeguards and per-crate details are recorded in the corresponding
+  crate changelogs (PR #40).
 - **Breaking:** Move all 25 graph algorithms to the independent `sci-graph`
   crate and `sci::graph` facade. Remove `sci::sparse::csgraph`, the corresponding
   `sci_sparse::csgraph` re-export, and the `sci-sparse` `graph` feature.

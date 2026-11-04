@@ -2,6 +2,10 @@
 
 ## 0.3.0
 
+- Use a scaled banded Cholesky solve for Whittaker–Henderson smoothing,
+  retaining a dense Cholesky fallback for doubtful pivots or nonfinite
+  intermediate results. Reduce normal-equation work to O(n · order²) and
+  memory to O(n · order); the native smoothing benchmark improved about 16×.
 - Remove choose_conv_method and ConvolutionMethod (SciPy timing calibration); rename closest_STFT_dual_window to closest_stft_dual_window.
 
 - Remove freqresp, dfreqresp, sosfreqz, check_COLA and check_NOLA aliases; use freqs, freqz, freqz_sos, check_cola and check_nola.

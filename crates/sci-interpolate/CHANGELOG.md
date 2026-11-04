@@ -2,6 +2,10 @@
 
 ## 0.3.0
 
+- Solve well-conditioned B-spline interpolation systems with pivoted LU
+  instead of an unconditional SVD, retaining pivot/residual checks and the
+  SVD fallback for ill-conditioned systems. The native cubic interpolation
+  spline benchmark improved approximately 12.5×.
 - Make barycentric, Krogh, Lagrange, and PCHIP interpolation generic over `Float`.
 
 - Remove splrep and splprep aliases; use make_splrep and make_splprep.
