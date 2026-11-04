@@ -258,8 +258,11 @@ pub fn scoreatpercentile<T: Float>(values: &[T], percentile: T) -> Result<T> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
-/// Inputs are limited to 1,048,576 observations. No Python runtime is used.
+/// Expected O(n) selection with O(n) scratch memory; the input is not changed.
+/// Even counts use the same convex interpolation as `quantile(x, 0.5)`.
+/// Evaluated in the selected floating-point precision; rounding and cancellation
+/// can affect ill-conditioned data. Inputs are limited to 1,048,576 observations.
+/// No Python runtime is used.
 ///
 /// # Examples
 ///
@@ -273,7 +276,9 @@ pub fn scoreatpercentile<T: Float>(values: &[T], percentile: T) -> Result<T> {
 /// [NumPy `median`](https://numpy.org/doc/stable/reference/generated/numpy.median.html).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn median<T: Float>(values: &[T]) -> Result<T> {
-    quantile(values, 0.5)
+    sample(values, 1)?;
+    let mut scratch = values.to_vec();
+    Ok(median_select_in_place(&mut scratch))
 }
 
 /// Interquartile range `Q(3/4)−Q(1/4)`.
@@ -1062,4 +1067,106 @@ pub fn describe<T: Float>(values: &[T], ddof: usize, bias: bool) -> Result<Descr
         skewness: skew(values, bias)?,
         kurtosis: kurtosis(values, true, bias)?,
     })
+}
+
+#[cfg(test)]
+mod median_selection_tests {
+    use super::*;
+
+    fn check_f64(values: &[f64]) {
+        let original_bits = values.iter().map(|x| x.to_bits()).collect::<Vec<_>>();
+        let mut sorted = values.to_vec();
+        sorted.sort_by(f64::total_cmp);
+        let expected = interpolate(&sorted, 0.5).to_bits();
+        let mut selected = values.to_vec();
+        assert_eq!(median_select_in_place(&mut selected).to_bits(), expected);
+        assert_eq!(median(values).unwrap().to_bits(), expected);
+        assert_eq!(
+            values.iter().map(|x| x.to_bits()).collect::<Vec<_>>(),
+            original_bits
+        );
+    }
+
+    fn check_f32(values: &[f32]) {
+        let original_bits = values.iter().map(|x| x.to_bits()).collect::<Vec<_>>();
+        let mut sorted = values.to_vec();
+        sorted.sort_by(f32::total_cmp);
+        let expected = interpolate(&sorted, 0.5).to_bits();
+        let mut selected = values.to_vec();
+        assert_eq!(median_select_in_place(&mut selected).to_bits(), expected);
+        assert_eq!(median(values).unwrap().to_bits(), expected);
+        assert_eq!(
+            values.iter().map(|x| x.to_bits()).collect::<Vec<_>>(),
+            original_bits
+        );
+    }
+
+    #[test]
+    fn f64_median_selection_matches_sorted_bits() {
+        for values in [
+            vec![-0.0],
+            vec![0.0, -0.0],
+            vec![-0.0, -0.0],
+            vec![0.0, 0.0],
+            vec![0.0, -0.0, -0.0],
+            vec![-0.0, 0.0, 0.0, -0.0],
+            vec![-f64::MAX, f64::MAX],
+            vec![-f64::MAX, -f64::MAX],
+            vec![f64::MAX, f64::MAX],
+            vec![f64::MIN_POSITIVE, f64::from_bits(1)],
+            vec![-f64::MAX, -1.0, 0.0, 1.0, f64::MAX],
+            vec![3.0, 3.0, 3.0, 3.0],
+        ] {
+            check_f64(&values);
+        }
+        for n in 1..=33 {
+            let mut values = (0..n)
+                .map(|i| ((i * 19 + 3) % 13 - 6) as f64)
+                .collect::<Vec<_>>();
+            check_f64(&values);
+            values.reverse();
+            check_f64(&values);
+        }
+    }
+
+    #[test]
+    fn f32_median_selection_matches_sorted_bits() {
+        for values in [
+            vec![-0.0_f32],
+            vec![0.0_f32, -0.0],
+            vec![-0.0_f32, -0.0],
+            vec![0.0_f32, 0.0],
+            vec![0.0_f32, -0.0, -0.0],
+            vec![-0.0_f32, 0.0, 0.0, -0.0],
+            vec![-f32::MAX, f32::MAX],
+            vec![-f32::MAX, -f32::MAX],
+            vec![f32::MAX, f32::MAX],
+            vec![f32::MIN_POSITIVE, f32::from_bits(1)],
+            vec![-f32::MAX, -1.0, 0.0, 1.0, f32::MAX],
+            vec![3.0_f32, 3.0, 3.0, 3.0],
+        ] {
+            check_f32(&values);
+        }
+        for n in 1..=33 {
+            let mut values = (0..n)
+                .map(|i| ((i * 19 + 3) % 13 - 6) as f32)
+                .collect::<Vec<_>>();
+            check_f32(&values);
+            values.reverse();
+            check_f32(&values);
+        }
+    }
+
+    #[test]
+    fn median_selection_retains_input_validation() {
+        assert!(median::<f64>(&[]).is_err());
+        assert!(median::<f32>(&[]).is_err());
+        for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert!(median(&[0.0, invalid]).is_err());
+        }
+        for invalid in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            assert!(median(&[0.0_f32, invalid]).is_err());
+        }
+        assert!(median(&vec![1.0_f64; MAX_SAMPLES + 1]).is_err());
+    }
 }

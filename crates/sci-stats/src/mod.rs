@@ -434,6 +434,21 @@ fn interpolate<T: Float>(x: &[T], p: T) -> T {
     }
 }
 
+/// Median of nonempty finite data, permuting only the caller's scratch slice.
+/// Selection preserves `total_cmp`'s `-0` before `+0` ordering without sorting
+/// all elements. The even case uses the same convex interpolation as `median`.
+fn median_select_in_place<T: Float>(values: &mut [T]) -> T {
+    let midpoint = values.len() / 2;
+    let even = values.len().is_multiple_of(2);
+    let (lower, upper, _) = values.select_nth_unstable_by(midpoint, total_cmp);
+    if even {
+        let lower_middle = lower.iter().copied().max_by(total_cmp).unwrap();
+        interpolate(&[lower_middle, *upper], T::from(0.5).unwrap())
+    } else {
+        *upper
+    }
+}
+
 /// Two-dimensional categorical-data statistics.
 pub mod contingency;
 pub use contingency::chi2_contingency;

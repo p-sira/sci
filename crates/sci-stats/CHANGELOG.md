@@ -2,6 +2,15 @@
 
 ## 0.3.0
 
+- Use selection instead of a full sort for descriptive medians, median
+  absolute deviation, and repeated medians in `siegelslopes`, retaining the
+  original total ordering, signed-zero results, and even-sample interpolation.
+  Theil–Sen still sorts all slopes for confidence-interval rank bounds.
+  Native benchmarks improved roughly 5–8× for medians and median absolute
+  deviation, and 2.6× for `siegelslopes`.
+- Share a stable, contiguous bin-grouping kernel across 1D, 2D, and ND binned
+  statistics, avoiding per-observation coordinate vectors and per-bin value
+  vectors while retaining observation order and statistical reductions.
 - Replace private `basin` bounded scalar minimization in transform and PPCC
   parameter searches with a safeguarded Brent implementation. Preserve closed
   bounds, finite objective validation, and bounded iteration; remove the direct
