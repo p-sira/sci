@@ -2,6 +2,10 @@
 
 ## 0.3.0
 
+- Reuse barycentric scratch vectors across simplex candidates in `tsearch`
+  instead of reallocating them for each trial. Preserve first-simplex ties,
+  edge tolerance, and numerical validation; the native `tsearch` benchmark
+  improved approximately 2×.
 - Update shared Sci dependency requirements to the new minor versions.
 - Borrow explicit distance weights until normalization requires owned storage.
 
