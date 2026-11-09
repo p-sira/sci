@@ -187,8 +187,9 @@ impl DiscreteAliasUrn {
     pub fn rvs(&mut self, n: usize) -> Result<Vec<usize>> {
         validate_draw_count(n)?;
         let mut draws = Vec::with_capacity(n);
+        let categories = self.threshold.len();
         for _ in 0..n {
-            let column = self.rng.random_range(0..self.threshold.len());
+            let column = self.rng.random_range(0..categories);
             let uniform = self.rng.random::<f64>();
             draws.push(if uniform < self.threshold[column] {
                 column

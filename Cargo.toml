@@ -395,6 +395,16 @@ harness = false
 required-features = ["stats"]
 
 [[bench]]
+name = "sampling_scipy_comparison"
+harness = false
+required-features = ["stats"]
+
+[[bench]]
+name = "sobol_comparison"
+harness = false
+required-features = ["stats"]
+
+[[bench]]
 name = "signal"
 harness = false
 required-features = ["complex", "signal"]

@@ -9,11 +9,16 @@ const MAX_OUTPUT_VALUES: usize = 1_048_576;
 
 fn stratum_coordinate(stratum: usize, offset: f64, size: f64) -> f64 {
     let mut coordinate = (stratum as f64 - offset) / size;
-    // Rounding can move a coordinate across either stratum boundary.
-    // Enforce the assigned bin as measured by floor(size * coordinate).
-    let scaled = coordinate * size;
-    if scaled < (stratum - 1) as f64 || scaled >= stratum as f64 {
-        coordinate = (stratum as f64 - 0.5) / size;
+    // For 1 <= stratum <= size <= 2^20, roundoff in subtraction,
+    // division, and the reverse multiplication is well below
+    // 8 * size * EPSILON. Only offsets near a stratum edge can cross
+    // the boundary; avoid the reverse multiplication for interior offsets.
+    let edge = 8. * size * f64::EPSILON;
+    if offset < edge || offset > 1. - edge {
+        let scaled = coordinate * size;
+        if scaled < (stratum - 1) as f64 || scaled >= stratum as f64 {
+            coordinate = (stratum as f64 - 0.5) / size;
+        }
     }
     coordinate
 }
@@ -173,21 +178,31 @@ impl LatinHypercube {
         }
 
         // SciPy draws all n*d jitter values before shuffling any dimension.
-        let mut points = vec![vec![0.5; self.dimensions]; n];
+        // Construct scrambled rows directly to avoid filling each coordinate
+        // with a midpoint that is immediately overwritten by random jitter.
+        let mut points = Vec::with_capacity(n);
         if self.scramble {
-            for row in &mut points {
-                for value in row {
-                    *value = self.rng.random::<f64>();
+            for _ in 0..n {
+                let mut row = Vec::with_capacity(self.dimensions);
+                for _ in 0..self.dimensions {
+                    row.push(self.rng.random::<f64>());
                 }
+                points.push(row);
+            }
+        } else {
+            for _ in 0..n {
+                points.push(vec![0.5; self.dimensions]);
             }
         }
 
         let mut strata: Vec<usize> = (1..=n).collect();
         let size = n as f64;
         for axis in 0..self.dimensions {
-            // SciPy starts each coordinate from the ordered stratum labels.
-            for (index, stratum) in strata.iter_mut().enumerate() {
-                *stratum = index + 1;
+            // The first axis already has ordered labels from collect().
+            if axis != 0 {
+                for (index, stratum) in strata.iter_mut().enumerate() {
+                    *stratum = index + 1;
+                }
             }
             strata.shuffle(&mut self.rng);
             for (row, &stratum) in points.iter_mut().zip(&strata) {
@@ -219,9 +234,8 @@ impl LatinHypercube {
         }
         let mut strata: Vec<usize> = (1..=n).collect();
         for _ in 0..self.dimensions {
-            for (index, stratum) in strata.iter_mut().enumerate() {
-                *stratum = index + 1;
-            }
+            // Only the shuffle's random index draws affect the RNG state.
+            // The label order is irrelevant when no coordinates are produced.
             strata.shuffle(&mut self.rng);
         }
         self.generated = end;
@@ -254,6 +268,42 @@ impl LatinHypercube {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn reference_coordinate(stratum: usize, offset: f64, size: f64) -> f64 {
+        let mut coordinate = (stratum as f64 - offset) / size;
+        let scaled = coordinate * size;
+        if scaled < (stratum - 1) as f64 || scaled >= stratum as f64 {
+            coordinate = (stratum as f64 - 0.5) / size;
+        }
+        coordinate
+    }
+
+    // Keep the original two-pass construction as a bitwise reference for
+    // changes to the allocation path in random().
+    fn reference_random(engine: &mut LatinHypercube, n: usize) -> Vec<Vec<f64>> {
+        let mut points = vec![vec![0.5; engine.dimensions]; n];
+        if engine.scramble {
+            for row in &mut points {
+                for value in row {
+                    *value = engine.rng.random::<f64>();
+                }
+            }
+        }
+
+        let mut strata: Vec<usize> = (1..=n).collect();
+        let size = n as f64;
+        for axis in 0..engine.dimensions {
+            for (index, stratum) in strata.iter_mut().enumerate() {
+                *stratum = index + 1;
+            }
+            strata.shuffle(&mut engine.rng);
+            for (row, &stratum) in points.iter_mut().zip(&strata) {
+                row[axis] = reference_coordinate(stratum, row[axis], size);
+            }
+        }
+        engine.generated += n as u128;
+        points
+    }
 
     fn assert_stratified(points: &[Vec<f64>], dimensions: usize) {
         let n = points.len();
@@ -319,6 +369,54 @@ mod tests {
     }
 
     #[test]
+    fn edge_guard_matches_full_boundary_check_bitwise() {
+        let one = 1.0_f64;
+        let almost_one = f64::from_bits(one.to_bits() - 1);
+        for n in [1, 2, 3, 47, 8192, 16_384, MAX_OUTPUT_VALUES] {
+            let size = n as f64;
+            let edge = 8. * size * f64::EPSILON;
+            let offsets = [
+                0.,
+                f64::from_bits(1),
+                edge * 0.5,
+                f64::from_bits(edge.to_bits() - 1),
+                edge,
+                f64::from_bits(edge.to_bits() + 1),
+                0.25,
+                0.5,
+                0.75,
+                one - edge * 2.,
+                one - edge,
+                f64::from_bits((one - edge).to_bits() + 1),
+                almost_one,
+            ];
+            for stratum in [1, n / 2 + 1, n] {
+                for offset in offsets {
+                    let expected = reference_coordinate(stratum, offset, size);
+                    let actual = stratum_coordinate(stratum, offset, size);
+                    assert_eq!(
+                        actual.to_bits(),
+                        expected.to_bits(),
+                        "n={n}, stratum={stratum}, offset={offset}"
+                    );
+                }
+            }
+            // At the representative large sizes, exercise every possible
+            // stratum and both centered and non-centered interior offsets.
+            if n == 8192 || n == MAX_OUTPUT_VALUES {
+                for stratum in 1..=n {
+                    for offset in [0.25, 0.5, 0.75] {
+                        assert_eq!(
+                            stratum_coordinate(stratum, offset, size).to_bits(),
+                            reference_coordinate(stratum, offset, size).to_bits()
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
     fn seeds_and_reset_are_reproducible() {
         let mut a = LatinHypercube::new(3, 44).unwrap();
         let mut b = LatinHypercube::new(3, 44).unwrap();
@@ -336,6 +434,30 @@ mod tests {
     }
 
     #[test]
+    fn optimized_rows_preserve_bitwise_coordinates_and_rng_stream() {
+        for scramble in [false, true] {
+            for dimensions in [1, 4, 7] {
+                let mut engine =
+                    LatinHypercube::with_scramble(dimensions, 0x1234_5678, scramble).unwrap();
+                let mut reference = engine.clone();
+                for n in [0, 1, 128, 1024, 8192, 16_384] {
+                    let actual = engine.random(n).unwrap();
+                    let expected = reference_random(&mut reference, n);
+                    assert_eq!(actual.len(), expected.len());
+                    for (row, expected_row) in actual.iter().zip(&expected) {
+                        let actual_bits: Vec<_> = row.iter().map(|x| x.to_bits()).collect();
+                        let expected_bits: Vec<_> =
+                            expected_row.iter().map(|x| x.to_bits()).collect();
+                        assert_eq!(actual_bits, expected_bits);
+                    }
+                    assert_eq!(engine.num_generated(), reference.num_generated());
+                    assert_eq!(engine.rng.random::<u64>(), reference.rng.random::<u64>());
+                }
+            }
+        }
+    }
+
+    #[test]
     fn skipping_matches_discarded_design_and_zero_is_noop() {
         for scramble in [true, false] {
             let mut drawn = LatinHypercube::with_scramble(5, 715, scramble).unwrap();
@@ -349,6 +471,22 @@ mod tests {
             skipped.reset();
             drawn.reset();
             assert_eq!(drawn.random(19).unwrap(), skipped.random(19).unwrap());
+        }
+    }
+
+    #[test]
+    fn skipping_large_batches_preserves_the_random_stream() {
+        for scramble in [true, false] {
+            for dimensions in [1, 4, 7] {
+                let mut drawn = LatinHypercube::with_scramble(dimensions, 718, scramble).unwrap();
+                let mut skipped = drawn.clone();
+                for n in [128, 1024, 16_384] {
+                    drawn.random(n).unwrap();
+                    skipped.fast_forward(n).unwrap();
+                    assert_eq!(drawn.num_generated(), skipped.num_generated());
+                    assert_eq!(drawn.random(17).unwrap(), skipped.random(17).unwrap());
+                }
+            }
         }
     }
 

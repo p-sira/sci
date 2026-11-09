@@ -4,6 +4,24 @@ use common::{fields, integer, lines, vector};
 use sci::stats::qmc::{QmcEngine, Sobol};
 
 #[test]
+fn sobol_flat_buffer_reuse_and_invalid_calls() {
+    let mut stream = Sobol::scrambled(6, 30, 71).unwrap();
+    let mut comparison = stream.clone();
+    let mut buffer = Vec::with_capacity(4096);
+    for count in [8, 128, 1, 0, 256, 7] {
+        stream.random_flat_into(count, &mut buffer).unwrap();
+        assert_eq!(buffer, comparison.random_flat(count).unwrap());
+    }
+    let original = buffer.clone();
+    let position = stream.num_generated();
+    assert!(stream.random_flat_into(1_048_577, &mut buffer).is_err());
+    assert_eq!(buffer, original);
+    assert_eq!(stream.num_generated(), position);
+    stream.random_flat_into(17, &mut buffer).unwrap();
+    assert_eq!(buffer, comparison.random_flat(17).unwrap());
+}
+
+#[test]
 fn sobol_matches_unscrambled_scipy_reference() {
     let cases: Vec<_> = lines(include_str!("scipy/sobol_cases.csv")).collect();
     let expected: Vec<_> = lines(include_str!("scipy/sobol_expected.csv")).collect();
@@ -194,4 +212,243 @@ fn qmc_integer_mapping_respects_bounds_and_stream_state() {
     .unwrap();
     assert_eq!(wide[0], [i64::MIN, i64::MIN]);
     assert_eq!(wide[1], [0, 0]);
+}
+
+/// Frozen before sci-stats 0.3.0's Sobol performance changes. Checking bitwise
+/// outputs across seeds, dimensions and precisions catches scramble and state
+/// changes that can survive ordinary numerical-tolerance comparisons.
+#[test]
+fn sobol_preoptimization_digital_streams_are_unchanged() {
+    fn fingerprint(points: &[Vec<f64>]) -> u64 {
+        let mut hash = 0xcbf2_9ce4_8422_2325_u64;
+        for row in points {
+            for &value in row {
+                hash = (hash ^ value.to_bits()).wrapping_mul(0x100_0000_01b3);
+            }
+        }
+        hash
+    }
+
+    // (dimensions, bits, seed, number of points, expected FNV-1a over f64 bits)
+    for (d, bits, seed, n, expected) in [
+        (1, 1, 0, 2, 0xd552_8807_b4eb_6fed),
+        (6, 30, 42, 64, 0x7b2e_be5f_1cee_8125),
+        (6, 30, 123_456_789, 1024, 0x6c6a_0965_2148_0325),
+        (6, 64, 42, 64, 0x457f_8edb_8a43_6609),
+        (16, 32, 123, 1024, 0x9f3a_154b_01c7_2325),
+        (64, 53, 7, 64, 0x687b_ec14_46bb_0ced),
+        (1024, 30, 100, 8, 0x63c4_dc2f_7f54_a325),
+    ] {
+        let mut engine = Sobol::scrambled(d, bits, seed).unwrap();
+        let actual = fingerprint(&engine.random(n).unwrap());
+        assert_eq!(
+            actual, expected,
+            "scrambled d={d}, bits={bits}, seed={seed}"
+        );
+    }
+
+    for (d, bits, n, expected) in [
+        (6, 30, 64, 0x40f9_c345_c0ee_8125),
+        (64, 53, 64, 0xfcd7_0c83_ce3b_6325),
+        (1024, 30, 8, 0xbb11_03fd_6854_a325),
+    ] {
+        let mut engine = Sobol::new(d, bits).unwrap();
+        let actual = fingerprint(&engine.random(n).unwrap());
+        assert_eq!(actual, expected, "unscrambled d={d}, bits={bits}");
+    }
+}
+
+fn row_major_bits(rows: Vec<Vec<f64>>) -> Vec<u64> {
+    rows.into_iter()
+        .flat_map(|row| row.into_iter().map(f64::to_bits))
+        .collect()
+}
+
+fn flat_bits(values: Vec<f64>) -> Vec<u64> {
+    values.into_iter().map(f64::to_bits).collect()
+}
+
+#[test]
+fn sobol_random_flat_matches_row_major_random_bit_for_bit() {
+    for (d, bits, seed, n) in [
+        (1, 1, None, 2),
+        (2, 8, None, 64),
+        (6, 30, Some(42), 64),
+        (6, 32, Some(65_537), 1024),
+        (16, 53, Some(123), 128),
+        (64, 64, Some(42), 64),
+        (256, 30, None, 8),
+    ] {
+        let make_engine = || match seed {
+            Some(seed) => Sobol::scrambled(d, bits, seed).unwrap(),
+            None => Sobol::new(d, bits).unwrap(),
+        };
+        let mut nested = make_engine();
+        let mut flat = make_engine();
+        assert!(flat.random_flat(0).unwrap().is_empty());
+        assert_eq!(flat.num_generated(), 0);
+        let expected = row_major_bits(nested.random(n).unwrap());
+        let actual = flat_bits(flat.random_flat(n).unwrap());
+        assert_eq!(actual.len(), n * d, "flat shape for d={d}, bits={bits}");
+        assert_eq!(actual, expected, "d={d}, bits={bits}, seed={seed:?}");
+        assert_eq!(flat.num_generated(), nested.num_generated());
+    }
+}
+
+#[test]
+fn sobol_large_row_batches_preserve_flat_bits_and_next_state() {
+    for (d, bits, seed, n) in [
+        (4, 30, None, 8192),
+        (4, 53, Some(42), 8192),
+        (16, 64, Some(65_537), 4096),
+        (256, 30, None, 256),
+    ] {
+        let make = || match seed {
+            Some(seed) => Sobol::scrambled(d, bits, seed).unwrap(),
+            None => Sobol::new(d, bits).unwrap(),
+        };
+        let mut nested = make();
+        let mut flat = make();
+        let first = n / 3;
+        let second = n - first;
+        for count in [first, second] {
+            let points = nested.random(count).unwrap();
+            assert_eq!(points.len(), count);
+            assert!(points.iter().all(|row| row.len() == d));
+            assert_eq!(
+                row_major_bits(points),
+                flat_bits(flat.random_flat(count).unwrap()),
+                "large batch differs for d={d}, bits={bits}, seed={seed:?}"
+            );
+        }
+        assert_eq!(nested.num_generated(), n as u128);
+        assert_eq!(flat.num_generated(), n as u128);
+
+        // A full batch must leave the next Gray-code state identical.
+        nested.fast_forward(23).unwrap();
+        flat.fast_forward(23).unwrap();
+        assert_eq!(
+            row_major_bits(nested.random(17).unwrap()),
+            flat_bits(flat.random_flat(17).unwrap())
+        );
+    }
+}
+
+#[test]
+#[cfg(target_pointer_width = "64")]
+fn sobol_final_period_rows_have_identical_nested_and_flat_bits() {
+    for bits in [1, 8, 30, 53, 54, 64] {
+        let remaining = (1_u128 << bits) - 2;
+        let mut nested = Sobol::scrambled(4, bits, 123).unwrap();
+        let mut flat = nested.clone();
+        nested.fast_forward(remaining as usize).unwrap();
+        flat.fast_forward(remaining as usize).unwrap();
+        assert_eq!(
+            row_major_bits(nested.random(2).unwrap()),
+            flat_bits(flat.random_flat(2).unwrap()),
+            "last two rows differ at bits={bits}"
+        );
+        assert_eq!(nested.num_generated(), 1_u128 << bits);
+        assert_eq!(flat.num_generated(), 1_u128 << bits);
+        assert!(nested.random(1).is_err());
+        assert!(flat.random_flat(1).is_err());
+        assert!(nested.random(0).unwrap().is_empty());
+        assert!(flat.random_flat(0).unwrap().is_empty());
+    }
+}
+
+#[test]
+fn sobol_random_flat_chunking_mixed_draws_and_fast_forward_agree() {
+    let mut reference = Sobol::scrambled(6, 30, 65_537).unwrap();
+    let expected = row_major_bits(reference.random(128).unwrap());
+    let d = 6;
+
+    let mut flat = Sobol::scrambled(d, 30, 65_537).unwrap();
+    let mut first = flat_bits(flat.random_flat(5).unwrap());
+    assert!(flat.random_flat(0).unwrap().is_empty());
+    first.extend(flat_bits(flat.random_flat(11).unwrap()));
+    assert_eq!(first, expected[..16 * d]);
+
+    // Existing row-oriented reads and the new flat reads must share one state.
+    assert_eq!(
+        row_major_bits(flat.random(7).unwrap()),
+        expected[16 * d..23 * d]
+    );
+    flat.fast_forward(8).unwrap();
+    assert_eq!(flat.num_generated(), 31);
+    assert_eq!(
+        flat_bits(flat.random_flat(10).unwrap()),
+        expected[31 * d..41 * d]
+    );
+    assert_eq!(flat.num_generated(), 41);
+
+    flat.reset();
+    assert_eq!(flat.num_generated(), 0);
+    assert_eq!(flat_bits(flat.random_flat(16).unwrap()), expected[..16 * d]);
+
+    let mut skipped = Sobol::scrambled(d, 30, 65_537).unwrap();
+    skipped.fast_forward(31).unwrap();
+    assert_eq!(
+        flat_bits(skipped.random_flat(10).unwrap()),
+        expected[31 * d..41 * d]
+    );
+}
+
+#[test]
+fn sobol_random_flat_rejects_invalid_batches_without_advancing() {
+    let mut flat = Sobol::scrambled(6, 8, 7).unwrap();
+    let _ = flat.random_flat(3).unwrap();
+    assert_eq!(flat.num_generated(), 3);
+
+    // Reject both scalar-output-limit violations and period exhaustion.
+    assert!(flat.random_flat(1_048_576 / 6 + 1).is_err());
+    assert!(flat.random_flat(usize::MAX).is_err());
+    assert!(flat.random_flat(254).is_err());
+    assert_eq!(flat.num_generated(), 3);
+    assert!(flat.random_flat(0).unwrap().is_empty());
+    assert_eq!(flat.num_generated(), 3);
+
+    let mut reference = Sobol::scrambled(6, 8, 7).unwrap();
+    reference.fast_forward(3).unwrap();
+    assert_eq!(
+        flat_bits(flat.random_flat(5).unwrap()),
+        row_major_bits(reference.random(5).unwrap())
+    );
+
+    let mut exhausted = Sobol::new(2, 3).unwrap();
+    assert_eq!(exhausted.random_flat(8).unwrap().len(), 16);
+    assert_eq!(exhausted.num_generated(), 8);
+    assert!(exhausted.random_flat(1).is_err());
+    assert_eq!(exhausted.num_generated(), 8);
+    assert!(exhausted.random_flat(0).unwrap().is_empty());
+}
+
+#[test]
+#[cfg(target_pointer_width = "64")]
+fn sobol_random_flat_handles_large_64_bit_indices() {
+    let mut last = Sobol::new(1, 64).unwrap();
+    last.fast_forward(usize::MAX).unwrap();
+    assert_eq!(
+        last.random_flat(1)
+            .unwrap()
+            .iter()
+            .map(|x| x.to_bits())
+            .collect::<Vec<_>>(),
+        vec![2_f64.powi(-64).to_bits()]
+    );
+    assert_eq!(last.num_generated(), 1_u128 << 64);
+    assert!(last.random_flat(1).is_err());
+    assert_eq!(last.num_generated(), 1_u128 << 64);
+
+    let index = 0xaaaa_aaaa_aaaa_aaaa_u64 as usize;
+    let mut flat = Sobol::new(1, 64).unwrap();
+    let mut nested = Sobol::new(1, 64).unwrap();
+    flat.fast_forward(index).unwrap();
+    nested.fast_forward(index).unwrap();
+    assert_eq!(
+        flat_bits(flat.random_flat(1).unwrap()),
+        row_major_bits(nested.random(1).unwrap())
+    );
+    assert_eq!(flat.num_generated(), index as u128 + 1);
+    assert_eq!(flat.random_flat(0).unwrap(), Vec::<f64>::new());
 }

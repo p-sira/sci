@@ -15,14 +15,17 @@ fn table_value(dimension: usize, column: usize) -> u32 {
     u32::from_le_bytes(TABLE[start..start + 4].try_into().unwrap())
 }
 
-fn directions(dimension: usize, bits: usize) -> Vec<u64> {
+fn directions(dimension: usize, bits: usize) -> [u64; MAX_BITS] {
+    let mut v = [0; MAX_BITS];
     if dimension == 0 {
-        return (0..bits).map(|j| 1_u64 << (bits - j - 1)).collect();
+        for (j, value) in v.iter_mut().enumerate().take(bits) {
+            *value = 1_u64 << (bits - j - 1);
+        }
+        return v;
     }
 
     let polynomial = table_value(dimension, 0);
     let degree = (u32::BITS - 1 - polynomial.leading_zeros()) as usize;
-    let mut v = vec![0; bits];
     for (j, value) in v.iter_mut().enumerate().take(degree.min(bits)) {
         *value = u64::from(table_value(dimension, j + 1)) << (bits - j - 1);
     }
@@ -52,9 +55,11 @@ impl SplitMix64 {
 
 // A random nonsingular lower triangular matrix over GF(2), with the most
 // significant bit representing the first row/column (Matousek's LMS scramble).
-fn scramble(directions: &mut [u64], bits: usize, generator: &mut SplitMix64) {
-    let original = directions.to_vec();
-    directions.fill(0);
+// Apply each row mask across a contiguous, stack-local direction column.
+// This retains the exact SplitMix64 draw order without scattered accesses
+// through the bit-major table or heap allocations for a cloned column.
+fn scramble(directions: &mut [u64; MAX_BITS], bits: usize, generator: &mut SplitMix64) {
+    let mut transformed = [0_u64; MAX_BITS];
     for row in 0..bits {
         let bit = bits - row - 1;
         let diagonal = 1_u64 << bit;
@@ -64,12 +69,11 @@ fn scramble(directions: &mut [u64], bits: usize, generator: &mut SplitMix64) {
             generator.next() & (u64::MAX << (bit + 1))
         };
         let mask = diagonal | above;
-        for (new, &old) in directions.iter_mut().zip(&original) {
-            if (old & mask).count_ones() & 1 != 0 {
-                *new |= diagonal;
-            }
+        for (new, &old) in transformed[..bits].iter_mut().zip(&directions[..bits]) {
+            *new |= u64::from((old & mask).count_ones() & 1) << bit;
         }
     }
+    directions[..bits].copy_from_slice(&transformed[..bits]);
 }
 
 /// Stateful Sobol sequence in the unit hypercube, using the Joe–Kuo D(6) table.
@@ -136,7 +140,9 @@ fn scramble(directions: &mut [u64], bits: usize, generator: &mut SplitMix64) {
 #[derive(Clone, Debug)]
 pub struct Sobol {
     bits: usize,
-    directions: Vec<Vec<u64>>,
+    // Direction vectors for each Gray-code bit, stored contiguously by bit.
+    // Every point update visits one contiguous dimension-sized slice.
+    directions: Vec<u64>,
     shift: Vec<u64>,
     state: Vec<u64>,
     generated: u128,
@@ -149,19 +155,7 @@ impl Sobol {
     /// with the zero vector. Dimensions must be `1..=21201` and bits `1..=64`.
     /// Otherwise returns [`Error::InvalidInput`].
     pub fn new(d: usize, bits: usize) -> Result<Self> {
-        if d == 0 || d > MAX_DIMENSIONS || bits == 0 || bits > MAX_BITS {
-            return Err(Error::InvalidInput(
-                "Sobol requires 1..=21201 dimensions and 1..=64 bits",
-            ));
-        }
-        let directions = (0..d).map(|axis| directions(axis, bits)).collect();
-        Ok(Self {
-            bits,
-            directions,
-            shift: vec![0; d],
-            state: vec![0; d],
-            generated: 0,
-        })
+        Self::build(d, bits, None)
     }
 
     /// Construct an LMS-scrambled Sobol sequence with a deterministic `seed`.
@@ -170,24 +164,45 @@ impl Sobol {
     /// Sci; SciPy uses a different random-number stream. The bounds and errors
     /// are identical to [`Sobol::new`].
     pub fn scrambled(d: usize, bits: usize, seed: u64) -> Result<Self> {
-        let mut sobol = Self::new(d, bits)?;
-        let mut generator = SplitMix64(seed);
+        Self::build(d, bits, Some(seed))
+    }
+
+    fn build(d: usize, bits: usize, seed: Option<u64>) -> Result<Self> {
+        if d == 0 || d > MAX_DIMENSIONS || bits == 0 || bits > MAX_BITS {
+            return Err(Error::InvalidInput(
+                "Sobol requires 1..=21201 dimensions and 1..=64 bits",
+            ));
+        }
+        let mut generator = seed.map(SplitMix64);
         let mask = if bits == 64 {
             u64::MAX
         } else {
             (1_u64 << bits) - 1
         };
+        let mut direction_table = vec![0_u64; d * bits];
+        let mut shift = vec![0; d];
         for axis in 0..d {
-            sobol.shift[axis] = generator.next() & mask;
-            scramble(&mut sobol.directions[axis], bits, &mut generator);
+            let mut column = directions(axis, bits);
+            if let Some(generator) = &mut generator {
+                shift[axis] = generator.next() & mask;
+                scramble(&mut column, bits, generator);
+            }
+            for (bit, &value) in column.iter().enumerate().take(bits) {
+                direction_table[bit * d + axis] = value;
+            }
         }
-        sobol.reset();
-        Ok(sobol)
+        Ok(Self {
+            bits,
+            directions: direction_table,
+            state: shift.clone(),
+            shift,
+            generated: 0,
+        })
     }
 
     /// Number of coordinates per generated point.
     pub fn dimensions(&self) -> usize {
-        self.directions.len()
+        self.shift.len()
     }
 
     /// Precision in binary digits used for the digital net.
@@ -223,35 +238,137 @@ impl Sobol {
     /// rounding is described in [`Sobol`].
     pub fn random(&mut self, n: usize) -> Result<Vec<Vec<f64>>> {
         let d = self.dimensions();
-        if n.checked_mul(d).is_none_or(|v| v > MAX_OUTPUT_VALUES) {
-            return Err(Error::InvalidInput("Sobol batch exceeds 1048576 values"));
-        }
-        let end = self.generated + n as u128;
-        if end > self.maximum() {
-            return Err(Error::InvalidInput(
-                "Sobol sequence exhausted at 2^bits points",
-            ));
-        }
+        self.check_batch(n, d)?;
         let factor = 2_f64.powi(-(self.bits as i32));
-        let maximum = self.maximum();
-        let below_one = f64::from_bits(1.0_f64.to_bits() - 1);
         let mut points = Vec::with_capacity(n);
-        for _ in 0..n {
-            points.push(
-                self.state
-                    .iter()
-                    .map(|x| ((*x as f64) * factor).min(below_one))
-                    .collect(),
-            );
-            self.generated += 1;
-            if self.generated < maximum {
-                let bit = self.generated.trailing_zeros() as usize;
-                for (value, direction) in self.state.iter_mut().zip(&self.directions) {
-                    *value ^= direction[bit];
-                }
+        let end = self.generated + n as u128;
+        // There is no next state after the final point in the period. All
+        // other transitions are unconditional, keeping the row loop small.
+        let transitions = n - usize::from(n != 0 && end == self.maximum());
+        // The sequence fits in 64 bits. Only the exhausted end sentinel is
+        // 2^64, and it is never used to index a direction column.
+        let mut index = self.generated as u64;
+        for _ in 0..transitions {
+            points.push(self.output_row(factor));
+            index = index.wrapping_add(1);
+            let offset = index.trailing_zeros() as usize * d;
+            for (value, &direction) in self
+                .state
+                .iter_mut()
+                .zip(&self.directions[offset..offset + d])
+            {
+                *value ^= direction;
             }
         }
+        if transitions < n {
+            points.push(self.output_row(factor));
+        }
+        self.generated = end;
         Ok(points)
+    }
+
+    #[inline]
+    fn output_row(&self, factor: f64) -> Vec<f64> {
+        if self.bits <= 53 {
+            // These fixed-point fractions are exactly representable in f64,
+            // so the upper-bound clamp cannot change any coordinate.
+            self.state
+                .iter()
+                .map(|&value| value as f64 * factor)
+                .collect()
+        } else {
+            let below_one = f64::from_bits(1.0_f64.to_bits() - 1);
+            self.state
+                .iter()
+                .map(|&value| ((value as f64) * factor).min(below_one))
+                .collect()
+        }
+    }
+
+    /// Generate the next `n` points as a contiguous row-major buffer.
+    ///
+    /// ## Parameters and conventions
+    ///
+    /// `n` is the number of points; each point has [`Sobol::dimensions`]
+    /// coordinates. This consumes the same points as [`Sobol::random`].
+    /// `random_flat(0)` returns an empty vector without advancing the engine.
+    ///
+    /// ## Returns
+    ///
+    /// A single `Vec<f64>` of length `n * dimensions()`, with coordinate
+    /// `(row, axis)` at `values[row * dimensions() + axis]`. No per-row vectors
+    /// are allocated.
+    ///
+    /// ## Errors
+    ///
+    /// Returns [`Error::InvalidInput`] if `n * dimensions()` overflows or
+    /// exceeds 1,048,576 values, or if the batch would exceed `2^bits` points.
+    /// On error, the engine state is unchanged.
+    ///
+    /// ## Numerical behavior
+    ///
+    /// Produces bitwise-identical coordinates and advances state identically
+    /// to [`Sobol::random`], including rounding and clamping for high bit
+    /// depths. Time and output memory are `O(n * dimensions())`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sci_stats::qmc::Sobol;
+    /// let mut sampler = Sobol::new(2, 30)?;
+    /// assert_eq!(sampler.random_flat(2)?, vec![0.0, 0.0, 0.5, 0.5]);
+    /// # Ok::<(), sci_core::Error>(())
+    /// ```
+    pub fn random_flat(&mut self, n: usize) -> Result<Vec<f64>> {
+        let mut points = Vec::new();
+        self.random_flat_into(n, &mut points)?;
+        Ok(points)
+    }
+
+    /// Generate row-major points into a reusable output buffer.
+    ///
+    /// Existing buffer contents are replaced. An invalid request preserves
+    /// both the generator state and the caller's buffer. Reusing a buffer
+    /// avoids allocating storage for every consecutive batch.
+    pub fn random_flat_into(&mut self, n: usize, points: &mut Vec<f64>) -> Result<()> {
+        let d = self.dimensions();
+        self.check_batch(n, d)?;
+        let factor = 2_f64.powi(-(self.bits as i32));
+        let below_one = f64::from_bits(1.0_f64.to_bits() - 1);
+        let clamp = self.bits > 53;
+        let end = self.generated + n as u128;
+        let transitions = n - usize::from(n != 0 && end == self.maximum());
+        let mut index = self.generated as u64;
+        points.resize(n * d, 0.0);
+        let write_row = |row: &mut [f64], state: &[u64]| {
+            if clamp {
+                for (coordinate, &value) in row.iter_mut().zip(state) {
+                    *coordinate = ((value as f64) * factor).min(below_one);
+                }
+            } else {
+                for (coordinate, &value) in row.iter_mut().zip(state) {
+                    *coordinate = (value as f64) * factor;
+                }
+            }
+        };
+        let mut rows = points.chunks_exact_mut(d);
+        for row in rows.by_ref().take(transitions) {
+            write_row(row, &self.state);
+            index = index.wrapping_add(1);
+            let offset = index.trailing_zeros() as usize * d;
+            for (value, &direction) in self
+                .state
+                .iter_mut()
+                .zip(&self.directions[offset..offset + d])
+            {
+                *value ^= direction;
+            }
+        }
+        if let Some(row) = rows.next() {
+            write_row(row, &self.state);
+        }
+        self.generated = end;
+        Ok(())
     }
 
     /// Generate `2^m` points while preserving base-two design balance.
@@ -302,8 +419,8 @@ impl Sobol {
     ///
     /// ## Numerical behavior
     ///
-    /// The next point is reconstructed from its binary Gray code in `O(d bits)`;
-    /// this gives the same result as drawing and discarding `n` points.
+    /// The next point is computed by XORing the directions for changed Gray-code
+    /// bits; this takes O(d * popcount(delta)) work and preserves exact outputs.
     pub fn fast_forward(&mut self, n: usize) -> Result<()> {
         let end = self.generated + n as u128;
         if end > self.maximum() {
@@ -311,21 +428,26 @@ impl Sobol {
                 "Sobol sequence exhausted at 2^bits points",
             ));
         }
-        self.generated = end;
         if end == self.maximum() {
+            self.generated = end;
             return Ok(());
         }
-        let gray = end ^ (end >> 1);
-        for ((value, shift), directions) in
-            self.state.iter_mut().zip(&self.shift).zip(&self.directions)
-        {
-            *value = *shift;
-            for (bit, &direction) in directions.iter().enumerate() {
-                if (gray >> bit) & 1 != 0 {
-                    *value ^= direction;
-                }
+        let old_gray = self.generated ^ (self.generated >> 1);
+        let new_gray = end ^ (end >> 1);
+        let d = self.dimensions();
+        let mut changed = old_gray ^ new_gray;
+        while changed != 0 {
+            let offset = changed.trailing_zeros() as usize * d;
+            for (value, &direction) in self
+                .state
+                .iter_mut()
+                .zip(&self.directions[offset..offset + d])
+            {
+                *value ^= direction;
             }
+            changed &= changed - 1;
         }
+        self.generated = end;
         Ok(())
     }
 
@@ -335,6 +457,19 @@ impl Sobol {
     pub fn reset(&mut self) {
         self.state.clone_from(&self.shift);
         self.generated = 0;
+    }
+
+    #[inline]
+    fn check_batch(&self, n: usize, d: usize) -> Result<()> {
+        if n.checked_mul(d).is_none_or(|v| v > MAX_OUTPUT_VALUES) {
+            return Err(Error::InvalidInput("Sobol batch exceeds 1048576 values"));
+        }
+        if self.generated + n as u128 > self.maximum() {
+            return Err(Error::InvalidInput(
+                "Sobol sequence exhausted at 2^bits points",
+            ));
+        }
+        Ok(())
     }
 
     fn maximum(&self) -> u128 {
