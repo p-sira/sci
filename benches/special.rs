@@ -555,6 +555,11 @@ mod combinatorics_benches {
     }
 
     #[divan::bench]
+    fn stirling2_boundary(bencher: Bencher) {
+        bencher.bench(|| special::combinatorics::stirling2(black_box(1024), black_box(1023)));
+    }
+
+    #[divan::bench]
     fn bernoulli(bencher: Bencher) {
         bencher.bench(|| special::combinatorics::bernoulli(black_box(64)).unwrap());
     }
@@ -577,6 +582,32 @@ mod combinatorics_benches {
     fn gen_harmonic(bencher: Bencher) {
         bencher.bench(|| {
             special::combinatorics::gen_harmonic(black_box(1000), black_box(1.5)).unwrap()
+        });
+    }
+
+    #[divan::bench]
+    fn normalized_gen_harmonic_full(bencher: Bencher) {
+        bencher.bench(|| {
+            special::combinatorics::normalized_gen_harmonic(
+                black_box(1),
+                black_box(1_000_000),
+                black_box(1_000_000),
+                black_box(1.5_f64),
+            )
+            .unwrap()
+        });
+    }
+
+    #[divan::bench]
+    fn normalized_gen_harmonic_uniform(bencher: Bencher) {
+        bencher.bench(|| {
+            special::combinatorics::normalized_gen_harmonic(
+                black_box(123),
+                black_box(456_789),
+                black_box(1_000_000),
+                black_box(0.0_f64),
+            )
+            .unwrap()
         });
     }
 
