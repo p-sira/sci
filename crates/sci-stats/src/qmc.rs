@@ -1,5 +1,23 @@
-//! Uniformity measures and scaling for supplied quasi-Monte Carlo samples.
+//! Sobol sequence generation, uniformity measures, and quasi-Monte Carlo scaling.
 use super::*;
+
+mod engine;
+pub use engine::QmcEngine;
+
+mod halton;
+pub use halton::Halton;
+
+mod latin_hypercube;
+pub use latin_hypercube::LatinHypercube;
+
+mod poisson_disk;
+pub use poisson_disk::{PoissonDisk, PoissonDiskHypersphere};
+
+mod sobol;
+pub use sobol::Sobol;
+
+mod transforms;
+pub use transforms::{MultinomialQMC, MultivariateNormalQMC};
 
 /// Quadrature discrepancy convention.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -325,22 +343,24 @@ pub fn geometric_discrepancy(points: &[Vec<f64>], method: GeometricDiscrepancy) 
     let d = unit(points, 2)?;
     let n = points.len();
     quadratic_work(n, d)?;
-    let distance = |i: usize, j: usize| {
+    let distance_squared = |i: usize, j: usize| {
         points[i]
             .iter()
             .zip(&points[j])
-            .map(|(a, b)| (a - b).powi(2))
+            .map(|(a, b)| {
+                let delta = a - b;
+                delta * delta
+            })
             .sum::<f64>()
-            .sqrt()
     };
     if matches!(method, GeometricDiscrepancy::MinimumDistance) {
         let mut min = f64::INFINITY;
         for i in 0..n {
             for j in 0..i {
-                min = min.min(distance(i, j));
+                min = min.min(distance_squared(i, j));
             }
         }
-        return Ok(min);
+        return Ok(min.sqrt());
     }
     let mut used = vec![false; n];
     let mut best = vec![f64::INFINITY; n];
@@ -352,10 +372,10 @@ pub fn geometric_discrepancy(points: &[Vec<f64>], method: GeometricDiscrepancy) 
             .min_by(|&i, &j| best[i].total_cmp(&best[j]))
             .unwrap();
         used[i] = true;
-        total += best[i];
+        total += best[i].sqrt();
         for j in 0..n {
             if !used[j] {
-                let length = distance(i, j);
+                let length = distance_squared(i, j);
                 if length == 0. {
                     return Err(Error::InvalidInput("MST sample points must be distinct"));
                 }

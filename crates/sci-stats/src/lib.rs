@@ -159,8 +159,11 @@ pub mod ranking {
     };
 }
 
-/// Quasi-Monte Carlo discrepancy and coordinate scaling.
+/// Quasi-Monte Carlo sampling engines, discrepancy and coordinate scaling.
 pub use implementation::qmc;
+
+/// Discrete, inverse-transform and rejection-based random sampling engines.
+pub use implementation::sampling;
 
 /// Linear and robust regression estimators.
 pub mod regression {

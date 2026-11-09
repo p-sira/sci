@@ -12,10 +12,11 @@ repository = "https://github.com/p-sira/sci"
 categories = ["algorithms", "mathematics", "science"]
 keywords = ["statistics", "probability", "distributions", "numerics", "data-analysis"]
 readme = false
-include = ["/src/**", "/LICENSE", "/SCIPY_LICENSE.txt"]
+include = ["/src/**", "/LICENSE", "/SCIPY_LICENSE.txt", "/JOE_KUO_LICENSE.txt"]
 
 [dependencies]
 numeric_literals.workspace = true
+rand.workspace = true
 sci-core.workspace = true
 sci-special.workspace = true
 nalgebra.workspace = true

@@ -1712,6 +1712,7 @@ dependencies = [
  "nalgebra",
  "ndarray 0.16.1",
  "numeric_literals",
+ "rand 0.9.5",
  "sci-complex",
  "sci-core",
  "sci-fft",

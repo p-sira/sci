@@ -453,8 +453,11 @@ fn median_select_in_place<T: Float>(values: &mut [T]) -> T {
 pub mod contingency;
 pub use contingency::chi2_contingency;
 
-/// Quasi-Monte Carlo discrepancy and coordinate scaling.
+/// Quasi-Monte Carlo sampling engines, discrepancy and coordinate scaling.
 pub mod qmc;
+
+/// Discrete, inverse-transform and rejection-based random sampling engines.
+pub mod sampling;
 
 mod extras;
 pub use extras::*;

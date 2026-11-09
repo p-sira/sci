@@ -3,15 +3,22 @@
 Native implementations use private statrs 0.19.1, Basin 1.15.1, nalgebra 0.35,
 shared Sci special functions and lapjv 0.3.0 backends. Shapiro and Tukey use
 private adaptations of BSD-licensed SciPy algorithms and mixture integrals;
-the retained license is `crates/sci-stats/SCIPY_LICENSE.txt`. No Python runtime is used. **The Rust API intentionally omits scalar standard-library wrappers. Full SciPy
+the retained license is `crates/sci-stats/SCIPY_LICENSE.txt`. The Sobol direction
+table also retains the Joe–Kuo license in `crates/sci-stats/JOE_KUO_LICENSE.txt`.
+No Python runtime is used. **The Rust API intentionally omits scalar standard-library wrappers. Full SciPy
 statistics parity is not complete.** The audit against `SCIPY_FUNCTIONS.md` and
 `scipy-func-list/scipy.stats.md` covers **133 of 137 scipy.stats function names**,
 all **7 contingency names**, and all **4 QMC utility function names**.
+The QMC namespace additionally exposes six concrete sampling engines plus a
+shared `QmcEngine` trait. The sampling namespace provides eight distribution
+engines; SciPy's ninth listed class, `UNURANError`, is an exception type and
+uses the shared `sci_core::Error` instead.
 Distribution coverage is **30 of 149 callable families** with evaluation methods;
 this does not claim their entire object-oriented SciPy method surface.
 
 The coverage audit fails for exported functions without committed reference
-cases and checks explicit main-namespace inventory dispositions. `abs`, `exp`,
+cases, checks sampling engine types against the SciPy class inventories, and
+checks explicit main-namespace inventory dispositions. `abs`, `exp`,
 and `log` are intentionally omitted in favor of `f64` methods. `kstest` is removed; use
 `ks_1samp` or `ks_2samp` explicitly. There are no placeholder
 exports. Run `python tests/scipy/audit_statistics.py` to reproduce the counts.
@@ -61,6 +68,84 @@ Statrs 0.19.1 additions used by Sci:
   tests, three association coefficients, sample odds ratio, relative risk, crosstabs.
 - All four QMC discrepancy measures, centered discrepancy updates, affine scaling,
   minimum Euclidean separation and mean Euclidean minimum-spanning-tree edge length.
+
+## QMC and random sampling engines
+
+The `sci_stats::qmc` module supports the six concrete engine families listed in
+SciPy's `scipy.stats.qmc` inventory, through Rust-specific constructors and
+explicitly bounded stateful methods:
+
+- `Sobol`: the complete 21,201-dimensional Joe–Kuo D(6) direction-number table,
+  1–64 binary digits, optional seeded LMS+shift scrambling, arbitrary batches,
+  balanced `random_base2`, logarithmic `fast_forward` and `reset`. A batch has
+  at most 1,048,576 coordinates. Unscrambled values match the pinned SciPy
+  reference; different seeds and RNGs mean scrambled points need not match.
+  At more than 53 bits distinct fixed-point states can round to the same `f64`.
+- `Halton`: the first 512 prime bases, optionally permuted independently by
+  digit position, with seeded `StdRng`, `random`, constant-time `fast_forward`
+  and `reset`. Unscrambled points match SciPy 1.18.1 reference fixtures.
+- `LatinHypercube`: independently randomized or centered strength-one designs
+  with one sample per coordinate stratum. Each `random(n)` call produces a
+  separate balanced design; `fast_forward(n)` consumes the corresponding RNG
+  work. Strength-two orthogonal arrays and SciPy's optimization passes are
+  omitted. The output is limited to 1,048,576 coordinate values.
+- `PoissonDisk`: bounded seeded Bridson sampling in 1–4 dimensions with a
+  minimum radius of 1e-12, configurable candidate count and shell/surface
+  trials, plus `fill_space`, `fast_forward` and `reset`. At most 16,384 points,
+  131,072 candidate proposals and 16,777,216 grid probes are considered.
+  Exhaustion can return fewer rows than requested. `is_exhausted` reports
+  either geometric exhaustion or a work cap; it does not distinguish them.
+- `MultivariateNormalQMC`: a 30-bit Sobol-driven clipped inverse-normal
+  transform in at most 64 dimensions, with optional positive-semidefinite
+  covariance factorization. The clipping gives finite normal quantiles at the
+  Sobol origin and truncates the farthest mathematical tails.
+- `MultinomialQMC`: cumulative inverse-CDF categories from a 30-bit 1D Sobol
+  stream, with at most 64 categories and 1,048,576 trials per batch. The
+  half-open categorical intervals preserve zero-mass categories, including at
+  exact boundaries; this differs from SciPy's tie convention.
+
+The public `QmcEngine` trait provides common `random`, `fast_forward`, `reset`,
+`dimensions`, `num_generated` and integer-interval sampling for unit-cube
+engines. The trait is not used for normal-valued or integer-count transforms.
+
+The `sci_stats::sampling` module provides eight named mathematical sampling
+families, organized by discrete, inverse-transform and rejection algorithms:
+
+- `DiscreteAliasUrn`: Walker–Vose alias tables for up to 1,048,576 weighted
+  categories, with O(1) draws after O(k) setup. `DiscreteGuideTable` supplies
+  cumulative inverse-CDF sampling and `ppf` with a guide table. Nonnegative
+  finite weights are scaled to avoid summation overflow; all-zero weights are
+  invalid. Guide quantiles at 0 and 1 return the effective support endpoints
+  instead of SciPy's `-1`/trailing-zero edge behavior.
+- `FastGeneratorInversion`: inverse-transform sampling through Sci's existing
+  native continuous-distribution `ppf`, with `cdf`, `support`, `qrvs`, `rvs`
+  and measured probability residuals. SciPy uses a precomputed UNU.RAN generator;
+  this adaptation evaluates the native quantile for each draw.
+- `NumericalInverseHermite` and `NumericalInversePolynomial`: adaptive monotone
+  cubic-Hermite and piecewise-linear inverse-CDF tables respectively, each
+  conditioned on caller-supplied finite bounds containing positive probability
+  mass. Constructors enforce a tested probability residual, at most 8,192
+  knots, 64 refinement passes and 96 bisections per knot. SciPy's underlying
+  Hermite and higher-degree UNU.RAN interpolation methods, unbounded domains
+  and automatic shape/distribution fitting are not reproduced. The requested
+  residual checks a finite grid and is not a rigorous global error guarantee.
+- `RatioUniforms`: seeded ratio-of-uniforms sampling from a caller-certified
+  enclosing rectangle and fallible unnormalized density. `SimpleRatioUniforms`
+  derives a valid enclosing rectangle from a finite support and a caller-certified
+  global PDF upper bound. `TransformedDensityRejection` builds adaptive
+  exponential tangent envelopes for finite-support differentiable log-concave
+  densities (the c=0 transformation). General SciPy SROU/TDR algorithms for
+  unbounded T-concave families and automatic envelope certification are omitted.
+  Rejection work is bounded at 16,777,216 proposals per call.
+
+All random engines use a private `rand` 0.9 `StdRng` or the deterministic Sobol
+digital stream. Explicit seeds reproduce Rust streams but do not promise the
+same random values as SciPy's NumPy generator. A draw batch is limited to
+1,048,576 outputs or coordinate values as documented; invalid domains, memory
+limits, and failure to converge produce errors. Checked-in SciPy 1.18.1 / NumPy
+2.5.4 fixtures cover unscrambled Sobol and Halton sequences, alongside property
+tests for stratification, inverse-CDF accuracy, categorical probabilities,
+rejection moments, covariance, separation distances and reset/skip behavior.
 
 ## Backend use for the preceding native rank/normality group
 
@@ -145,7 +230,7 @@ The additional 36 supported signatures complete main-namespace coverage from
   explicit ties and singleton behavior. Linear singleton equality is NaN.
 - `sobol_indices`, `power`: scalar Saltelli 2010 indices from supplied A/B/hybrid
   evaluations and rejection fractions from fallible tests on supplied alternative
-  draws. Multi-output sensitivity, sampling engines, bootstrap result objects,
+  draws. Multi-output sensitivity, bootstrap result objects,
   vectorization and sample-size grids are absent.
 - `shapiro`, `tukey_hsd`: private SciPy-based AS R94 and studentized-range algorithms.
   Shapiro accepts 3..=5000 samples after shared shifted/scaled normalization;
@@ -206,7 +291,9 @@ Supported SciPy families are:
 Joint density/log-density functions cover `multivariate_normal`, `multivariate_t`,
 `dirichlet` (interior simplex only), and `multinomial` (mass/log-mass). Categorical
 mass/CDF is an additional arbitrary-weight helper. Shared normal functions retain
-their original signatures. Automatic random sampling, generic distribution fitting, distribution expectations,
+their original signatures. The new `sampling::FastGeneratorInversion` provides
+seeded draws from supported continuous laws; distribution variants do not expose
+their own `rvs`. Generic distribution fitting, distribution expectations,
 confidence-interval object methods, generic moments, frozen distributions, and
 other distribution families are unsupported. Integer uniform uses exclusive high;
 gamma/exponential/Erlang use scale, converted to statrs rate; lognormal uses
@@ -221,8 +308,10 @@ the backend. Multivariate matrices use one Vec per row, interoperable with algeb
   supported permutation/resampling signatures are described above.
   NaN and infinity observations are rejected; scalar distribution observations
   may be infinite. Undefined constant-sample statistics preserve documented NaNs.
-- Observation slices are bounded by 1,048,576; moment powers by 64; multivariate/QMC
-  dimensions by 64; binning dimensions by 16; pairwise QMC work by 16,777,216.
+- Observation slices are bounded by 1,048,576; moment powers by 64;
+  multivariate/QMC discrepancy dimensions by 64; binning dimensions by 16;
+  pairwise QMC work by 16,777,216. New sampling-engine dimension limits differ
+  by algorithm and are listed in the QMC/sampling section above.
   Distribution shapes/counts are capped at 1,048,576. Fisher/binomial exact tests
   and hypergeometric population are capped at 65,536. Sigma clipping has 128 passes,
   expectiles at most 21 balance evaluations after sorting, continuous quantiles at most 6144 bounded
@@ -336,7 +425,9 @@ The 31 mstats-only function names, all masked-input behavior and compatibility
 aliases of mask-only functions remain unsupported. Of 73 mstats names, 42 share
 unmasked canonical algorithms; this is not a claim of masked-array support.
 The other 120 callable distribution families, generic distribution methods,
-QMC/sampling engines and SciPy class APIs remain gaps. The coverage audit prints
+and unadapted SciPy class methods remain gaps. The six concrete QMC and eight
+sampling engines described above cover their mathematical generator families,
+with deliberately narrower parameters and methods. The coverage audit prints
 these distinct totals, so function-name completion cannot imply full distribution
 or namespace parity. Unsupported overloads and numerical work/accuracy limits
 are documented with each public function and summarized above.
