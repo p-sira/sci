@@ -447,7 +447,26 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
             op,
         )?,
         Distribution::Exponential { scale } => {
-            continuous(&make(Exp::new(reciprocal(scale)?))?, x, op)?
+            let d = make(Exp::new(reciprocal(scale)?))?;
+            if matches!(op, Operation::Ppf) {
+                // statrs provides the analytic inverse using ln_1p, avoiding
+                // dozens of CDF evaluations and preserving small probabilities.
+                // Retain the existing support endpoints and finite-interior rule.
+                if x == 0. {
+                    0.
+                } else if x == 1. {
+                    f64::INFINITY
+                } else {
+                    match d.inverse_cdf(x) {
+                        value if value.is_finite() => value,
+                        _ => {
+                            return Err(Error::NumericalFailure("quantile outside finite range"));
+                        }
+                    }
+                }
+            } else {
+                continuous(&d, x, op)?
+            }
         }
         Distribution::Cauchy { location, scale } => continuous(
             &{
@@ -1110,4 +1129,27 @@ pub fn sf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 /// [SciPy distributions](https://docs.scipy.org/doc/scipy/reference/stats.html).
 pub fn ppf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
     composition::evaluate(distribution.into(), x, Operation::Ppf)
+}
+
+#[cfg(test)]
+mod exponential_quantile_tests {
+    use super::*;
+
+    #[test]
+    fn analytic_exponential_quantiles_preserve_tails_and_endpoints() {
+        for scale in [1e-200, 1.0, 1e200] {
+            let distribution = Distribution::Exponential { scale };
+            assert_eq!(ppf(distribution, 0.0).unwrap(), 0.0);
+            assert_eq!(ppf(distribution, 1.0).unwrap(), f64::INFINITY);
+            let tiny = ppf(distribution, 1e-20).unwrap();
+            assert!((tiny / scale / 1e-20 - 1.0).abs() < 1e-13);
+            for probability in [0.01, 0.25, 0.5, 0.9, 1.0 - 1e-12] {
+                let x = ppf(distribution, probability).unwrap();
+                assert!(x.is_finite());
+                assert!((cdf(distribution, x).unwrap() - probability).abs() < 1e-14);
+            }
+        }
+        assert!(ppf(Distribution::Exponential { scale: 1e308 }, 0.99).is_err());
+        assert!(ppf(Distribution::Exponential { scale: 0.0 }, 0.5).is_err());
+    }
 }

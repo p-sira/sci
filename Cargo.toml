@@ -390,6 +390,11 @@ harness = false
 required-features = ["stats"]
 
 [[bench]]
+name = "stats_scipy_comparison"
+harness = false
+required-features = ["stats"]
+
+[[bench]]
 name = "sampling_engines"
 harness = false
 required-features = ["stats"]

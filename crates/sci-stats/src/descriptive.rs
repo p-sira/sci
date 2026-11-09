@@ -177,7 +177,8 @@ pub fn variation<T: Float>(values: &[T], ddof: usize) -> Result<T> {
 ///
 /// ## Numerical behavior
 ///
-/// Sorting takes O(n log n) work; convex interpolation avoids subtracting distant endpoints.
+/// Selection takes expected O(n) work with O(n) scratch memory. Already ordered
+/// inputs are evaluated directly. Convex interpolation avoids subtracting distant endpoints.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -192,8 +193,54 @@ pub fn variation<T: Float>(values: &[T], ddof: usize) -> Result<T> {
 /// [SciPy `quantile`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.quantile.html).
 pub fn quantile<T: Float>(values: &[T], probability: T) -> Result<T> {
     probability_check(probability)?;
-    let x = sorted(values)?;
-    Ok(interpolate(&x, probability))
+    sample(values, 1)?;
+    // The same total order as sorted() distinguishes -0 from +0.
+    // Monotone samples are common and need no allocation or selection.
+    if values
+        .windows(2)
+        .all(|pair| total_cmp(&pair[0], &pair[1]).is_le())
+    {
+        return Ok(interpolate(values, probability));
+    }
+    if values
+        .windows(2)
+        .all(|pair| total_cmp(&pair[0], &pair[1]).is_ge())
+    {
+        let h = T::from(values.len() - 1).unwrap() * probability;
+        let i = h.floor().to_usize().unwrap();
+        let j = h.ceil().to_usize().unwrap();
+        if i == j {
+            return Ok(values[values.len() - 1 - i]);
+        }
+        let f = h - T::from(i).unwrap();
+        return Ok((T::from(1.).unwrap() - f) * values[values.len() - 1 - i]
+            + f * values[values.len() - 1 - j]);
+    }
+    let mut scratch = values.to_vec();
+    Ok(quantile_select_in_place(&mut scratch, probability))
+}
+
+/// Quantile of a nonempty, finite scratch slice. Keep exactly interpolate()'s
+/// index calculation and convex arithmetic, but select only the two neighbors.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn quantile_select_in_place<T: Float>(values: &mut [T], probability: T) -> T {
+    let h = T::from(values.len() - 1).unwrap() * probability;
+    let i = h.floor().to_usize().unwrap();
+    let j = h.ceil().to_usize().unwrap();
+    if i == j {
+        return *values.select_nth_unstable_by(i, total_cmp).1;
+    }
+    // The adjacent neighbor is an extremum of the smaller partition.
+    // Scanning it is cheaper than a second partitioning pass.
+    let (lower, upper) = if j < values.len() - i {
+        let (prefix, selected, _) = values.select_nth_unstable_by(j, total_cmp);
+        (prefix.iter().copied().max_by(total_cmp).unwrap(), *selected)
+    } else {
+        let (_, selected, suffix) = values.select_nth_unstable_by(i, total_cmp);
+        (*selected, suffix.iter().copied().min_by(total_cmp).unwrap())
+    };
+    let f = h - T::from(i).unwrap();
+    (1. - f) * lower + f * upper
 }
 
 /// Sample percentile `quantile(x, percentile/100)`.
@@ -363,11 +410,14 @@ pub fn iqr<T: Float>(values: &[T]) -> Result<T> {
 pub fn median_abs_deviation<T: Float>(values: &[T], scale: T) -> Result<T> {
     positive(scale)?;
     let center = median(values)?;
-    let distances = values
+    let mut distances = values
         .iter()
         .map(|&x| (x - center).abs())
         .collect::<Vec<_>>();
-    match median(&distances)? / scale {
+    // The deviations are owned scratch storage. Select their median in place
+    // rather than making a second copy inside median().
+    sample(&distances, 1)?;
+    match median_select_in_place(&mut distances) / scale {
         value if value.is_finite() => Ok(value),
         _ => Err(crate::Error::NonFiniteEvaluation),
     }
@@ -639,15 +689,20 @@ pub fn moment<T: Float>(values: &[T], order: usize) -> Result<T> {
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn skew<T: Float>(values: &[T], bias: bool) -> Result<T> {
     let (n, m2, m3, _) = standardized_moments(values)?;
+    Ok(skew_from_moments(n, m2, m3, bias))
+}
+
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn skew_from_moments<T: Float>(n: T, m2: T, m3: T, bias: bool) -> T {
     if m2 == 0. {
-        return Ok(T::nan());
+        return T::nan();
     }
     let g = m3 / m2.powf(1.5);
-    Ok(if !bias && n > 2. {
+    if !bias && n > 2. {
         g * (n * (n - 1.)).sqrt() / (n - 2.)
     } else {
         g
-    })
+    }
 }
 
 /// Kurtosis `m₄/m₂²`; Fisher excess subtracts three.
@@ -688,14 +743,19 @@ pub fn skew<T: Float>(values: &[T], bias: bool) -> Result<T> {
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn kurtosis<T: Float>(values: &[T], fisher: bool, bias: bool) -> Result<T> {
     let (n, m2, _, m4) = standardized_moments(values)?;
+    Ok(kurtosis_from_moments(n, m2, m4, fisher, bias))
+}
+
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn kurtosis_from_moments<T: Float>(n: T, m2: T, m4: T, fisher: bool, bias: bool) -> T {
     if m2 == 0. {
-        return Ok(T::nan());
+        return T::nan();
     }
     let mut k = m4 / (m2 * m2);
     if !bias && n > 3. {
         k = ((n * n - 1.) * k - 3. * (n - 1.).powi(2)) / ((n - 2.) * (n - 3.)) + 3.;
     }
-    Ok(if fisher { k - 3. } else { k })
+    if fisher { k - 3. } else { k }
 }
 
 /// Standardized scores `z_i=(x_i−mean(x))/std(x,ddof)`.
@@ -1058,15 +1118,191 @@ pub fn mode<T: Float>(values: &[T]) -> Result<(T, usize)> {
 /// [SciPy `describe`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.describe.html).
 pub fn describe<T: Float>(values: &[T], ddof: usize, bias: bool) -> Result<Description<T>> {
     sample(values, 1)?;
+    let min = values.iter().copied().fold(T::infinity(), T::min);
+    let max = values.iter().copied().fold(T::neg_infinity(), T::max);
+    let mean = mean(values)?;
+    let variance = variance(values, ddof)?;
+    // Skewness and kurtosis require the same three standardized moments.
+    // Reuse their common calculation without changing either formula.
+    let (n, m2, m3, m4) = standardized_moments(values)?;
     Ok(Description {
         count: values.len(),
-        min: values.iter().copied().fold(T::infinity(), T::min),
-        max: values.iter().copied().fold(T::neg_infinity(), T::max),
-        mean: mean(values)?,
-        variance: variance(values, ddof)?,
-        skewness: skew(values, bias)?,
-        kurtosis: kurtosis(values, true, bias)?,
+        min,
+        max,
+        mean,
+        variance,
+        skewness: skew_from_moments(n, m2, m3, bias),
+        kurtosis: kurtosis_from_moments(n, m2, m4, true, bias),
     })
+}
+
+#[cfg(test)]
+mod quantile_selection_tests {
+    use super::*;
+
+    fn check<T: Float>(values: &[T], probabilities: &[T]) {
+        let input_bits: Vec<_> = values
+            .iter()
+            .map(|v| v.to_f64().unwrap().to_bits())
+            .collect();
+        let mut reference = values.to_vec();
+        reference.sort_by(total_cmp);
+        for &p in probabilities {
+            let expected = interpolate(&reference, p).to_f64().unwrap().to_bits();
+            let actual = quantile(values, p).unwrap().to_f64().unwrap().to_bits();
+            assert_eq!(actual, expected, "n={}, p={:?}", values.len(), p.to_f64());
+
+            // Exercise the selection path even when the public API recognizes
+            // already sorted input and skips partitioning.
+            let mut scratch = values.to_vec();
+            let selected = quantile_select_in_place(&mut scratch, p)
+                .to_f64()
+                .unwrap()
+                .to_bits();
+            assert_eq!(
+                selected,
+                expected,
+                "selection n={}, p={:?}",
+                values.len(),
+                p.to_f64()
+            );
+        }
+        assert_eq!(
+            values
+                .iter()
+                .map(|v| v.to_f64().unwrap().to_bits())
+                .collect::<Vec<_>>(),
+            input_bits,
+            "quantile must leave its input unchanged"
+        );
+    }
+
+    #[test]
+    fn quantile_selection_matches_sorted_bits_f64() {
+        let probabilities = [
+            -0.0,
+            0.0,
+            f64::from_bits(1),
+            f64::EPSILON,
+            0.001,
+            0.1,
+            0.3,
+            0.5,
+            0.7,
+            0.9,
+            0.999,
+            f64::from_bits(1.0_f64.to_bits() - 1),
+            1.0,
+        ];
+        for values in [
+            vec![-0.0],
+            vec![0.0, -0.0],
+            vec![-0.0, 0.0, -0.0, 0.0],
+            vec![f64::MIN_POSITIVE, f64::from_bits(1)],
+            vec![-f64::MAX, -1.0, -0.0, 0.0, 1.0, f64::MAX],
+            vec![-f64::MAX, f64::MAX],
+            vec![f64::MAX, f64::MAX],
+            vec![3.0; 17],
+        ] {
+            check(&values, &probabilities);
+        }
+        for n in 1..=128 {
+            let mut values = (0..n)
+                .map(|i| ((i * 37 + 11) % 23) as f64 - 11.0)
+                .collect::<Vec<_>>();
+            check(&values, &probabilities);
+            values.sort_by(f64::total_cmp);
+            check(&values, &probabilities);
+            values.reverse();
+            check(&values, &probabilities);
+        }
+        for n in [127, 128, 255, 256, 2048, 8192] {
+            let mut state = 0x245e_91b3_82ae_99dfu64;
+            let values = (0..n)
+                .map(|_| {
+                    state ^= state << 13;
+                    state ^= state >> 7;
+                    state ^= state << 17;
+                    (state >> 11) as f64 / (1_u64 << 53) as f64
+                })
+                .collect::<Vec<_>>();
+            check(&values, &probabilities);
+        }
+    }
+
+    #[test]
+    fn quantile_selection_matches_sorted_bits_f32() {
+        let probabilities = [
+            -0.0_f32,
+            0.0,
+            f32::from_bits(1),
+            f32::EPSILON,
+            0.001,
+            0.1,
+            0.3,
+            0.5,
+            0.7,
+            0.9,
+            0.999,
+            f32::from_bits(1.0_f32.to_bits() - 1),
+            1.0,
+        ];
+        for values in [
+            vec![-0.0_f32],
+            vec![0.0_f32, -0.0],
+            vec![-0.0_f32, 0.0, -0.0, 0.0],
+            vec![f32::MIN_POSITIVE, f32::from_bits(1)],
+            vec![-f32::MAX, -1.0, -0.0, 0.0, 1.0, f32::MAX],
+            vec![-f32::MAX, f32::MAX],
+            vec![f32::MAX, f32::MAX],
+            vec![3.0_f32; 17],
+        ] {
+            check(&values, &probabilities);
+        }
+        for n in 1..=128 {
+            let mut values = (0..n)
+                .map(|i| ((i * 37 + 11) % 23) as f32 - 11.0)
+                .collect::<Vec<_>>();
+            check(&values, &probabilities);
+            values.sort_by(f32::total_cmp);
+            check(&values, &probabilities);
+            values.reverse();
+            check(&values, &probabilities);
+        }
+        for n in [127, 128, 255, 256, 2048, 8192] {
+            let mut state = 0x245e_91b3_82ae_99dfu64;
+            let values = (0..n)
+                .map(|_| {
+                    state ^= state << 13;
+                    state ^= state >> 7;
+                    ((state >> 11) as f64 / (1_u64 << 53) as f64) as f32
+                })
+                .collect::<Vec<_>>();
+            check(&values, &probabilities);
+        }
+    }
+
+    #[test]
+    fn quantile_selection_preserves_validation_and_endpoints() {
+        assert!(quantile::<f64>(&[], 0.5).is_err());
+        assert!(quantile::<f32>(&[], 0.5).is_err());
+        for invalid in [f64::NAN, f64::NEG_INFINITY, f64::INFINITY, -0.1, 1.1] {
+            assert!(quantile(&[0.0, 1.0], invalid).is_err());
+        }
+        for invalid in [f32::NAN, f32::NEG_INFINITY, f32::INFINITY, -0.1, 1.1] {
+            assert!(quantile(&[0.0_f32, 1.0], invalid).is_err());
+        }
+        for invalid in [f64::NAN, f64::NEG_INFINITY, f64::INFINITY] {
+            assert!(quantile(&[0.0, invalid], 0.3).is_err());
+        }
+        for invalid in [f32::NAN, f32::NEG_INFINITY, f32::INFINITY] {
+            assert!(quantile(&[0.0_f32, invalid], 0.3).is_err());
+        }
+        assert!(quantile(&vec![1.0_f64; MAX_SAMPLES + 1], 0.3).is_err());
+        let x: [f64; 4] = [0.0, -0.0, -1.0, 1.0];
+        assert_eq!(quantile(&x, 0.0).unwrap().to_bits(), (-1.0_f64).to_bits());
+        assert_eq!(quantile(&x, 1.0).unwrap().to_bits(), 1.0_f64.to_bits());
+    }
 }
 
 #[cfg(test)]
@@ -1168,5 +1404,98 @@ mod median_selection_tests {
             assert!(median(&[0.0_f32, invalid]).is_err());
         }
         assert!(median(&vec![1.0_f64; MAX_SAMPLES + 1]).is_err());
+    }
+}
+
+#[cfg(test)]
+mod shared_moments_tests {
+    use super::*;
+
+    fn assert_same_float<T: Float>(actual: T, expected: T) {
+        if expected.is_nan() {
+            assert!(actual.is_nan());
+        } else {
+            // f32 and f64 convert to f64 exactly, including signed zero.
+            assert_eq!(
+                actual.to_f64().unwrap().to_bits(),
+                expected.to_f64().unwrap().to_bits()
+            );
+        }
+    }
+
+    fn check_description<T: Float>(values: &[T]) {
+        for ddof in [0, 1] {
+            if ddof >= values.len() {
+                continue;
+            }
+            for bias in [false, true] {
+                let summary = describe(values, ddof, bias).unwrap();
+                assert_eq!(summary.count, values.len());
+                assert_same_float(summary.mean, mean(values).unwrap());
+                assert_same_float(summary.variance, variance(values, ddof).unwrap());
+                assert_same_float(summary.skewness, skew(values, bias).unwrap());
+                assert_same_float(summary.kurtosis, kurtosis(values, true, bias).unwrap());
+            }
+        }
+    }
+
+    #[test]
+    fn describe_reused_moments_match_separate_statistics_bitwise() {
+        for values in [
+            vec![0.0_f64],
+            vec![-0.0, 0.0, -0.0, 0.0],
+            vec![2.0, 2.0, 2.0, 2.0],
+            vec![-11.0, -3.0, 0.0, 4.0, 5.0, 100.0],
+            vec![1e-100, 3e-100, 2e-100, 1e-100],
+            vec![-1e150, -1e100, 3e100, 1e150],
+        ] {
+            check_description(&values);
+        }
+        for values in [
+            vec![0.0_f32],
+            vec![-0.0_f32, 0.0, -0.0, 0.0],
+            vec![3.0_f32; 5],
+            vec![-11.0_f32, -3.0, 0.0, 4.0, 5.0, 100.0],
+            vec![1e-15_f32, 3e-15, 2e-15, 1e-15],
+            vec![-1e15_f32, -1e10, 3e10, 1e15],
+        ] {
+            check_description(&values);
+        }
+        assert!(describe::<f64>(&[], 0, false).is_err());
+        assert!(describe(&[1.0, 2.0], 2, true).is_err());
+        assert!(describe(&[1.0, f64::NAN], 0, false).is_err());
+    }
+
+    #[test]
+    fn mad_in_place_matches_previous_double_copy_selection() {
+        for values in [
+            vec![-0.0_f64],
+            vec![-0.0, 0.0, -0.0, 0.0],
+            vec![1.0, 1.0, 1.0],
+            vec![9.0, 1.0, 3.0, 1.0, -1.0],
+            vec![-100.0, -3.0, 0.0, 4.0, 75.0, 200.0],
+            vec![1e-120, -1e-120, 2e-120, 3e-120],
+        ] {
+            let center = median(&values).unwrap();
+            let distances = values
+                .iter()
+                .map(|&x| (x - center).abs())
+                .collect::<Vec<_>>();
+            for scale in [0.5, 1.0, 1.4826] {
+                let expected = median(&distances).unwrap() / scale;
+                let actual = median_abs_deviation(&values, scale).unwrap();
+                assert_eq!(actual.to_bits(), expected.to_bits());
+            }
+        }
+        let values = [-0.0_f32, 0.0, -4.0, 2.0, 6.0];
+        let center = median(&values).unwrap();
+        let distances = values.map(|x| (x - center).abs());
+        assert_eq!(
+            median_abs_deviation(&values, 1.0_f32).unwrap().to_bits(),
+            median(&distances).unwrap().to_bits()
+        );
+        assert!(median_abs_deviation(&[-f64::MAX, f64::MAX, f64::MAX], 1.0).is_err());
+        assert!(median_abs_deviation(&[1.0, f64::NAN], 1.0).is_err());
+        assert!(median_abs_deviation(&[1.0], 0.0).is_err());
     }
 }

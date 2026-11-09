@@ -61,6 +61,12 @@ mod descriptive_benches {
     }
 
     #[divan::bench]
+    fn quantile_large(bencher: Bencher) {
+        let x = values(8192, 1);
+        bencher.bench(|| stats::descriptive::quantile(black_box(&x), 0.3).unwrap());
+    }
+
+    #[divan::bench]
     fn scoreatpercentile(bencher: Bencher) {
         let x = values(N, 1);
         bencher.bench(|| stats::descriptive::scoreatpercentile(black_box(&x), 75.0).unwrap());

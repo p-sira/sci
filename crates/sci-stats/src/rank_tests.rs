@@ -40,10 +40,9 @@ pub enum KendallVariant {
 ///
 /// ## Numerical behavior
 ///
-/// Native direct pair counting uses O(n²) work and O(n) memory, capped at
-/// 8,386,560 pairs. Counts are exact within that limit. Statrs supplies normal
-/// tails. This is slower than SciPy's Fenwick-tree implementation; small
-/// samples or extensive ties can weaken asymptotic calibration.
+/// Native O(n log n) rank counting and O(n) memory, capped at 4096
+/// observations. Pair counts are exact within that limit. Statrs supplies
+/// normal tails; small samples or extensive ties can weaken calibration.
 ///
 /// ## Examples
 ///
@@ -83,20 +82,8 @@ pub fn kendalltau(
             pvalue: f64::NAN,
         });
     }
-    let mut difference = 0_i64;
-    for i in 0..x.len() {
-        for j in i + 1..x.len() {
-            if x[i] == x[j] || y[i] == y[j] {
-                continue;
-            }
-            difference += if (x[i] < x[j]) == (y[i] < y[j]) {
-                1
-            } else {
-                -1
-            };
-        }
-    }
-    let difference = difference as f64;
+    let (scores, _) = super::association::concordance_scores(x, y);
+    let difference = (scores.iter().sum::<i64>() / 2) as f64;
     let statistic = match variant {
         KendallVariant::B => difference / (total - tx.pairs).sqrt() / (total - ty.pairs).sqrt(),
         KendallVariant::C => {
@@ -924,4 +911,91 @@ pub fn fligner(groups: &[&[f64]], center: Center) -> Result<TestResult> {
         offset += g.len();
     }
     inference::chi_result(numerator / spread, (groups.len() - 1) as f64)
+}
+
+#[cfg(test)]
+mod kendall_sweep_tests {
+    use super::*;
+
+    fn pairwise_tau(
+        x: &[f64],
+        y: &[f64],
+        variant: KendallVariant,
+        alternative: Alternative,
+    ) -> Result<TestResult> {
+        let tx = ranking::tie_counts(x);
+        let ty = ranking::tie_counts(y);
+        let n = x.len() as f64;
+        let total = n * (n - 1.) / 2.;
+        if tx.pairs == total || ty.pairs == total {
+            return Ok(TestResult {
+                statistic: f64::NAN,
+                pvalue: f64::NAN,
+            });
+        }
+        let mut difference = 0_i64;
+        for i in 0..x.len() {
+            for j in i + 1..x.len() {
+                if x[i] != x[j] && y[i] != y[j] {
+                    difference += if (x[i] < x[j]) == (y[i] < y[j]) {
+                        1
+                    } else {
+                        -1
+                    };
+                }
+            }
+        }
+        let difference = difference as f64;
+        let statistic = match variant {
+            KendallVariant::B => difference / (total - tx.pairs).sqrt() / (total - ty.pairs).sqrt(),
+            KendallVariant::C => {
+                let c = tx.unique.min(ty.unique) as f64;
+                2. * difference / (n * n * (c - 1.) / c)
+            }
+        }
+        .clamp(-1., 1.);
+        let m = n * (n - 1.);
+        let variance = (m * (2. * n + 5.) - tx.variance_term - ty.variance_term) / 18.
+            + 2. * tx.pairs * ty.pairs / m
+            + tx.triples * ty.triples / (9. * m * (n - 2.));
+        Ok(TestResult {
+            statistic,
+            pvalue: normality::normal_result(difference / variance.sqrt(), alternative)?.pvalue,
+        })
+    }
+
+    #[test]
+    fn kendall_fenwick_matches_exact_pair_counts_with_ties() -> Result<()> {
+        let cases: Vec<(Vec<f64>, Vec<f64>)> = vec![
+            (vec![0., -0., 1., 1., 2.], vec![2., 1., -0., 0., 2.]),
+            (vec![2., 1., 4., 3., 5.], vec![1., 4., 3., 5., 2.]),
+            (
+                (0..64).map(|i| (i * 31 % 13) as f64).collect(),
+                (0..64).map(|i| (i * 17 % 9) as f64).collect(),
+            ),
+            (
+                (0..257).map(|i| (i * 37 % 257) as f64).collect(),
+                (0..257).map(|i| (i * 41 % 257) as f64).collect(),
+            ),
+            (
+                (0..300).map(|i| (i * 37 % 5) as f64).collect(),
+                (0..300).map(|i| (i * 19 % 7) as f64).collect(),
+            ),
+        ];
+        for (x, y) in cases {
+            for variant in [KendallVariant::B, KendallVariant::C] {
+                for alternative in [
+                    Alternative::TwoSided,
+                    Alternative::Less,
+                    Alternative::Greater,
+                ] {
+                    let actual = kendalltau(&x, &y, variant, alternative)?;
+                    let expected = pairwise_tau(&x, &y, variant, alternative)?;
+                    assert_eq!(actual.statistic.to_bits(), expected.statistic.to_bits());
+                    assert_eq!(actual.pvalue.to_bits(), expected.pvalue.to_bits());
+                }
+            }
+        }
+        Ok(())
+    }
 }

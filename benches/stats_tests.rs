@@ -170,6 +170,26 @@ mod correlation_benches {
     }
 
     #[divan::bench]
+    fn kendalltau_large(bencher: Bencher) {
+        let x = values(1024, 1);
+        let noise = values(1024, 2);
+        let y = x
+            .iter()
+            .zip(&noise)
+            .map(|(a, b)| a + 0.5 * b)
+            .collect::<Vec<_>>();
+        bencher.bench(|| {
+            stats::association::kendalltau(
+                black_box(&x),
+                black_box(&y),
+                stats::association::KendallVariant::B,
+                Alternative::TwoSided,
+            )
+            .unwrap()
+        });
+    }
+
+    #[divan::bench]
     fn weightedtau(bencher: Bencher) {
         let (x, y) = pair();
         bencher.bench(|| {
@@ -186,6 +206,21 @@ mod correlation_benches {
     #[divan::bench]
     fn somersd(bencher: Bencher) {
         let (x, y) = pair();
+        bencher.bench(|| {
+            stats::association::somersd(black_box(&x), black_box(&y), Alternative::TwoSided)
+                .unwrap()
+        });
+    }
+
+    #[divan::bench]
+    fn somersd_large(bencher: Bencher) {
+        let x = values(1024, 1);
+        let noise = values(1024, 2);
+        let y = x
+            .iter()
+            .zip(&noise)
+            .map(|(a, b)| a + 0.5 * b)
+            .collect::<Vec<_>>();
         bencher.bench(|| {
             stats::association::somersd(black_box(&x), black_box(&y), Alternative::TwoSided)
                 .unwrap()
