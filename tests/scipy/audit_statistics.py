@@ -50,7 +50,7 @@ def inventory():
     for line in (ROOT / "function_coverages/scipy_function_list/scipy.stats.md").read_text().splitlines():
         if line.startswith("### scipy.stats"):
             namespace = line[4:]
-            namespaces[namespace] = {"functions": set(), "objects": set()}
+            namespaces[namespace] = {"functions": set(), "objects": set(), "classes": set()}
         elif line.startswith("#### "):
             section = line[5:]
         elif namespace and line.startswith("- "):
@@ -59,6 +59,8 @@ def inventory():
                 namespaces[namespace]["functions"].add(name[1])
             if name and section == "Callable objects and distribution APIs":
                 namespaces[namespace]["objects"].add(name[1])
+            if name and section == "Classes and their public methods" and "." not in name[1]:
+                namespaces[namespace]["classes"].add(name[1])
     return namespaces
 
 
@@ -142,6 +144,37 @@ def audit():
     print(
         f"{len(NATIVE_DISTRIBUTIONS) + len(MULTIVARIATE)}/{len(names)} callable distribution families with tested evaluation APIs"
     )
+    engine_sources = {
+        "scipy.stats.qmc": {
+            "Halton": "qmc/halton.rs",
+            "LatinHypercube": "qmc/latin_hypercube.rs",
+            "MultinomialQMC": "qmc/transforms.rs",
+            "MultivariateNormalQMC": "qmc/transforms.rs",
+            "PoissonDisk": "qmc/poisson_disk.rs",
+            "QMCEngine": "qmc/engine.rs",
+            "Sobol": "qmc/sobol.rs",
+        },
+        "scipy.stats.sampling": {
+            "DiscreteAliasUrn": "sampling/discrete.rs",
+            "DiscreteGuideTable": "sampling/discrete.rs",
+            "FastGeneratorInversion": "sampling/inversion.rs",
+            "NumericalInverseHermite": "sampling/inversion.rs",
+            "NumericalInversePolynomial": "sampling/inversion.rs",
+            "RatioUniforms": "sampling/rejection.rs",
+            "SimpleRatioUniforms": "sampling/rejection.rs",
+            "TransformedDensityRejection": "sampling/rejection.rs",
+        },
+    }
+    for namespace, sources in engine_sources.items():
+        expected = set(sources) | ({"UNURANError"} if namespace.endswith(".sampling") else set())
+        if namespaces[namespace]["classes"] != expected:
+            raise SystemExit("Sampling engine inventory drift: " + namespace)
+        for engine, path in sources.items():
+            code = (ROOT / "crates/sci-stats/src" / path).read_text()
+            rust_engine = "QmcEngine" if engine == "QMCEngine" else engine
+            if not re.search(rf"pub (?:struct|trait) {rust_engine}\b", code):
+                raise SystemExit(f"Missing public sampling engine: {engine}")
+        print(f"{namespace}: {len(sources)} native engine types; SciPy signature adaptations documented")
     masked = namespaces["scipy.stats.mstats"]["functions"]
     print(
         f"mstats: {len(masked & exported['scipy.stats'])}/{len(masked)} names share unmasked algorithms; masking is unsupported"

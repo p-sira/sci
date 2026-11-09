@@ -201,6 +201,26 @@ path = "tests/dogbox.rs"
 required-features = ["optimize"]
 
 [[test]]
+name = "sobol"
+path = "tests/sobol.rs"
+required-features = ["stats"]
+
+[[test]]
+name = "halton"
+path = "tests/halton.rs"
+required-features = ["stats"]
+
+[[test]]
+name = "qmc_engines"
+path = "tests/qmc_engines.rs"
+required-features = ["stats"]
+
+[[test]]
+name = "sampling_engines"
+path = "tests/sampling_engines.rs"
+required-features = ["stats"]
+
+[[test]]
 name = "scipy_compatibility"
 path = "tests/scipy_compatibility.rs"
 required-features = ["complex", "differentiate", "fft", "linalg", "optimize", "special", "stats"]
@@ -366,6 +386,11 @@ required-features = ["stats"]
 
 [[bench]]
 name = "stats_tests"
+harness = false
+required-features = ["stats"]
+
+[[bench]]
+name = "sampling_engines"
 harness = false
 required-features = ["stats"]
 

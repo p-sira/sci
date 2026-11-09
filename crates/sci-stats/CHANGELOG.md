@@ -2,6 +2,19 @@
 
 ## 0.3.0
 
+- Add Halton, Latin hypercube, Poisson-disk, multivariate-normal QMC and
+  multinomial QMC generators alongside Sobol, with a shared `QmcEngine` trait
+  and bounded integer-interval sampling. Introduce `stats::sampling` with
+  discrete alias/guide-table, native and interpolated inverse-CDF, and bounded
+  ratio-of-uniforms/log-tangent rejection samplers. Seeded generators use Rust
+  `StdRng`; document SciPy adaptations and work limits.
+- Add a stateful Sobol quasi-Monte Carlo generator in `qmc` with the full
+  21,201-dimensional Joe–Kuo D(6) direction table, up to 64-bit sequences,
+  optional reproducible LMS scrambling, base-two batches, fast-forward and reset.
+  Validate generated points against independent SciPy references.
+- Add CodSpeed benchmarks for QMC point generation and integer mapping,
+  discrete samplers, inverse quantiles, and rejection sampling, including
+  separate setup and draw workloads.
 - Use selection instead of a full sort for descriptive medians, median
   absolute deviation, and repeated medians in `siegelslopes`, retaining the
   original total ordering, signed-zero results, and even-sample interpolation.
