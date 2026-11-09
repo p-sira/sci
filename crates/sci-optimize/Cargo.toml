@@ -17,6 +17,7 @@ include = ["/src/**", "/LICENSE"]
 [dependencies]
 sci-core.workspace = true
 basin.workspace = true
+nalgebra.workspace = true
 
 [dev-dependencies]
 sci-differentiate = { path = "../sci-differentiate" }

@@ -196,6 +196,11 @@ path = "tests/optimize_helpers.rs"
 required-features = ["differentiate", "linalg", "optimize"]
 
 [[test]]
+name = "dogbox"
+path = "tests/dogbox.rs"
+required-features = ["optimize"]
+
+[[test]]
 name = "scipy_compatibility"
 path = "tests/scipy_compatibility.rs"
 required-features = ["complex", "differentiate", "fft", "linalg", "optimize", "special", "stats"]
