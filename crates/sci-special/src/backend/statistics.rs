@@ -46,7 +46,8 @@ fn tukey(x: f64, lambda: f64) -> f64 {
     }
     if lambda == 0.0 {
         return if x < 0.0 {
-            x.exp() / (1.0 + x.exp())
+            let exp_x = x.exp();
+            exp_x / (1.0 + exp_x)
         } else {
             1.0 / (1.0 + (-x).exp())
         };

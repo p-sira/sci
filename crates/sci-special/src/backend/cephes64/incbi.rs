@@ -55,6 +55,18 @@ fn incbi_impl(aa: f64, bb: f64, yy0: f64, accelerate: bool) -> (f64, bool) {
     } else if yy0 >= 1.0 {
         return (1.0, false);
     }
+    // Invert the exact unit-shape beta identities. Both expressions preserve
+    // tiny interior probabilities, avoiding many CDF/derivative evaluations.
+    // Mark the analytic result converged for the public inverse's refiner.
+    if aa == 1.0 && bb == 1.0 && yy0.is_finite() {
+        return (yy0, true);
+    }
+    if bb == 1.0 && aa.is_finite() && aa > 0.0 && yy0.is_finite() {
+        return (yy0.powf(1.0 / aa), true);
+    }
+    if aa == 1.0 && bb.is_finite() && bb > 0.0 && yy0.is_finite() {
+        return (-((-yy0).ln_1p() / bb).exp_m1(), true);
+    }
     let mut converged = false;
     let mut x0: f64 = 0.0;
     let mut yl: f64 = 0.0;
@@ -416,6 +428,37 @@ mod tests {
                 close(incbi_status(a, b, p).0, expected, 2e-15, 2e-8);
             }
         }
+    }
+
+    #[test]
+    fn unit_shape_inverses_preserve_extreme_interior_probabilities() {
+        for shape in [0.1_f64, 0.5, 1.0, 2.0, 32.0, 1000.0] {
+            for p in [
+                f64::MIN_POSITIVE,
+                1e-200,
+                1e-30,
+                1e-12,
+                0.01,
+                0.5,
+                0.99,
+                1.0 - f64::EPSILON,
+            ] {
+                let x_left = if shape == 1.0 { p } else { p.powf(1.0 / shape) };
+                let x_right = if shape == 1.0 {
+                    p
+                } else {
+                    -((-p).ln_1p() / shape).exp_m1()
+                };
+                assert_eq!(incbi(shape, 1.0, p).to_bits(), x_left.to_bits());
+                assert_eq!(incbi(1.0, shape, p).to_bits(), x_right.to_bits());
+                assert_eq!(incbi_status(shape, 1.0, p).0.to_bits(), x_left.to_bits());
+                assert_eq!(incbi_status(1.0, shape, p).0.to_bits(), x_right.to_bits());
+                assert!(incbi_status(shape, 1.0, p).1);
+                assert!(incbi_status(1.0, shape, p).1);
+            }
+        }
+        assert_eq!(incbi(1.0, 1.0, -0.0).to_bits(), 0.0_f64.to_bits());
+        assert!(incbi(1.0, 1.0, f64::NAN).is_nan());
     }
 
     // For positive integer parameters, I_x(a,b) is a binomial survival sum:

@@ -697,10 +697,40 @@ fn characteristic(m: u64, n: u64, c: f64, kd: i32) -> f64 {
     if !c.is_finite() {
         return f64::NAN;
     }
+    // segv returns n(n+1) for |c| < 1e-10, irrespective of parity or kd.
+    // Avoid its output allocation and degree-by-degree initialization.
+    // The public spheroidal API bounds n to 128, where the integer product
+    // matches the kernel exactly; other orders retain the existing path.
+    if c.abs() < 1e-10 && m <= n && n <= 128 {
+        return (n * (n + 1)) as f64;
+    }
     let mut cv = [f64::NAN];
     let mut eg = vec![0.0; (n - m + 1) as usize];
     s::segv(m as i32, n as i32, c.abs(), kd, &mut cv, &mut eg);
     cv[0]
+}
+
+/// All characteristic values from degree m through n from one spectral solve.
+/// Callers validate 0 <= m <= n <= 128 and finite |c| <= 64 beforehand.
+pub(crate) fn spheroidal_characteristic_sequence(m: u64, n: u64, c: f64, kd: i32) -> Vec<f64> {
+    if c.abs() < 1e-10 {
+        // segv's exactly integral limit; no matrix or output scratch needed.
+        return (m..=n)
+            .map(|degree| (degree * (degree + 1)) as f64)
+            .collect();
+    }
+    let mut cv = [f64::NAN];
+    let mut values = vec![0.0; (n - m + 1) as usize];
+    if s::segv(m as i32, n as i32, c.abs(), kd, &mut cv, &mut values) == 0
+        && values.iter().all(|value| value.is_finite())
+    {
+        return values;
+    }
+    // Preserve the old per-degree outcomes if the shared solve fails to
+    // converge or returns a nonfinite entry.
+    (m..=n)
+        .map(|degree| characteristic(m, degree, c, kd))
+        .collect()
 }
 fn spheroidal(m: u64, n: u64, c: f64, cv: f64, x: f64, kd: i32, radial: i32) -> (f64, f64) {
     if !c.is_finite() || !cv.is_finite() || !x.is_finite() {
@@ -736,6 +766,19 @@ fn spheroidal(m: u64, n: u64, c: f64, cv: f64, x: f64, kd: i32, radial: i32) -> 
     } else {
         (f[0], d[0])
     }
+}
+
+fn spheroidal_nocv(m: u64, n: u64, c: f64, x: f64, kd: i32, radial: i32) -> (f64, f64) {
+    // Reject invalid coordinates before the costly characteristic-value solve.
+    // These are the same domain checks used by spheroidal after receiving cv.
+    if !c.is_finite()
+        || !x.is_finite()
+        || (radial == 0 && x.abs() > 1.0)
+        || (radial != 0 && ((kd == 1 && x <= 1.0) || (kd != 1 && x < 0.0)))
+    {
+        return (f64::NAN, f64::NAN);
+    }
+    spheroidal(m, n, c, characteristic(m, n, c, kd), x, kd, radial)
 }
 
 pub(crate) fn polygamma(n: u32, x: f64) -> f64 {
@@ -1159,19 +1202,19 @@ pub(crate) fn prolate_aswfa(m: u64, n: u64, c: f64, cv: f64, x: f64) -> (f64, f6
     spheroidal(m, n, c, cv, x, 1, 0)
 }
 pub(crate) fn prolate_aswfa_nocv(m: u64, n: u64, c: f64, x: f64) -> (f64, f64) {
-    prolate_aswfa(m, n, c, characteristic(m, n, c, 1), x)
+    spheroidal_nocv(m, n, c, x, 1, 0)
 }
 pub(crate) fn prolate_radial1(m: u64, n: u64, c: f64, cv: f64, x: f64) -> (f64, f64) {
     spheroidal(m, n, c, cv, x, 1, 1)
 }
 pub(crate) fn prolate_radial1_nocv(m: u64, n: u64, c: f64, x: f64) -> (f64, f64) {
-    prolate_radial1(m, n, c, characteristic(m, n, c, 1), x)
+    spheroidal_nocv(m, n, c, x, 1, 1)
 }
 pub(crate) fn prolate_radial2(m: u64, n: u64, c: f64, cv: f64, x: f64) -> (f64, f64) {
     spheroidal(m, n, c, cv, x, 1, 2)
 }
 pub(crate) fn prolate_radial2_nocv(m: u64, n: u64, c: f64, x: f64) -> (f64, f64) {
-    prolate_radial2(m, n, c, characteristic(m, n, c, 1), x)
+    spheroidal_nocv(m, n, c, x, 1, 2)
 }
 
 pub(crate) fn oblate_segv(m: u64, n: u64, c: f64) -> f64 {
@@ -1181,19 +1224,19 @@ pub(crate) fn oblate_aswfa(m: u64, n: u64, c: f64, cv: f64, x: f64) -> (f64, f64
     spheroidal(m, n, c, cv, x, -1, 0)
 }
 pub(crate) fn oblate_aswfa_nocv(m: u64, n: u64, c: f64, x: f64) -> (f64, f64) {
-    oblate_aswfa(m, n, c, characteristic(m, n, c, -1), x)
+    spheroidal_nocv(m, n, c, x, -1, 0)
 }
 pub(crate) fn oblate_radial1(m: u64, n: u64, c: f64, cv: f64, x: f64) -> (f64, f64) {
     spheroidal(m, n, c, cv, x, -1, 1)
 }
 pub(crate) fn oblate_radial1_nocv(m: u64, n: u64, c: f64, x: f64) -> (f64, f64) {
-    oblate_radial1(m, n, c, characteristic(m, n, c, -1), x)
+    spheroidal_nocv(m, n, c, x, -1, 1)
 }
 pub(crate) fn oblate_radial2(m: u64, n: u64, c: f64, cv: f64, x: f64) -> (f64, f64) {
     spheroidal(m, n, c, cv, x, -1, 2)
 }
 pub(crate) fn oblate_radial2_nocv(m: u64, n: u64, c: f64, x: f64) -> (f64, f64) {
-    oblate_radial2(m, n, c, characteristic(m, n, c, -1), x)
+    spheroidal_nocv(m, n, c, x, -1, 2)
 }
 pub(crate) fn mathieu_modcem1(m: u32, q: f64, x: f64) -> (f64, f64) {
     modified(m, q, x, false, 1)
@@ -2513,6 +2556,66 @@ pub(crate) fn keip_zeros(nt: usize) -> Result<Vec<f64>, &'static str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn spheroidal_small_c_characteristic_matches_original_segv() {
+        for n in [0_u64, 1, 2, 3, 7, 64, 128] {
+            for m in [0, n / 2, n] {
+                for c in [0.0_f64, -0.0, 1e-20, -1e-20, 9.99e-11, -9.99e-11] {
+                    for kd in [-1, 1] {
+                        let mut expected = [f64::NAN];
+                        let mut eigenvalues = vec![0.0; (n - m + 1) as usize];
+                        assert_eq!(
+                            s::segv(
+                                m as i32,
+                                n as i32,
+                                c.abs(),
+                                kd,
+                                &mut expected,
+                                &mut eigenvalues
+                            ),
+                            0
+                        );
+                        assert_eq!(
+                            characteristic(m, n, c, kd).to_bits(),
+                            expected[0].to_bits(),
+                            "m={m}, n={n}, c={c}, kd={kd}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn spheroidal_nocv_matches_original_composition() {
+        for (m, n, c) in [(0, 2, 0.75), (1, 3, 2.0)] {
+            for (kd, radial, x) in [
+                (1, 0, -0.5),
+                (-1, 0, 0.5),
+                (1, 1, 1.5),
+                (1, 2, 1.5),
+                (-1, 1, 0.5),
+                (-1, 2, 0.5),
+                (1, 0, 1.5),
+                (-1, 0, -1.5),
+                (1, 1, 1.0),
+                (1, 2, 0.0),
+                (-1, 1, -0.5),
+                (-1, 2, f64::NAN),
+            ] {
+                let original = spheroidal(m, n, c, characteristic(m, n, c, kd), x, kd, radial);
+                let optimized = spheroidal_nocv(m, n, c, x, kd, radial);
+                for (a, b) in [(original.0, optimized.0), (original.1, optimized.1)] {
+                    assert_eq!(
+                        a.to_bits(),
+                        b.to_bits(),
+                        "m={m}, n={n}, c={c}, kd={kd}, radial={radial}, x={x}"
+                    );
+                }
+            }
+        }
+    }
 
     #[test]
     fn gauss_tables_match_legendre_root_solves() {

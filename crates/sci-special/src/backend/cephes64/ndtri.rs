@@ -136,6 +136,30 @@ const Q2: [f64; 8] = [
     6.79019408009981274425E-9,
 ];
 
+// The central ndtri branch evaluates fixed-degree polynomials. Spell out the
+// Horner steps so the common path has no iterator or slice-length machinery.
+// Retain the exact multiply-then-add order used by polevl/p1evl.
+#[inline(always)]
+fn ndtri_p0(z: f64) -> f64 {
+    let mut ans = P0[0];
+    ans = ans * z + P0[1];
+    ans = ans * z + P0[2];
+    ans = ans * z + P0[3];
+    ans * z + P0[4]
+}
+
+#[inline(always)]
+fn ndtri_q0(z: f64) -> f64 {
+    let mut ans = z + Q0[0];
+    ans = ans * z + Q0[1];
+    ans = ans * z + Q0[2];
+    ans = ans * z + Q0[3];
+    ans = ans * z + Q0[4];
+    ans = ans * z + Q0[5];
+    ans = ans * z + Q0[6];
+    ans * z + Q0[7]
+}
+
 // The overwhelmingly common ndtri_exp tail (sqrt(-2*y) < 8) has fixed
 // coefficients. Evaluate its numerator/denominator directly instead of
 // passing a runtime degree and slices through the shared Cephes helpers.
@@ -183,7 +207,7 @@ pub fn ndtri(y0: f64) -> f64 {
     } else if y > 0.13533528323661269189 {
         y -= 0.5;
         let y2 = y * y;
-        let x = y + y * (y2 * polevl(y2, &P0, 4) / p1evl(y2, &Q0, 8));
+        let x = y + y * (y2 * ndtri_p0(y2) / ndtri_q0(y2));
         return x * S2PI;
     }
 
@@ -193,7 +217,7 @@ pub fn ndtri(y0: f64) -> f64 {
     let z = 1.0 / x;
     let x1 = if x < 8.0 {
         /* y > exp(-32) = 1.2664165549e-14 */
-        z * polevl(z, &P1, 8) / p1evl(z, &Q1, 8)
+        z * ndtri_exp_p1(z) / ndtri_exp_q1(z)
     } else {
         z * polevl(z, &P2, 8) / p1evl(z, &Q2, 8)
     };
@@ -236,6 +260,81 @@ mod ndtri_exp_horner_tests {
         for z in [0.125, 0.14, 0.2, 0.3, 0.4, 0.5, 0.75, 1.0] {
             assert_eq!(ndtri_exp_p1(z).to_bits(), polevl(z, &P1, 8).to_bits());
             assert_eq!(ndtri_exp_q1(z).to_bits(), p1evl(z, &Q1, 8).to_bits());
+        }
+    }
+
+    #[test]
+    fn ndtri_central_horner_preserves_cephes_polynomial_order() {
+        for z in [0.0, f64::MIN_POSITIVE, 0.001, 0.01, 0.05, 0.1, 0.125, 0.14] {
+            assert_eq!(ndtri_p0(z).to_bits(), polevl(z, &P0, 4).to_bits());
+            assert_eq!(ndtri_q0(z).to_bits(), p1evl(z, &Q0, 8).to_bits());
+        }
+    }
+
+    // Independent reference: retain the original Cephes calls before the
+    // fixed-degree Horner substitutions, including the original branches.
+    fn ndtri_before_unrolling(y0: f64) -> f64 {
+        if y0 == 0.0 {
+            return -f64::INFINITY;
+        } else if y0 == 1.0 {
+            return f64::INFINITY;
+        } else if !(0.0..=1.0).contains(&y0) {
+            return f64::NAN;
+        }
+        let mut code = true;
+        let mut y = y0;
+        if y > 1.0 - 0.13533528323661269189 {
+            y = 1.0 - y;
+            code = false;
+        } else if y > 0.13533528323661269189 {
+            y -= 0.5;
+            let y2 = y * y;
+            let x = y + y * (y2 * polevl(y2, &P0, 4) / p1evl(y2, &Q0, 8));
+            return x * S2PI;
+        }
+
+        let x = (-2.0 * y.ln()).sqrt();
+        let x0 = x - x.ln() / x;
+        let z = 1.0 / x;
+        let x1 = if x < 8.0 {
+            z * polevl(z, &P1, 8) / p1evl(z, &Q1, 8)
+        } else {
+            z * polevl(z, &P2, 8) / p1evl(z, &Q2, 8)
+        };
+        if code { x1 - x0 } else { x0 - x1 }
+    }
+
+    #[test]
+    fn ndtri_fixed_horner_is_bitwise_identical_to_original_branches() {
+        for p in [
+            0.0,
+            f64::MIN_POSITIVE,
+            1e-300,
+            1e-14,
+            0.01,
+            0.1353352832366127,
+            0.125,
+            0.5,
+            0.875,
+            1.0 - 0.1353352832366127,
+            0.9999999999999999,
+            1.0,
+        ] {
+            assert_eq!(
+                ndtri(p).to_bits(),
+                ndtri_before_unrolling(p).to_bits(),
+                "p={p}"
+            );
+        }
+        let mut state = 0x9e3779b97f4a7c15_u64;
+        for _ in 0..4096 {
+            state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+            let p = (state >> 11) as f64 * (1.0 / (1_u64 << 53) as f64);
+            assert_eq!(
+                ndtri(p).to_bits(),
+                ndtri_before_unrolling(p).to_bits(),
+                "p={p}"
+            );
         }
     }
 }

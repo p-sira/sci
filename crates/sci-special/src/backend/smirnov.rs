@@ -12,8 +12,10 @@ fn validate(n: u32, x: f64) -> Result<(), StrErr> {
     }
 }
 
-// Returns log CDF, log survival, and the survival derivative.
-fn tails(n: u32, x: f64) -> (f64, f64, f64) {
+// Returns log CDF, log survival, and optionally the survival derivative.
+// The forward distribution never needs the derivative, so specialize its
+// series at compile time to avoid divisions for every summand.
+fn tails<const WITH_DERIVATIVE: bool>(n: u32, x: f64) -> (f64, f64, f64) {
     let nf = n as f64;
     if x == 0.0 {
         return (f64::NEG_INFINITY, 0.0, -1.0);
@@ -23,12 +25,22 @@ fn tails(n: u32, x: f64) -> (f64, f64, f64) {
     }
     if nf * x <= 1.0 {
         let logcdf = x.ln() + (nf - 1.0) * x.ln_1p();
-        let derivative = -(logcdf.exp() / x) * (1.0 + (nf - 1.0) * x / (1.0 + x));
+        let derivative = if WITH_DERIVATIVE {
+            -(logcdf.exp() / x) * (1.0 + (nf - 1.0) * x / (1.0 + x))
+        } else {
+            0.0
+        };
         return (logcdf, (-logcdf.exp()).ln_1p(), derivative);
     }
     // Smirnov's finite positive sum. Extended precision in logarithmic
     // binomial accumulation limits drift for large sample sizes.
     let end = (nf * (1.0 - x)).floor() as u32;
+    let log_x = if end > 0 { x.ln() } else { 0.0 };
+    let reciprocal_x = if WITH_DERIVATIVE && end > 0 {
+        1.0 / x
+    } else {
+        0.0
+    };
     let mut binomial = Dd::from(0.0);
     let mut scale = f64::NEG_INFINITY;
     let mut sum = 0.0;
@@ -43,17 +55,14 @@ fn tails(n: u32, x: f64) -> (f64, f64, f64) {
         if j > 0 {
             binomial = binomial + Dd::from(((n - j + 1) as f64 / jf).ln());
         }
-        let (logterm, slope) = if j == 0 {
-            (nf * (-x).ln_1p(), -nf / (1.0 - x))
+        let logterm = if j == 0 {
+            nf * (-x).ln_1p()
         } else if b > 0.0 {
-            (
-                x.ln() + binomial.hi + binomial.lo + (jf - 1.0) * a.ln() + exponent as f64 * b.ln(),
-                1.0 / x + (jf - 1.0) / a - exponent as f64 / b,
-            )
+            log_x + binomial.hi + binomial.lo + (jf - 1.0) * a.ln() + exponent as f64 * b.ln()
         } else {
             // At the moving endpoint only exponent=1 has a nonzero derivative.
-            if exponent == 1 {
-                let d = -(x.ln() + binomial.hi + binomial.lo + (jf - 1.0) * a.ln()).exp();
+            if WITH_DERIVATIVE && exponent == 1 {
+                let d = -(log_x + binomial.hi + binomial.lo + (jf - 1.0) * a.ln()).exp();
                 derivative += if scale.is_finite() {
                     d * (-scale).exp()
                 } else {
@@ -66,7 +75,9 @@ fn tails(n: u32, x: f64) -> (f64, f64, f64) {
             let rescale = (scale - logterm).exp();
             sum *= rescale;
             correction *= rescale;
-            derivative *= rescale;
+            if WITH_DERIVATIVE {
+                derivative *= rescale;
+            }
             scale = logterm;
         }
         let weight = (logterm - scale).exp();
@@ -74,7 +85,14 @@ fn tails(n: u32, x: f64) -> (f64, f64, f64) {
         let next = sum + term;
         correction = (next - sum) - term;
         sum = next;
-        derivative += weight * slope;
+        if WITH_DERIVATIVE {
+            let slope = if j == 0 {
+                -nf / (1.0 - x)
+            } else {
+                reciprocal_x + (jf - 1.0) / a - exponent as f64 / b
+            };
+            derivative += weight * slope;
+        }
     }
     let logsf = (scale + sum.ln()).min(0.0);
     ((-logsf.exp_m1()).ln(), logsf, derivative * scale.exp())
@@ -86,7 +104,7 @@ macro_rules! distribution {
         pub fn $name<T:Float>(n:u32,x:T)->Result<T,StrErr> {
             let x=x.to_f64().ok_or(ERROR)?;
             validate(n,x)?;
-            let values=tails(n,x);
+            let values=tails::<false>(n,x);
             let value=distribution!(@value values,$component);
             finish(value,ERROR)
         }
@@ -127,7 +145,7 @@ fn inverse(n: u32, p: f64, mut lower: bool) -> Result<f64, StrErr> {
     }
     for _ in 0..200 {
         let x = logx.exp();
-        let (logcdf, logsf, derivative) = tails(n, x);
+        let (logcdf, logsf, derivative) = tails::<true>(n, x);
         let value = if lower { logcdf } else { logsf } - target;
         if value == 0.0 {
             return Ok(x);
@@ -175,4 +193,36 @@ distribution! {
 
 inverse_api! {
     smirnovi,false,"Inverse finite-sample Smirnov survival function, including endpoint probabilities.";
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{smirnov, tails};
+
+    #[test]
+    fn probability_only_series_matches_derivative_series_bitwise() {
+        for n in [1, 2, 3, 11, 100, 500] {
+            for x in [0.0, 0.0001, 0.01, 0.1, 0.4, 0.5, 0.9, 0.999, 1.0] {
+                let fast = tails::<false>(n, x);
+                let complete = tails::<true>(n, x);
+                assert_eq!(fast.0.to_bits(), complete.0.to_bits(), "n={n}, x={x}, CDF");
+                assert_eq!(fast.1.to_bits(), complete.1.to_bits(), "n={n}, x={x}, SF");
+            }
+        }
+    }
+
+    #[test]
+    fn small_sample_survival_matches_closed_forms() {
+        for x in [0.0_f64, 0.01, 0.25, 0.4, 0.5, 0.75, 0.99, 1.0] {
+            let n1 = smirnov(1, x).unwrap();
+            let n2 = smirnov(2, x).unwrap();
+            let expected_n2 = if x <= 0.5 {
+                1.0 - x - x * x
+            } else {
+                (1.0 - x) * (1.0 - x)
+            };
+            assert!((n1 - (1.0 - x)).abs() <= 8.0 * f64::EPSILON);
+            assert!((n2 - expected_n2).abs() <= 8.0 * f64::EPSILON);
+        }
+    }
 }

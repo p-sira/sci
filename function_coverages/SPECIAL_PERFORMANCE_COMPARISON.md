@@ -70,3 +70,21 @@ Across the first, last and sum-of-output summaries, the largest absolute differe
 For the dependency upgrade itself, native Divan medians of existing workloads before (`ellip` 1.2.3) and after (`ellip` 1.2.4), in microseconds, were `ellipkinc` 14.33 → 11.79, `ellipdinc` 13.92 → 11.38, `ellipeinc` 19.53 → 17.75 and `elliprj` 14.89 → 13.84. Other elliptic workloads varied in both directions; do not extrapolate these specific improvements to all elliptic functions.
 
 An isolated optimized Rust microbenchmark of the previous and new elementary implementations at 1,024 observations measured `softmax` 6.63 → 6.42 µs and `log_softmax` 5.63 → 5.23 µs. The new `stirling2(n,n−1)` closed form avoids the old quadratic recurrence; at `n=1024`, the same standalone harness measured approximately 285 µs versus 1.6 ns per call. These are kernel-level observations, not CodSpeed comparisons; three new CodSpeed cases monitor the optimized Stirling and normalized-harmonic boundary paths going forward.
+
+### Native-kernel follow-up on PR #51
+
+Further improvements target redundant *numeric work*, regardless of whether Sci already beats SciPy. The same original and optimized Rust binaries were run alternately on CPU core 2, using the same inputs, 13 timed repetitions, five warmups and four calls per block, repeated in seven matched pairs. Times below are median-of-run medians at 1,024 outputs, except for the three named Divan cases. The `target/special_old_*_paired.csv` and `target/special_new_*_paired.csv` files are local-only.
+
+| Operation | Previous Rust | Optimized Rust | Native speedup |
+| --- | ---: | ---: | ---: |
+| Real `exp1` on 1,024 values | 255.08 µs | 161.83 µs | **1.58×** |
+| Real `erfinv` on 1,024 values | 16.43 µs | 14.81 µs | **1.11×** |
+| `pro_cv_seq(1,6,2)` | 61.53 µs | 17.28 µs | **3.56×** |
+| `obl_cv_seq(1,6,2)` | 63.83 µs | 17.53 µs | **3.64×** |
+| `jnjnp_zeros(1)` | 162.9 ns | 53.4 ns | **3.05×** |
+
+`exp1` retains the original continued-fraction depth while replacing two divisions per step with one. Inverse-normal polynomial evaluation uses fixed-degree Horner loops. The spheroidal sequences reuse one tridiagonal eigenvalue solve over the degree range, rather than recalculating all lower roots for every degree. Their results may differ by last-bit rounding; comparisons to an independent high-precision Sturm solver were comparable to the previous implementation, with sampled differences between the sequence and scalar routines below `8e-14` relative. The first merged J/J′ zero is a fixed mathematical origin entry and now bypasses bounded root-search setup. Exact unit-shape beta/gamma cases skip general series or Halley inversion, with explicit endpoint and tail tests; those specialized cases are not represented in the general 20-function matrix.
+
+General gamma, digamma, incomplete-beta and most elliptic workloads did **not** show reproducible improvements on the common-input matrix after the native edits; isolated differences during a single run disappeared in repeated alternating measurements. The incomplete-gamma complementary series retains its original independently rounded log-gamma evaluation after a proposed reassociation changed a reference tail by several ulps. Speculative replacements of power functions in Bessel/Struve recurrences were not retained without independent performance evidence. This follow-up does not establish that every kernel is optimal.
+
+CodSpeed's earlier `jnjnp_zeros` 7.0→7.8 µs warning occurred before the exact-first-zero optimization, with unchanged wrapper/backend and a warning that base/head results used different hardware. Alternating identical pre-optimization source binaries did not reproduce a stable regression; the new shortcut has a separate same-core improvement above. Await a fresh CodSpeed run before interpreting the remote regression as resolved.

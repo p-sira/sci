@@ -199,11 +199,36 @@ mod gamma_benches {
         });
     }
 
+    // Analytic unit-shape beta branches avoid iterative inverse/CDF kernels.
+    #[divan::bench]
+    fn betainc_unit_shape(bencher: Bencher) {
+        let x = unit_values(N, 3);
+        bencher.bench(|| sum1(black_box(&x), |x| special::beta::betainc(1.0, 3.5, x)));
+    }
+
+    #[divan::bench]
+    fn betaincinv_unit_shape(bencher: Bencher) {
+        let p = unit_values(N, 3);
+        bencher.bench(|| sum1(black_box(&p), |p| special::beta::betaincinv(1.0, 3.5, p)));
+    }
+
     #[divan::bench]
     fn gammainc(bencher: Bencher) {
         let a = positive_values(N, 1);
         let x = positive_values(N, 2);
         bencher.bench(|| sum2(black_box(&a), black_box(&x), special::gamma::gammainc));
+    }
+
+    #[divan::bench]
+    fn gammainc_unit_shape(bencher: Bencher) {
+        let x = positive_values(N, 2);
+        bencher.bench(|| sum1(black_box(&x), |x| special::gamma::gammainc(1.0, x)));
+    }
+
+    #[divan::bench]
+    fn gammaincinv_unit_shape(bencher: Bencher) {
+        let p = unit_values(N, 3);
+        bencher.bench(|| sum1(black_box(&p), |p| special::gamma::gammaincinv(1.0, p)));
     }
 
     #[divan::bench]
@@ -1025,6 +1050,13 @@ mod spheroidal_benches {
     }
 
     #[divan::bench]
+    fn pro_cv_seq_large(bencher: Bencher) {
+        bencher.bench(|| {
+            special::wave::pro_cv_seq(black_box(2), black_box(30), black_box(10.0)).unwrap()
+        });
+    }
+
+    #[divan::bench]
     fn pro_ang1(bencher: Bencher) {
         let x = angles();
         bencher.bench(|| sum1(black_box(&x), |x| special::wave::pro_ang1(1, 3, 2.0, x).0));
@@ -1085,6 +1117,13 @@ mod spheroidal_benches {
     fn obl_cv_seq(bencher: Bencher) {
         bencher.bench(|| {
             special::wave::obl_cv_seq(black_box(1), black_box(6), black_box(2.0)).unwrap()
+        });
+    }
+
+    #[divan::bench]
+    fn obl_cv_seq_large(bencher: Bencher) {
+        bencher.bench(|| {
+            special::wave::obl_cv_seq(black_box(2), black_box(30), black_box(10.0)).unwrap()
         });
     }
 

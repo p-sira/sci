@@ -250,6 +250,9 @@ pub fn igami(a: f64, p: f64) -> f64 {
         return 0.0;
     } else if p == 1.0 {
         return f64::INFINITY;
+    } else if a == 1.0 {
+        // P(1,x) = -expm1(-x): the inverse is exact without Halley steps.
+        return -(-p).ln_1p();
     } else if p > 0.9 {
         return igamci(a, 1.0 - p);
     }
@@ -273,6 +276,9 @@ pub fn igamci(a: f64, q: f64) -> f64 {
         return f64::INFINITY;
     } else if q == 1.0 {
         return 0.0;
+    } else if a == 1.0 {
+        // Q(1,x) = exp(-x). log1p preserves the tail when q is near one.
+        return if q > 0.9 { -(q - 1.0).ln_1p() } else { -q.ln() };
     } else if q > 0.9 {
         return igami(a, 1.0 - q);
     }
@@ -331,4 +337,42 @@ fn halley_converged(a: f64, x: f64, step: f64) -> bool {
     let cx = a - 1.0 - x;
     let k = ((a - 1.0).abs() + cx * cx) / 6.0 + 0.25 * cx * cx;
     k * (r * r * r).abs() < 0.25 * MACHEP
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{igamci, igami};
+
+    #[test]
+    fn unit_shape_inverse_matches_exponential_quantiles() {
+        for p in [
+            f64::MIN_POSITIVE,
+            1e-200,
+            1e-12,
+            0.01,
+            0.1,
+            0.5,
+            0.9,
+            0.99,
+            1.0 - f64::EPSILON,
+        ] {
+            assert_eq!(igami(1.0, p).to_bits(), (-(-p).ln_1p()).to_bits());
+            let q = 1.0 - p;
+            // The existing q=1 endpoint convention is positive zero.
+            let expected = if q == 1.0 {
+                0.0
+            } else if q > 0.9 {
+                -(q - 1.0).ln_1p()
+            } else {
+                -q.ln()
+            };
+            assert_eq!(igamci(1.0, q).to_bits(), expected.to_bits());
+        }
+        assert_eq!(igami(1.0, 0.0), 0.0);
+        assert_eq!(igami(1.0, 1.0), f64::INFINITY);
+        assert_eq!(igamci(1.0, 0.0), f64::INFINITY);
+        assert_eq!(igamci(1.0, 1.0), 0.0);
+        assert!(igami(1.0, -1.0).is_nan());
+        assert!(igamci(1.0, f64::NAN).is_nan());
+    }
 }
