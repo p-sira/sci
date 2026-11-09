@@ -490,6 +490,69 @@ pub enum AndersonVariant {
     Right,
 }
 
+// The support points and each sample are sorted, so cumulative counts can
+// advance monotonically. This gives the same counts as partition_point with
+// < and <= (including tied values and signed zeros), without repeating
+// binary searches for every group and support point.
+fn anderson_ksamp_raw(
+    groups: &[&[f64]],
+    pooled: &[f64],
+    unique: &[f64],
+    variant: AndersonVariant,
+) -> Result<f64> {
+    let n = pooled.len() as f64;
+    let mut pooled_bounds = Vec::with_capacity(unique.len());
+    let mut position = 0;
+    for &z in unique {
+        while position < pooled.len() && pooled[position] < z {
+            position += 1;
+        }
+        let before = position as f64;
+        while position < pooled.len() && pooled[position] <= z {
+            position += 1;
+        }
+        pooled_bounds.push((before, position as f64));
+    }
+
+    let mut raw = 0.;
+    for group in groups {
+        let ordered = sorted(group)?;
+        let ni = group.len() as f64;
+        let mut position = 0;
+        for (j, &z) in unique.iter().enumerate() {
+            if variant == AndersonVariant::Right && j + 1 == unique.len() {
+                break;
+            }
+            let (before, after) = pooled_bounds[j];
+            let lj = after - before;
+            while position < ordered.len() && ordered[position] < z {
+                position += 1;
+            }
+            let mij_before = position as f64;
+            while position < ordered.len() && ordered[position] <= z {
+                position += 1;
+            }
+            let mij_after = position as f64;
+            let (bj, mij, denominator) = match variant {
+                AndersonVariant::Right => (after, mij_after, after * (n - after)),
+                AndersonVariant::Midrank => {
+                    let bj = before + lj / 2.;
+                    (
+                        bj,
+                        (mij_before + mij_after) / 2.,
+                        bj * (n - bj) - n * lj / 4.,
+                    )
+                }
+            };
+            raw += lj / n * (n * mij - bj * ni).powi(2) / (denominator * ni);
+        }
+    }
+    if variant == AndersonVariant::Midrank {
+        raw *= (n - 1.) / n;
+    }
+    Ok(raw)
+}
+
 /// Multi-sample Anderson–Darling equality-of-distributions test.
 ///
 /// ## Parameters and conventions
@@ -526,7 +589,7 @@ pub enum AndersonVariant {
 ///
 /// ## Numerical behavior
 ///
-/// O(N log N+k*N log N) work and O(N) memory; group size/work bounds are checked
+/// O(N log N+k*N) work and O(N) memory; group size/work bounds are checked
 /// before allocation. Private nalgebra SVD fits the seven-point calibration,
 /// with at most 10,000 iterations; nonconvergence returns a numerical error.
 /// P-values are approximate and can be poorly calibrated for small or heavily
@@ -569,36 +632,7 @@ pub fn anderson_ksamp(groups: &[&[f64]], variant: AndersonVariant) -> Result<Tes
     }
     let n = count as f64;
     let k = groups.len() as f64;
-    let mut raw = 0.;
-    for group in groups {
-        let ordered = sorted(group)?;
-        let ni = group.len() as f64;
-        for (j, &z) in unique.iter().enumerate() {
-            if variant == AndersonVariant::Right && j + 1 == unique.len() {
-                break;
-            }
-            let before = pooled.partition_point(|v| *v < z) as f64;
-            let after = pooled.partition_point(|v| *v <= z) as f64;
-            let lj = after - before;
-            let mij_after = ordered.partition_point(|v| *v <= z) as f64;
-            let (bj, mij, denominator) = match variant {
-                AndersonVariant::Right => (after, mij_after, after * (n - after)),
-                AndersonVariant::Midrank => {
-                    let bj = before + lj / 2.;
-                    let mij_before = ordered.partition_point(|v| *v < z) as f64;
-                    (
-                        bj,
-                        (mij_before + mij_after) / 2.,
-                        bj * (n - bj) - n * lj / 4.,
-                    )
-                }
-            };
-            raw += lj / n * (n * mij - bj * ni).powi(2) / (denominator * ni);
-        }
-    }
-    if variant == AndersonVariant::Midrank {
-        raw *= (n - 1.) / n;
-    }
+    let raw = anderson_ksamp_raw(groups, &pooled, &unique, variant)?;
     let h_groups = groups.iter().map(|row| 1. / row.len() as f64).sum::<f64>();
     let (mut harmonic, mut g) = (0., 0.);
     for (i, r) in (2..count).rev().enumerate() {
@@ -665,4 +699,122 @@ pub fn anderson_ksamp(groups: &[&[f64]], variant: AndersonVariant) -> Result<Tes
         }?
     };
     Ok(TestResult { statistic, pvalue })
+}
+
+#[cfg(test)]
+mod anderson_sweep_tests {
+    use super::*;
+
+    // Original exact cumulative-count calculation, retained independently to
+    // check every intermediate floating-point accumulation against the sweep.
+    fn reference_raw(
+        groups: &[&[f64]],
+        pooled: &[f64],
+        unique: &[f64],
+        variant: AndersonVariant,
+    ) -> Result<f64> {
+        let n = pooled.len() as f64;
+        let mut raw = 0.;
+        for group in groups {
+            let ordered = sorted(group)?;
+            let ni = group.len() as f64;
+            for (j, &z) in unique.iter().enumerate() {
+                if variant == AndersonVariant::Right && j + 1 == unique.len() {
+                    break;
+                }
+                let before = pooled.partition_point(|v| *v < z) as f64;
+                let after = pooled.partition_point(|v| *v <= z) as f64;
+                let lj = after - before;
+                let mij_after = ordered.partition_point(|v| *v <= z) as f64;
+                let (bj, mij, denominator) = match variant {
+                    AndersonVariant::Right => (after, mij_after, after * (n - after)),
+                    AndersonVariant::Midrank => {
+                        let bj = before + lj / 2.;
+                        let mij_before = ordered.partition_point(|v| *v < z) as f64;
+                        (
+                            bj,
+                            (mij_before + mij_after) / 2.,
+                            bj * (n - bj) - n * lj / 4.,
+                        )
+                    }
+                };
+                raw += lj / n * (n * mij - bj * ni).powi(2) / (denominator * ni);
+            }
+        }
+        if variant == AndersonVariant::Midrank {
+            raw *= (n - 1.) / n;
+        }
+        Ok(raw)
+    }
+
+    #[test]
+    fn anderson_monotone_counts_match_original_bitwise_with_ties_and_signed_zero() -> Result<()> {
+        let mut cases = vec![
+            vec![vec![1., 2.], vec![3., 4.]],
+            vec![vec![1., 2., 2., 4.], vec![2., 3., 3., 5.]],
+            vec![
+                vec![-0., 0., 0., 1., 1., 3.],
+                vec![0., -0., 1., 1., 2.],
+                vec![-0., 2., 2., 3., 3., 3., 3.],
+            ],
+            vec![
+                vec![-1e100, -1e-300, 0., 1e-300, 1e100],
+                vec![-1e100, -1e-300, -0., 1e-300, 1e100],
+            ],
+            vec![
+                vec![0., 0., 0., 0., 0., 0., 1.],
+                vec![1., 1., 1., 1., 1., 1., 1.],
+                vec![0., 0., 1., 1., 1., 1., 1.],
+            ],
+        ];
+
+        // A larger, highly tied sample and many uneven groups exercise both
+        // the point-count and per-group cursor paths.
+        let mut state = 0x9e37_79b9_7f4a_7c15_u64;
+        cases.push(
+            (0..16)
+                .map(|group| {
+                    (0..(31 + group * 13))
+                        .map(|_| {
+                            state ^= state << 13;
+                            state ^= state >> 7;
+                            state ^= state << 17;
+                            let value = ((state >> 48) % 19) as f64 - 9.;
+                            if value == 0. && state & 1 != 0 {
+                                -0.
+                            } else {
+                                value
+                            }
+                        })
+                        .collect()
+                })
+                .collect(),
+        );
+
+        for case in cases {
+            let groups = case.iter().map(Vec::as_slice).collect::<Vec<_>>();
+            let pooled = sorted(
+                &groups
+                    .iter()
+                    .flat_map(|row| row.iter().copied())
+                    .collect::<Vec<_>>(),
+            )?;
+            let mut unique = pooled.clone();
+            unique.dedup();
+            for variant in [AndersonVariant::Midrank, AndersonVariant::Right] {
+                let expected = reference_raw(&groups, &pooled, &unique, variant)?;
+                let actual = anderson_ksamp_raw(&groups, &pooled, &unique, variant)?;
+                assert_eq!(
+                    actual.to_bits(),
+                    expected.to_bits(),
+                    "variant={variant:?}, group sizes={:?}",
+                    groups.iter().map(|g| g.len()).collect::<Vec<_>>()
+                );
+                let result = anderson_ksamp(&groups, variant)?;
+                assert!(result.statistic.is_finite());
+                assert!(result.pvalue.is_finite());
+            }
+        }
+        Ok(())
+    }
 }

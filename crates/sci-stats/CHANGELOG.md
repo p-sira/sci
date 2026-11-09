@@ -2,6 +2,10 @@
 
 ## 0.3.0
 
+- Speed up non-sampling statistics with quantile selection, exact rank-pair
+  sweeps, fewer redundant allocations and sorting passes, cached hypothesis-test
+  tails, and reusable transform likelihood terms. Add matched SciPy benchmarks
+  and bitwise regression tests; see `function_coverages/STATS_PERFORMANCE_COMPARISON.md`.
 - Add Sobol (21,201 dimensions, 64-bit sequences, LMS scrambling), Halton,
   Latin hypercube, Poisson-disk and multivariate/multinomial QMC engines,
   with shared `QmcEngine` and bounded integer sampling APIs.

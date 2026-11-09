@@ -385,8 +385,13 @@ pub fn yeojohnson(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
 /// [SciPy `boxcox_llf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.boxcox_llf.html).
 pub fn boxcox_llf(lambda: f64, values: &[f64]) -> Result<f64> {
     sample(values, 1)?;
-    let y = boxcox(values, lambda)?;
     let logsum = values.iter().map(|x| x.ln()).sum::<f64>();
+    boxcox_llf_with_logsum(lambda, values, logsum)
+}
+
+/// Reuse the sample-only log sum across likelihood evaluations in a parameter search.
+pub(super) fn boxcox_llf_with_logsum(lambda: f64, values: &[f64], logsum: f64) -> Result<f64> {
+    let y = boxcox(values, lambda)?;
     let v = variance(&y, 0)?;
     let result = (lambda - 1.) * logsum - values.len() as f64 / 2. * v.ln();
     if result.is_nan() {
@@ -432,11 +437,20 @@ pub fn boxcox_llf(lambda: f64, values: &[f64]) -> Result<f64> {
 /// [SciPy `yeojohnson_llf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.yeojohnson_llf.html).
 pub fn yeojohnson_llf(lambda: f64, values: &[f64]) -> Result<f64> {
     sample(values, 1)?;
-    let y = yeojohnson(values, lambda)?;
     let jacobian = values
         .iter()
         .map(|x| x.signum() * x.abs().ln_1p())
         .sum::<f64>();
+    yeojohnson_llf_with_jacobian(lambda, values, jacobian)
+}
+
+/// Reuse the sample-only Jacobian across likelihood evaluations in a parameter search.
+pub(super) fn yeojohnson_llf_with_jacobian(
+    lambda: f64,
+    values: &[f64],
+    jacobian: f64,
+) -> Result<f64> {
+    let y = yeojohnson(values, lambda)?;
     let result = -(values.len() as f64) / 2. * variance(&y, 0)?.ln() + (lambda - 1.) * jacobian;
     if result.is_nan() {
         Err(Error::NonFiniteEvaluation)
@@ -674,7 +688,7 @@ pub fn expectile(values: &[f64], alpha: f64) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Sorts and merges CDF breakpoints in O((n+m) log(n+m)) work; no quadratic pairwise distances.
+/// Sorts each sample, then merges CDF breakpoints in linear time without a third sort.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -712,7 +726,7 @@ pub fn wasserstein_distance(first: &[f64], second: &[f64]) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Sorts CDF breakpoints; computes the integral before taking its square root.
+/// Sorts each sample and merges CDF breakpoints without allocating a union.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -737,23 +751,40 @@ fn empirical_distance(first: &[f64], second: &[f64], energy: bool) -> Result<f64
     }
     let a = sorted(first)?;
     let b = sorted(second)?;
-    let mut knots = a.iter().chain(&b).copied().collect::<Vec<_>>();
-    knots.sort_by(f64::total_cmp);
-    knots.dedup();
     let (mut i, mut j) = (0, 0);
     let mut integral = 0.;
-    for window in knots.windows(2) {
-        while i < a.len() && a[i] <= window[0] {
+    let mut previous = if a[0].total_cmp(&b[0]).is_le() {
+        a[0]
+    } else {
+        b[0]
+    };
+    loop {
+        // Counts at the left endpoint determine the CDF difference throughout
+        // the next interval. This also collapses ties and signed-zero knots.
+        while i < a.len() && a[i] <= previous {
             i += 1;
         }
-        while j < b.len() && b[j] <= window[0] {
+        while j < b.len() && b[j] <= previous {
             j += 1;
         }
+        let next = match (a.get(i), b.get(j)) {
+            (Some(&left), Some(&right)) => {
+                if left.total_cmp(&right).is_le() {
+                    left
+                } else {
+                    right
+                }
+            }
+            (Some(&left), None) => left,
+            (None, Some(&right)) => right,
+            (None, None) => break,
+        };
         let d = (i as f64 / a.len() as f64 - j as f64 / b.len() as f64).abs();
-        integral += match window[1] - window[0] {
+        integral += match next - previous {
             value if value.is_finite() => Ok(value),
             _ => Err(crate::Error::NonFiniteEvaluation),
         }? * if energy { d * d } else { d };
+        previous = next;
     }
     match if energy {
         (2. * integral).sqrt()
@@ -762,5 +793,28 @@ fn empirical_distance(first: &[f64], second: &[f64], energy: bool) -> Result<f64
     } {
         value if value.is_finite() => Ok(value),
         _ => Err(crate::Error::NonFiniteEvaluation),
+    }
+}
+
+#[cfg(test)]
+mod distance_merge_tests {
+    use super::*;
+
+    #[test]
+    fn unequal_samples_with_ties_have_exact_cdf_integrals() {
+        // CDF differences on [0,1), [1,2), [2,3) are 2/3, 1/6, 1/2.
+        let a = [-0.0, 0.0, 2.0];
+        let b = [3.0, 1.0];
+        let w = wasserstein_distance(&a, &b).unwrap();
+        let e = energy_distance(&a, &b).unwrap();
+        assert!((w - 4.0 / 3.0).abs() < 1e-14);
+        assert!((e - 13.0_f64.sqrt() / 3.0).abs() < 1e-14);
+        assert!((wasserstein_distance(&b, &a).unwrap() - w).abs() < 1e-14);
+        assert!((energy_distance(&b, &a).unwrap() - e).abs() < 1e-14);
+
+        // Positive and negative zero are the same CDF breakpoint.
+        assert_eq!(wasserstein_distance(&[-0.0, 0.0], &[0.0]).unwrap(), 0.0);
+        assert_eq!(energy_distance(&[-0.0, 0.0], &[0.0]).unwrap(), 0.0);
+        assert!(wasserstein_distance(&[-1e308], &[1e308]).is_err());
     }
 }

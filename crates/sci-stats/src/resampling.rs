@@ -416,7 +416,14 @@ pub fn bws_test(x: &[f64], y: &[f64], alternative: Alternative) -> Result<Resamp
     let ranks = rankdata(&pooled, RankMethod::Average)?;
     let statistic = |a: &[f64], b: &[f64]| -> Result<f64> {
         let group = |ranks: &[f64], other: usize| -> Result<f64> {
-            let ordered = sorted(ranks)?;
+            // An exact BWS test permits at most twenty pooled observations.
+            // Sort the ranks on the stack for each partition: the original
+            // sorting order is unchanged, without two heap allocations per
+            // callback across as many as 184756 partitions.
+            let mut buffer = [0.; 20];
+            let ordered = &mut buffer[..ranks.len()];
+            ordered.copy_from_slice(ranks);
+            ordered.sort_by(f64::total_cmp);
             let n = ranks.len() as f64;
             let m = other as f64;
             Ok(ordered
@@ -453,4 +460,87 @@ pub fn bws_test(x: &[f64], y: &[f64], alternative: Alternative) -> Result<Resamp
             Alternative::Greater
         },
     )
+}
+
+#[cfg(test)]
+mod bws_stack_sort_tests {
+    use super::*;
+
+    fn heap_reference(x: &[f64], y: &[f64], alternative: Alternative) -> Result<ResamplingResult> {
+        let pooled = x.iter().chain(y).copied().collect::<Vec<_>>();
+        let ranks = rankdata(&pooled, RankMethod::Average)?;
+        let statistic = |a: &[f64], b: &[f64]| -> Result<f64> {
+            let group = |ranks: &[f64], other: usize| -> Result<f64> {
+                let ordered = sorted(ranks)?;
+                let n = ranks.len() as f64;
+                let m = other as f64;
+                Ok(ordered
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &r)| {
+                        let position = (i + 1) as f64;
+                        let d = r - (m + n) / n * position;
+                        let numerator = if alternative == Alternative::TwoSided {
+                            d * d
+                        } else {
+                            d * d.abs()
+                        };
+                        let f = position / (n + 1.);
+                        numerator / (f * (1. - f) * m * (m + n))
+                    })
+                    .sum())
+            };
+            let bx = group(a, b.len())?;
+            let by = group(b, a.len())?;
+            Ok(if alternative == Alternative::TwoSided {
+                (bx + by) / 2.
+            } else {
+                (bx - by) / 2.
+            })
+        };
+        permutation_test(
+            &ranks[..x.len()],
+            &ranks[x.len()..],
+            statistic,
+            if alternative == Alternative::Less {
+                Alternative::Less
+            } else {
+                Alternative::Greater
+            },
+        )
+    }
+
+    #[test]
+    fn stack_sorted_bws_matches_original_heap_sort_bitwise() -> Result<()> {
+        let cases: &[(&[f64], &[f64])] = &[
+            (&[1., 2.], &[3., 4.]),
+            (&[0., -0., 1.], &[0., 2., 2., 3.]),
+            (&[2., 1., 3., 4., 5.], &[3., 7., 5., 9., 11.]),
+            (&[1., 1., 1., 1.], &[1., 1., 1., 1.]),
+        ];
+        for &(x, y) in cases {
+            for alternative in [
+                Alternative::Less,
+                Alternative::Greater,
+                Alternative::TwoSided,
+            ] {
+                let actual = bws_test(x, y, alternative)?;
+                let expected = heap_reference(x, y, alternative)?;
+                assert_eq!(actual.statistic.to_bits(), expected.statistic.to_bits());
+                assert_eq!(actual.pvalue.to_bits(), expected.pvalue.to_bits());
+                assert_eq!(
+                    actual.null_distribution.len(),
+                    expected.null_distribution.len()
+                );
+                for (a, b) in actual
+                    .null_distribution
+                    .iter()
+                    .zip(&expected.null_distribution)
+                {
+                    assert_eq!(a.to_bits(), b.to_bits());
+                }
+            }
+        }
+        Ok(())
+    }
 }

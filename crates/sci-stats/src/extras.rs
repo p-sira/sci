@@ -94,6 +94,10 @@ fn limited(
 ///
 /// [SciPy `tmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tmean.html).
 pub fn tmean(values: &[f64], limits: Option<(f64, f64)>, inclusive: (bool, bool)) -> Result<f64> {
+    if limits.is_none() {
+        sample(values, 1)?;
+        return mean(values);
+    }
     let x = limited(values, limits, inclusive)?;
     mean(&x)
 }
@@ -139,6 +143,10 @@ pub fn tvar(
     inclusive: (bool, bool),
     ddof: usize,
 ) -> Result<f64> {
+    if limits.is_none() {
+        sample(values, 1)?;
+        return variance(values, ddof);
+    }
     let x = limited(values, limits, inclusive)?;
     variance(&x, ddof)
 }
@@ -184,6 +192,10 @@ pub fn tstd(
     inclusive: (bool, bool),
     ddof: usize,
 ) -> Result<f64> {
+    if limits.is_none() {
+        sample(values, 1)?;
+        return std(values, ddof);
+    }
     let x = limited(values, limits, inclusive)?;
     std(&x, ddof)
 }
@@ -229,6 +241,10 @@ pub fn tsem(
     inclusive: (bool, bool),
     ddof: usize,
 ) -> Result<f64> {
+    if limits.is_none() {
+        sample(values, 1)?;
+        return sem(values, ddof);
+    }
     let x = limited(values, limits, inclusive)?;
     sem(&x, ddof)
 }
@@ -657,4 +673,57 @@ pub fn sigmaclip(values: &[f64], low: f64, high: f64) -> Result<SigmaClip> {
     Err(Error::NumericalFailure(
         "sigma clipping exceeded 128 passes",
     ))
+}
+
+#[cfg(test)]
+mod unbounded_trim_tests {
+    use super::*;
+
+    fn assert_same(actual: Result<f64>, expected: Result<f64>) {
+        match (actual, expected) {
+            (Ok(actual), Ok(expected)) => assert_eq!(actual.to_bits(), expected.to_bits()),
+            (Err(_), Err(_)) => {}
+            (actual, expected) => panic!("mismatched results: {actual:?} vs {expected:?}"),
+        }
+    }
+
+    #[test]
+    fn unbounded_trim_avoids_copy_without_changing_statistics() {
+        for values in [
+            vec![],
+            vec![1.0],
+            vec![-0.0, 0.0, -0.0, 0.0],
+            vec![1.0, 1.0, 1.0],
+            vec![-10.0, -4.0, 1.0, 5.0, 11.0],
+            vec![-1e100, -1e80, 1e80, 1e100],
+        ] {
+            for inclusive in [(true, true), (false, true), (true, false), (false, false)] {
+                assert_same(tmean(&values, None, inclusive), mean(&values));
+                for ddof in [0, 1, 2, 8] {
+                    assert_same(
+                        tvar(&values, None, inclusive, ddof),
+                        variance(&values, ddof),
+                    );
+                    assert_same(tstd(&values, None, inclusive, ddof), std(&values, ddof));
+                    assert_same(tsem(&values, None, inclusive, ddof), sem(&values, ddof));
+                }
+            }
+        }
+
+        // Explicit limits retain their original inclusive and exclusive
+        // filtering behavior, including validation after an empty selection.
+        let values = [1.0, 2.0, 3.0, 100.0];
+        assert_eq!(
+            tmean(&values, Some((1.0, 3.0)), (false, false))
+                .unwrap()
+                .to_bits(),
+            mean(&[2.0_f64]).unwrap().to_bits()
+        );
+        assert_same(
+            tvar(&values, Some((1.0, 3.0)), (true, true), 1),
+            variance(&[1.0, 2.0, 3.0], 1),
+        );
+        assert!(tmean(&values, Some((4.0, 5.0)), (true, true)).is_err());
+        assert!(tmean(&values, Some((f64::NAN, 5.0)), (true, true)).is_err());
+    }
 }

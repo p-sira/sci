@@ -215,13 +215,16 @@ pub fn differential_entropy(values: &[f64], window: usize, base: Option<f64>) ->
     } else {
         1.
     };
+    // The window scaling is constant for every spacing. Evaluate its
+    // logarithm once while preserving the per-observation addition order.
+    let log_spacing_scale = (n as f64 / (2. * window as f64)).ln();
     let mut sum = 0.;
     for i in 0..n {
         let distance = match x[(i + window).min(n - 1)] - x[i.saturating_sub(window)] {
             value if value.is_finite() => Ok(value),
             _ => Err(crate::Error::NonFiniteEvaluation),
         }?;
-        sum += distance.ln() + (n as f64 / (2. * window as f64)).ln();
+        sum += distance.ln() + log_spacing_scale;
     }
     Ok(sum / n as f64 / denominator)
 }
@@ -309,5 +312,48 @@ pub fn lmoment(values: &[f64], order: usize, standardize: bool) -> Result<f64> {
             value if value.is_finite() => Ok(value),
             _ => Err(crate::Error::NonFiniteEvaluation),
         }
+    }
+}
+
+#[cfg(test)]
+mod entropy_scale_tests {
+    use super::*;
+
+    fn reference(values: &[f64], window: usize, base: Option<f64>) -> f64 {
+        let x = sorted(values).unwrap();
+        let n = x.len();
+        let denominator = base.map_or(1., f64::ln);
+        let mut sum = 0.;
+        for i in 0..n {
+            let distance = x[(i + window).min(n - 1)] - x[i.saturating_sub(window)];
+            sum += distance.ln() + (n as f64 / (2. * window as f64)).ln();
+        }
+        sum / n as f64 / denominator
+    }
+
+    #[test]
+    fn hoisted_entropy_log_matches_per_spacing_evaluation_bitwise() {
+        for data in [
+            vec![1.0, 2.0, 3.0, 4.0, 5.0],
+            vec![0.0, -0.0, 0.0, 0.0, 0.0, 0.0],
+            vec![-7.0, -3.0, -1.0, 0.0, 1.0, 3.0, 7.0],
+            vec![1e-100, 2e-100, 3e-100, 4e-100, 5e-100, 6e-100],
+            (0..1024).map(|i| (i * 43 % 1021) as f64).collect(),
+        ] {
+            for window in 1..data.len().div_ceil(2) {
+                for base in [None, Some(2.0), Some(0.5)] {
+                    let actual = differential_entropy(&data, window, base).unwrap();
+                    let expected = reference(&data, window, base);
+                    assert_eq!(
+                        actual.to_bits(),
+                        expected.to_bits(),
+                        "n={}, window={window}, base={base:?}",
+                        data.len()
+                    );
+                }
+            }
+        }
+        assert!(differential_entropy(&[1., 2., 3.], 0, None).is_err());
+        assert!(differential_entropy(&[1., 2., 3.], 1, Some(1.)).is_err());
     }
 }

@@ -361,7 +361,10 @@ pub fn boxcox_normmax(values: &[f64], lower: f64, upper: f64, method: BoxCoxMeth
     }
     match method {
         BoxCoxMethod::MaximumLikelihood => {
-            bounded_minimum(lower, upper, |l| Ok(-boxcox_llf(l, values)?))
+            let logsum = values.iter().map(|x| x.ln()).sum::<f64>();
+            bounded_minimum(lower, upper, |l| {
+                Ok(-transformations::boxcox_llf_with_logsum(l, values, logsum)?)
+            })
         }
         BoxCoxMethod::Pearson => {
             let plot = probplot(
@@ -421,7 +424,15 @@ pub fn boxcox_normmax(values: &[f64], lower: f64, upper: f64, method: BoxCoxMeth
 pub fn yeojohnson_normmax(values: &[f64], lower: f64, upper: f64) -> Result<f64> {
     search_bounds(lower, upper)?;
     search_sample(values)?;
-    bounded_minimum(lower, upper, |l| Ok(-yeojohnson_llf(l, values)?))
+    let jacobian = values
+        .iter()
+        .map(|x| x.signum() * x.abs().ln_1p())
+        .sum::<f64>();
+    bounded_minimum(lower, upper, |l| {
+        Ok(-transformations::yeojohnson_llf_with_jacobian(
+            l, values, jacobian,
+        )?)
+    })
 }
 
 /// One-shape distribution families supported by PPCC shape diagnostics.
