@@ -15,7 +15,11 @@
 //! rate must suit the objective; convergence is not guaranteed for arbitrary
 //! functions. Limits return a result with a status, while invalid evaluations
 //! return the shared [`Error`].
-//! Objective values and callback outputs must be finite. A successful status
+//! [`least_squares::dogbox`] solves small nonlinear least-squares problems with
+//! optional coordinate bounds, using a rectangular trust-region dogleg method.
+//! Minimizers require finite objective and gradient evaluations. Dogbox requires
+//! finite initial residuals and Jacobian samples; nonfinite trial residuals shrink
+//! the trust region. A successful status
 //! means the method met its configured stopping rule, not that a global
 //! minimum was proved; inspect the returned point, value, and status together.
 //!
@@ -48,6 +52,9 @@ pub use sci_core::{Error, Result};
 #[path = "mod.rs"]
 mod implementation;
 pub use implementation::{Minimum, Options, Status};
+
+/// Rectangular trust-region nonlinear least squares with coordinate bounds.
+pub mod least_squares;
 
 /// Objective minimization and its solver configuration and results.
 pub mod minimize {

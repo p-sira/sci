@@ -1642,6 +1642,7 @@ name = "sci-optimize"
 version = "0.3.0"
 dependencies = [
  "basin",
+ "nalgebra",
  "sci-core",
  "sci-differentiate",
  "sci-linalg",
