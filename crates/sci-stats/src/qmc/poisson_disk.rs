@@ -375,8 +375,8 @@ impl PoissonDisk {
         self.generated += 1;
     }
 
-    fn sample_candidate(&mut self, center: usize) -> Vec<f64> {
-        let mut direction = vec![0.0; self.dimensions];
+    fn sample_candidate(&mut self, center: usize) -> [f64; MAX_DIMENSIONS] {
+        let mut direction = [0.0; MAX_DIMENSIONS];
         for axis in (0..self.dimensions).step_by(2) {
             let u = self.rng.random::<f64>().max(f64::MIN_POSITIVE);
             let angle = TAU * self.rng.random::<f64>();
@@ -401,7 +401,7 @@ impl PoissonDisk {
             PoissonDiskHypersphere::Surface => 1.001,
         };
         let scale = self.radius * radial_factor / norm;
-        direction
+        direction[..self.dimensions]
             .iter_mut()
             .enumerate()
             .for_each(|(axis, value)| *value = self.points[center][axis] + *value * scale);
@@ -481,15 +481,15 @@ impl PoissonDisk {
             };
             self.attempts += 1;
             let candidate = self.sample_candidate(center);
-            if self.acceptable(&candidate) {
+            if self.acceptable(&candidate[..self.dimensions]) {
                 // A productive center remains active. The proposal budget
                 // counts successive failures, not all previous trials.
                 self.active.push(center);
                 self.current_center = None;
                 if collect {
-                    output.push(candidate.clone());
+                    output.push(candidate[..self.dimensions].to_vec());
                 }
-                self.add_point(candidate);
+                self.add_point(candidate[..self.dimensions].to_vec());
                 added += 1;
             } else {
                 self.current_center = (remaining > 1).then_some((center, remaining - 1));

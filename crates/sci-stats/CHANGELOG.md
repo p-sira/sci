@@ -2,6 +2,27 @@
 
 ## 0.3.0
 
+- Cache per-segment Hermite inverse-interpolation coefficients and activate
+  coarse probability bins for smaller tables without changing seeded draws
+  or interpolation bits. A matched single-thread 1024-draw release run
+  measured 17.7 µs versus SciPy 1.18.1's 41.4 µs. Add contiguous Sobol
+  comparison cases and document remaining nested-row allocation overhead
+  and the large centered Latin-hypercube benchmark gap; see
+  `function_coverages/SAMPLING_BENCHMARK_COMPARISON.md`.
+- Stream Sobol coordinates through contiguous row-major buffers in the QMC
+  multivariate-normal and multinomial transforms, avoiding intermediate
+  per-point allocations while preserving the existing seeded sequences.
+  Add reusable Sobol `random_flat_into` output and optimize its state updates;
+  accelerate plain Halton with exact reciprocal digit division, specialize
+  Latin-hypercube initialization and floating-point stratum boundary checks,
+  and reduce temporary Poisson-disk candidate allocations.
+  Optimize inverse-CDF sampling with the native normal quantile fast path,
+  indexed interpolation tables and early termination of construction probes;
+  cache rejection sampler envelope transforms and invariant geometry, and
+  validate only new tangent relationships during adaptive TDR insertion.
+  Add paired SciPy 1.18.1 native performance harnesses for all 17 sampling/QMC
+  engine variants, with separate construction/draw results and explicit
+  comparability notes for methods with different sampling algorithms.
 - Add Halton, Latin hypercube, Poisson-disk, multivariate-normal QMC and
   multinomial QMC generators alongside Sobol, with a shared `QmcEngine` trait
   and bounded integer-interval sampling. Introduce `stats::sampling` with

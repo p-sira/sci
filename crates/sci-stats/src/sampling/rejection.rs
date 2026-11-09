@@ -146,11 +146,15 @@ where
     /// preserves density units and generation order.
     pub fn random(&mut self, n: usize) -> Result<Vec<f64>> {
         valid_count(n, self.max_attempts)?;
+        if n == 0 {
+            return Ok(Vec::new());
+        }
         let mut samples = Vec::with_capacity(n);
+        let vmax = self.vmin + self.width;
+        let vscale = self.vmin.abs().max(vmax.abs());
+        let support = self.support;
+        let density_upper = self.density_upper;
         for _ in 0..self.max_attempts {
-            if samples.len() == n {
-                return Ok(samples);
-            }
             let u = self.umax * self.rng.random::<f64>();
             if u == 0.0 {
                 continue;
@@ -160,7 +164,7 @@ where
             if !x.is_finite() {
                 continue;
             }
-            if self.support.is_some_and(|(lo, hi)| x < lo || x > hi) {
+            if support.is_some_and(|(lo, hi)| x < lo || x > hi) {
                 continue;
             }
             let density = (self.pdf)(x)?;
@@ -170,7 +174,7 @@ where
             if density < 0.0 {
                 return Err(Error::InvalidInput("PDF must be nonnegative"));
             }
-            if self.density_upper.is_some_and(|bound| density > bound) {
+            if density_upper.is_some_and(|bound| density > bound) {
                 return Err(Error::InvalidInput(
                     "PDF exceeds declared global upper bound",
                 ));
@@ -182,9 +186,8 @@ where
             }
             let root = density.sqrt();
             let vx = (x - self.shift) * root;
-            let vmax = self.vmin + self.width;
             let tol_u = 32.0 * f64::EPSILON * self.umax.max(root);
-            let tol_v = 32.0 * f64::EPSILON * self.vmin.abs().max(vmax.abs()).max(vx.abs());
+            let tol_v = 32.0 * f64::EPSILON * vscale.max(vx.abs());
             if !vx.is_finite()
                 || root > self.umax + tol_u
                 || vx < self.vmin - tol_v
@@ -196,15 +199,14 @@ where
             }
             if u <= root {
                 samples.push(x);
+                if samples.len() == n {
+                    return Ok(samples);
+                }
             }
         }
-        if samples.len() == n {
-            Ok(samples)
-        } else {
-            Err(Error::NumericalFailure(
-                "ratio-of-uniforms attempt budget exhausted",
-            ))
-        }
+        Err(Error::NumericalFailure(
+            "ratio-of-uniforms attempt budget exhausted",
+        ))
     }
 
     /// Reset the seeded random stream; does not change the PDF or rectangle.
@@ -331,6 +333,9 @@ struct HatSegment {
     index: usize,
     log_mass: f64,
     cumulative_mass: f64,
+    width: f64,
+    z: f64,
+    inverse_factor: f64,
 }
 
 /// Transformed-density rejection with the logarithmic (`c=0`) transformation.
@@ -489,6 +494,44 @@ where
         Ok(())
     }
 
+    /// Previously accepted tangents are already mutually valid. After an
+    /// insertion, only the two adjacent slope comparisons and tangent bounds
+    /// involving the new knot can change.
+    fn validate_inserted_tangent(&self, pos: usize) -> Result<()> {
+        let knot = self.knots[pos];
+        if (pos > 0 && self.knots[pos - 1].slope < knot.slope)
+            || (pos + 1 < self.knots.len() && knot.slope < self.knots[pos + 1].slope)
+        {
+            return Err(Error::InvalidInput(
+                "log density derivatives must be nonincreasing",
+            ));
+        }
+        for (index, other) in self.knots.iter().enumerate() {
+            if index == pos {
+                continue;
+            }
+            let upper = other.logf + other.slope * (knot.x - other.x);
+            if !upper.is_finite() {
+                return Err(Error::NonFiniteEvaluation);
+            }
+            if knot.logf - upper > TDR_HAT_MARGIN {
+                return Err(Error::InvalidInput(
+                    "log density exceeds one of its tangents",
+                ));
+            }
+            let upper = knot.logf + knot.slope * (other.x - knot.x);
+            if !upper.is_finite() {
+                return Err(Error::NonFiniteEvaluation);
+            }
+            if other.logf - upper > TDR_HAT_MARGIN {
+                return Err(Error::InvalidInput(
+                    "log density exceeds one of its tangents",
+                ));
+            }
+        }
+        Ok(())
+    }
+
     fn hat_segments(&self) -> Result<Vec<HatSegment>> {
         let mut boundaries = Vec::with_capacity(self.knots.len() + 1);
         boundaries.push(self.support.0);
@@ -531,12 +574,27 @@ where
             if !log_mass.is_finite() {
                 return Err(Error::NonFiniteEvaluation);
             }
+            let width = hi - lo;
+            let z = knot.slope * width;
+            // An envelope is reused for many proposals. The inverse CDF's
+            // exponential factor depends only on this segment, even after
+            // rejecting a point; recompute it only when the hat adapts.
+            let inverse_factor = if z >= 1.0 {
+                (-z).exp()
+            } else if z != 0.0 {
+                z.exp_m1()
+            } else {
+                0.0
+            };
             segments.push(HatSegment {
                 lo,
                 hi,
                 index,
                 log_mass,
                 cumulative_mass: 0.0,
+                width,
+                z,
+                inverse_factor,
             });
         }
         if segments.is_empty() {
@@ -572,28 +630,27 @@ where
         }
         let mut segments = self.hat_segments()?;
         let mut out = Vec::with_capacity(n);
+        let mut area = segments.last().unwrap().cumulative_mass;
+        let mut area_ceiling = area.next_down();
         for _ in 0..self.max_attempts {
-            let area = segments.last().unwrap().cumulative_mass;
             // Multiplication can round to `area` even when the input is < 1.
             // Keep the search strictly inside the positive-mass CDF.
-            let choice = (self.rng.random::<f64>() * area).min(area.next_down());
+            let choice = (self.rng.random::<f64>() * area).min(area_ceiling);
             let index = segments
                 .partition_point(|part| part.cumulative_mass <= choice)
                 .min(segments.len() - 1);
             let segment = segments[index];
             let knot = self.knots[segment.index];
-            let width = segment.hi - segment.lo;
-            let z = knot.slope * width;
-            if !z.is_finite() {
+            if !segment.z.is_finite() {
                 return Err(Error::NonFiniteEvaluation);
             }
             let u = self.rng.random::<f64>().max(f64::MIN_POSITIVE);
-            let x = if z >= 1.0 {
-                segment.hi + (u + (1.0 - u) * (-z).exp()).ln() / knot.slope
-            } else if z != 0.0 {
-                segment.lo + (u * z.exp_m1()).ln_1p() / knot.slope
+            let x = if segment.z >= 1.0 {
+                segment.hi + (u + (1.0 - u) * segment.inverse_factor).ln() / knot.slope
+            } else if segment.z != 0.0 {
+                segment.lo + (u * segment.inverse_factor).ln_1p() / knot.slope
             } else {
-                segment.lo + width * u
+                segment.lo + segment.width * u
             };
             if !x.is_finite() || x < segment.lo || x > segment.hi {
                 return Err(Error::NonFiniteEvaluation);
@@ -632,8 +689,15 @@ where
                         return Err(Error::NonFiniteEvaluation);
                     }
                     self.knots.insert(pos, Knot { x, logf, slope });
-                    match self.validate_tangents().and_then(|()| self.hat_segments()) {
-                        Ok(next) => segments = next,
+                    match self
+                        .validate_inserted_tangent(pos)
+                        .and_then(|()| self.hat_segments())
+                    {
+                        Ok(next) => {
+                            segments = next;
+                            area = segments.last().unwrap().cumulative_mass;
+                            area_ceiling = area.next_down();
+                        }
                         Err(error) => {
                             // An invalid derivative must not poison subsequent
                             // calls to this generator after reporting an error.
@@ -681,6 +745,45 @@ mod tests {
         assert!((second - 1.0).abs() < 0.07, "{second}");
         sampler.reset();
         assert_eq!(a, sampler.random(8_000)?);
+        Ok(())
+    }
+
+    #[test]
+    fn ratio_uniforms_keeps_proposal_stream_and_batch_boundaries() -> Result<()> {
+        let v = 2.0_f64.sqrt() * (-0.5_f64).exp();
+        let mut sampler = RatioUniforms::new(
+            |x: f64| Ok((-0.5 * x * x).exp()),
+            1.0,
+            -v,
+            v,
+            0.0,
+            47,
+            10_000,
+        )?;
+        let mut reference_rng = sampler.rng.clone();
+        let mut expected = Vec::with_capacity(256);
+        for _ in 0..10_000 {
+            if expected.len() == 256 {
+                break;
+            }
+            let u = sampler.umax * reference_rng.random::<f64>();
+            if u == 0.0 {
+                continue;
+            }
+            let v = sampler.vmin + sampler.width * reference_rng.random::<f64>();
+            let x = v / u + sampler.shift;
+            if x.is_finite() && u <= (-0.5 * x * x).exp().sqrt() {
+                expected.push(x);
+            }
+        }
+        assert_eq!(expected.len(), 256);
+        assert!(sampler.random(0)?.is_empty());
+        assert_eq!(sampler.random(256)?, expected);
+
+        sampler.reset();
+        let mut parts = sampler.random(128)?;
+        parts.extend(sampler.random(128)?);
+        assert_eq!(parts, expected);
         Ok(())
     }
 
@@ -747,6 +850,68 @@ mod tests {
             )
             .is_err()
         );
+        Ok(())
+    }
+
+    #[test]
+    fn tdr_inverse_cdf_cache_preserves_original_proposals() -> Result<()> {
+        // Exercise the positive, negative, and nearly zero slope branches,
+        // using the uncached inversion formula as an independent reference.
+        for slope in [0.0, 1e-16, 2.0, -2.0, 1_000.0] {
+            let mut sampler = TransformedDensityRejection::new(
+                move |x: f64| Ok(slope * x),
+                move |_x: f64| Ok(slope),
+                (0.0, 1.0),
+                97,
+                10_000,
+            )?;
+            let segments = sampler.hat_segments()?;
+            let area = segments.last().unwrap().cumulative_mass;
+            let mut reference_rng = sampler.rng.clone();
+            let mut expected = Vec::with_capacity(256);
+            for _ in 0..256 {
+                let choice = (reference_rng.random::<f64>() * area).min(area.next_down());
+                let index = segments
+                    .partition_point(|part| part.cumulative_mass <= choice)
+                    .min(segments.len() - 1);
+                let segment = segments[index];
+                let knot = sampler.knots[segment.index];
+                let width = segment.hi - segment.lo;
+                let z = knot.slope * width;
+                let u = reference_rng.random::<f64>().max(f64::MIN_POSITIVE);
+                let x = if z >= 1.0 {
+                    segment.hi + (u + (1.0 - u) * (-z).exp()).ln() / knot.slope
+                } else if z != 0.0 {
+                    segment.lo + (u * z.exp_m1()).ln_1p() / knot.slope
+                } else {
+                    segment.lo + width * u
+                };
+                let hat = knot.logf + knot.slope * (x - knot.x);
+                let gap = slope * x - hat;
+                let log_accept = (1.0 - reference_rng.random::<f64>()).ln();
+                assert!(log_accept <= gap - TDR_HAT_MARGIN);
+                expected.push(x);
+            }
+            assert_eq!(sampler.random(256)?, expected, "slope {slope}");
+        }
+
+        let make_normal = || {
+            TransformedDensityRejection::new(
+                |x: f64| Ok(-0.5 * x * x),
+                |x: f64| Ok(-x),
+                (-5.0, 5.0),
+                97,
+                10_000,
+            )
+        };
+        let mut whole = make_normal()?;
+        let mut split = make_normal()?;
+        let expected = whole.random(512)?;
+        let mut actual = split.random(17)?;
+        actual.extend(split.random(495)?);
+        assert!(whole.knot_count() > 2);
+        assert_eq!(actual, expected);
+        assert_eq!(split.knot_count(), whole.knot_count());
         Ok(())
     }
 
@@ -829,6 +994,39 @@ mod tests {
         assert_eq!(sampler.knot_count(), 2);
         assert!(sampler.validate_tangents().is_ok());
         assert!(sampler.hat_segments().is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn incremental_tangent_validation_matches_full_validation() -> Result<()> {
+        let mut sampler = TransformedDensityRejection::new(
+            |x: f64| Ok(-0.5 * x * x),
+            |x: f64| Ok(-x),
+            (-5.0, 5.0),
+            13,
+            1_000,
+        )?;
+        // Valid insertions at both ends and in the middle, inconsistent
+        // derivative orderings, and violations on either side of the hat.
+        let candidates = [
+            (-3.5, -6.125, 3.5),
+            (0.0, 0.0, 0.0),
+            (3.5, -6.125, -3.5),
+            (0.0, 4.0, 0.0),
+            (0.0, -100.0, 0.0),
+            (0.0, 0.0, 100.0),
+            (0.0, 0.0, -100.0),
+        ];
+        for (x, logf, slope) in candidates {
+            let pos = sampler.knots.partition_point(|k| k.x < x);
+            sampler.knots.insert(pos, Knot { x, logf, slope });
+            assert_eq!(
+                sampler.validate_inserted_tangent(pos),
+                sampler.validate_tangents(),
+                "candidate {x}, {logf}, {slope}"
+            );
+            sampler.knots.remove(pos);
+        }
         Ok(())
     }
 

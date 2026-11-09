@@ -24,6 +24,25 @@ fn prime_bases(d: usize) -> Vec<u32> {
     primes
 }
 
+#[derive(Clone, Copy, Debug)]
+struct HaltonBase {
+    prime: u32,
+    inv_base: f64,
+    reciprocal32: u32,
+    reciprocal64: u64,
+}
+
+impl HaltonBase {
+    fn new(prime: u32) -> Self {
+        Self {
+            prime,
+            inv_base: 1.0 / f64::from(prime),
+            reciprocal32: ((1_u64 << 32) / u64::from(prime)) as u32,
+            reciprocal64: ((1_u128 << 64) / u128::from(prime)) as u64,
+        }
+    }
+}
+
 #[derive(Clone, Debug)]
 struct DigitScramble {
     permutations: Vec<Vec<u16>>,
@@ -102,6 +121,68 @@ fn radical_inverse(mut index: u128, base: u32, scramble: Option<&DigitScramble>)
     value.min(BELOW_ONE)
 }
 
+// Compute each plain coordinate in the same digit-addition order as
+// radical_inverse while avoiding unnecessary integer divisions.
+// M=floor(2^w / b) gives q=floor(n*M / 2^w), which is either floor(n/b)
+// or exactly one smaller for 0 <= n < 2^w. One remainder correction gives
+// exact division without a variable integer-divide instruction.
+#[inline]
+fn div_rem32(n: u32, base: &HaltonBase) -> (u32, u32) {
+    let mut quotient = ((u64::from(n) * u64::from(base.reciprocal32)) >> 32) as u32;
+    let mut remainder = n - quotient * base.prime;
+    if remainder >= base.prime {
+        quotient += 1;
+        remainder -= base.prime;
+    }
+    (quotient, remainder)
+}
+
+#[inline]
+fn div_rem64(n: u64, base: &HaltonBase) -> (u64, u64) {
+    let divisor = u64::from(base.prime);
+    let mut quotient = ((u128::from(n) * u128::from(base.reciprocal64)) >> 64) as u64;
+    let mut remainder = n - quotient * divisor;
+    if remainder >= divisor {
+        quotient += 1;
+        remainder -= divisor;
+    }
+    (quotient, remainder)
+}
+
+#[inline]
+fn radical_inverse_plain(mut index: u128, base: &HaltonBase) -> f64 {
+    if base.prime == 2 && index <= u128::from(u32::MAX) {
+        // All 32 binary fractional digits are exactly representable as f64.
+        return f64::from((index as u32).reverse_bits()) * 2_f64.powi(-32);
+    }
+    let inv_base = base.inv_base;
+    let mut weight = inv_base;
+    let mut value = 0.0;
+    if let Ok(mut small) = u32::try_from(index) {
+        while small != 0 {
+            let (quotient, digit) = div_rem32(small, base);
+            value += f64::from(digit) * weight;
+            small = quotient;
+            weight *= inv_base;
+        }
+    } else if let Ok(mut small) = u64::try_from(index) {
+        while small != 0 {
+            let (quotient, digit) = div_rem64(small, base);
+            value += digit as f64 * weight;
+            small = quotient;
+            weight *= inv_base;
+        }
+    } else {
+        let base = u128::from(base.prime);
+        while index != 0 {
+            value += (index % base) as f64 * weight;
+            index /= base;
+            weight *= inv_base;
+        }
+    }
+    value.min(BELOW_ONE)
+}
+
 /// Stateful Halton low-discrepancy sequence in the unit hypercube.
 ///
 /// The `j`th coordinate of zero-based point `n` is the radical inverse in the
@@ -139,7 +220,9 @@ fn radical_inverse(mut index: u128, base: u32, scramble: Option<&DigitScramble>)
 /// prime base. Skipping is `O(1)` independent of the number of skipped points.
 /// All digits of a `u128` index are scrambled, with constant zero-digit tails
 /// cached to keep ordinary generation proportional to the index digit count.
-/// Indices fitting in `u64` use native-width division in the inner loop.
+/// Plain indices fitting in 32 or 64 bits use precomputed exact integer
+/// reciprocal multiplication; larger indices retain 128-bit division.
+/// The first coordinate uses exact binary bit reversal for 32-bit indices.
 /// Floating-point rounding may still merge distinct points at very large
 /// indices; values rounded to 1 are clamped to the next `f64` below 1.
 /// The independent-digit scramble uses `StdRng` permutations and is reproducible
@@ -166,7 +249,7 @@ fn radical_inverse(mut index: u128, base: u32, scramble: Option<&DigitScramble>)
 /// and [SciPy `qmc.Halton`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.qmc.Halton.html).
 #[derive(Clone, Debug)]
 pub struct Halton {
-    bases: Vec<u32>,
+    bases: Vec<HaltonBase>,
     permutations: Option<Vec<DigitScramble>>,
     generated: u128,
 }
@@ -181,7 +264,7 @@ impl Halton {
             return Err(Error::InvalidInput("Halton requires 1..=512 dimensions"));
         }
         Ok(Self {
-            bases: prime_bases(d),
+            bases: prime_bases(d).into_iter().map(HaltonBase::new).collect(),
             permutations: None,
             generated: 0,
         })
@@ -199,7 +282,7 @@ impl Halton {
             engine
                 .bases
                 .iter()
-                .map(|&base| random_permutations(base, &mut rng))
+                .map(|base| random_permutations(base.prime, &mut rng))
                 .collect(),
         );
         Ok(engine)
@@ -233,17 +316,25 @@ impl Halton {
             .checked_add(n as u128)
             .ok_or(Error::InvalidInput("Halton sequence index overflow"))?;
         let mut samples = Vec::with_capacity(n);
-        for index in self.generated..end {
-            samples.push(
-                self.bases
-                    .iter()
-                    .enumerate()
-                    .map(|(j, &base)| {
-                        let perms = self.permutations.as_ref().map(|p| &p[j]);
-                        radical_inverse(index, base, perms)
-                    })
-                    .collect(),
-            );
+        if let Some(permutations) = self.permutations.as_deref() {
+            for index in self.generated..end {
+                samples.push(
+                    self.bases
+                        .iter()
+                        .zip(permutations)
+                        .map(|(base, scramble)| radical_inverse(index, base.prime, Some(scramble)))
+                        .collect(),
+                );
+            }
+        } else {
+            for index in self.generated..end {
+                samples.push(
+                    self.bases
+                        .iter()
+                        .map(|base| radical_inverse_plain(index, base))
+                        .collect(),
+                );
+            }
         }
         self.generated = end;
         Ok(samples)
@@ -272,6 +363,131 @@ impl Halton {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reciprocal_division_matches_native_for_all_prime_bases() {
+        let mut state = 0x9e37_79b9_7f4a_7c15_u64;
+        for prime in prime_bases(MAX_DIMENSIONS) {
+            let base = HaltonBase::new(prime);
+            for n in [
+                0_u32,
+                1,
+                prime - 1,
+                prime,
+                prime + 1,
+                u32::MAX - 1,
+                u32::MAX,
+            ] {
+                assert_eq!(
+                    div_rem32(n, &base),
+                    (n / prime, n % prime),
+                    "32-bit division: base={prime}, n={n}"
+                );
+            }
+            for n in [
+                0_u64,
+                1,
+                u64::from(prime),
+                u64::from(u32::MAX),
+                u64::from(u32::MAX) + 1,
+                u64::MAX - 1,
+                u64::MAX,
+            ] {
+                assert_eq!(
+                    div_rem64(n, &base),
+                    (n / u64::from(prime), n % u64::from(prime)),
+                    "64-bit division: base={prime}, n={n}"
+                );
+            }
+            for _ in 0..128 {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                let n = state;
+                assert_eq!(
+                    div_rem32(n as u32, &base),
+                    ((n as u32) / prime, (n as u32) % prime),
+                    "32-bit random division: base={prime}, n={n}"
+                );
+                assert_eq!(
+                    div_rem64(n, &base),
+                    (n / u64::from(prime), n % u64::from(prime)),
+                    "64-bit random division: base={prime}, n={n}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn plain_radical_inverse_preserves_original_bits_across_all_index_widths() {
+        let fixed_indices = [
+            0_u128,
+            1,
+            (1_u128 << 16) - 1,
+            1_u128 << 16,
+            (1_u128 << 32) - 1,
+            1_u128 << 32,
+            (1_u128 << 53) - 1,
+            1_u128 << 53,
+            (1_u128 << 64) - 1,
+            1_u128 << 64,
+            (1_u128 << 96) + 123_456_789,
+            u128::MAX - 1,
+            u128::MAX,
+        ];
+        let mut state = 0xa5a5_5a5a_1234_5678_u64;
+        for prime in prime_bases(MAX_DIMENSIONS) {
+            let base = HaltonBase::new(prime);
+            for index in 0..1024_u128 {
+                assert_eq!(
+                    radical_inverse_plain(index, &base).to_bits(),
+                    radical_inverse(index, prime, None).to_bits(),
+                    "base={prime}, index={index}"
+                );
+            }
+            for index in fixed_indices {
+                assert_eq!(
+                    radical_inverse_plain(index, &base).to_bits(),
+                    radical_inverse(index, prime, None).to_bits(),
+                    "base={prime}, index={index}"
+                );
+            }
+            for _ in 0..64 {
+                state ^= state << 13;
+                state ^= state >> 7;
+                state ^= state << 17;
+                let index = u128::from(state);
+                assert_eq!(
+                    radical_inverse_plain(index, &base).to_bits(),
+                    radical_inverse(index, prime, None).to_bits(),
+                    "base={prime}, index={index}"
+                );
+            }
+        }
+
+        // Exercise the public batch path near every representation boundary.
+        let mut engine = Halton::new(4).unwrap();
+        for start in [
+            0_u128,
+            (1_u128 << 32) - 2,
+            (1_u128 << 53) - 2,
+            (1_u128 << 64) - 2,
+            1_u128 << 96,
+            u128::MAX - 4,
+        ] {
+            engine.generated = start;
+            for (i, row) in engine.random(3).unwrap().iter().enumerate() {
+                for (axis, (&actual, base)) in row.iter().zip(&engine.bases).enumerate() {
+                    assert_eq!(
+                        actual.to_bits(),
+                        radical_inverse(start + i as u128, base.prime, None).to_bits(),
+                        "start={start}, i={i}, axis={axis}"
+                    );
+                }
+            }
+            assert_eq!(engine.num_generated(), start + 3);
+        }
+    }
 
     #[test]
     fn van_der_corput_and_primes() {

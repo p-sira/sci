@@ -215,14 +215,13 @@ impl MultivariateNormalQMC {
     /// normal transform uses the finite endpoint clipping described above.
     pub fn random(&mut self, n: usize) -> Result<Vec<Vec<f64>>> {
         let mut candidate = self.engine.clone();
-        let uniforms = candidate.random(n)?;
+        let uniforms = candidate.random_flat(n)?;
         let d = self.dimensions();
         let mut rows = Vec::with_capacity(n);
-        for unit in uniforms {
-            let independent: Vec<_> = unit
-                .into_iter()
-                .map(|u| ndtri(0.5 + (1.0 - 1e-10) * (u - 0.5)))
-                .collect();
+        let mut independent = Vec::with_capacity(d);
+        for unit in uniforms.chunks_exact(d) {
+            independent.clear();
+            independent.extend(unit.iter().map(|&u| ndtri(0.5 + (1.0 - 1e-10) * (u - 0.5))));
             let mut sample = Vec::with_capacity(d);
             for (j, &mean) in self.mean.iter().enumerate() {
                 let transformed = match &self.covariance_root {
@@ -426,16 +425,18 @@ impl MultinomialQMC {
             .ok_or(Error::InvalidInput("multinomial sample counter overflow"))?;
         let mut candidate = self.engine.clone();
         let mut samples = vec![vec![0; self.categories()]; n];
-        for sample in &mut samples {
-            let mut remaining = self.n_trials;
-            while remaining > 0 {
-                let chunk = remaining.min(MULTINOMIAL_CHUNK_SIZE);
-                for point in candidate.random(chunk)? {
-                    let category = self.cumulative.partition_point(|&p| p <= point[0]);
-                    sample[category] += 1;
-                }
-                remaining -= chunk;
+        let mut uniforms = Vec::new();
+        let mut remaining_draws = draws;
+        let mut consumed = 0;
+        while remaining_draws > 0 {
+            let chunk = remaining_draws.min(MULTINOMIAL_CHUNK_SIZE);
+            candidate.random_flat_into(chunk, &mut uniforms)?;
+            for (offset, &point) in uniforms.iter().enumerate() {
+                let category = self.cumulative.partition_point(|&p| p <= point);
+                samples[(consumed + offset) / self.n_trials][category] += 1;
             }
+            remaining_draws -= chunk;
+            consumed += chunk;
         }
         self.engine = candidate;
         self.samples_generated = count;
