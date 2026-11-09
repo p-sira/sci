@@ -566,10 +566,10 @@ fn benchmark(spec: &Spec, phase: Phase, n: usize, options: Options) -> (u128, u1
 fn main() -> Result<(), Box<dyn Error>> {
     let (options, out) = parse_args()?;
     let output: Box<dyn Write> = if let Some(path) = out {
-        if let Some(parent) = Path::new(&path).parent() {
-            if !parent.as_os_str().is_empty() {
-                fs::create_dir_all(parent)?;
-            }
+        if let Some(parent) = Path::new(&path).parent()
+            && !parent.as_os_str().is_empty()
+        {
+            fs::create_dir_all(parent)?;
         }
         Box::new(BufWriter::new(File::create(path)?))
     } else {
