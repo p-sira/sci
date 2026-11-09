@@ -225,15 +225,13 @@ pub fn percentileofscore(values: &[f64], score: f64, kind: PercentileKind) -> Re
     if score.is_nan() {
         return Err(Error::InvalidInput("score must not be NaN"));
     }
-    // Count both groups in one pass, retaining IEEE equality for tied
-    // signed zeros and converting the exact integer counts only once.
+    // Count both groups without data-dependent branches. Independent
+    // comparisons preserve IEEE equality for tied signed zeros and allow
+    // the loop to vectorize, unlike a conditional if/else-if chain.
     let (mut less, mut equal) = (0_usize, 0_usize);
     for &value in values {
-        if value < score {
-            less += 1;
-        } else if value == score {
-            equal += 1;
-        }
+        less += usize::from(value < score);
+        equal += usize::from(value == score);
     }
     let less = less as f64;
     let equal = equal as f64;
