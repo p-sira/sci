@@ -196,6 +196,48 @@ mod dogbox_benches {
         black_box(result);
     }
 
+    /// Typical bounded curve fit: `y = a·exp(-b·t) + c·exp(-d·t)` on 64 noisy
+    /// samples, starting away from the optimum with well-conditioned columns.
+    #[divan::bench]
+    fn normal(bencher: Bencher) {
+        let t: Vec<f64> = (0..64).map(|i| i as f64 * 0.125).collect();
+        let y: Vec<f64> = t
+            .iter()
+            .enumerate()
+            .map(|(i, &t)| {
+                3.0 * (-1.5 * t).exp() + 1.0 * (-0.2 * t).exp() + 1e-3 * (i as f64).sin()
+            })
+            .collect();
+        let start = [1.0, 1.0, 2.0, 0.5];
+        let lower = [0.0; 4];
+        let upper = [10.0; 4];
+        bencher.bench(|| {
+            let result = dogbox_with_jacobian(
+                |p| {
+                    t.iter()
+                        .zip(&y)
+                        .map(|(&t, &y)| p[0] * (-p[1] * t).exp() + p[2] * (-p[3] * t).exp() - y)
+                        .collect()
+                },
+                |p| {
+                    t.iter()
+                        .map(|&t| {
+                            let e1 = (-p[1] * t).exp();
+                            let e2 = (-p[3] * t).exp();
+                            vec![e1, -p[0] * t * e1, e2, -p[2] * t * e2]
+                        })
+                        .collect()
+                },
+                black_box(&start),
+                &lower,
+                &upper,
+                DogboxOptions::default(),
+            )
+            .unwrap();
+            black_box(result)
+        });
+    }
+
     #[divan::bench]
     fn rejected_trials(bencher: Bencher) {
         bencher.bench(|| solve(16, 4, true, false));
