@@ -255,12 +255,12 @@ fn free_gradient(gradient: &[f64], mask: &[i8]) -> (Vec<f64>, Vec<usize>, f64) {
     (g, free, norm)
 }
 
-fn model_reduction(jac: &[Vec<f64>], grad: &[f64], step: &[f64]) -> f64 {
+fn model_reduction(jac: &[Vec<f64>], free: &[usize], grad: &[f64], step: &[f64]) -> f64 {
     let linear: f64 = grad.iter().zip(step).map(|(g, s)| g * s).sum();
     let quadratic: f64 = jac
         .iter()
         .map(|row| {
-            let value: f64 = row.iter().zip(step).map(|(j, s)| j * s).sum();
+            let value: f64 = free.iter().zip(step).map(|(&j, s)| row[j] * s).sum();
             value * value
         })
         .sum();
@@ -295,58 +295,76 @@ fn box_point(origin: &[f64], direction: &[f64], alpha: f64, lo: &[f64], hi: &[f6
         .collect()
 }
 
+// Valid only while the accepted point, Jacobian and free coordinates are unchanged.
+struct DoglegModel {
+    newton_step: Vec<f64>,
+    cauchy_coefficients: Option<(f64, f64)>,
+}
+
+impl DoglegModel {
+    fn new(jac: &[Vec<f64>], residuals: &[f64], free: &[usize]) -> Result<Self> {
+        let (m, k) = (residuals.len(), free.len());
+        let matrix = DMatrix::from_fn(m, k, |i, j| jac[i][free[j]]);
+        // Impose a finite iteration budget even if a difficult SVD cannot converge.
+        let svd =
+            nalgebra::linalg::SVD::try_new(matrix, true, true, f64::EPSILON, 128 * m.min(k).max(1))
+                .ok_or(Error::NumericalFailure("dogbox SVD did not converge"))?;
+        let largest = svd.singular_values.iter().copied().fold(0.0_f64, f64::max);
+        // SciPy's dense dogbox requests NumPy lstsq with rcond=-1 (machine epsilon).
+        let cutoff = f64::EPSILON * largest;
+        let rhs = DVector::from_iterator(m, residuals.iter().map(|r| -r));
+        let newton = svd.solve(&rhs, cutoff).map_err(Error::NumericalFailure)?;
+
+        let mut newton_step = vec![0.0; k];
+        for (i, &v) in newton.iter().enumerate() {
+            newton_step[i] = v;
+        }
+        if newton_step.iter().any(|v| !v.is_finite()) {
+            return Err(Error::NonFiniteEvaluation);
+        }
+        Ok(Self {
+            newton_step,
+            cauchy_coefficients: None,
+        })
+    }
+}
+
 fn dogleg(
+    model: &mut DoglegModel,
     jac: &[Vec<f64>],
-    residuals: &[f64],
     gradient: &[f64],
     free: &[usize],
     lower_step: &[f64],
     upper_step: &[f64],
-) -> Result<Vec<f64>> {
-    let (m, k) = (residuals.len(), free.len());
-    let matrix = DMatrix::from_fn(m, k, |i, j| jac[i][free[j]]);
-    // Impose a finite iteration budget even if a difficult SVD cannot converge.
-    let svd =
-        nalgebra::linalg::SVD::try_new(matrix, true, true, f64::EPSILON, 128 * m.min(k).max(1))
-            .ok_or(Error::NumericalFailure("dogbox SVD did not converge"))?;
-    let largest = svd.singular_values.iter().copied().fold(0.0_f64, f64::max);
-    // SciPy's dense dogbox requests NumPy lstsq with rcond=-1 (machine epsilon).
-    let cutoff = f64::EPSILON * largest;
-    let rhs = DVector::from_iterator(m, residuals.iter().map(|r| -r));
-    let newton = svd.solve(&rhs, cutoff).map_err(Error::NumericalFailure)?;
-
-    let mut newton_step = vec![0.0; k];
-    for (i, &v) in newton.iter().enumerate() {
-        newton_step[i] = v;
-    }
-    if newton_step.iter().any(|v| !v.is_finite()) {
-        return Err(Error::NonFiniteEvaluation);
-    }
-    let reduced_jac: Matrix = jac
+) -> (Vec<f64>, f64) {
+    let k = free.len();
+    let newton_step = &model.newton_step;
+    if newton_step
         .iter()
-        .map(|row| free.iter().map(|&j| row[j]).collect())
-        .collect();
-    if model_reduction(&reduced_jac, gradient, &newton_step) > 0.0
-        && newton_step
-            .iter()
-            .zip(lower_step.iter().zip(upper_step))
-            .all(|(s, (lo, hi))| *s >= *lo && *s <= *hi)
+        .zip(lower_step.iter().zip(upper_step))
+        .all(|(s, (lo, hi))| *s >= *lo && *s <= *hi)
     {
-        return Ok(newton_step);
+        let reduction = model_reduction(jac, free, gradient, newton_step);
+        if reduction > 0.0 {
+            return (newton_step.clone(), reduction);
+        }
     }
 
     // Minimize the quadratic along the constrained anti-gradient ray.
     let opposite: Vec<f64> = gradient.iter().map(|g| -g).collect();
     let zero = vec![0.0; k];
     let to_bounds = step_to_box(&zero, &opposite, lower_step, upper_step);
-    let grad_sq: f64 = gradient.iter().map(|g| g * g).sum();
-    let jg_sq: f64 = jac
-        .iter()
-        .map(|row| {
-            let val: f64 = free.iter().zip(gradient).map(|(&j, &g)| row[j] * g).sum();
-            val * val
-        })
-        .sum();
+    let (grad_sq, jg_sq) = *model.cauchy_coefficients.get_or_insert_with(|| {
+        let grad_sq = gradient.iter().map(|g| g * g).sum();
+        let jg_sq = jac
+            .iter()
+            .map(|row| {
+                let val: f64 = free.iter().zip(gradient).map(|(&j, &g)| row[j] * g).sum();
+                val * val
+            })
+            .sum();
+        (grad_sq, jg_sq)
+    });
     let alpha = if jg_sq > 0.0 {
         (grad_sq / jg_sq).min(to_bounds)
     } else {
@@ -359,16 +377,17 @@ fn dogleg(
         .map(|(n, c)| n - c)
         .collect();
     let distance = step_to_box(&cauchy, &direction, lower_step, upper_step).min(1.0);
-    let mut step = box_point(&cauchy, &direction, distance, lower_step, upper_step);
+    let step = box_point(&cauchy, &direction, distance, lower_step, upper_step);
 
     // With rank-deficient Jacobians the dogleg path can increase the model.
     // SciPy documents the constrained Cauchy direction as the safe alternative.
-    if model_reduction(&reduced_jac, gradient, &cauchy)
-        > model_reduction(&reduced_jac, gradient, &step)
-    {
-        step = cauchy;
+    let cauchy_reduction = model_reduction(jac, free, gradient, &cauchy);
+    let step_reduction = model_reduction(jac, free, gradient, &step);
+    if cauchy_reduction > step_reduction {
+        (cauchy, cauchy_reduction)
+    } else {
+        (step, step_reduction)
     }
-    Ok(step)
 }
 
 fn solve<F, J>(
@@ -413,9 +432,10 @@ where
     }
     let mut status = DogboxStatus::IterationLimit;
     let mut iterations = 0;
+    let mut grad = gradient(&jac, &residuals, n)?;
+    let mut model = None;
 
     for _ in 0..options.max_iterations {
-        let grad = gradient(&jac, &residuals, n)?;
         let (g_free, free, optimality) = free_gradient(&grad, &mask);
         if optimality <= options.gradient_tolerance {
             status = DogboxStatus::Gradient;
@@ -429,7 +449,11 @@ where
             .iter()
             .map(|&i| (upper[i] - x[i]).min(radius))
             .collect();
-        let step_free = dogleg(&jac, &residuals, &g_free, &free, &low, &high)?;
+        let cached_model = match &mut model {
+            Some(model) => model,
+            slot @ None => slot.insert(DoglegModel::new(&jac, &residuals, &free)?),
+        };
+        let (step_free, predicted) = dogleg(cached_model, &jac, &g_free, &free, &low, &high);
         let mut step = vec![0.0; n];
         for (&i, &value) in free.iter().zip(&step_free) {
             step[i] = value;
@@ -440,7 +464,6 @@ where
             status = DogboxStatus::NoProgress;
             break;
         }
-        let predicted = model_reduction(&jac, &grad, &step);
         if !predicted.is_finite() || predicted <= 0.0 {
             status = DogboxStatus::NoProgress;
             break;
@@ -499,6 +522,8 @@ where
             }
             jac = derivative(&mut eval, analytical.as_ref(), &x, &residuals, lower, upper)?;
             njev += 1;
+            grad = gradient(&jac, &residuals, n)?;
+            model = None;
         }
         let ftol = actual > 0.0 && ratio > 0.25 && actual < options.cost_tolerance * previous_cost;
         let xtol = step_norm < options.step_tolerance * (options.step_tolerance + previous_x_norm);
@@ -512,7 +537,6 @@ where
             break;
         }
     }
-    let grad = gradient(&jac, &residuals, n)?;
     let (_, _, optimality) = free_gradient(&grad, &mask);
     if status == DogboxStatus::IterationLimit && optimality <= options.gradient_tolerance {
         status = DogboxStatus::Gradient;
@@ -574,6 +598,8 @@ where
 ///
 /// The solver forms a minimum-norm Gauss–Newton step using SVD, then follows a
 /// dogleg path through the box defined by the trust region and input bounds.
+/// The Gauss–Newton step and Cauchy coefficients are reused across rejected
+/// trials and refreshed after each accepted step.
 /// Singular values at or below machine epsilon times the largest singular value
 /// are discarded. Variables with outward gradients at active bounds are held
 /// fixed; coordinates that hit a bound are set to that bound before evaluation.

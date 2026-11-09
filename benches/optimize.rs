@@ -153,3 +153,61 @@ mod derivative_benches {
         });
     }
 }
+
+mod dogbox_benches {
+    use super::*;
+    use optimize::least_squares::{DogboxOptions, dogbox_with_jacobian};
+
+    // Replicated independent residuals keep callback work small relative to the
+    // dense SVD. The logarithm forces a nonfinite trial before recovery.
+    fn solve(n: usize, copies: usize, logarithmic: bool, rank_deficient: bool) {
+        let start = vec![1.0; n];
+        let lower = vec![0.0; n];
+        let upper = vec![10.0; n];
+        let result = dogbox_with_jacobian(
+            |x| {
+                (0..n * copies)
+                    .map(|i| {
+                        let j = if rank_deficient { i % (n / 2) } else { i % n };
+                        if logarithmic {
+                            x[j].ln() + 2.0
+                        } else {
+                            x[j] - 3.0
+                        }
+                    })
+                    .collect()
+            },
+            |x| {
+                (0..n * copies)
+                    .map(|i| {
+                        let j = if rank_deficient { i % (n / 2) } else { i % n };
+                        let mut row = vec![0.0; n];
+                        row[j] = if logarithmic { x[j].recip() } else { 1.0 };
+                        row
+                    })
+                    .collect()
+            },
+            &start,
+            &lower,
+            &upper,
+            DogboxOptions::default(),
+        )
+        .unwrap();
+        black_box(result);
+    }
+
+    #[divan::bench]
+    fn rejected_trials(bencher: Bencher) {
+        bencher.bench(|| solve(16, 4, true, false));
+    }
+
+    #[divan::bench]
+    fn tall(bencher: Bencher) {
+        bencher.bench(|| solve(16, 32, false, false));
+    }
+
+    #[divan::bench]
+    fn rank_deficient(bencher: Bencher) {
+        bencher.bench(|| solve(16, 4, false, true));
+    }
+}

@@ -404,3 +404,77 @@ fn dogbox_rejects_invalid_controls_and_callback_shapes() {
         Err(sci::Error::NonFiniteEvaluation)
     );
 }
+
+#[test]
+fn dogbox_retries_preserve_attempt_budgets_and_refresh_accepted_models() {
+    // The first logarithmic trial is nonfinite; the next smaller box accepts
+    // x=0.75. Both Jacobian paths must preserve calls and attempt accounting.
+    for exact in [false, true] {
+        for budget in [0, 1, 2, 100] {
+            let options = DogboxOptions {
+                max_iterations: budget,
+                ..DogboxOptions::default()
+            };
+            let result = if exact {
+                dogbox_with_jacobian(
+                    |x| vec![x[0].ln() + 2.0],
+                    |x| vec![vec![x[0].recip()]],
+                    &[1.0],
+                    &[0.0],
+                    &[10.0],
+                    options,
+                )
+            } else {
+                dogbox(|x| vec![x[0].ln() + 2.0], &[1.0], &[0.0], &[10.0], options)
+            }
+            .unwrap();
+            if budget <= 2 {
+                assert_eq!(result.iterations, budget);
+                assert_eq!(result.point, vec![if budget == 2 { 0.75 } else { 1.0 }]);
+                assert_eq!(result.jacobian_evaluations, if budget == 2 { 2 } else { 1 });
+                assert_eq!(result.status, DogboxStatus::IterationLimit);
+            } else {
+                assert!((result.point[0] - (-2.0_f64).exp()).abs() < 1e-8);
+                assert!(result.cost < 1e-16);
+            }
+            let difference_calls = if exact {
+                0
+            } else {
+                result.jacobian_evaluations
+            };
+            assert_eq!(
+                result.function_evaluations,
+                1 + result.iterations + difference_calls
+            );
+            assert!((result.gradient[0] - result.residuals[0] / result.point[0]).abs() < 1e-6);
+        }
+    }
+
+    // A finite uphill trial is also rejected. The smaller retry reaches the
+    // stationary point, so the returned gradient must use its new Jacobian.
+    for budget in [1, 2] {
+        let result = dogbox_with_jacobian(
+            |x| vec![1.0 - 1e20 * x[0] + 2e40 * x[0] * x[0]],
+            |x| vec![vec![-1e20 + 4e40 * x[0]]],
+            &[0.0],
+            &[0.0],
+            &[1e-20],
+            DogboxOptions {
+                max_iterations: budget,
+                ..DogboxOptions::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(result.iterations, budget);
+        assert_eq!(result.function_evaluations, 1 + budget);
+        assert_eq!(result.jacobian_evaluations, budget);
+        if budget == 1 {
+            assert_eq!(result.point, vec![0.0]);
+            assert_eq!(result.cost, 0.5);
+        } else {
+            assert!((result.point[0] - 2.5e-21).abs() < 1e-36);
+            assert!((result.cost - 0.3828125).abs() < 1e-15);
+            assert_eq!(result.gradient, vec![0.0]);
+        }
+    }
+}
