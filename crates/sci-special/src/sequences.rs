@@ -636,8 +636,6 @@ pub fn mathieu_odd_coef(m: u32, q: f64) -> Result<Vec<f64>> {
 /// ## Returns
 ///
 /// A vector with `n - m + 1` characteristic values, in increasing degree order.
-/// One tridiagonal solve supplies all degrees; its larger common truncation
-/// can change the last few bits relative to separate scalar evaluations.
 ///
 /// ## Errors
 ///
@@ -660,9 +658,7 @@ pub fn pro_cv_seq(m: u64, n: u64, c: f64) -> Result<Vec<f64>> {
             "sequence arguments exceed the supported domain",
         ));
     }
-    Ok(crate::backend::legacy::spheroidal_characteristic_sequence(
-        m, n, c, 1,
-    ))
+    Ok((m..=n).map(|degree| super::pro_cv(m, degree, c)).collect())
 }
 
 /// Oblate spheroidal characteristic values for degrees m..=n.
@@ -674,8 +670,6 @@ pub fn pro_cv_seq(m: u64, n: u64, c: f64) -> Result<Vec<f64>> {
 /// ## Returns
 ///
 /// A vector with `n - m + 1` characteristic values, in increasing degree order.
-/// One tridiagonal solve supplies all degrees; its larger common truncation
-/// can change the last few bits relative to separate scalar evaluations.
 ///
 /// ## Errors
 ///
@@ -698,92 +692,5 @@ pub fn obl_cv_seq(m: u64, n: u64, c: f64) -> Result<Vec<f64>> {
             "sequence arguments exceed the supported domain",
         ));
     }
-    Ok(crate::backend::legacy::spheroidal_characteristic_sequence(
-        m, n, c, -1,
-    ))
-}
-
-#[cfg(test)]
-mod spheroidal_sequence_tests {
-    use super::*;
-
-    #[test]
-    fn sequences_agree_with_original_per_degree_solves() {
-        for (m, n, c) in [
-            (0, 0, 0.0),
-            (0, 8, -0.0),
-            (0, 8, 5e-11),
-            (0, 8, -1.0),
-            (1, 12, 5.0),
-            (2, 20, 10.0),
-            (4, 30, 40.0),
-        ] {
-            for (sequence, scalar) in [
-                (
-                    pro_cv_seq(m, n, c).unwrap(),
-                    crate::wave::pro_cv as fn(u64, u64, f64) -> f64,
-                ),
-                (
-                    obl_cv_seq(m, n, c).unwrap(),
-                    crate::wave::obl_cv as fn(u64, u64, f64) -> f64,
-                ),
-            ] {
-                assert_eq!(sequence.len(), (n - m + 1) as usize);
-                for (degree, &actual) in (m..=n).zip(&sequence) {
-                    let original = scalar(m, degree, c);
-                    if c.abs() < 1e-10 {
-                        assert_eq!(actual.to_bits(), original.to_bits());
-                    } else {
-                        assert!(
-                            (actual - original).abs() <= 8e-14 * original.abs().max(1.0),
-                            "m={m}, degree={degree}, c={c}: bulk={actual}, scalar={original}"
-                        );
-                    }
-                }
-            }
-        }
-    }
-
-    #[test]
-    fn sequences_match_independent_high_precision_sturm_eigenvalues() {
-        // Reference: 65-digit Sturm bisection of the symmetric spheroidal
-        // recurrence, using 25 additional Fourier rows and no Sci backend.
-        const PROLATE: [f64; 7] = [
-            8.747674251539472,
-            19.135_981_911_035_79,
-            29.628786139324383,
-            40.89293268792674,
-            53.51157026530326,
-            67.83255605869294,
-            84.01651945695066,
-        ];
-        const OBLATE: [f64; 7] = [
-            0.4289571085097118,
-            2.109805816037,
-            10.512367333816282,
-            19.384390525378247,
-            30.910172248026665,
-            44.58279942651216,
-            60.3574156276832,
-        ];
-        for (actual, expected) in [
-            (pro_cv_seq(2, 8, 5.0).unwrap(), &PROLATE[..]),
-            (obl_cv_seq(2, 8, 5.0).unwrap(), &OBLATE[..]),
-        ] {
-            for (degree, (&a, &e)) in (2..=8).zip(actual.iter().zip(expected)) {
-                assert!(
-                    (a - e).abs() <= 8e-14 * e.abs().max(1.0),
-                    "degree={degree}: bulk={a}, reference={e}"
-                );
-            }
-        }
-    }
-
-    #[test]
-    fn sequences_reject_invalid_domains() {
-        for (m, n, c) in [(2, 1, 0.5), (0, 129, 0.5), (0, 2, f64::NAN), (0, 2, 65.0)] {
-            assert!(matches!(pro_cv_seq(m, n, c), Err(Error::InvalidInput(_))));
-            assert!(matches!(obl_cv_seq(m, n, c), Err(Error::InvalidInput(_))));
-        }
-    }
+    Ok((m..=n).map(|degree| super::obl_cv(m, degree, c)).collect())
 }

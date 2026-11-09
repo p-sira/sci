@@ -41,7 +41,7 @@
   Stirling and normalized-harmonic routines. Add parity tests, CodSpeed cases,
   and a matched Rust/SciPy performance report. Optimize native exponential
   integrals, inverse normal polynomials, exact unit-shape gamma/beta tails,
-  finite Smirnov sums, and shared spheroidal eigenvalue sequences; avoid the
+  finite Smirnov sums, and spheroidal domain shortcuts; avoid the
   unnecessary merged-Bessel root search at the first zero. Add numerical
   regressions and before/after native benchmarks.
 

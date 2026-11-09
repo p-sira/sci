@@ -1050,13 +1050,6 @@ mod spheroidal_benches {
     }
 
     #[divan::bench]
-    fn pro_cv_seq_large(bencher: Bencher) {
-        bencher.bench(|| {
-            special::wave::pro_cv_seq(black_box(2), black_box(30), black_box(10.0)).unwrap()
-        });
-    }
-
-    #[divan::bench]
     fn pro_ang1(bencher: Bencher) {
         let x = angles();
         bencher.bench(|| sum1(black_box(&x), |x| special::wave::pro_ang1(1, 3, 2.0, x).0));
@@ -1117,13 +1110,6 @@ mod spheroidal_benches {
     fn obl_cv_seq(bencher: Bencher) {
         bencher.bench(|| {
             special::wave::obl_cv_seq(black_box(1), black_box(6), black_box(2.0)).unwrap()
-        });
-    }
-
-    #[divan::bench]
-    fn obl_cv_seq_large(bencher: Bencher) {
-        bencher.bench(|| {
-            special::wave::obl_cv_seq(black_box(2), black_box(30), black_box(10.0)).unwrap()
         });
     }
 

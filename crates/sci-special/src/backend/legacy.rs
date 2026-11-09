@@ -710,28 +710,6 @@ fn characteristic(m: u64, n: u64, c: f64, kd: i32) -> f64 {
     cv[0]
 }
 
-/// All characteristic values from degree m through n from one spectral solve.
-/// Callers validate 0 <= m <= n <= 128 and finite |c| <= 64 beforehand.
-pub(crate) fn spheroidal_characteristic_sequence(m: u64, n: u64, c: f64, kd: i32) -> Vec<f64> {
-    if c.abs() < 1e-10 {
-        // segv's exactly integral limit; no matrix or output scratch needed.
-        return (m..=n)
-            .map(|degree| (degree * (degree + 1)) as f64)
-            .collect();
-    }
-    let mut cv = [f64::NAN];
-    let mut values = vec![0.0; (n - m + 1) as usize];
-    if s::segv(m as i32, n as i32, c.abs(), kd, &mut cv, &mut values) == 0
-        && values.iter().all(|value| value.is_finite())
-    {
-        return values;
-    }
-    // Preserve the old per-degree outcomes if the shared solve fails to
-    // converge or returns a nonfinite entry.
-    (m..=n)
-        .map(|degree| characteristic(m, degree, c, kd))
-        .collect()
-}
 fn spheroidal(m: u64, n: u64, c: f64, cv: f64, x: f64, kd: i32, radial: i32) -> (f64, f64) {
     if !c.is_finite() || !cv.is_finite() || !x.is_finite() {
         return (f64::NAN, f64::NAN);
