@@ -12,6 +12,16 @@
   21,201-dimensional Joe–Kuo D(6) direction table, up to 64-bit sequences,
   optional reproducible LMS scrambling, base-two batches, fast-forward and reset.
   Validate generated points against independent SciPy references.
+- Improve the new QMC engines' numerical and sequence correctness: handle all
+  `u128` index digits in scrambled Halton, map binary64 samples exactly to
+  integer intervals (including the full `i64` range), preserve Latin-hypercube
+  strata at floating-point boundaries, and retire Poisson-disk active points
+  only after consecutive failed proposals.
+- Improve sampling accuracy and robustness for upper-tail conditional inverse
+  CDFs, large-offset and subnormal Hermite interpolation, and rejection-envelope
+  checks. Reduce work through cached Halton scramble tails and rejection weights,
+  fewer inverse-CDF evaluations, precomputed Poisson-disk neighbor offsets,
+  streamed multinomial QMC draws, and squared-distance comparisons.
 - Add CodSpeed benchmarks for QMC point generation and integer mapping,
   discrete samplers, inverse quantiles, and rejection sampling, including
   separate setup and draw workloads.
