@@ -6,7 +6,7 @@
 
 mod common;
 
-use common::{points, spd_matrix, square_matrix, symmetric_matrix, values, warm};
+use common::{points, repeated, spd_matrix, square_matrix, symmetric_matrix, values, warm};
 use divan::{Bencher, black_box};
 use sci::linalg;
 
@@ -190,7 +190,7 @@ mod basic_benches {
     fn dot(bencher: Bencher) {
         let x = values(1_000, 1);
         let y = values(1_000, 2);
-        warm(bencher, || {
+        repeated(bencher, || {
             linalg::basic::dot(black_box(&x), black_box(&y)).unwrap()
         });
     }
@@ -216,7 +216,7 @@ mod basic_benches {
     #[divan::bench]
     fn transpose(bencher: Bencher) {
         let a = square_matrix(N);
-        warm(bencher, || linalg::basic::transpose(black_box(&a)).unwrap());
+        repeated(bencher, || linalg::basic::transpose(black_box(&a)).unwrap());
     }
 
     #[divan::bench]
@@ -238,13 +238,13 @@ mod basic_benches {
     #[divan::bench]
     fn bandwidth(bencher: Bencher) {
         let a = linalg::structured::toeplitz(&values(N, 4), None).unwrap();
-        warm(bencher, || linalg::basic::bandwidth(black_box(&a)).unwrap());
+        repeated(bencher, || linalg::basic::bandwidth(black_box(&a)).unwrap());
     }
 
     #[divan::bench]
     fn issymmetric(bencher: Bencher) {
         let a = symmetric_matrix(N);
-        warm(bencher, || {
+        repeated(bencher, || {
             linalg::basic::issymmetric(black_box(&a), None, None).unwrap()
         });
     }
@@ -958,89 +958,117 @@ mod structured_benches {
     fn toeplitz(bencher: Bencher) {
         let c = values(N, 1);
         let r = values(N, 2);
-        bencher.bench(|| linalg::structured::toeplitz(black_box(&c), Some(black_box(&r))).unwrap());
+        repeated(bencher, || {
+            linalg::structured::toeplitz(black_box(&c), Some(black_box(&r))).unwrap()
+        });
     }
 
     #[divan::bench]
     fn hankel(bencher: Bencher) {
         let c = values(N, 1);
         let r = values(N, 2);
-        bencher.bench(|| linalg::structured::hankel(black_box(&c), Some(black_box(&r))).unwrap());
+        repeated(bencher, || {
+            linalg::structured::hankel(black_box(&c), Some(black_box(&r))).unwrap()
+        });
     }
 
     #[divan::bench]
     fn circulant(bencher: Bencher) {
         let c = values(N, 1);
-        bencher.bench(|| linalg::structured::circulant(black_box(&c)).unwrap());
+        repeated(bencher, || {
+            linalg::structured::circulant(black_box(&c)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn hilbert(bencher: Bencher) {
-        bencher.bench(|| linalg::structured::hilbert(black_box(N)).unwrap());
+        repeated(bencher, || {
+            linalg::structured::hilbert(black_box(N)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn invhilbert(bencher: Bencher) {
-        bencher.bench(|| linalg::structured::invhilbert(black_box(SMALL)).unwrap());
+        repeated(bencher, || {
+            linalg::structured::invhilbert(black_box(SMALL)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn pascal(bencher: Bencher) {
-        bencher.bench(|| linalg::structured::pascal(black_box(N), PascalKind::Symmetric).unwrap());
+        repeated(bencher, || {
+            linalg::structured::pascal(black_box(N), PascalKind::Symmetric).unwrap()
+        });
     }
 
     #[divan::bench]
     fn invpascal(bencher: Bencher) {
-        bencher.bench(|| linalg::structured::invpascal(black_box(N), PascalKind::Lower).unwrap());
+        repeated(bencher, || {
+            linalg::structured::invpascal(black_box(N), PascalKind::Lower).unwrap()
+        });
     }
 
     #[divan::bench]
     fn hadamard(bencher: Bencher) {
-        bencher.bench(|| linalg::structured::hadamard(black_box(N)).unwrap());
+        repeated(bencher, || {
+            linalg::structured::hadamard(black_box(N)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn helmert(bencher: Bencher) {
-        bencher.bench(|| linalg::structured::helmert(black_box(N), true).unwrap());
+        repeated(bencher, || {
+            linalg::structured::helmert(black_box(N), true).unwrap()
+        });
     }
 
     #[divan::bench]
     fn fiedler(bencher: Bencher) {
         let a = values(N, 1);
-        bencher.bench(|| linalg::structured::fiedler(black_box(&a)).unwrap());
+        repeated(bencher, || {
+            linalg::structured::fiedler(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn companion(bencher: Bencher) {
         let mut a = values(N + 1, 1);
         a[0] = 1.0;
-        bencher.bench(|| linalg::structured::companion(black_box(&a)).unwrap());
+        repeated(bencher, || {
+            linalg::structured::companion(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn fiedler_companion(bencher: Bencher) {
         let mut a = values(N + 1, 1);
         a[0] = 1.0;
-        bencher.bench(|| linalg::structured::fiedler_companion(black_box(&a)).unwrap());
+        repeated(bencher, || {
+            linalg::structured::fiedler_companion(black_box(&a)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn leslie(bencher: Bencher) {
         let f = common::unit_values(N, 1);
         let s = common::unit_values(N - 1, 2);
-        bencher.bench(|| linalg::structured::leslie(black_box(&f), black_box(&s)).unwrap());
+        repeated(bencher, || {
+            linalg::structured::leslie(black_box(&f), black_box(&s)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn block_diag(bencher: Bencher) {
         let blocks = vec![square_matrix(4), symmetric_matrix(5), spd_matrix(7)];
-        bencher.bench(|| linalg::structured::block_diag(black_box(&blocks)).unwrap());
+        repeated(bencher, || {
+            linalg::structured::block_diag(black_box(&blocks)).unwrap()
+        });
     }
 
     #[divan::bench]
     fn convolution_matrix(bencher: Bencher) {
         let a = values(SMALL, 1);
-        bencher.bench(|| {
+        repeated(bencher, || {
             linalg::structured::convolution_matrix(black_box(&a), N, sci::Mode::Full).unwrap()
         });
     }
@@ -1053,7 +1081,9 @@ mod structured_benches {
     #[divan::bench]
     fn diagsvd(bencher: Bencher) {
         let s = common::positive_values(SMALL, 1);
-        bencher.bench(|| linalg::structured::diagsvd(black_box(&s), N, SMALL).unwrap());
+        repeated(bencher, || {
+            linalg::structured::diagsvd(black_box(&s), N, SMALL).unwrap()
+        });
     }
 }
 
@@ -1074,7 +1104,7 @@ mod interpolative_benches {
     #[divan::bench]
     fn reconstruct_interp_matrix(bencher: Bencher) {
         let id = interpolative::interp_decomp(&low_rank(N, N, RANK), Rank::Fixed(RANK)).unwrap();
-        warm(bencher, || {
+        repeated(bencher, || {
             interpolative::reconstruct_interp_matrix(
                 black_box(&id.indices),
                 black_box(&id.projection),
@@ -1164,49 +1194,49 @@ mod interop_benches {
     #[divan::bench]
     fn to_matrix(bencher: Bencher) {
         let a = square_matrix(N).to_faer().unwrap();
-        bencher.bench(|| black_box(&a).to_matrix().unwrap());
+        repeated(bencher, || black_box(&a).to_matrix().unwrap());
     }
 
     #[divan::bench]
     fn to_ndarray(bencher: Bencher) {
         let a = square_matrix(N);
-        bencher.bench(|| black_box(&a).to_ndarray().unwrap());
+        repeated(bencher, || black_box(&a).to_ndarray().unwrap());
     }
 
     #[divan::bench]
     fn to_nalgebra(bencher: Bencher) {
         let a = square_matrix(N);
-        bencher.bench(|| black_box(&a).to_nalgebra().unwrap());
+        repeated(bencher, || black_box(&a).to_nalgebra().unwrap());
     }
 
     #[divan::bench]
     fn to_faer(bencher: Bencher) {
         let a = square_matrix(N);
-        bencher.bench(|| black_box(&a).to_faer().unwrap());
+        repeated(bencher, || black_box(&a).to_faer().unwrap());
     }
 
     #[divan::bench]
     fn to_vector(bencher: Bencher) {
         let x = values(256, 1).to_faer_col().unwrap();
-        bencher.bench(|| black_box(&x).to_vector().unwrap());
+        repeated(bencher, || black_box(&x).to_vector().unwrap());
     }
 
     #[divan::bench]
     fn to_ndarray_vector(bencher: Bencher) {
         let x = values(256, 1);
-        bencher.bench(|| black_box(&x).to_ndarray_vector().unwrap());
+        repeated(bencher, || black_box(&x).to_ndarray_vector().unwrap());
     }
 
     #[divan::bench]
     fn to_nalgebra_vector(bencher: Bencher) {
         let x = values(256, 1);
-        bencher.bench(|| black_box(&x).to_nalgebra_vector().unwrap());
+        repeated(bencher, || black_box(&x).to_nalgebra_vector().unwrap());
     }
 
     #[divan::bench]
     fn to_faer_col(bencher: Bencher) {
         let x = values(256, 1);
-        bencher.bench(|| black_box(&x).to_faer_col().unwrap());
+        repeated(bencher, || black_box(&x).to_faer_col().unwrap());
     }
 
     /// Products on library-native inputs (ndarray × nalgebra).

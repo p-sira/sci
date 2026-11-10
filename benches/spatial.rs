@@ -4,7 +4,7 @@
 
 mod common;
 
-use common::{linspace, points, positive_values, spd_matrix, values, warm};
+use common::{linspace, points, positive_values, repeated, spd_matrix, values, warm};
 use divan::{Bencher, black_box};
 use sci::spatial;
 
@@ -238,7 +238,7 @@ mod distance_form_benches {
     #[divan::bench]
     fn is_valid_y(bencher: Bencher) {
         let y = condensed();
-        bencher.bench(|| spatial::distance::is_valid_y(black_box(&y)));
+        repeated(bencher, || spatial::distance::is_valid_y(black_box(&y)));
     }
 
     #[divan::bench]
@@ -250,7 +250,9 @@ mod distance_form_benches {
     #[divan::bench]
     fn num_obs_y(bencher: Bencher) {
         let y = condensed();
-        bencher.bench(|| spatial::distance::num_obs_y(black_box(&y)).unwrap());
+        repeated(bencher, || {
+            spatial::distance::num_obs_y(black_box(&y)).unwrap()
+        });
     }
 }
 

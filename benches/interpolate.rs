@@ -4,7 +4,7 @@
 
 mod common;
 
-use common::{linspace, points, values, warm};
+use common::{linspace, points, repeated, values, warm};
 use divan::{Bencher, black_box};
 use sci::interpolate;
 
@@ -86,7 +86,7 @@ mod polynomial_benches {
         for k in 1..an.len() {
             an[k] = an[k - 1] / k as f64;
         }
-        warm(bencher, || {
+        repeated(bencher, || {
             interpolate::polynomial::pade(black_box(&an), black_box(5), black_box(None)).unwrap()
         });
     }
@@ -127,7 +127,9 @@ mod spline_eval_benches {
     #[divan::bench]
     fn splder(bencher: Bencher) {
         let spline = cubic_spline(64);
-        bencher.bench(|| interpolate::spline::splder(black_box(&spline), black_box(1)).unwrap());
+        repeated(bencher, || {
+            interpolate::spline::splder(black_box(&spline), black_box(1)).unwrap()
+        });
     }
 
     #[divan::bench]
@@ -166,7 +168,7 @@ mod spline_eval_benches {
     #[divan::bench]
     fn insert(bencher: Bencher) {
         let spline = cubic_spline(64);
-        bencher.bench(|| {
+        repeated(bencher, || {
             interpolate::spline::insert(black_box(5.05), black_box(&spline), black_box(2)).unwrap()
         });
     }

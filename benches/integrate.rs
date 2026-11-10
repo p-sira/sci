@@ -4,7 +4,7 @@
 
 mod common;
 
-use common::{linspace, sine_signal};
+use common::{linspace, repeated, sine_signal};
 use divan::{Bencher, black_box};
 
 fn main() {
@@ -115,6 +115,8 @@ mod quadrature {
     #[divan::bench]
     fn newton_cotes(bencher: Bencher) {
         let nodes: Vec<f64> = (0..=12).map(f64::from).collect();
-        bencher.bench(|| sci::integrate::quadrature::newton_cotes(black_box(&nodes)).unwrap());
+        repeated(bencher, || {
+            sci::integrate::quadrature::newton_cotes(black_box(&nodes)).unwrap()
+        });
     }
 }
