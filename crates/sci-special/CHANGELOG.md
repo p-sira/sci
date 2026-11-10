@@ -1,5 +1,11 @@
 # Changelog
 
+## Standalone numerical backend updates for 0.3.0
+
+- Upgrade `hypergeometric` to 0.1.4 for faster certified `hyp2f1` series termination and positive-parameter summation, and lower cancellation fallback cost in `hyp1f1`, building on 0.1.2–0.1.3 accuracy and performance improvements.
+- Upgrade `bessel` to 0.1.3 for faster half-integer cylindrical Bessel derivative evaluation in the oscillatory region, alongside 0.1.2 real and complex kernel optimizations and numerical fixes.
+- Upgrade `orthogonal` to 0.2.2 for faster polynomial evaluation, table construction, and Chebyshev quadrature, with improved near-endpoint Chebyshev accuracy.
+
 ## Sci-testing 0.3 numerical accuracy follow-up
 
 - Resolve seven finite-input `digammainv` failures caused by oscillating

@@ -68,9 +68,9 @@ dependencies = [
 
 [[package]]
 name = "bessel"
-version = "0.1.1"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "686055b68710834f2ea06e044bda582a380c9930108f457db99f6bec45ef7477"
+checksum = "02720e0cfd1dd72d6d280fd5f72f1152de242767a6a37efb94b8624e28915cdc"
 dependencies = [
  "num-complex",
  "num-traits",
@@ -752,9 +752,9 @@ checksum = "62adaabb884c94955b19907d60019f4e145d091c75345379e70d1ee696f7854f"
 
 [[package]]
 name = "hypergeometric"
-version = "0.1.1"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ca04ea0406f1ae7d0856bf45b7e3f69af78755f48fdd99c7c32dad85d15a087"
+checksum = "1292238589aa12fd51df2fe360d230d932647ef00f2a8019556f88c4b0cf7166"
 dependencies = [
  "bessel",
  "num-traits",
@@ -1125,9 +1125,9 @@ checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 
 [[package]]
 name = "orthogonal"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d86cedbf71688af63a886e85dc0e1b055ffb008c43cece47cb81fc23df9723b1"
+checksum = "70d1148e8b118f75f83c69ba31c14032ecfcd2139e1bd1bb6c9b2b5c9ef48c2d"
 dependencies = [
  "num-complex",
  "num-traits",
