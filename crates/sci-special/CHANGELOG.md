@@ -2,8 +2,8 @@
 
 ## Standalone numerical backend updates for 0.3.0
 
-- Upgrade `hypergeometric` to 0.1.3 for faster certified `hyp1f1` mixed-sign series and lower-overhead `hyp2f1` summation, alongside the 0.1.2 continuation and numerical accuracy improvements.
-- Upgrade `bessel` to 0.1.2 for faster real and complex Bessel kernels, zero searches, Kelvin functions, and spherical derivatives, with numerical fixes at small arguments and range limits.
+- Upgrade `hypergeometric` to 0.1.4 for faster certified `hyp2f1` series termination and positive-parameter summation, and lower cancellation fallback cost in `hyp1f1`, building on 0.1.2–0.1.3 accuracy and performance improvements.
+- Upgrade `bessel` to 0.1.3 for faster half-integer cylindrical Bessel derivative evaluation in the oscillatory region, alongside 0.1.2 real and complex kernel optimizations and numerical fixes.
 - Upgrade `orthogonal` to 0.2.2 for faster polynomial evaluation, table construction, and Chebyshev quadrature, with improved near-endpoint Chebyshev accuracy.
 
 ## Sci-testing 0.3 numerical accuracy follow-up
