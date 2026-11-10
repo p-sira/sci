@@ -1,5 +1,11 @@
 # Changelog
 
+## Standalone numerical backend updates for 0.3.0
+
+- Upgrade `hypergeometric` to 0.1.2 for faster series and continuation paths, with improved cancellation and endpoint accuracy.
+- Upgrade `bessel` to 0.1.2 for faster real and complex Bessel kernels, zero searches, Kelvin functions, and spherical derivatives, with numerical fixes at small arguments and range limits.
+- Upgrade `orthogonal` to 0.2.2 for faster polynomial evaluation, table construction, and Chebyshev quadrature, with improved near-endpoint Chebyshev accuracy.
+
 ## Sci-testing 0.3 numerical accuracy follow-up
 
 - Resolve seven finite-input `digammainv` failures caused by oscillating
