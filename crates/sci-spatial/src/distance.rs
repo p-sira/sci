@@ -228,12 +228,18 @@ fn calculate_validated(u: &[f64], v: &[f64], metric: Metric<'_>, w: &[f64]) -> R
                 return Ok(f64::NAN);
             }
             let sw = w.iter().copied().fold(0.0, f64::max);
-            let wn: Vec<_> = w.iter().map(|x| x / sw).collect();
+            // Pairwise distances use unit weights. Borrow that slice rather
+            // than allocating normalized weights for every observation pair.
+            let wn: Cow<'_, [f64]> = if sw == 1.0 {
+                Cow::Borrowed(w)
+            } else {
+                Cow::Owned(w.iter().map(|x| x / sw).collect())
+            };
             let total = wn.iter().sum::<f64>();
             let center = matches!(metric, Metric::Correlation);
             let mu = if center {
                 u.iter()
-                    .zip(&wn)
+                    .zip(wn.iter())
                     .filter(|(_, w)| **w > 0.0)
                     .map(|(&a, &w)| a / su * w)
                     .sum::<f64>()
@@ -243,7 +249,7 @@ fn calculate_validated(u: &[f64], v: &[f64], metric: Metric<'_>, w: &[f64]) -> R
             };
             let mv = if center {
                 v.iter()
-                    .zip(&wn)
+                    .zip(wn.iter())
                     .filter(|(_, w)| **w > 0.0)
                     .map(|(&a, &w)| a / sv * w)
                     .sum::<f64>()
@@ -252,7 +258,7 @@ fn calculate_validated(u: &[f64], v: &[f64], metric: Metric<'_>, w: &[f64]) -> R
                 0.0
             };
             let (mut uv, mut uu, mut vv) = (0.0, 0.0, 0.0);
-            for ((&a, &b), &w) in u.iter().zip(v).zip(&wn) {
+            for ((&a, &b), &w) in u.iter().zip(v).zip(wn.iter()) {
                 if w == 0.0 {
                     continue;
                 }

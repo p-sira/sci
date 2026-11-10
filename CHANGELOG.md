@@ -2,6 +2,8 @@
 
 ## 0.3.0 (unreleased)
 
+- Continue performance work in the other Sci crates: specialized hierarchical clustering and tridiagonal eigenpair algorithms, reduced-spectrum FFTs, singleton-axis interpolation, graph reconstruction, SOS filtering, sparse storage operations and lower-allocation I/O. Add matched pinned-core release benchmarks and independent numerical regressions; retain original hot paths wherever measurements show regressions.
+
 - **Breaking:** Remove `special::elliptic::ellipf` and
   `linalg::basic::ishermitian`. Use `special::elliptic::ellipkinc(phi, m)`
   for the incomplete first-kind elliptic integral and

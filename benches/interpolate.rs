@@ -145,6 +145,17 @@ mod spline_eval_benches {
     }
 
     #[divan::bench]
+    fn spalde_quintic_many_queries(bencher: Bencher) {
+        let samples = linspace(0.0, 10.0, 96);
+        let spline =
+            interpolate::fitting::make_interp_spline(&samples, &smooth(&samples), 5).unwrap();
+        let queries = linspace(0.01, 9.99, 300);
+        bencher.bench(|| {
+            interpolate::spline::spalde(black_box(&queries), black_box(&spline)).unwrap()
+        });
+    }
+
+    #[divan::bench]
     fn splint(bencher: Bencher) {
         let spline = cubic_spline(64);
         bencher.bench(|| {
@@ -335,6 +346,25 @@ mod surface_benches {
             .unwrap()
         });
     }
+
+    #[divan::bench]
+    fn bisplev_dense_grid(bencher: Bencher) {
+        let (x, y, z, knots) = surface_data();
+        let spline =
+            interpolate::fitting::bisplrep(&x, &y, &z, &knots, &knots, 3, 3, None).unwrap();
+        let qx = linspace(0.0, 1.0, 80);
+        let qy = linspace(0.0, 1.0, 80);
+        bencher.bench(|| {
+            interpolate::multidimensional::bisplev(
+                black_box(&qx),
+                black_box(&qy),
+                black_box(&spline),
+                0,
+                0,
+            )
+            .unwrap()
+        });
+    }
 }
 
 mod multidimensional_benches {
@@ -365,10 +395,77 @@ mod multidimensional_benches {
     }
 
     #[divan::bench]
+    fn interpn_singleton_axes(bencher: Bencher) {
+        let axes = vec![
+            linspace(0.0, 1.0, 25),
+            vec![2.0],
+            vec![3.0],
+            vec![4.0],
+            linspace(0.0, 1.0, 25),
+            vec![6.0],
+            vec![7.0],
+            vec![8.0],
+        ];
+        let mut grid = Vec::with_capacity(25 * 25);
+        for &a in &axes[0] {
+            for &b in &axes[4] {
+                grid.push((3.0 * a).sin() + b * b);
+            }
+        }
+        let queries: Vec<Vec<f64>> = points(300, 2, 41)
+            .into_iter()
+            .map(|p| {
+                vec![
+                    0.5 * (1.0 + p[0]),
+                    2.0,
+                    3.0,
+                    4.0,
+                    0.5 * (1.0 + p[1]),
+                    6.0,
+                    7.0,
+                    8.0,
+                ]
+            })
+            .collect();
+        bencher.bench(|| {
+            interpolate::multidimensional::interpn(
+                black_box(&axes),
+                black_box(&grid),
+                black_box(&queries),
+                interpolate::multidimensional::GridMethod::Linear,
+                true,
+                None,
+            )
+            .unwrap()
+        });
+    }
+
+    #[divan::bench]
     fn griddata(bencher: Bencher) {
         let pts = points(100, 2, 29);
         let vals: Vec<f64> = pts.iter().map(|p| p[0] * p[0] - p[1]).collect();
         let queries: Vec<Vec<f64>> = points(100, 2, 31)
+            .into_iter()
+            .map(|p| p.iter().map(|v| 0.8 * v).collect())
+            .collect();
+        bencher.bench(|| {
+            interpolate::multidimensional::griddata(
+                black_box(&pts),
+                black_box(&vals),
+                black_box(&queries),
+                interpolate::multidimensional::ScatteredMethod::Linear,
+                f64::NAN,
+                false,
+            )
+            .unwrap()
+        });
+    }
+
+    #[divan::bench]
+    fn griddata_many_triangles_and_queries(bencher: Bencher) {
+        let pts = points(256, 2, 43);
+        let vals: Vec<f64> = pts.iter().map(|p| p[0] * p[0] - p[1]).collect();
+        let queries: Vec<Vec<f64>> = points(400, 2, 47)
             .into_iter()
             .map(|p| p.iter().map(|v| 0.8 * v).collect())
             .collect();

@@ -24,6 +24,44 @@ mod performance_benches {
     use super::*;
 
     #[divan::bench(args = [16, 64, 256])]
+    fn matmul_toeplitz_vector(bencher: Bencher, n: usize) {
+        let mut column = values(n, 8);
+        column[0] = 2.0 * n as f64;
+        let rhs = points(n, 1, 10);
+        warm(bencher, || {
+            linalg::structured::matmul_toeplitz(black_box(&column), None, black_box(&rhs)).unwrap()
+        });
+    }
+
+    #[divan::bench(args = [16, 64, 256])]
+    fn matmul_toeplitz_wide(bencher: Bencher, n: usize) {
+        let mut column = values(n, 8);
+        column[0] = 2.0 * n as f64;
+        let rhs = points(n, 16, 10);
+        warm(bencher, || {
+            linalg::structured::matmul_toeplitz(black_box(&column), None, black_box(&rhs)).unwrap()
+        });
+    }
+
+    #[divan::bench(args = [16, 64, 256])]
+    fn qr_multiply_left(bencher: Bencher, n: usize) {
+        let a = square_matrix(n);
+        let rhs = points(n, 4, 20);
+        warm(bencher, || {
+            linalg::decompositions::qr_multiply(black_box(&a), black_box(&rhs), true).unwrap()
+        });
+    }
+
+    #[divan::bench(args = [16, 64, 256])]
+    fn qr_multiply_right(bencher: Bencher, n: usize) {
+        let a = square_matrix(n);
+        let lhs = points(4, n, 20);
+        warm(bencher, || {
+            linalg::decompositions::qr_multiply(black_box(&a), black_box(&lhs), false).unwrap()
+        });
+    }
+
+    #[divan::bench(args = [16, 64, 256])]
     fn eigvalsh(bencher: Bencher, n: usize) {
         let a = symmetric_matrix(n);
         warm(bencher, || {
@@ -37,6 +75,15 @@ mod performance_benches {
         let e = values(n - 1, 2);
         warm(bencher, || {
             linalg::eigen::eigvalsh_tridiagonal(black_box(&d), black_box(&e)).unwrap()
+        });
+    }
+
+    #[divan::bench(args = [16, 64, 256])]
+    fn eigh_tridiagonal(bencher: Bencher, n: usize) {
+        let d = values(n, 1);
+        let e = values(n - 1, 2);
+        warm(bencher, || {
+            linalg::eigen::eigh_tridiagonal(black_box(&d), black_box(&e)).unwrap()
         });
     }
 

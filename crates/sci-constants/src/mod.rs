@@ -123,11 +123,56 @@ pub fn precision(key: &str) -> Result<f64> {
 /// [SciPy find](https://docs.scipy.org/doc/scipy/reference/generated/scipy.constants.find.html).
 pub fn find(substring: Option<&str>) -> Vec<&'static str> {
     let substring = substring.unwrap_or("").to_lowercase();
+    if substring.is_empty() {
+        return CURRENT_NAMES.to_vec();
+    }
+    let needle = substring.as_bytes();
+    let ascii_needle = substring.is_ascii();
     CURRENT_NAMES
         .iter()
         .copied()
-        .filter(|name| name.to_lowercase().contains(&substring))
+        .filter(|name| {
+            if ascii_needle && name.is_ascii() {
+                // CODATA keys are ASCII. Compare their bytes without
+                // allocating a lowercase String for every entry on each
+                // search. The Unicode fallback preserves generic semantics.
+                name.as_bytes()
+                    .windows(needle.len())
+                    .any(|part| part.eq_ignore_ascii_case(needle))
+            } else {
+                name.to_lowercase().contains(&substring)
+            }
+        })
         .collect()
+}
+
+#[cfg(test)]
+mod find_tests {
+    use super::{CURRENT_NAMES, find};
+
+    #[test]
+    fn ascii_search_matches_original_unicode_lowercase_reference() {
+        for query in [
+            None,
+            Some(""),
+            Some("ELECTRON"),
+            Some("vacUum"),
+            Some("mAgneTic"),
+            Some("m s^-1"),
+            Some("k"),
+            Some("K"), // Unicode lowercase maps the Kelvin sign to ASCII k.
+            Some("İ"), // Dot-above lowercase expansion must not match.
+            Some("xyz-unlisted-constant"),
+        ] {
+            let needle = query.unwrap_or("").to_lowercase();
+            let expected: Vec<_> = CURRENT_NAMES
+                .iter()
+                .copied()
+                .filter(|name| name.to_lowercase().contains(&needle))
+                .collect();
+            assert_eq!(find(query), expected, "query={query:?}");
+        }
+    }
 }
 
 /// Temperature scales accepted by [`convert_temperature`].

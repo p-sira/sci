@@ -1470,7 +1470,10 @@ pub fn pinvh(
 ///
 /// ## Numerical behavior
 ///
-/// Private faer algorithms use f64. Ill-conditioned results can lose accuracy. Iterative routines use bounded backend-specific sweep limits. Uses O(n³) dense symmetric decomposition, rather than a specialized tridiagonal backend.
+/// Uses faer's symmetric tridiagonal eigensolver directly, avoiding the O(n³)
+/// dense reduction and expansion. The backend uses bounded QR or divide-and-
+/// conquer iteration and orders eigenvalues ascending. Eigenvector signs and
+/// bases for repeated eigenvalues are nonunique.
 ///
 /// # Examples
 ///
@@ -1491,10 +1494,6 @@ pub fn eigh_tridiagonal(
     let d = d_input.as_ref();
     let e_input = super::input::vector_slice(e)?;
     let e = e_input.as_ref();
-    eigendecomposition(tridiagonal(d, e)?)
-}
-
-fn tridiagonal(d: &[f64], e: &[f64]) -> Result<Mat<f64>> {
     let n = d.len();
     if n == 0 || n > MAX_DIM {
         return Err(Error::InvalidInput("tridiagonal order must be 1..=256"));
@@ -1504,15 +1503,45 @@ fn tridiagonal(d: &[f64], e: &[f64]) -> Result<Mat<f64>> {
     }
     crate::error::is_finite_slice(d)?;
     crate::error::is_finite_slice(e)?;
-    Ok(Mat::from_fn(n, n, |i, j| {
-        if i == j {
-            d[i]
-        } else if i.abs_diff(j) == 1 {
-            e[i.min(j)]
-        } else {
-            0.0
-        }
-    }))
+
+    let scale = d
+        .iter()
+        .chain(e)
+        .fold(0.0_f64, |max, &value| max.max(value.abs()));
+    let scale = if scale == 0.0 { 1.0 } else { scale };
+    let diagonal: Vec<f64> = d.iter().map(|&value| value / scale).collect();
+    let off_diagonal: Vec<f64> = e.iter().map(|&value| value / scale).collect();
+    let mut values = vec![0.0; n];
+    let mut vectors = Mat::zeros(n, n);
+    // This scratch bound covers both the QR path for small n and faer's
+    // divide-and-conquer path for n at or above its recursion threshold.
+    let req = faer::linalg::evd::self_adjoint_evd_scratch::<f64>(
+        n,
+        faer::linalg::evd::ComputeEigenvectors::Yes,
+        faer::Par::Seq,
+        faer::Spec::default(),
+    );
+    let mut memory = MemBuffer::new(req);
+    faer::linalg::evd::tridiagonal_self_adjoint_evd(
+        DiagRef::from_slice(&diagonal),
+        DiagRef::from_slice(&off_diagonal),
+        DiagMut::from_slice_mut(&mut values),
+        Some(vectors.as_mut()),
+        faer::Par::Seq,
+        MemStack::new(&mut memory),
+        faer::Spec::default(),
+    )
+    .map_err(|_| Error::NumericalFailure("symmetric eigensolver did not converge"))?;
+    for value in &mut values {
+        *value = match *value * scale {
+            finite if finite.is_finite() => Ok(finite),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
+    }
+    Ok(EigenResult {
+        eigenvalues: values,
+        eigenvectors: rows(&vectors)?,
+    })
 }
 
 /// Eigenvalues of a symmetric tridiagonal matrix without dense reduction.

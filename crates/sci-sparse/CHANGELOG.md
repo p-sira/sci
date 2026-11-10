@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Avoid redundant sparse-storage conversion work with direct CSR construction, structural filters and narrow-product workspaces; preserve the original accumulator for wider matrices after performance comparisons. Add sparse operations and solver benchmarks.
+
 - Split the default-compatible `full` feature into optional `solver`, `graph`,
   and `random` backends. `npz` stays independent and enabled by default.
   `default-features = false` now selects only canonical CSR/COO construction,

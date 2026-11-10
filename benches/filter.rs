@@ -102,6 +102,20 @@ mod kalman_benches {
         });
     }
 
+    /// Exercises the covariance validation fast path at larger state sizes.
+    #[divan::bench(args = [8, 16, 32])]
+    fn kalman_predict_spd_dimension(bencher: Bencher, n: usize) {
+        let x = Gaussian {
+            mean: vec![0.; n],
+            covariance: identity(n, 1.0),
+        };
+        let f = identity(n, 1.0);
+        let q = identity(n, 0.01);
+        bencher.bench(|| {
+            filter::kalman::kalman_predict(black_box(&x), black_box(&f), black_box(&q)).unwrap()
+        });
+    }
+
     #[divan::bench]
     fn kalman_update(bencher: Bencher) {
         let x = prior();
@@ -228,9 +242,12 @@ mod particle_benches {
         bencher.bench(|| filter::particle::effective_sample_size(black_box(&p)).unwrap());
     }
 
-    #[divan::bench]
-    fn systematic_resample(bencher: Bencher) {
-        let p = particles();
+    #[divan::bench(args = [PARTICLES, 8192])]
+    fn systematic_resample(bencher: Bencher, count: usize) {
+        let p = ParticleSet {
+            states: points(count, 2, 51),
+            weights: unit_values(count, 52),
+        };
         bencher.bench(|| {
             filter::particle::systematic_resample(black_box(&p), black_box(0.37)).unwrap()
         });

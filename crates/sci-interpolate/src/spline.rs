@@ -240,7 +240,9 @@ pub fn splantider(spline: &Spline, order: usize) -> Result<Spline> {
 ///
 /// ## Numerical behavior
 ///
-/// Reuses splder and local evaluation, bounding query × (degree+1)^3 work by 10,000,000. Repeated-knot nondifferentiability fails.
+/// Builds successive derivative splines incrementally and evaluates locally,
+/// bounding query × (degree+1)^3 work by 10,000,000.
+/// Repeated-knot nondifferentiability fails.
 ///
 /// # Examples
 ///
@@ -259,10 +261,18 @@ pub fn spalde(x: &[f64], spline: &Spline) -> Result<Vec<Vec<f64>>> {
     backend::bound(&[x.len(), (spline.degree + 1).pow(3)])?;
     is_finite_slice(x)?;
     let mut result = vec![Vec::with_capacity(spline.degree + 1); x.len()];
+    let lo = spline.knots[spline.degree];
+    let hi = spline.knots[spline.coefficients.len()];
+    let mut derivative = spline.clone();
     for j in 0..=spline.degree {
-        let values = splev(x, spline, j, SplineExtension::Error)?;
-        for (row, value) in result.iter_mut().zip(values) {
-            row.push(value);
+        for (row, &query) in result.iter_mut().zip(x) {
+            if query < lo || query > hi {
+                return Err(Error::InvalidInput("query outside spline domain"));
+            }
+            row.push(backend::evaluate(&derivative, query)?);
+        }
+        if j < spline.degree {
+            derivative = splder(&derivative, 1)?;
         }
     }
     Ok(result)

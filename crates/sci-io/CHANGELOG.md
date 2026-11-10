@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Buffer Matrix Market serialization, encode MATLAB numeric payloads directly and normalize only the selected WAV channel; retain format, error and signed-value regression tests.
+
 - Read and write Matrix Market sparse matrices through shared `sci-core::csr`
   operations, removing the `sci-sparse` dependency without changing the
   canonical CSR representation, validation or error mapping.

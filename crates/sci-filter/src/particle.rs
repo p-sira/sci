@@ -17,7 +17,7 @@ struct Weights {
     log: Vec<f64>,
 }
 
-fn validated(particles: &ParticleSet) -> Result<Weights> {
+fn validated(particles: &ParticleSet, logarithms: bool) -> Result<Weights> {
     let count = particles.states.len();
     if count == 0 || count > 65_536 {
         return Err(Error::InvalidInput("particle count must be in 1..=65536"));
@@ -44,23 +44,31 @@ fn validated(particles: &ParticleSet) -> Result<Weights> {
         return Err(Error::InvalidInput("particle weights have zero mass"));
     }
     let sum: f64 = particles.weights.iter().map(|w| w / maximum).sum();
-    let log_sum = sum.ln();
-    let log_maximum = maximum.ln();
-    let (linear, log) = particles
+    let linear = particles
         .weights
         .iter()
-        .map(|w| {
-            let relative = w / maximum;
-            (
-                relative / sum,
+        .map(|w| (w / maximum) / sum)
+        .collect();
+    // Log weights are required only for likelihood updating. Avoid N logarithms
+    // and another allocation in prediction, resampling, moments, and ESS.
+    let log = if logarithms {
+        let log_sum = sum.ln();
+        let log_maximum = maximum.ln();
+        particles
+            .weights
+            .iter()
+            .map(|&w| {
+                let relative = w / maximum;
                 if relative.is_normal() {
                     relative.ln() - log_sum
                 } else {
                     w.ln() - log_maximum - log_sum
-                },
-            )
-        })
-        .unzip();
+                }
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
     Ok(Weights { linear, log })
 }
 
@@ -116,7 +124,7 @@ pub fn particle_predict<F>(prior: &ParticleSet, process: F) -> Result<ParticleSe
 where
     F: FnMut(&[f64]) -> Result<Vec<f64>>,
 {
-    let weights = validated(prior)?;
+    let weights = validated(prior, false)?;
     let mut filter = filter(prior)?;
     let mut process = process;
     let mut error = None;
@@ -195,7 +203,7 @@ pub fn particle_update<F>(prior: &ParticleSet, mut log_likelihood: F) -> Result<
 where
     F: FnMut(&[f64]) -> Result<f64>,
 {
-    let mut weights = validated(prior)?;
+    let mut weights = validated(prior, true)?;
     let mut likelihoods = Vec::with_capacity(prior.states.len());
     let mut maximum_likelihood = f64::NEG_INFINITY;
     for (state, log_weight) in prior.states.iter().zip(&weights.log) {
@@ -271,7 +279,7 @@ where
 /// # References
 /// [Särkkä and Svensson, ch. 11](https://users.aalto.fi/~ssarkka/pub/bfs_book_2023_online.pdf).
 pub fn particle_estimate(particles: &ParticleSet) -> Result<Gaussian> {
-    let weights = validated(particles)?;
+    let weights = validated(particles, false)?;
     let mut filter = filter(particles)?;
     let mut weights = weights.linear.into_iter();
     filter
@@ -312,7 +320,7 @@ pub fn particle_estimate(particles: &ParticleSet) -> Result<Gaussian> {
 /// # References
 /// [Särkkä and Svensson, ch. 11](https://users.aalto.fi/~ssarkka/pub/bfs_book_2023_online.pdf).
 pub fn effective_sample_size(particles: &ParticleSet) -> Result<f64> {
-    let weights = validated(particles)?;
+    let weights = validated(particles, false)?;
     Ok(1. / weights.linear.iter().map(|w| w * w).sum::<f64>())
 }
 
@@ -354,7 +362,7 @@ pub fn systematic_resample(particles: &ParticleSet, offset: f64) -> Result<Parti
     if !offset.is_finite() || !(0. ..1.).contains(&offset) {
         return Err(Error::InvalidInput("resampling offset must be in [0,1)"));
     }
-    let weights = validated(particles)?.linear;
+    let weights = validated(particles, false)?.linear;
     let count = particles.states.len();
     let last = weights.iter().rposition(|w| *w > 0.).unwrap();
     let mut states = Vec::with_capacity(count);
@@ -372,4 +380,50 @@ pub fn systematic_resample(particles: &ParticleSet, offset: f64) -> Result<Parti
         states,
         weights: vec![1. / count as f64; count],
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn systematic_resample_skips_zero_weight_intervals_and_preserves_order() {
+        let particles = ParticleSet {
+            states: (0..8).map(|i| vec![i as f64]).collect(),
+            weights: vec![0., 1., 0., 2., 1., 0., 0., 0.],
+        };
+        let sampled = systematic_resample(&particles, 0.).unwrap();
+        assert_eq!(
+            sampled.states,
+            vec![1., 1., 3., 3., 3., 3., 4., 4.]
+                .into_iter()
+                .map(|x| vec![x])
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(sampled.weights, vec![0.125; 8]);
+        assert!((effective_sample_size(&particles).unwrap() - 8. / 3.).abs() < 1e-14);
+    }
+
+    #[test]
+    fn update_retains_extremely_small_positive_prior_ratios() {
+        let particles = ParticleSet {
+            states: vec![vec![0.], vec![1.], vec![2.], vec![3.]],
+            weights: vec![f64::MIN_POSITIVE, 1., 0., 1e-300],
+        };
+        let updated = particle_update(&particles, |state| {
+            Ok(if state[0] == 0. || state[0] == 1. {
+                1e308
+            } else {
+                f64::NEG_INFINITY
+            })
+        })
+        .unwrap();
+        // All finite likelihoods around 1e308 round to the same f64.
+        // The maximum-shift path therefore retains the original prior ratios.
+        assert!(updated.weights[0] > 0.);
+        assert!(((updated.weights[0] - f64::MIN_POSITIVE) / f64::MIN_POSITIVE).abs() < 1e-12);
+        assert_eq!(updated.weights[1], 1.);
+        assert_eq!(updated.weights[2], 0.);
+        assert_eq!(updated.weights[3], 0.);
+    }
 }

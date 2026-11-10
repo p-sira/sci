@@ -450,9 +450,24 @@ fn put_element(out: &mut Vec<u8>, kind: u32, bytes: &[u8]) {
         out.resize((out.len() + 7) & !7, 0);
     }
 }
-fn numeric_bytes(d: &NumericData) -> Vec<u8> {
-    macro_rules! bytes { ($($v:ident),+) => { match d { $(NumericData::$v(v)=>v.iter().flat_map(|x|x.to_le_bytes()).collect()),+ } }; }
-    bytes!(I8, U8, I16, U16, I32, U32, I64, U64, F32, F64)
+fn put_numeric_element(out: &mut Vec<u8>, kind: u32, data: &NumericData) {
+    out.extend(kind.to_le_bytes());
+    out.extend(((data.len() * repr(data).2) as u32).to_le_bytes());
+    // Write typed bytes into the destination directly; a million-element f64
+    // array would otherwise allocate and immediately copy another 8 MiB.
+    macro_rules! encode {
+        ($($variant:ident),+ $(,)?) => {
+            match data {
+                $(NumericData::$variant(values) => {
+                    for value in values {
+                        out.extend(value.to_le_bytes());
+                    }
+                }),+
+            }
+        };
+    }
+    encode!(I8, U8, I16, U16, I32, U32, I64, U64, F32, F64);
+    out.resize((out.len() + 7) & !7, 0);
 }
 
 /// Save typed numerical arrays as a deterministic little-endian Level-5 file.
@@ -518,9 +533,9 @@ pub fn savemat(mut writer: impl Write, variables: &MatFile, compressed: bool) ->
             .collect();
         put_element(&mut payload, 5, &dims);
         put_element(&mut payload, 1, name.as_bytes());
-        put_element(&mut payload, storage, &numeric_bytes(&a.real));
+        put_numeric_element(&mut payload, storage, &a.real);
         if let Some(im) = &a.imag {
-            put_element(&mut payload, storage, &numeric_bytes(im));
+            put_numeric_element(&mut payload, storage, im);
         }
         if compressed {
             let mut matrix = Vec::new();
@@ -574,5 +589,53 @@ impl MatArray {
         Ok((0..rows)
             .map(|r| (0..cols).map(|c| v[r + c * rows]).collect())
             .collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn numeric_encoding_round_trips_integer_and_complex_float_bit_patterns() {
+        let mut variables = MatFile::new();
+        variables.insert(
+            "large_integers".into(),
+            MatArray {
+                shape: vec![1, 3],
+                real: NumericData::U64(vec![0, 9_007_199_254_740_993, u64::MAX]),
+                imag: None,
+            },
+        );
+        let real = [-0.0, f64::INFINITY, f64::from_bits(0x7ff8_0000_0000_0011)];
+        let imag = [f64::NEG_INFINITY, 1.25, -0.0];
+        variables.insert(
+            "complex_values".into(),
+            MatArray {
+                shape: vec![3, 1],
+                real: NumericData::F64(real.to_vec()),
+                imag: Some(NumericData::F64(imag.to_vec())),
+            },
+        );
+        for compressed in [false, true] {
+            let mut bytes = Vec::new();
+            savemat(&mut bytes, &variables, compressed).unwrap();
+            let round_trip = loadmat(bytes.as_slice()).unwrap();
+            assert_eq!(round_trip["large_integers"], variables["large_integers"]);
+            let NumericData::F64(values) = &round_trip["complex_values"].real else {
+                panic!("float64 real component lost its type");
+            };
+            assert_eq!(
+                values.iter().map(|x| x.to_bits()).collect::<Vec<_>>(),
+                real.iter().map(|x| x.to_bits()).collect::<Vec<_>>()
+            );
+            let Some(NumericData::F64(values)) = &round_trip["complex_values"].imag else {
+                panic!("float64 imaginary component lost its type");
+            };
+            assert_eq!(
+                values.iter().map(|x| x.to_bits()).collect::<Vec<_>>(),
+                imag.iter().map(|x| x.to_bits()).collect::<Vec<_>>()
+            );
+        }
     }
 }

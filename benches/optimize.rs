@@ -125,6 +125,15 @@ mod derivative_benches {
     }
 
     #[divan::bench]
+    fn rosen_hess_prod_large(bencher: Bencher) {
+        let x = values(65_536, 1);
+        let p = values(65_536, 2);
+        bencher.bench(|| {
+            optimize::derivatives::rosen_hess_prod(black_box(&x), black_box(&p)).unwrap()
+        });
+    }
+
+    #[divan::bench]
     fn approx_fprime(bencher: Bencher) {
         let x = values(32, 1);
         let epsilon = [1e-7];

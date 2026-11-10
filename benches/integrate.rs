@@ -33,6 +33,13 @@ mod sampled {
         });
     }
 
+    /// Equally spaced data, including allocation of the spacing vector.
+    #[divan::bench]
+    fn trapezoid_uniform(bencher: Bencher) {
+        let y = sine_signal(N);
+        bencher.bench(|| sci::integrate::sampled::trapezoid(black_box(&y), None, DX).unwrap());
+    }
+
     #[divan::bench]
     fn cumulative_trapezoid(bencher: Bencher) {
         let y = sine_signal(N);
@@ -49,6 +56,13 @@ mod sampled {
         bencher.bench(|| {
             sci::integrate::sampled::simpson(black_box(&y), Some(black_box(&x)), DX).unwrap()
         });
+    }
+
+    /// Composite Simpson integration with constant spacing.
+    #[divan::bench]
+    fn simpson_uniform(bencher: Bencher) {
+        let y = sine_signal(N);
+        bencher.bench(|| sci::integrate::sampled::simpson(black_box(&y), None, DX).unwrap());
     }
 
     #[divan::bench]
@@ -69,7 +83,7 @@ mod sampled {
 mod quadrature {
     use super::*;
 
-    /// 16-point Gauss–Legendre rule (includes computing the nodes and weights).
+    /// Repeated 16-point Gauss–Legendre integration, including rule construction.
     #[divan::bench]
     fn fixed_quad(bencher: Bencher) {
         bencher.bench(|| {
@@ -78,6 +92,20 @@ mod quadrature {
                 black_box(-3.0),
                 black_box(3.0),
                 16,
+            )
+            .unwrap()
+        });
+    }
+
+    /// Repeated high-order calls, including Legendre rule construction.
+    #[divan::bench]
+    fn fixed_quad_reused_high_order(bencher: Bencher) {
+        bencher.bench(|| {
+            sci::integrate::quadrature::fixed_quad(
+                |x: f64| x * x + 1.0,
+                black_box(-1.0),
+                black_box(1.0),
+                128,
             )
             .unwrap()
         });

@@ -98,6 +98,38 @@ mod complex_transforms {
 mod real_transforms {
     use super::*;
 
+    /// Odd and even inverse transforms use different RealFFT kernels.
+    #[divan::bench(args = [255, 256, 257, 1024, 4096])]
+    fn irfft_lengths(bencher: Bencher, n: usize) {
+        let input = sci::fft::real::rfft(&sine_signal(n));
+        warm(bencher, || {
+            sci::fft::real::irfft(black_box(&input), Some(n)).unwrap()
+        });
+    }
+
+    /// Transform on a strided axis with a reduced intermediate tensor.
+    #[divan::bench]
+    fn rfftn_strided_axis(bencher: Bencher) {
+        const SHAPE3: [usize; 3] = [16, 32, 8];
+        const AXES3: [usize; 2] = [2, 0];
+        let input = values(SHAPE3.iter().product(), 17);
+        warm(bencher, || {
+            sci::fft::real::rfftn(black_box(&input), &SHAPE3, &AXES3).unwrap()
+        });
+    }
+
+    #[divan::bench]
+    fn irfftn_strided_axis(bencher: Bencher) {
+        const SHAPE3: [usize; 3] = [16, 32, 8];
+        const AXES3: [usize; 2] = [2, 0];
+        let input = sci::fft::real::rfftn(&values(SHAPE3.iter().product(), 17), &SHAPE3, &AXES3)
+            .unwrap()
+            .0;
+        warm(bencher, || {
+            sci::fft::real::irfftn(black_box(&input), &SHAPE3, &AXES3).unwrap()
+        });
+    }
+
     #[divan::bench]
     fn rfft(bencher: Bencher) {
         let input = sine_signal(N);

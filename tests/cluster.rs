@@ -450,3 +450,94 @@ fn hierarchy_euclidean_matches_spatial_condensed_order_and_errors() {
         Err(sci::Error::InvalidInput("geometry work limit exceeded")),
     );
 }
+
+#[test]
+fn requested_tree_cuts_match_independent_partitions_with_tied_heights() {
+    // Two pairs merge at height 1, then join a third leaf at height 2.
+    // The resulting tree has deliberately interleaved leaf indices.
+    let z = vec![
+        vec![0.0, 1.0, 1.0, 2.0],
+        vec![2.0, 3.0, 1.0, 2.0],
+        vec![6.0, 4.0, 2.0, 3.0],
+        vec![7.0, 5.0, 2.0, 3.0],
+        vec![8.0, 9.0, 4.0, 6.0],
+    ];
+    let stages = [
+        [0, 1, 2, 3, 4, 5],
+        [0, 0, 1, 2, 3, 4],
+        [0, 0, 1, 1, 2, 3],
+        [0, 0, 1, 1, 0, 2],
+        [0, 0, 1, 1, 0, 1],
+        [0, 0, 0, 0, 0, 0],
+    ];
+    let expected: Vec<Vec<usize>> = (0..6)
+        .map(|leaf| stages.iter().map(|stage| stage[leaf]).collect())
+        .collect();
+    assert_eq!(h::cut_tree(&z, Cut::All).unwrap(), expected);
+
+    let counts = [6, 3, 6, 1, 2, 3];
+    let by_count = h::cut_tree(&z, Cut::Counts(&counts)).unwrap();
+    for (column, &count) in counts.iter().enumerate() {
+        for leaf in 0..6 {
+            assert_eq!(by_count[leaf][column], stages[6 - count][leaf]);
+        }
+    }
+    let heights = [-1.0, 1.0, 2.0, 4.0, 5.0];
+    let by_height = h::cut_tree(&z, Cut::Heights(&heights)).unwrap();
+    for (column, &stage) in [0, 0, 2, 4, 5].iter().enumerate() {
+        for leaf in 0..6 {
+            assert_eq!(by_height[leaf][column], stages[stage][leaf]);
+        }
+    }
+    assert_eq!(h::cut_tree(&z, Cut::Counts(&[])).unwrap(), vec![vec![]; 6]);
+    assert_eq!(h::cut_tree(&z, Cut::Heights(&[])).unwrap(), vec![vec![]; 6]);
+
+    let (nodes, ids) = h::leaders(&z, &[99, 99, 7, 7, 99, 7]).unwrap();
+    assert_eq!((nodes, ids), (vec![8, 9], vec![99, 7]));
+    assert!(h::leaders(&z, &[99, 7, 99, 7, 7, 7]).is_err());
+    // usize::MAX is a valid label, including when it is a singleton.
+    assert_eq!(
+        h::leaders(&z, &[usize::MAX, usize::MAX, 0, 0, usize::MAX, 0]).unwrap(),
+        (vec![8, 9], vec![usize::MAX, 0])
+    );
+}
+
+#[test]
+fn max_cluster_count_uses_merge_order_statistics_with_ties() {
+    let z = vec![
+        vec![0.0, 1.0, 1.0, 2.0],
+        vec![2.0, 3.0, 1.0, 2.0],
+        vec![6.0, 4.0, 2.0, 3.0],
+        vec![7.0, 5.0, 2.0, 3.0],
+        vec![8.0, 9.0, 4.0, 6.0],
+    ];
+    let stats = [0.0, 0.0, 0.0, 0.0, 4.0];
+    for target in 1..=6 {
+        let labels = h::fcluster(&z, target as f64, Criterion::MaxClustMonocrit(&stats)).unwrap();
+        let cut = if target == 6 {
+            f64::NEG_INFINITY
+        } else if target == 1 {
+            4.0
+        } else {
+            0.0
+        };
+        let expected = if target == 6 {
+            vec![1, 2, 3, 4, 5, 6]
+        } else {
+            h::fcluster(&z, cut, Criterion::Monocrit(&stats)).unwrap()
+        };
+        assert_eq!(labels, expected, "target {target}");
+    }
+    assert_eq!(
+        h::fcluster(&z, 3.0, Criterion::MaxClustMonocrit(&stats)).unwrap(),
+        vec![1, 1, 2, 2, 1, 2]
+    );
+    assert_eq!(
+        h::fcluster(&z, 4.0, Criterion::MaxClust).unwrap(),
+        vec![1, 1, 3, 3, 2, 4]
+    );
+    assert_eq!(
+        h::fcluster(&z, 3.0, Criterion::MaxClust).unwrap(),
+        vec![1, 1, 2, 2, 1, 2]
+    );
+}

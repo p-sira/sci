@@ -47,7 +47,8 @@ pub fn from_coo(
 /// # Errors
 /// Invalid pointers, lengths, indices, nonfinite data/sums, or crate limits.
 /// # Numerical behavior
-/// Uses [`from_coo`], including its summation order and work limits.
+/// Copies already canonical CSR storage in linear time; otherwise uses
+/// [`from_coo`] to sort and combine duplicates in input order.
 /// # Examples
 /// ```
 /// let a = sci_sparse::construct::from_csr(1, 2, &[0, 2], &[1, 0], &[3.0, 2.0])?;
@@ -72,6 +73,22 @@ pub fn from_csr(
         || indptr.windows(2).any(|w| w[0] > w[1] || w[1] > data.len())
     {
         return Err(Error::InvalidInput("invalid CSR pointers or lengths"));
+    }
+    // Most CSR inputs already have sorted, unique columns. Avoid constructing
+    // triples and sorting them again in this common case.
+    if data.iter().all(|v| v.is_finite())
+        && (0..rows).all(|r| {
+            let columns = &indices[indptr[r]..indptr[r + 1]];
+            columns.iter().all(|&c| c < cols) && columns.windows(2).all(|w| w[0] < w[1])
+        })
+    {
+        return Ok(SparseMatrix {
+            rows,
+            cols,
+            indptr: indptr.to_vec(),
+            indices: indices.to_vec(),
+            data: data.to_vec(),
+        });
     }
     let coordinates: Vec<_> = (0..rows)
         .flat_map(|r| (indptr[r]..indptr[r + 1]).map(move |p| (r, indices[p], data[p])))
@@ -119,7 +136,7 @@ pub fn from_csc(
 /// # Errors
 /// Ragged rows, nonfinite data, or more than 1,000,000 dense cells.
 /// # Numerical behavior
-/// Exact copying without rounding. Both signs of zero become implicit positive zero.
+/// Exact copying without sorting. Both signs of zero become implicit positive zero.
 /// # Examples
 /// ```
 /// let a = sci_sparse::construct::from_dense(&[vec![0.0, 3.0]])?;
@@ -132,8 +149,15 @@ pub fn from_dense(values: &[Vec<f64>]) -> Result<SparseMatrix> {
     let rows = values.len();
     let cols = values.first().map_or(0, Vec::len);
     dense_size(rows, cols)?;
-    let mut coordinates = Vec::new();
-    for (r, row) in values.iter().enumerate() {
+    let mut a = SparseMatrix {
+        rows,
+        cols,
+        indptr: Vec::with_capacity(rows + 1),
+        indices: Vec::new(),
+        data: Vec::new(),
+    };
+    a.indptr.push(0);
+    for row in values {
         if row.len() != cols {
             return Err(Error::DimensionMismatch);
         }
@@ -142,11 +166,13 @@ pub fn from_dense(values: &[Vec<f64>]) -> Result<SparseMatrix> {
                 return Err(Error::InvalidInput("dense entries must be finite"));
             }
             if v != 0.0 {
-                coordinates.push((r, c, v));
+                a.indices.push(c);
+                a.data.push(v);
             }
         }
+        a.indptr.push(a.data.len());
     }
-    from_coo(rows, cols, &coordinates)
+    Ok(a)
 }
 
 fn dense_size(rows: usize, cols: usize) -> Result<()> {

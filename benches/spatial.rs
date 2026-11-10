@@ -159,6 +159,28 @@ mod pairwise_benches {
     }
 
     #[divan::bench]
+    fn pdist_correlation_many_pairs(bencher: Bencher) {
+        let x = points(160, 12, 35);
+        bencher.bench(|| {
+            spatial::distance::pdist(black_box(&x), spatial::distance::Metric::Correlation).unwrap()
+        });
+    }
+
+    #[divan::bench]
+    fn cdist_cosine_many_pairs(bencher: Bencher) {
+        let x = points(100, 8, 36);
+        let y = points(100, 8, 37);
+        bencher.bench(|| {
+            spatial::distance::cdist(
+                black_box(&x),
+                black_box(&y),
+                spatial::distance::Metric::Cosine,
+            )
+            .unwrap()
+        });
+    }
+
+    #[divan::bench]
     fn distance_matrix(bencher: Bencher) {
         let x = points(40, 3, 1);
         let y = points(40, 3, 2);

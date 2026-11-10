@@ -95,9 +95,10 @@ pub fn validate(a: &SparseMatrix) -> Result<()> {
 /// input; [`Error::NonFiniteEvaluation`] if duplicate accumulation overflows.
 ///
 /// # Numerical behavior
-/// Stable coordinate sorting followed by sequential `f64` addition in original
-/// order for duplicates. O(entries log entries + rows) work. This preserves
-/// summation order and signed zeros of the original Sci sparse constructor.
+/// Stable row bucketing and per-row column sorting, followed by sequential
+/// `f64` addition in original order for duplicates. O(entries + rows +
+/// Σ row_entries × log(row_entries)) work. This preserves summation order and
+/// signed zeros of the original Sci sparse constructor.
 ///
 /// # Examples
 /// ```
@@ -124,32 +125,46 @@ pub fn from_coo(
             ));
         }
     }
-    let mut coordinates = coordinates.to_vec();
-    coordinates.sort_by_key(|&(r, c, _)| (r, c));
+    // Place entries into their rows in input order, then sort only within each
+    // row. This avoids comparing row keys for every entry of large CSR inputs.
+    let mut row_offsets = vec![0; rows + 1];
+    for &(r, _, _) in coordinates {
+        row_offsets[r + 1] += 1;
+    }
+    for r in 0..rows {
+        row_offsets[r + 1] += row_offsets[r];
+    }
+    let mut next = row_offsets[..rows].to_vec();
+    let mut grouped = vec![(0, 0.0); coordinates.len()];
+    for &(r, c, v) in coordinates {
+        grouped[next[r]] = (c, v);
+        next[r] += 1;
+    }
     let mut a: SparseMatrix = SparseMatrix {
         rows,
         cols,
         indptr: vec![0; rows + 1],
-        indices: Vec::new(),
-        data: Vec::new(),
+        indices: Vec::with_capacity(coordinates.len()),
+        data: Vec::with_capacity(coordinates.len()),
     };
-    let mut previous = None;
-    for (r, c, v) in coordinates {
-        if previous == Some((r, c)) {
-            let last = a.data.last_mut().expect("previous entry exists");
-            *last = match *last + v {
-                value if value.is_finite() => Ok(value),
-                _ => Err(Error::NonFiniteEvaluation),
-            }?;
-        } else {
-            a.indices.push(c);
-            a.data.push(v);
-            a.indptr[r + 1] += 1;
-            previous = Some((r, c));
+    for r in 0..rows {
+        let row = &mut grouped[row_offsets[r]..row_offsets[r + 1]];
+        row.sort_by_key(|&(c, _)| c); // stable: duplicate summation order matters
+        let mut previous = None;
+        for &(c, v) in row.iter() {
+            if previous == Some(c) {
+                let last = a.data.last_mut().expect("previous entry exists");
+                *last = match *last + v {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
+            } else {
+                a.indices.push(c);
+                a.data.push(v);
+                previous = Some(c);
+            }
         }
-    }
-    for i in 0..rows {
-        a.indptr[i + 1] += a.indptr[i];
+        a.indptr[r + 1] = a.data.len();
     }
     Ok(a)
 }

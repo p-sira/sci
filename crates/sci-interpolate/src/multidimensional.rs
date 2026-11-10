@@ -42,7 +42,10 @@ pub enum ScatteredMethod {
 ///
 /// ## Numerical behavior
 ///
-/// Binary interval lookup and at most 2^dimension corners per query. Query × corner × dimension work is limited to 10,000,000. Extrapolation and extreme scales can overflow.
+/// Binary interval lookup and at most 2^dimension corners per query. Singleton
+/// axes are removed from corner enumeration, and lower-corner offsets and
+/// weights are reused. Query × corner × dimension work is limited to
+/// 10,000,000. Extrapolation and extreme scales can overflow.
 ///
 /// # Examples
 ///
@@ -122,6 +125,9 @@ pub fn interpn(
             }
             let mut indices = [0usize; 8];
             let mut fractions = [0.0; 8];
+            let mut complements = [1.0; 8];
+            let mut active_axes = [0usize; 8];
+            let mut active_len = 0;
             for j in 0..dim {
                 let a = &points[j];
                 if a.len() == 1 {
@@ -141,28 +147,27 @@ pub fn interpn(
                 } else {
                     indices[j] = i;
                     fractions[j] = u;
+                    complements[j] = 1.0 - u;
+                    active_axes[active_len] = j;
+                    active_len += 1;
                 }
             }
+            let base_index = (0..dim).map(|j| indices[j] * strides[j]).sum::<usize>();
             if method == GridMethod::Nearest {
-                let index = (0..dim).map(|j| indices[j] * strides[j]).sum::<usize>();
-                return Ok(values[index]);
+                return Ok(values[base_index]);
             }
             let mut sum = 0.0;
-            for corner in 0..1 << dim {
+            for corner in 0..1 << active_len {
                 let mut weight = 1.0;
-                let mut index = 0;
-                for j in 0..dim {
-                    let upper = (corner >> j) & 1;
-                    if points[j].len() == 1 && upper == 1 {
-                        weight = 0.0;
-                        break;
-                    }
+                let mut index = base_index;
+                for (bit, &j) in active_axes[..active_len].iter().enumerate() {
+                    let upper = (corner >> bit) & 1;
                     weight *= if upper == 1 {
                         fractions[j]
                     } else {
-                        1.0 - fractions[j]
+                        complements[j]
                     };
-                    index += (indices[j] + upper) * strides[j];
+                    index += upper * strides[j];
                 }
                 if weight != 0.0 {
                     sum = match sum + weight * values[index] {
@@ -422,7 +427,11 @@ pub fn griddata(
 ///
 /// ## Numerical behavior
 ///
-/// Reuses scalar derivative and local evaluation kernels. The product of query-axis lengths (each at least one for work accounting) and coefficient counts is bounded by 10,000,000.
+/// Reuses scalar derivative and local evaluation kernels. With zero derivative
+/// orders, caches local basis functions along both Cartesian axes instead of
+/// rebuilding them for each coefficient column and output row. The product of
+/// query-axis lengths (each at least one for work accounting) and coefficient
+/// counts is bounded by 10,000,000.
 ///
 /// # Examples
 ///
@@ -483,6 +492,46 @@ pub fn bisplev(
     };
     backend::validate(&sx)?;
     backend::validate(&sy)?;
+    // Bound the cache independently of the output work limit. A single long
+    // query axis can otherwise require millions of fixed-size basis arrays.
+    if dx == 0 && dy == 0 && y.len() <= 16_384 {
+        let xlo = spline.x_knots[kx];
+        let xhi = spline.x_knots[nx];
+        let ylo = spline.y_knots[ky];
+        let yhi = spline.y_knots[ny];
+        let yb: Vec<_> = y
+            .iter()
+            .map(|&value| backend::basis(&sy.knots, ky, value.clamp(ylo, yhi)))
+            .collect();
+        let mut along_y = vec![0.0; ny];
+        let mut result = Vec::with_capacity(x.len());
+        for &query in x {
+            let (start_x, basis_x) = backend::basis(&sx.knots, kx, query.clamp(xlo, xhi));
+            for (j, value) in along_y.iter_mut().enumerate() {
+                let mut sum = 0.0;
+                for (i, weight) in basis_x.iter().take(kx + 1).enumerate() {
+                    sum += *weight * spline.coefficients[(start_x + i) * ny + j];
+                }
+                if !sum.is_finite() {
+                    return Err(Error::NonFiniteEvaluation);
+                }
+                *value = sum;
+            }
+            let mut row = Vec::with_capacity(y.len());
+            for (start_y, basis_y) in &yb {
+                let mut sum = 0.0;
+                for (j, weight) in basis_y.iter().take(ky + 1).enumerate() {
+                    sum += *weight * along_y[*start_y + j];
+                }
+                if !sum.is_finite() {
+                    return Err(Error::NonFiniteEvaluation);
+                }
+                row.push(sum);
+            }
+            result.push(row);
+        }
+        return Ok(result);
+    }
     let mut along_x = Vec::with_capacity(ny);
     for j in 0..ny {
         for (i, c) in sx.coefficients.iter_mut().enumerate() {

@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Speed up case-insensitive CODATA name searches by comparing ASCII bytes without allocating a lowercase string per entry; retain Unicode matching semantics and independent parity tests.
+
 - Make temperature, wavelength, and frequency conversions generic over `Float`; retain the pinned binary64 CODATA database.
 
 - Update shared Sci dependency requirements to the new minor versions.

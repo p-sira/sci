@@ -37,6 +37,7 @@ struct Cache<T: FftFloat> {
     forward: Option<ComplexWorkspace<T>>,
     inverse: Option<ComplexWorkspace<T>>,
     real: Option<RealWorkspace<T>>,
+    inverse_real: Option<InverseRealWorkspace<T>>,
 }
 thread_local! {
     static CACHE_F32: RefCell<Cache<f32>> = RefCell::new(Cache::default());
@@ -49,6 +50,10 @@ pub(super) mod private {
     pub trait Backend: rustfft::FftNum {
         fn transform(input: &[Complex<Self>], inverse: bool) -> Vec<Complex<Self>>;
         fn real(input: &[Self]) -> Vec<Complex<Self>>;
+        fn real_into(input: &[Self], output: &mut [Complex<Self>]);
+        fn real_strided(input: &[Self], output: &mut [Complex<Self>], n: usize, stride: usize);
+        fn inverse_real(input: &[Complex<Self>], n: usize) -> crate::Result<Vec<Self>>;
+        fn inverse_real_into(input: &[Complex<Self>], output: &mut [Self]) -> crate::Result<()>;
     }
     macro_rules! backend {
         ($t:ty, $cache:ident) => {
@@ -57,7 +62,41 @@ pub(super) mod private {
                     $cache.with_borrow_mut(|cache| transform(input, inverse, cache))
                 }
                 fn real(input: &[Self]) -> Vec<Complex<Self>> {
-                    $cache.with_borrow_mut(|cache| real_transform(input, cache))
+                    let mut output = vec![
+                        Complex { re: 0.0, im: 0.0 };
+                        if input.is_empty() {
+                            0
+                        } else {
+                            input.len() / 2 + 1
+                        }
+                    ];
+                    Self::real_into(input, &mut output);
+                    output
+                }
+                fn real_into(input: &[Self], output: &mut [Complex<Self>]) {
+                    $cache.with_borrow_mut(|cache| real_transform_into(input, output, cache));
+                }
+                fn real_strided(
+                    input: &[Self],
+                    output: &mut [Complex<Self>],
+                    n: usize,
+                    stride: usize,
+                ) {
+                    $cache.with_borrow_mut(|cache| {
+                        real_transform_strided(input, output, n, stride, cache)
+                    });
+                }
+                fn inverse_real(input: &[Complex<Self>], n: usize) -> crate::Result<Vec<Self>> {
+                    let mut output = vec![0.0; n];
+                    Self::inverse_real_into(input, &mut output)?;
+                    Ok(output)
+                }
+                fn inverse_real_into(
+                    input: &[Complex<Self>],
+                    output: &mut [Self],
+                ) -> crate::Result<()> {
+                    $cache
+                        .with_borrow_mut(|cache| inverse_real_transform_into(input, output, cache))
                 }
             }
         };
@@ -119,7 +158,7 @@ impl<T: FftFloat> RealWorkspace<T> {
             plan,
         }
     }
-    fn run(&mut self, input: &[T]) -> Vec<Complex<T>> {
+    fn run_into(&mut self, input: &[T], output: &mut [Complex<T>]) {
         self.buffer.copy_from_slice(input);
         if self
             .plan
@@ -134,9 +173,92 @@ impl<T: FftFloat> RealWorkspace<T> {
                 .collect();
             let mut result = ComplexWorkspace::new(input.len(), false).run(&values, false);
             result.truncate(input.len() / 2 + 1);
-            return result;
+            output.copy_from_slice(&result);
+            return;
         }
-        self.output.iter().copied().map(owned).collect()
+        for (dst, &value) in output.iter_mut().zip(&self.output) {
+            *dst = owned(value);
+        }
+    }
+
+    // Process all lines with one cached plan, one workspace borrow and direct
+    // gather/scatter. Short strided axes otherwise pay a cache dispatch and
+    // two extra buffer copies for every transform.
+    fn run_strided(&mut self, input: &[T], output: &mut [Complex<T>], stride: usize) {
+        let n = self.buffer.len();
+        let block = n * stride;
+        let small_block = self.output.len() * stride;
+        for (outer, chunk) in input.chunks_exact(block).enumerate() {
+            for offset in 0..stride {
+                for (k, value) in self.buffer.iter_mut().enumerate() {
+                    *value = chunk[offset + k * stride];
+                }
+                let base = outer * small_block + offset;
+                if self
+                    .plan
+                    .process_with_scratch(&mut self.buffer, &mut self.output, &mut self.scratch)
+                    .is_err()
+                {
+                    // The plan and buffers have matching dimensions, so this
+                    // should never occur; preserve the public fallback path.
+                    let values: Vec<_> = (0..n)
+                        .map(|k| Complex {
+                            re: chunk[offset + k * stride],
+                            im: T::zero(),
+                        })
+                        .collect();
+                    let result = ComplexWorkspace::new(n, false).run(&values, false);
+                    for (k, value) in result.into_iter().take(self.output.len()).enumerate() {
+                        output[base + k * stride] = value;
+                    }
+                } else {
+                    for (k, &value) in self.output.iter().enumerate() {
+                        output[base + k * stride] = owned(value);
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct InverseRealWorkspace<T: FftFloat> {
+    plan: Arc<dyn realfft::ComplexToReal<T>>,
+    input: Vec<Native<T>>,
+    output: Vec<T>,
+    scratch: Vec<Native<T>>,
+}
+impl<T: FftFloat> InverseRealWorkspace<T> {
+    fn new(n: usize) -> Self {
+        let plan = realfft::RealFftPlanner::<T>::new().plan_fft_inverse(n);
+        Self {
+            input: plan.make_input_vec(),
+            output: plan.make_output_vec(),
+            scratch: plan.make_scratch_vec(),
+            plan,
+        }
+    }
+
+    fn run_into(&mut self, bins: &[Complex<T>], output: &mut [T]) -> crate::Result<()> {
+        self.input.fill(Native::new(T::zero(), T::zero()));
+        for (dst, &src) in self.input.iter_mut().zip(bins) {
+            *dst = native(src);
+        }
+        // The imaginary parts of DC and even Nyquist do not contribute.
+        self.input[0].im = T::zero();
+        if self.output.len().is_multiple_of(2) {
+            self.input[self.output.len() / 2].im = T::zero();
+        }
+        self.plan
+            .process_with_scratch(&mut self.input, &mut self.output, &mut self.scratch)
+            .map_err(|_| crate::Error::NumericalFailure("inverse real FFT backend failed"))?;
+        let scale = T::from(self.output.len()).unwrap();
+        for (dst, &value) in output.iter_mut().zip(&self.output) {
+            *dst = match value / scale {
+                result if result.is_finite() => Ok(result),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?;
+        }
+        Ok(())
     }
 }
 
@@ -180,7 +302,7 @@ fn transform<T: FftFloat>(
 /// ## Numerical behavior
 ///
 /// O(n log n) private backend computation. Each thread retains the most recent
-/// forward, inverse, and real FFT plans and work buffers for lengths up to
+/// forward, inverse, real forward, and real inverse FFT plans and work buffers for lengths up to
 /// 65,536. Larger lengths use temporary workspaces. Plan storage does not grow
 /// with the number of different lengths. Each precision has its own cache.
 /// Roundoff depends on the selected type, length, and data.
@@ -214,7 +336,7 @@ pub fn fft<T: FftFloat>(input: &[Complex<T>]) -> Vec<Complex<T>> {
 /// ## Numerical behavior
 ///
 /// O(n log n) private backend computation. Each thread retains the most recent
-/// forward, inverse, and real FFT plans and work buffers for lengths up to
+/// forward, inverse, real forward, and real inverse FFT plans and work buffers for lengths up to
 /// 65,536. Larger lengths use temporary workspaces. Plan storage does not grow
 /// with the number of different lengths. Each precision has its own cache.
 /// Roundoff depends on the selected type, length, and data.
@@ -250,7 +372,7 @@ pub fn ifft<T: FftFloat>(input: &[Complex<T>]) -> Vec<Complex<T>> {
 /// ## Numerical behavior
 ///
 /// O(n log n) private backend computation. Each thread retains the most recent
-/// forward, inverse, and real FFT plans and work buffers for lengths up to
+/// forward, inverse, real forward, and real inverse FFT plans and work buffers for lengths up to
 /// 65,536. Larger lengths use temporary workspaces. Plan storage does not grow
 /// with the number of different lengths. Each precision has its own cache.
 /// Roundoff depends on the selected type, length, and data.
@@ -266,12 +388,21 @@ pub fn rfft<T: FftFloat>(input: &[T]) -> Vec<Complex<T>> {
     T::real(input)
 }
 
-fn real_transform<T: FftFloat>(input: &[T], cache: &mut Cache<T>) -> Vec<Complex<T>> {
+pub(super) fn real_strided<T: FftFloat>(
+    input: &[T],
+    output: &mut [Complex<T>],
+    n: usize,
+    stride: usize,
+) {
+    T::real_strided(input, output, n, stride)
+}
+
+fn real_transform_into<T: FftFloat>(input: &[T], output: &mut [Complex<T>], cache: &mut Cache<T>) {
     if input.is_empty() {
-        return Vec::new();
+        return;
     }
     if input.len() > CACHE_LENGTH {
-        return RealWorkspace::new(input.len()).run(input);
+        return RealWorkspace::new(input.len()).run_into(input, output);
     }
     let workspace = cache
         .real
@@ -279,5 +410,51 @@ fn real_transform<T: FftFloat>(input: &[T], cache: &mut Cache<T>) -> Vec<Complex
     if workspace.buffer.len() != input.len() {
         *workspace = RealWorkspace::new(input.len());
     }
-    workspace.run(input)
+    workspace.run_into(input, output)
+}
+
+fn real_transform_strided<T: FftFloat>(
+    input: &[T],
+    output: &mut [Complex<T>],
+    n: usize,
+    stride: usize,
+    cache: &mut Cache<T>,
+) {
+    if n > CACHE_LENGTH {
+        return RealWorkspace::new(n).run_strided(input, output, stride);
+    }
+    let workspace = cache.real.get_or_insert_with(|| RealWorkspace::new(n));
+    if workspace.buffer.len() != n {
+        *workspace = RealWorkspace::new(n);
+    }
+    workspace.run_strided(input, output, stride);
+}
+
+pub(super) fn inverse_real<T: FftFloat>(input: &[Complex<T>], n: usize) -> crate::Result<Vec<T>> {
+    T::inverse_real(input, n)
+}
+
+pub(super) fn inverse_real_into<T: FftFloat>(
+    input: &[Complex<T>],
+    output: &mut [T],
+) -> crate::Result<()> {
+    T::inverse_real_into(input, output)
+}
+
+fn inverse_real_transform_into<T: FftFloat>(
+    input: &[Complex<T>],
+    output: &mut [T],
+    cache: &mut Cache<T>,
+) -> crate::Result<()> {
+    let n = output.len();
+    if n > CACHE_LENGTH {
+        return InverseRealWorkspace::new(n).run_into(input, output);
+    }
+    let workspace = cache
+        .inverse_real
+        .get_or_insert_with(|| InverseRealWorkspace::new(n));
+    if workspace.output.len() != n {
+        *workspace = InverseRealWorkspace::new(n);
+    }
+    workspace.run_into(input, output)
 }

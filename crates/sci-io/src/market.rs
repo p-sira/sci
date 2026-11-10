@@ -1,6 +1,6 @@
 use crate::{Error, Matrix, Result, SparseMatrix, VALUES, bounded_read};
 use sci_core::csr;
-use std::io::{Read, Write};
+use std::io::{BufWriter, Read, Write};
 
 /// A real Matrix Market matrix, with explicit dense shape or shared CSR storage.
 #[derive(Clone, Debug, PartialEq)]
@@ -300,7 +300,10 @@ pub fn mmread(reader: impl Read) -> Result<MarketMatrix> {
 /// ```
 /// # References
 /// [NIST Matrix Market](https://math.nist.gov/MatrixMarket/formats.html).
-pub fn mmwrite(mut writer: impl Write, a: &MarketMatrix) -> Result<()> {
+pub fn mmwrite(writer: impl Write, a: &MarketMatrix) -> Result<()> {
+    // Matrix Market is line-oriented; writing each scalar to an unbuffered file
+    // would otherwise issue one small write per value.
+    let mut writer = BufWriter::new(writer);
     match a {
         MarketMatrix::Dense { rows, cols, data } => {
             if *rows > VALUES
@@ -336,6 +339,8 @@ pub fn mmwrite(mut writer: impl Write, a: &MarketMatrix) -> Result<()> {
             }
         }
     }
+    // Drain our buffer but leave flushing the caller's destination to them.
+    writer.into_inner().map_err(|e| Error::Io(e.into_error()))?;
     Ok(())
 }
 

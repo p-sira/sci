@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Skip redundant corners of singleton axes in multidimensional interpolation and reuse Cartesian B-spline bases in surface evaluation; compute repeated spline derivatives incrementally.
+
 - Solve well-conditioned B-spline interpolation systems with pivoted LU
   instead of an unconditional SVD, retaining pivot/residual checks and the
   SVD fallback for ill-conditioned systems. The native cubic interpolation

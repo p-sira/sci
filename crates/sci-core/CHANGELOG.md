@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Construct canonical CSR storage from COO with stable row buckets and per-row sorting rather than a global coordinate sort; retain duplicate and signed-zero conventions.
+
 - Remove the hidden `finite` helper; use `Float::is_finite()` for scalar checks. Rename `finite_slice` to `is_finite_slice` for shared slice validation.
 
 - Re-export the shared `Float` bound; make finite checks and matrix, spline, and sparse storage generic with `f64` defaults.

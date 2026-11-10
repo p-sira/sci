@@ -123,6 +123,15 @@ mod convolution_benches {
         });
     }
 
+    #[divan::bench(args = [32, 257])]
+    fn fftconvolve_large(bencher: Bencher, kernel_len: usize) {
+        let x = sine_signal(8192);
+        let h = values(kernel_len, 3);
+        warm(bencher, || {
+            signal::convolution::fftconvolve(black_box(&x), black_box(&h), Mode::Same).unwrap()
+        });
+    }
+
     #[divan::bench]
     fn oaconvolve(bencher: Bencher) {
         let x = sine_signal(N);
@@ -144,6 +153,16 @@ mod convolution_benches {
         let h = signal::filtering::firwin(31, &[0.25], true, &Window::Hamming, true, 2.).unwrap();
         let x = sine_signal(N);
         bencher.bench(|| signal::convolution::upfirdn(black_box(&h), black_box(&x), 3, 2).unwrap());
+    }
+
+    #[divan::bench(args = [(1, 8), (5, 4), (8, 3)])]
+    fn upfirdn_polyphase(bencher: Bencher, rates: (usize, usize)) {
+        let (up, down) = rates;
+        let h = values(127, 7);
+        let x = sine_signal(2048);
+        bencher.bench(|| {
+            signal::convolution::upfirdn(black_box(&h), black_box(&x), up, down).unwrap()
+        });
     }
 
     #[divan::bench]
@@ -708,6 +727,13 @@ mod filtering_benches {
         bencher.bench(|| signal::filtering::sosfilt(black_box(&sos), black_box(&x)).unwrap());
     }
 
+    #[divan::bench(args = [4, 16])]
+    fn sosfilt_large(bencher: Bencher, order: usize) {
+        let sos = digital_sos(order);
+        let x = sine_signal(8192);
+        bencher.bench(|| signal::filtering::sosfilt(black_box(&sos), black_box(&x)).unwrap());
+    }
+
     #[divan::bench]
     fn sosfilt_zi(bencher: Bencher) {
         let sos = digital_sos(8);
@@ -1153,6 +1179,24 @@ mod spectral_benches {
         });
     }
 
+    #[divan::bench(args = [128, 512])]
+    fn welch_many_segments(bencher: Bencher, window_len: usize) {
+        let x = sine_signal(8192);
+        let window = windows::hann(window_len, false).unwrap();
+        warm(bencher, || {
+            signal::spectral::welch(
+                black_box(&x),
+                black_box(&window),
+                window_len / 2,
+                window_len,
+                FS,
+                true,
+                Scaling::Density,
+            )
+            .unwrap()
+        });
+    }
+
     #[divan::bench]
     fn csd(bencher: Bencher) {
         let x = sine_signal(N);
@@ -1185,6 +1229,24 @@ mod spectral_benches {
                 black_box(&window),
                 128,
                 256,
+                FS,
+            )
+            .unwrap()
+        });
+    }
+
+    #[divan::bench(args = [128, 512])]
+    fn coherence_many_segments(bencher: Bencher, window_len: usize) {
+        let x = sine_signal(8192);
+        let y = values(8192, 5);
+        let window = windows::hann(window_len, false).unwrap();
+        warm(bencher, || {
+            signal::spectral::coherence(
+                black_box(&x),
+                black_box(&y),
+                black_box(&window),
+                window_len / 2,
+                window_len,
                 FS,
             )
             .unwrap()
@@ -1560,6 +1622,14 @@ mod window_benches {
     }
 
     #[divan::bench]
+    fn general_cosine_eight_harmonics(bencher: Bencher) {
+        let coefficients = [0.4, 0.5, 0.1, 0.05, -0.02, 0.01, -0.005, 0.001];
+        bencher.bench(|| {
+            windows::general_cosine(black_box(M), black_box(&coefficients), true).unwrap()
+        });
+    }
+
+    #[divan::bench]
     fn general_hamming(bencher: Bencher) {
         bencher.bench(|| windows::general_hamming(black_box(M), 0.54, true).unwrap());
     }
@@ -1608,6 +1678,13 @@ mod window_benches {
     fn dpss(bencher: Bencher) {
         warm(bencher, || {
             windows::dpss(black_box(48), 2.5, 4, true).unwrap()
+        });
+    }
+
+    #[divan::bench(args = [64, 128, 192])]
+    fn dpss_size_sweep(bencher: Bencher, n: usize) {
+        warm(bencher, || {
+            windows::dpss(black_box(n), 2.5, 4, true).unwrap()
         });
     }
 
