@@ -1410,15 +1410,16 @@ pub struct ClusterNode {
 /// [SciPy to_tree](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.to_tree.html).
 pub fn to_tree(z: &[Vec<f64>]) -> Result<Vec<ClusterNode>> {
     let n = validate(z)?;
-    let mut nodes = (0..n)
-        .map(|id| ClusterNode {
-            id,
-            left: None,
-            right: None,
-            distance: 0.0,
-            count: 1,
-        })
-        .collect::<Vec<_>>();
+    // Allocate all leaves and merges at once; growing after the leaves
+    // otherwise reallocates and copies the whole leaf block.
+    let mut nodes = Vec::with_capacity(n + z.len());
+    nodes.extend((0..n).map(|id| ClusterNode {
+        id,
+        left: None,
+        right: None,
+        distance: 0.0,
+        count: 1,
+    }));
     nodes.extend(z.iter().enumerate().map(|(i, r)| ClusterNode {
         id: n + i,
         left: Some(r[0] as usize),

@@ -50,7 +50,6 @@ pub(super) mod private {
     pub trait Backend: rustfft::FftNum {
         fn transform(input: &[Complex<Self>], inverse: bool) -> Vec<Complex<Self>>;
         fn real(input: &[Self]) -> Vec<Complex<Self>>;
-        fn real_into(input: &[Self], output: &mut [Complex<Self>]);
         fn real_strided(input: &[Self], output: &mut [Complex<Self>], n: usize, stride: usize);
         fn inverse_real(input: &[Complex<Self>], n: usize) -> crate::Result<Vec<Self>>;
         fn inverse_real_into(input: &[Complex<Self>], output: &mut [Self]) -> crate::Result<()>;
@@ -62,19 +61,7 @@ pub(super) mod private {
                     $cache.with_borrow_mut(|cache| transform(input, inverse, cache))
                 }
                 fn real(input: &[Self]) -> Vec<Complex<Self>> {
-                    let mut output = vec![
-                        Complex { re: 0.0, im: 0.0 };
-                        if input.is_empty() {
-                            0
-                        } else {
-                            input.len() / 2 + 1
-                        }
-                    ];
-                    Self::real_into(input, &mut output);
-                    output
-                }
-                fn real_into(input: &[Self], output: &mut [Complex<Self>]) {
-                    $cache.with_borrow_mut(|cache| real_transform_into(input, output, cache));
+                    $cache.with_borrow_mut(|cache| real_transform(input, cache))
                 }
                 fn real_strided(
                     input: &[Self],
@@ -158,7 +145,7 @@ impl<T: FftFloat> RealWorkspace<T> {
             plan,
         }
     }
-    fn run_into(&mut self, input: &[T], output: &mut [Complex<T>]) {
+    fn run(&mut self, input: &[T]) -> Vec<Complex<T>> {
         self.buffer.copy_from_slice(input);
         if self
             .plan
@@ -173,12 +160,11 @@ impl<T: FftFloat> RealWorkspace<T> {
                 .collect();
             let mut result = ComplexWorkspace::new(input.len(), false).run(&values, false);
             result.truncate(input.len() / 2 + 1);
-            output.copy_from_slice(&result);
-            return;
+            return result;
         }
-        for (dst, &value) in output.iter_mut().zip(&self.output) {
-            *dst = owned(value);
-        }
+        // Collect directly: zero-filling a preallocated output first costs an
+        // extra full pass (memset) over the half spectrum.
+        self.output.iter().copied().map(owned).collect()
     }
 
     // Process all lines with one cached plan, one workspace borrow and direct
@@ -397,12 +383,12 @@ pub(super) fn real_strided<T: FftFloat>(
     T::real_strided(input, output, n, stride)
 }
 
-fn real_transform_into<T: FftFloat>(input: &[T], output: &mut [Complex<T>], cache: &mut Cache<T>) {
+fn real_transform<T: FftFloat>(input: &[T], cache: &mut Cache<T>) -> Vec<Complex<T>> {
     if input.is_empty() {
-        return;
+        return Vec::new();
     }
     if input.len() > CACHE_LENGTH {
-        return RealWorkspace::new(input.len()).run_into(input, output);
+        return RealWorkspace::new(input.len()).run(input);
     }
     let workspace = cache
         .real
@@ -410,7 +396,7 @@ fn real_transform_into<T: FftFloat>(input: &[T], output: &mut [Complex<T>], cach
     if workspace.buffer.len() != input.len() {
         *workspace = RealWorkspace::new(input.len());
     }
-    workspace.run_into(input, output)
+    workspace.run(input)
 }
 
 fn real_transform_strided<T: FftFloat>(
