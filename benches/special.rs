@@ -199,11 +199,36 @@ mod gamma_benches {
         });
     }
 
+    // Analytic unit-shape beta branches avoid iterative inverse/CDF kernels.
+    #[divan::bench]
+    fn betainc_unit_shape(bencher: Bencher) {
+        let x = unit_values(N, 3);
+        bencher.bench(|| sum1(black_box(&x), |x| special::beta::betainc(1.0, 3.5, x)));
+    }
+
+    #[divan::bench]
+    fn betaincinv_unit_shape(bencher: Bencher) {
+        let p = unit_values(N, 3);
+        bencher.bench(|| sum1(black_box(&p), |p| special::beta::betaincinv(1.0, 3.5, p)));
+    }
+
     #[divan::bench]
     fn gammainc(bencher: Bencher) {
         let a = positive_values(N, 1);
         let x = positive_values(N, 2);
         bencher.bench(|| sum2(black_box(&a), black_box(&x), special::gamma::gammainc));
+    }
+
+    #[divan::bench]
+    fn gammainc_unit_shape(bencher: Bencher) {
+        let x = positive_values(N, 2);
+        bencher.bench(|| sum1(black_box(&x), |x| special::gamma::gammainc(1.0, x)));
+    }
+
+    #[divan::bench]
+    fn gammaincinv_unit_shape(bencher: Bencher) {
+        let p = unit_values(N, 3);
+        bencher.bench(|| sum1(black_box(&p), |p| special::gamma::gammaincinv(1.0, p)));
     }
 
     #[divan::bench]
@@ -555,6 +580,11 @@ mod combinatorics_benches {
     }
 
     #[divan::bench]
+    fn stirling2_boundary(bencher: Bencher) {
+        bencher.bench(|| special::combinatorics::stirling2(black_box(1024), black_box(1023)));
+    }
+
+    #[divan::bench]
     fn bernoulli(bencher: Bencher) {
         bencher.bench(|| special::combinatorics::bernoulli(black_box(64)).unwrap());
     }
@@ -577,6 +607,32 @@ mod combinatorics_benches {
     fn gen_harmonic(bencher: Bencher) {
         bencher.bench(|| {
             special::combinatorics::gen_harmonic(black_box(1000), black_box(1.5)).unwrap()
+        });
+    }
+
+    #[divan::bench]
+    fn normalized_gen_harmonic_full(bencher: Bencher) {
+        bencher.bench(|| {
+            special::combinatorics::normalized_gen_harmonic(
+                black_box(1),
+                black_box(1_000_000),
+                black_box(1_000_000),
+                black_box(1.5_f64),
+            )
+            .unwrap()
+        });
+    }
+
+    #[divan::bench]
+    fn normalized_gen_harmonic_uniform(bencher: Bencher) {
+        bencher.bench(|| {
+            special::combinatorics::normalized_gen_harmonic(
+                black_box(123),
+                black_box(456_789),
+                black_box(1_000_000),
+                black_box(0.0_f64),
+            )
+            .unwrap()
         });
     }
 

@@ -279,6 +279,15 @@ pub fn incbet(aa: f64, bb: f64, xx: f64) -> f64 {
         }
     }
 
+    // The regularized beta CDF has exact power-law forms when either
+    // shape is one. Avoid the beta/gamma evaluations and continued fraction.
+    if bb == 1.0 && aa.is_finite() {
+        return xx.powf(aa);
+    }
+    if aa == 1.0 && bb.is_finite() {
+        return -(bb * (-xx).ln_1p()).exp_m1();
+    }
+
     let mut flag: isize = 0;
     if bb * xx <= 1.0 && xx <= 0.95 {
         let t = pseries(aa, bb, xx);
@@ -336,5 +345,40 @@ pub fn incbet(aa: f64, bb: f64, xx: f64) -> f64 {
         if t <= MACHEP { 1.0 - MACHEP } else { 1.0 - t }
     } else {
         t
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::incbet;
+
+    #[test]
+    fn unit_shapes_follow_analytic_cdf_with_stable_tails() {
+        // I_x(a,1) = x^a; I_x(1,b) = -expm1(b log1p(-x)).
+        for shape in [0.01_f64, 0.5, 1.0, 2.0, 50.0, 1000.0] {
+            for x in [
+                f64::MIN_POSITIVE,
+                1e-200,
+                1e-12,
+                0.01,
+                0.5,
+                0.99,
+                1.0 - f64::EPSILON,
+            ] {
+                let lower = x.powf(shape);
+                let upper = -(shape * (-x).ln_1p()).exp_m1();
+                assert_eq!(incbet(shape, 1.0, x).to_bits(), lower.to_bits());
+                assert!(
+                    (incbet(1.0, shape, x) - upper).abs() <= 2.0 * f64::EPSILON,
+                    "shape={shape}, x={x}"
+                );
+            }
+        }
+        for (a, b) in [(1.0, 0.5), (0.5, 1.0), (1.0, 1.0)] {
+            assert_eq!(incbet(a, b, 0.0), 0.0);
+            assert_eq!(incbet(a, b, 1.0), 1.0);
+            assert!(incbet(a, b, -1.0).is_nan());
+            assert!(incbet(a, b, f64::NAN).is_nan());
+        }
     }
 }

@@ -435,5 +435,32 @@ pub fn erf_zeros(nt: usize) -> Result<Vec<Complex>> {
 /// - [SciPy jnjnp_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.jnjnp_zeros.html).
 pub fn jnjnp_zeros(nt: usize) -> Result<[Vec<f64>; 4]> {
     count(nt)?;
+    // The first merged entry is J_0'(0) = 0, with order/index 0 and flag 1.
+    // Avoid the general backend's root-search setup for this exact case.
+    if nt == 1 {
+        return Ok([vec![0.0], vec![0.0], vec![0.0], vec![1.0]]);
+    }
     ::bessel::jnjnp_zeros(nt).map_err(super::external_bessel_error)
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn first_merged_bessel_zero_matches_original_backend_bits() {
+        let actual = super::jnjnp_zeros(1).unwrap();
+        let original = ::bessel::jnjnp_zeros(1).unwrap();
+        for (component, (&expected, values)) in [0.0_f64, 0.0, 0.0, 1.0]
+            .iter()
+            .zip(actual.iter())
+            .enumerate()
+        {
+            assert_eq!(values.len(), 1, "component {component}");
+            assert_eq!(
+                values[0].to_bits(),
+                expected.to_bits(),
+                "component {component}"
+            );
+            assert_eq!(values[0].to_bits(), original[component][0].to_bits());
+        }
+    }
 }

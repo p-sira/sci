@@ -36,6 +36,15 @@
 
 ## 0.3.0
 
+- Upgrade `ellip` to 1.2.4 for faster incomplete elliptic integrals; reuse
+  normalization buffers and exact boundary formulas in softmax, log-softmax,
+  Stirling and normalized-harmonic routines. Add parity tests, CodSpeed cases,
+  and a matched Rust/SciPy performance report. Optimize native exponential
+  integrals, inverse normal polynomials, exact unit-shape gamma/beta tails,
+  finite Smirnov sums, and spheroidal domain shortcuts; avoid the
+  unnecessary merged-Bessel root search at the first zero. Add numerical
+  regressions and before/after native benchmarks.
+
 - **Breaking:** Remove `elliptic::ellipf` and retain
   `elliptic::ellipkinc(phi, m)` as the only public name for `F(phi, m)`.
   Update former root-level `ellipf` and `ellipkinc` imports to the

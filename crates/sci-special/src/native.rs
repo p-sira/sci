@@ -253,8 +253,9 @@ pub fn scaled_exp1<T: Float>(x: T) -> T {
 ///
 /// ## Numerical behavior
 /// Scales weights by their maximum and accumulates numerator and denominator
-/// with compensated summation in `T`. Work is `O(n)` and storage is constant.
-/// Small relative weights can underflow; no zeta subtraction is used.
+/// with compensated summation in `T`. The full interval and zero exponent
+/// have constant-time closed forms; otherwise work is `O(n)` with constant
+/// storage. Small relative weights can underflow; no zeta subtraction is used.
 ///
 /// ## Examples
 /// ```
@@ -269,6 +270,14 @@ pub fn normalized_gen_harmonic<T: Float>(j: u32, k: u32, n: u32, a: T) -> Result
         return Err(Error::InvalidInput(
             "require 1 <= j <= k <= n <= 1000000 and finite exponent",
         ));
+    }
+    if j == 1 && k == n {
+        return Ok(T::one());
+    }
+    if a == T::zero() {
+        // All weights are one, including for negative zero. Both integer
+        // counts are exactly representable in f32 throughout the work limit.
+        return Ok(T::from(k - j + 1).unwrap() / T::from(n).unwrap());
     }
     let (mut numerator, mut denominator, mut nc, mut dc) =
         (T::zero(), T::zero(), T::zero(), T::zero());
@@ -396,4 +405,44 @@ pub fn iv_ratio_c<T: Float>(v: T, x: T) -> T {
 /// [NIST DLMF §10.41](https://dlmf.nist.gov/10.41).
 pub fn iv_ratioinv<T: Float>(v: T, r: T) -> T {
     ::bessel::iv_ratioinv(v, r)
+}
+
+#[cfg(test)]
+mod normalized_gen_harmonic_fast_path_tests {
+    use super::normalized_gen_harmonic;
+
+    #[test]
+    fn zero_exponent_uses_uniform_weights_for_both_precisions() {
+        for a in [0.0_f64, -0.0] {
+            assert_eq!(normalized_gen_harmonic(2, 5, 7, a).unwrap(), 4.0 / 7.0);
+            assert_eq!(
+                normalized_gen_harmonic(123, 456_789, 1_000_000, a).unwrap(),
+                456_667.0 / 1_000_000.0
+            );
+        }
+        for a in [0.0_f32, -0.0] {
+            assert_eq!(normalized_gen_harmonic(2, 5, 7, a).unwrap(), 4.0_f32 / 7.0);
+            assert_eq!(
+                normalized_gen_harmonic(123, 456_789, 1_000_000, a).unwrap(),
+                456_667.0_f32 / 1_000_000.0
+            );
+        }
+    }
+
+    #[test]
+    fn full_interval_is_one_for_extreme_finite_exponents() {
+        for a in [-1e300_f64, -5.0, -0.0, 0.0, 5.0, 1e300] {
+            assert_eq!(
+                normalized_gen_harmonic(1, 1_000_000, 1_000_000, a).unwrap(),
+                1.0
+            );
+        }
+        for a in [-1e30_f32, -0.0, 0.0, 1e30] {
+            assert_eq!(
+                normalized_gen_harmonic(1, 1_000_000, 1_000_000, a).unwrap(),
+                1.0
+            );
+        }
+        assert!(normalized_gen_harmonic(1, 1, 1, f64::NAN).is_err());
+    }
 }

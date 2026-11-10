@@ -35,7 +35,7 @@
 //!
 //! ## References
 //!
-//! - [Ellip 1.2.3](https://docs.rs/ellip/1.2.3/ellip/).
+//! - [Ellip 1.2.4](https://docs.rs/ellip/1.2.4/ellip/).
 //! - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 
 use crate::{Error, Result};
@@ -80,7 +80,7 @@ use sci_core::Float;
 ///
 /// ## References
 ///
-/// - [Ellip `ellipk`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipk.html).
+/// - [Ellip `ellipk`](https://docs.rs/ellip/1.2.4/ellip/fn.ellipk.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipk<T: Float>(m: T) -> Result<T> {
@@ -135,7 +135,7 @@ pub fn ellipk<T: Float>(m: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `ellipe`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipe.html).
+/// - [Ellip `ellipe`](https://docs.rs/ellip/1.2.4/ellip/fn.ellipe.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipe<T: Float>(m: T) -> Result<T> {
@@ -192,7 +192,7 @@ pub fn ellipe<T: Float>(m: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `ellippi`](https://docs.rs/ellip/1.2.3/ellip/fn.ellippi.html).
+/// - [Ellip `ellippi`](https://docs.rs/ellip/1.2.4/ellip/fn.ellippi.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellippi<T: Float>(n: T, m: T) -> Result<T> {
@@ -247,7 +247,7 @@ pub fn ellippi<T: Float>(n: T, m: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `ellipd`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipd.html).
+/// - [Ellip `ellipd`](https://docs.rs/ellip/1.2.4/ellip/fn.ellipd.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipd<T: Float>(m: T) -> Result<T> {
@@ -308,7 +308,7 @@ pub fn ellipd<T: Float>(m: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `ellipf`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipf.html).
+/// - [Ellip `ellipf`](https://docs.rs/ellip/1.2.4/ellip/fn.ellipf.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipkinc<T: Float>(phi: T, m: T) -> Result<T> {
@@ -366,7 +366,7 @@ pub fn ellipkinc<T: Float>(phi: T, m: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `ellipeinc`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipeinc.html).
+/// - [Ellip `ellipeinc`](https://docs.rs/ellip/1.2.4/ellip/fn.ellipeinc.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipeinc<T: Float>(phi: T, m: T) -> Result<T> {
@@ -426,7 +426,7 @@ pub fn ellipeinc<T: Float>(phi: T, m: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `ellippiinc`](https://docs.rs/ellip/1.2.3/ellip/fn.ellippiinc.html).
+/// - [Ellip `ellippiinc`](https://docs.rs/ellip/1.2.4/ellip/fn.ellippiinc.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellippiinc<T: Float>(phi: T, n: T, m: T) -> Result<T> {
@@ -484,7 +484,7 @@ pub fn ellippiinc<T: Float>(phi: T, n: T, m: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `ellipdinc`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipdinc.html).
+/// - [Ellip `ellipdinc`](https://docs.rs/ellip/1.2.4/ellip/fn.ellipdinc.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipdinc<T: Float>(phi: T, m: T) -> Result<T> {
@@ -541,7 +541,7 @@ pub fn ellipdinc<T: Float>(phi: T, m: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `elliprf`](https://docs.rs/ellip/1.2.3/ellip/fn.elliprf.html).
+/// - [Ellip `elliprf`](https://docs.rs/ellip/1.2.4/ellip/fn.elliprf.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn elliprf<T: Float>(x: T, y: T, z: T) -> Result<T> {
@@ -606,7 +606,7 @@ pub fn elliprf<T: Float>(x: T, y: T, z: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `elliprd`](https://docs.rs/ellip/1.2.3/ellip/fn.elliprd.html).
+/// - [Ellip `elliprd`](https://docs.rs/ellip/1.2.4/ellip/fn.elliprd.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn elliprd<T: Float>(x: T, y: T, z: T) -> Result<T> {
@@ -668,7 +668,7 @@ pub fn elliprd<T: Float>(x: T, y: T, z: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `elliprg`](https://docs.rs/ellip/1.2.3/ellip/fn.elliprg.html).
+/// - [Ellip `elliprg`](https://docs.rs/ellip/1.2.4/ellip/fn.elliprg.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn elliprg<T: Float>(x: T, y: T, z: T) -> Result<T> {
@@ -727,7 +727,7 @@ pub fn elliprg<T: Float>(x: T, y: T, z: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `elliprj`](https://docs.rs/ellip/1.2.3/ellip/fn.elliprj.html).
+/// - [Ellip `elliprj`](https://docs.rs/ellip/1.2.4/ellip/fn.elliprj.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn elliprj<T: Float>(x: T, y: T, z: T, p: T) -> Result<T> {
@@ -794,7 +794,7 @@ pub fn elliprj<T: Float>(x: T, y: T, z: T, p: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `elliprc`](https://docs.rs/ellip/1.2.3/ellip/fn.elliprc.html).
+/// - [Ellip `elliprc`](https://docs.rs/ellip/1.2.4/ellip/fn.elliprc.html).
 /// - [NIST DLMF, Chapter 19](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn elliprc<T: Float>(x: T, y: T) -> Result<T> {
@@ -849,7 +849,7 @@ pub fn elliprc<T: Float>(x: T, y: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `ellipke`](https://docs.rs/ellip/1.2.3/ellip/fn.ellipke.html).
+/// - [Ellip `ellipke`](https://docs.rs/ellip/1.2.4/ellip/fn.ellipke.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipke<T: Float>(m: T) -> Result<(T, T)> {
@@ -914,7 +914,7 @@ pub fn ellipke<T: Float>(m: T) -> Result<(T, T)> {
 ///
 /// ## References
 ///
-/// - [Ellip `cel`](https://docs.rs/ellip/1.2.3/ellip/fn.cel.html).
+/// - [Ellip `cel`](https://docs.rs/ellip/1.2.4/ellip/fn.cel.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn cel<T: Float>(kc: T, p: T, a: T, b: T) -> Result<T> {
@@ -970,7 +970,7 @@ pub fn cel<T: Float>(kc: T, p: T, a: T, b: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `cel1`](https://docs.rs/ellip/1.2.3/ellip/fn.cel1.html).
+/// - [Ellip `cel1`](https://docs.rs/ellip/1.2.4/ellip/fn.cel1.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn cel1<T: Float>(kc: T) -> Result<T> {
@@ -1027,7 +1027,7 @@ pub fn cel1<T: Float>(kc: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `cel2`](https://docs.rs/ellip/1.2.3/ellip/fn.cel2.html).
+/// - [Ellip `cel2`](https://docs.rs/ellip/1.2.4/ellip/fn.cel2.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn cel2<T: Float>(kc: T, a: T, b: T) -> Result<T> {
@@ -1083,7 +1083,7 @@ pub fn cel2<T: Float>(kc: T, a: T, b: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `cel3`](https://docs.rs/ellip/1.2.3/ellip/fn.cel3.html).
+/// - [Ellip `cel3`](https://docs.rs/ellip/1.2.4/ellip/fn.cel3.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn cel3<T: Float>(kc: T, p: T) -> Result<T> {
@@ -1140,7 +1140,7 @@ pub fn cel3<T: Float>(kc: T, p: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `el1`](https://docs.rs/ellip/1.2.3/ellip/fn.el1.html).
+/// - [Ellip `el1`](https://docs.rs/ellip/1.2.4/ellip/fn.el1.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn el1<T: Float>(x: T, kc: T) -> Result<T> {
@@ -1198,7 +1198,7 @@ pub fn el1<T: Float>(x: T, kc: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `el2`](https://docs.rs/ellip/1.2.3/ellip/fn.el2.html).
+/// - [Ellip `el2`](https://docs.rs/ellip/1.2.4/ellip/fn.el2.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn el2<T: Float>(x: T, kc: T, a: T, b: T) -> Result<T> {
@@ -1257,7 +1257,7 @@ pub fn el2<T: Float>(x: T, kc: T, a: T, b: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `el3`](https://docs.rs/ellip/1.2.3/ellip/fn.el3.html).
+/// - [Ellip `el3`](https://docs.rs/ellip/1.2.4/ellip/fn.el3.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn el3<T: Float>(x: T, kc: T, p: T) -> Result<T> {
@@ -1320,7 +1320,7 @@ pub fn el3<T: Float>(x: T, kc: T, p: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `jacobi_zeta`](https://docs.rs/ellip/1.2.3/ellip/fn.jacobi_zeta.html).
+/// - [Ellip `jacobi_zeta`](https://docs.rs/ellip/1.2.4/ellip/fn.jacobi_zeta.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn jacobi_zeta<T: Float>(phi: T, m: T) -> Result<T> {
@@ -1377,7 +1377,7 @@ pub fn jacobi_zeta<T: Float>(phi: T, m: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `heuman_lambda`](https://docs.rs/ellip/1.2.3/ellip/fn.heuman_lambda.html).
+/// - [Ellip `heuman_lambda`](https://docs.rs/ellip/1.2.4/ellip/fn.heuman_lambda.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn heuman_lambda<T: Float>(phi: T, m: T) -> Result<T> {
@@ -1435,7 +1435,7 @@ pub fn heuman_lambda<T: Float>(phi: T, m: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `ellippiinc_bulirsch`](https://docs.rs/ellip/1.2.3/ellip/fn.ellippiinc_bulirsch.html).
+/// - [Ellip `ellippiinc_bulirsch`](https://docs.rs/ellip/1.2.4/ellip/fn.ellippiinc_bulirsch.html).
 /// - [NIST DLMF, elliptic integrals](https://dlmf.nist.gov/19).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellippiinc_bulirsch<T: BulirschFloat>(phi: T, n: T, m: T) -> Result<T> {
@@ -1490,7 +1490,7 @@ pub fn ellippiinc_bulirsch<T: BulirschFloat>(phi: T, n: T, m: T) -> Result<T> {
 ///
 /// ## References
 ///
-/// - [Ellip `elliprf`](https://docs.rs/ellip/1.2.3/ellip/fn.elliprf.html).
+/// - [Ellip `elliprf`](https://docs.rs/ellip/1.2.4/ellip/fn.elliprf.html).
 /// - [NIST DLMF, Carlson integrals](https://dlmf.nist.gov/19.25).
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn ellipkm1<T: Float>(p: T) -> Result<T> {

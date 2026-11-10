@@ -62,7 +62,10 @@ use sci_core::Float;
 
 // from https://github.com/scipy/scipy/blob/c4ce0c4560bc635867512c4d2ea6db6f666d3eeb/scipy/special/cephes/polevl.h#L67
 pub fn polevl(x: f64, coef: &[f64], n: usize) -> f64 {
-    let mut coef_iter = coef.iter().take(n + 1);
+    // Bound the slice once instead of checking `take`'s remaining count on
+    // every Horner step. When n exceeds the coefficient count, preserve the
+    // old iterator's truncation behavior.
+    let mut coef_iter = coef[..(n + 1).min(coef.len())].iter();
     let mut ans = *coef_iter.next().unwrap();
     for i in coef_iter {
         ans = ans * x + *i;
@@ -86,7 +89,7 @@ pub fn polevl(x: f64, coef: &[f64], n: usize) -> f64 {
 */
 
 pub fn p1evl(x: f64, coef: &[f64], n: usize) -> f64 {
-    let mut coef_iter = coef.iter().take(n);
+    let mut coef_iter = coef[..n.min(coef.len())].iter();
     let mut ans = x + *coef_iter.next().unwrap();
 
     for i in coef_iter {
@@ -134,5 +137,85 @@ pub fn ratevl(x: f64, num: &[f64], m: isize, denom: &[f64], n: isize) -> f64 {
         x.powi(i as i32) * num_ans / denom_ans
     } else {
         num_ans / denom_ans
+    }
+}
+
+#[cfg(test)]
+mod horner_iterator_tests {
+    use super::{p1evl, polevl};
+
+    fn previous_polevl(x: f64, coef: &[f64], n: usize) -> f64 {
+        let mut iter = coef.iter().take(n + 1);
+        let mut ans = *iter.next().unwrap();
+        for c in iter {
+            ans = ans * x + *c;
+        }
+        ans
+    }
+
+    fn previous_p1evl(x: f64, coef: &[f64], n: usize) -> f64 {
+        let mut iter = coef.iter().take(n);
+        let mut ans = x + *iter.next().unwrap();
+        for c in iter {
+            ans = ans * x + *c;
+        }
+        ans
+    }
+
+    fn equivalent_bits(actual: f64, expected: f64) {
+        if expected.is_nan() {
+            assert!(actual.is_nan());
+        } else {
+            assert_eq!(actual.to_bits(), expected.to_bits());
+        }
+    }
+
+    #[test]
+    fn bounded_slice_horner_matches_previous_iterator_bitwise() {
+        let xs = [
+            -f64::INFINITY,
+            -f64::MAX,
+            -2.0,
+            -1.0,
+            -0.0,
+            0.0,
+            0.2,
+            0.75,
+            1.0,
+            2.0,
+            f64::MIN_POSITIVE,
+            f64::MAX,
+            f64::INFINITY,
+            f64::NAN,
+        ];
+        let mut state = 0x1234_5678_90ab_cdef_u64;
+        let mut coefficients = Vec::new();
+        for length in 1..=32 {
+            state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+            coefficients.push((state as i64 as f64) / (i64::MAX as f64));
+            for &x in &xs {
+                for n in 0..=length + 2 {
+                    equivalent_bits(
+                        polevl(x, &coefficients, n),
+                        previous_polevl(x, &coefficients, n),
+                    );
+                    if n > 0 {
+                        equivalent_bits(
+                            p1evl(x, &coefficients, n),
+                            previous_p1evl(x, &coefficients, n),
+                        );
+                    }
+                }
+            }
+        }
+        let special = [-0.0, 0.0, f64::INFINITY, f64::NEG_INFINITY, f64::NAN];
+        for &x in &xs {
+            for n in 0..=special.len() + 2 {
+                equivalent_bits(polevl(x, &special, n), previous_polevl(x, &special, n));
+                if n > 0 {
+                    equivalent_bits(p1evl(x, &special, n), previous_p1evl(x, &special, n));
+                }
+            }
+        }
     }
 }

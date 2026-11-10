@@ -782,6 +782,9 @@ pub fn igam(a: f64, x: f64) -> f64 {
         if x.is_infinite() { f64::NAN } else { 0.0 }
     } else if x.is_infinite() {
         1.0
+    } else if a == 1.0 {
+        // P(1,x) = 1 - exp(-x); expm1 retains the small-x tail.
+        -(-x).exp_m1()
     } else {
         /* Asymptotic regime where a ~ x; see [2]. */
         let absxma_a = (x - a).abs() / a;
@@ -811,6 +814,9 @@ pub fn igamc(a: f64, x: f64) -> f64 {
         if x.is_infinite() { f64::NAN } else { 1.0 }
     } else if x.is_infinite() {
         0.0
+    } else if a == 1.0 {
+        // Q(1,x) = exp(-x), without a gamma prefactor or series.
+        (-x).exp()
     } else {
         /* Asymptotic regime where a ~ x; see [2]. */
         let absxma_a = (x - a).abs() / a;
@@ -1013,8 +1019,9 @@ fn igamc_series(a: f64, x: f64) -> f64 {
     }
 
     let logx = x.ln();
+    // Retain the original independently rounded log-gamma evaluations;
+    // algebraic reassociation changes the established tail result.
     let term = -expm1(a * logx - lgam1p(a));
-
     term - (a * logx - lgam(a)).exp() * sum
 }
 
@@ -1067,4 +1074,52 @@ fn asymptotic_series(a: f64, x: f64, func: isize) -> f64 {
     }
 
     res + sgn as f64 * (-0.5 * a * eta * eta).exp() * sum / (2.0 * M_PI * a).sqrt()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{igam, igamc, igamc_with_fac};
+    use crate::backend::cephes64::ndtr::erfc;
+
+    #[test]
+    fn unit_shape_has_exact_exponential_tails() {
+        for x in [
+            f64::MIN_POSITIVE,
+            1e-150,
+            1e-12,
+            0.001,
+            0.5,
+            1.0,
+            5.0,
+            50.0,
+            700.0,
+            800.0,
+        ] {
+            let p = -(-x).exp_m1();
+            let q = (-x).exp();
+            assert_eq!(igam(1.0, x).to_bits(), p.to_bits());
+            assert_eq!(igamc(1.0, x).to_bits(), q.to_bits());
+        }
+        assert_eq!(igam(1.0, 0.0), 0.0);
+        assert_eq!(igamc(1.0, 0.0), 1.0);
+        assert_eq!(igam(1.0, f64::INFINITY), 1.0);
+        assert_eq!(igamc(1.0, f64::INFINITY), 0.0);
+        assert!(igam(1.0, f64::NAN).is_nan());
+        assert!(igamc(1.0, f64::NAN).is_nan());
+    }
+
+    #[test]
+    fn complemented_half_shape_uses_independent_erfc_identity() {
+        // Q(1/2,x) = erfc(sqrt(x)); these inputs exercise the series
+        // using lgam1p, including the x=1 branch.
+        for x in [0.6_f64, 0.8, 1.0, 1.1] {
+            let expected = erfc(x.sqrt());
+            let q = igamc(0.5, x);
+            assert!(
+                (q - expected).abs() <= 5e-15,
+                "x={x}, q={q}, expected={expected}"
+            );
+            assert_eq!(igamc_with_fac(0.5, x).0.to_bits(), q.to_bits());
+        }
+    }
 }

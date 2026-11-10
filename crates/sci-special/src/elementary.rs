@@ -82,9 +82,12 @@ pub fn logsumexp<T: Float>(values: &[T]) -> T {
 /// ```
 pub fn softmax<T: Float>(values: &[T]) -> Vec<T> {
     let maximum = values.iter().copied().fold(T::neg_infinity(), T::max);
-    let exp: Vec<_> = values.iter().map(|&x| (x - maximum).exp()).collect();
+    let mut exp: Vec<_> = values.iter().map(|&x| (x - maximum).exp()).collect();
     let sum = exp.iter().copied().fold(T::zero(), |a, b| a + b);
-    exp.into_iter().map(|x| x / sum).collect()
+    for value in &mut exp {
+        *value = *value / sum;
+    }
+    exp
 }
 
 /// Log softmax `log_softmax(x)ᵢ = xᵢ − ln(Σⱼ exp(xⱼ))`.
@@ -120,9 +123,12 @@ pub fn softmax<T: Float>(values: &[T]) -> Vec<T> {
 /// ```
 pub fn log_softmax<T: Float>(values: &[T]) -> Vec<T> {
     let maximum = values.iter().copied().fold(T::neg_infinity(), T::max);
-    let shifted: Vec<_> = values.iter().map(|&x| x - maximum).collect();
-    let logsum = logsumexp(&shifted);
-    shifted.into_iter().map(|x| x - logsum).collect()
+    let sum = values
+        .iter()
+        .map(|&x| (x - maximum).exp())
+        .fold(T::zero(), |a, b| a + b);
+    let logsum = sum.ln();
+    values.iter().map(|&x| (x - maximum) - logsum).collect()
 }
 
 fn bernoulli_numbers(n: usize) -> Vec<f64> {
@@ -772,6 +778,15 @@ pub fn stirling2(n: u32, k: u32) -> f64 {
     if k > n {
         return 0.0;
     }
+    if k == n || k == 1 {
+        return 1.0;
+    }
+    if k == 0 {
+        return 0.0;
+    }
+    if k + 1 == n {
+        return f64::from(n) * f64::from(n - 1) / 2.0;
+    }
     let mut row = vec![0.0; k as usize + 1];
     row[0] = 1.0;
     for i in 1..=n {
@@ -1047,4 +1062,122 @@ pub fn lmbda(v: f64, x: f64) -> Result<(Vec<f64>, Vec<f64>)> {
         return Err(Error::InvalidInput("invalid Lambda function arguments"));
     }
     Ok(crate::backend::legacy::jahnke_emden_lambda(v, x))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stirling2_boundary_formulas_match_original_recurrence() {
+        fn original(n: u32, k: u32) -> f64 {
+            let mut row = vec![0.0; k as usize + 1];
+            row[0] = 1.0;
+            for i in 1..=n {
+                for j in (1..=k.min(i)).rev() {
+                    row[j as usize] = f64::from(j) * row[j as usize] + row[j as usize - 1];
+                }
+                row[0] = 0.0;
+            }
+            row[k as usize]
+        }
+
+        for n in [0_u32, 1, 2, 3, 4, 8, 16, 31, 64, 128, 256] {
+            for k in [0, 1, n.saturating_sub(1), n] {
+                if k <= n {
+                    assert_eq!(stirling2(n, k).to_bits(), original(n, k).to_bits());
+                }
+            }
+        }
+        assert_eq!(stirling2(4096, 4096), 1.0);
+        assert_eq!(stirling2(4096, 4095), 4096.0 * 4095.0 / 2.0);
+        assert_eq!(stirling2(4096, 1), 1.0);
+        assert_eq!(stirling2(4096, 0), 0.0);
+        assert!(stirling2(4096, 4097).is_nan());
+    }
+
+    // Keep independent copies of the original two normalization paths so the
+    // allocation optimizations cannot silently change IEEE behavior.
+    fn original_softmax<T: Float>(values: &[T]) -> Vec<T> {
+        let maximum = values.iter().copied().fold(T::neg_infinity(), T::max);
+        let exp: Vec<_> = values.iter().map(|&x| (x - maximum).exp()).collect();
+        let sum = exp.iter().copied().fold(T::zero(), |a, b| a + b);
+        exp.into_iter().map(|x| x / sum).collect()
+    }
+
+    fn original_log_softmax<T: Float>(values: &[T]) -> Vec<T> {
+        let maximum = values.iter().copied().fold(T::neg_infinity(), T::max);
+        let shifted: Vec<_> = values.iter().map(|&x| x - maximum).collect();
+        let logsum = logsumexp(&shifted);
+        shifted.into_iter().map(|x| x - logsum).collect()
+    }
+
+    #[test]
+    fn softmax_and_log_softmax_match_original_ieee_behavior() {
+        let cases: &[&[f64]] = &[
+            &[],
+            &[0.0],
+            &[-0.0, 0.0, -0.0],
+            &[1000.0, 1001.0, 999.0],
+            &[-745.0, 0.0, -746.0],
+            &[f64::MIN_POSITIVE, -f64::MIN_POSITIVE],
+            &[f64::MAX, f64::MAX, -f64::MAX],
+            &[f64::NEG_INFINITY, 0.0],
+            &[f64::NEG_INFINITY, f64::NEG_INFINITY],
+            &[f64::INFINITY, 1.0],
+            &[f64::INFINITY, f64::INFINITY],
+            &[f64::NAN, 0.0],
+            &[f64::INFINITY, f64::NAN],
+        ];
+        for case in cases {
+            let actual = softmax(case);
+            let original = original_softmax(case);
+            let actual_log = log_softmax(case);
+            let original_log = original_log_softmax(case);
+            for (got, expected) in actual.iter().zip(original.iter()) {
+                if expected.is_nan() {
+                    assert!(got.is_nan());
+                } else {
+                    assert_eq!(got.to_bits(), expected.to_bits(), "softmax {case:?}");
+                }
+            }
+            for (got, expected) in actual_log.iter().zip(original_log.iter()) {
+                if expected.is_nan() {
+                    assert!(got.is_nan());
+                } else {
+                    assert_eq!(got.to_bits(), expected.to_bits(), "log_softmax {case:?}");
+                }
+            }
+
+            let case32: Vec<_> = case.iter().map(|&x| x as f32).collect();
+            for (got, expected) in softmax(&case32)
+                .iter()
+                .zip(original_softmax(&case32).iter())
+            {
+                if expected.is_nan() {
+                    assert!(got.is_nan());
+                } else {
+                    assert_eq!(got.to_bits(), expected.to_bits(), "softmax f32 {case32:?}");
+                }
+            }
+            for (got, expected) in log_softmax(&case32)
+                .iter()
+                .zip(original_log_softmax(&case32).iter())
+            {
+                if expected.is_nan() {
+                    assert!(got.is_nan());
+                } else {
+                    assert_eq!(
+                        got.to_bits(),
+                        expected.to_bits(),
+                        "log_softmax f32 {case32:?}"
+                    );
+                }
+            }
+        }
+
+        let long: Vec<_> = (0..257).map(|i| (f64::from(i) - 128.0) * 1.75).collect();
+        assert_eq!(softmax(&long), original_softmax(&long));
+        assert_eq!(log_softmax(&long), original_log_softmax(&long));
+    }
 }
