@@ -373,10 +373,11 @@ fn finish(
 }
 fn operator_matrix(a: &dyn LinearMap) -> Result<faer::Mat<f64>> {
     let mut d = faer::Mat::<f64>::zeros(a.rows(), a.cols());
+    let mut e = vec![0.; a.cols()];
     for j in 0..a.cols() {
-        let mut e = vec![0.; a.cols()];
         e[j] = 1.;
         let c = mv(a, &e, false)?;
+        e[j] = 0.;
         for i in 0..a.rows() {
             d[(i, j)] = c[i];
         }

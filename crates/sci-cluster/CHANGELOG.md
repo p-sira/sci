@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Build requested hierarchical partitions with union-find snapshots instead of sorting all merge stages; use direct threshold selection for max-cluster cuts and bottom-up leader aggregation. Add independent tied-height and label-order tests.
+
 - Reuse the label buffer during `kmeans2` iterations and compare bounded
   squared distances for ordinary centroid assignments, falling back to the
   original `hypot` comparison for extreme values and near ties. Preserve

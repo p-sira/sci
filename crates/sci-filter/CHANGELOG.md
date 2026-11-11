@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Skip unnecessary particle log-weight calculations outside likelihood updates and accept strictly positive-definite covariance matrices through Cholesky with the existing tolerant eigenvalue fallback. Add subnormal-weight and covariance-boundary tests.
+
 - Update shared Sci dependency requirements to the new minor versions.
 - Upgrade Smelly to 0.2 and reuse its particle propagation and weighted moments;
   remove kalman_filters and its random dependencies. Preserve native log-weight

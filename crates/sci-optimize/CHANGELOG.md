@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Compute the Rosenbrock Hessian-vector product directly, avoiding two linear-size scratch arrays while preserving analytic cross-checks.
+
 - Update shared Sci dependency requirements to the new minor versions.
 - Add dense bound-constrained nonlinear least squares through `least_squares::dogbox`, with rectangular trust-region dogleg steps, SVD Gauss–Newton solves, analytical or bound-aware finite-difference Jacobians, and SciPy reference tests.
 - Prevent false dogbox stationarity from symmetric numerical-difference samples and preserve exact bound intersections; document callback errors, stopping rules and numerical limits.

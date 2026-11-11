@@ -4,6 +4,45 @@ use sci_io::{
     Error, SparseMatrix,
     matrix_market::{MarketMatrix, mmread, mmwrite},
 };
+use std::io::{self, Write};
+
+#[derive(Default)]
+struct CountingWriter {
+    bytes: Vec<u8>,
+    calls: usize,
+    flushes: usize,
+}
+
+impl Write for CountingWriter {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        self.calls += 1;
+        self.bytes.extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.flushes += 1;
+        Ok(())
+    }
+}
+
+#[test]
+fn matrix_market_writer_buffers_records_without_changing_round_trip() {
+    let matrix = MarketMatrix::Dense {
+        rows: 100,
+        cols: 100,
+        data: (0..10_000).map(|i| f64::from(i) / 8.).collect(),
+    };
+    let mut writer = CountingWriter::default();
+    mmwrite(&mut writer, &matrix).unwrap();
+    assert!(
+        writer.calls < 100,
+        "{} writes for 10000 values",
+        writer.calls
+    );
+    assert_eq!(writer.flushes, 0, "flushing remains caller-owned");
+    assert_eq!(mmread(writer.bytes.as_slice()).unwrap(), matrix);
+}
 
 #[test]
 fn matrix_market_sparse_duplicates_sorting_and_bitwise_round_trip() {

@@ -200,7 +200,8 @@ pub fn rosen_hess(x: &[f64]) -> Result<Matrix> {
 /// Dimension mismatch, unsupported size, invalid values, or nonfinite arithmetic.
 /// ## Numerical behavior
 ///
-/// O(n) time and storage, using the tridiagonal analytical Hessian without dense allocation.
+/// O(n) time and output storage, forming the tridiagonal Hessian-vector
+/// product directly without allocating diagonal and off-diagonal buffers.
 /// # Examples
 ///
 /// ```
@@ -216,16 +217,33 @@ pub fn rosen_hess_prod(x: &[f64], p: &[f64]) -> Result<Vec<f64>> {
         return Err(Error::DimensionMismatch);
     }
     is_finite_slice(p)?;
-    let (d, o) = curvature(x)?;
-    let mut out = d
-        .iter()
-        .zip(p)
-        .map(|(d, p)| match d * p {
+    // Each interior diagonal receives 200 from the preceding pair. Form
+    // those diagonals directly into the output, retaining the same addition
+    // and neighbor-update order as the dense Hessian implementation.
+    let mut out = vec![0.0; x.len()];
+    for (i, pair) in x.windows(2).enumerate() {
+        let diagonal = match 1200.0 * pair[0] * pair[0] - 400.0 * pair[1] + 2.0 {
             value if value.is_finite() => Ok(value),
             _ => Err(Error::NonFiniteEvaluation),
-        })
-        .collect::<Result<Vec<_>>>()?;
-    for (i, v) in o.into_iter().enumerate() {
+        }?;
+        let diagonal = match (if i == 0 { 0.0 } else { 200.0 }) + diagonal {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
+        out[i] = match diagonal * p[i] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
+    }
+    out[x.len() - 1] = match 200.0 * p[x.len() - 1] {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
+    for (i, &x_i) in x.iter().take(x.len() - 1).enumerate() {
+        let v = match -400.0 * x_i {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         out[i] = match out[i] + v * p[i + 1] {
             value if value.is_finite() => Ok(value),
             _ => Err(Error::NonFiniteEvaluation),

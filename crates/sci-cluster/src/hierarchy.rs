@@ -1077,7 +1077,9 @@ fn flat(z: &[Vec<f64>], stats: &[f64], threshold: f64) -> Vec<usize> {
 /// Returns a shared error for invalid linkage structure, values, counts, dimensions, or work limits.
 /// ## Numerical behavior
 ///
-/// O(n²) bounded work for inconsistency or threshold search. Supplied statistics must be finite and monotone along the tree. Label numbers follow internal-child-first traversal.
+/// O(n²) bounded work for inconsistency; count cuts select the required order
+/// statistic in expected O(n) time. Supplied statistics must be finite and
+/// monotone along the tree. Label numbers follow internal-child-first traversal.
 /// # Examples
 ///
 /// ```
@@ -1121,13 +1123,14 @@ pub fn fcluster(z: &[Vec<f64>], threshold: f64, criterion: Criterion<'_>) -> Res
     if threshold >= (z.len() + 1) as f64 {
         return Ok((1..=z.len() + 1).collect());
     }
-    let mut levels = stats.clone();
-    levels.sort_by(f64::total_cmp);
-    levels.dedup();
     let target = threshold as usize;
-    let index =
-        levels.partition_point(|t| flat(z, &stats, *t).iter().copied().max().unwrap_or(0) > target);
-    Ok(flat(z, &stats, levels[index]))
+    // A monotone subtree statistic makes every merge at or below the cut
+    // coalesce exactly one pair of clusters. The (n-target)-th smallest merge
+    // value is therefore the earliest threshold yielding <= target clusters.
+    // Selecting this value avoids constructing a full labeling at every level.
+    let mut levels = stats.clone();
+    let (_, level, _) = levels.select_nth_unstable_by(z.len() - target, f64::total_cmp);
+    Ok(flat(z, &stats, *level))
 }
 
 /// Clusters Euclidean observations through `pdist`, linkage, and flat clustering.
@@ -1189,7 +1192,8 @@ pub fn fclusterdata(
 /// Returns a shared error for invalid linkage structure, values, counts, dimensions, or work limits.
 /// ## Numerical behavior
 ///
-/// O(n²) bounded traversal. Detects partitions which split subtrees inconsistently.
+/// O(n) expected work using a bottom-up homogeneous-subtree pass and a label map.
+/// Detects partitions which split subtrees inconsistently.
 /// # Examples
 ///
 /// ```
@@ -1208,12 +1212,26 @@ pub fn leaders(z: &[Vec<f64>], labels: &[usize]) -> Result<(Vec<usize>, Vec<usiz
     for &v in labels {
         *counts.entry(v).or_insert(0) += 1;
     }
+    // A subtree is homogeneous precisely when its two children have the same
+    // homogeneous label. Build that fact once per node instead of enumerating
+    // each node's descendant leaves independently (quadratic on chain trees).
+    let mut uniform: Vec<Option<usize>> = labels.iter().copied().map(Some).collect();
     let mut nodes = Vec::new();
     let mut ids = Vec::new();
     for v in 0..2 * n - 1 {
-        let leaves = descendants(z, v);
-        let label = labels[leaves[0]];
-        if leaves.len() == counts[&label] && leaves.iter().all(|i| labels[*i] == label) {
+        let (label, size) = if v < n {
+            (uniform[v], 1)
+        } else {
+            let row = &z[v - n];
+            let a = uniform[row[0] as usize];
+            let b = uniform[row[1] as usize];
+            let label = if a == b { a } else { None };
+            uniform.push(label);
+            (label, row[3] as usize)
+        };
+        if let Some(label) = label
+            && size == counts[&label]
+        {
             nodes.push(v);
             ids.push(label);
         }
@@ -1251,7 +1269,9 @@ pub enum Cut<'a> {
 /// Returns a shared error for invalid linkage structure, values, counts, dimensions, or work limits.
 /// ## Numerical behavior
 ///
-/// O(n²) work and up to 1,000,000 output labels. Exact label operations with finite height comparisons.
+/// Expected O(n + n·requests) union-find work and up to 1,000,000 output
+/// labels. Only requested stages are materialized; labels retain ascending
+/// smallest-leaf order. Exact label operations with finite height comparisons.
 /// # Examples
 ///
 /// ```
@@ -1263,6 +1283,14 @@ pub enum Cut<'a> {
 ///
 /// [SciPy cut_tree](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.cut_tree.html).
 pub fn cut_tree(z: &[Vec<f64>], cut: Cut<'_>) -> Result<Vec<Vec<usize>>> {
+    fn root(parent: &mut [usize], mut node: usize) -> usize {
+        while parent[node] != node {
+            parent[node] = parent[parent[node]];
+            node = parent[node];
+        }
+        node
+    }
+
     let n = validate(z)?;
     if !is_monotonic(z)? {
         return Err(Error::InvalidInput("cuts require a monotone tree"));
@@ -1276,7 +1304,7 @@ pub fn cut_tree(z: &[Vec<f64>], cut: Cut<'_>) -> Result<Vec<Vec<usize>>> {
             v.iter().map(|k| n - k).collect()
         }
         Cut::Heights(v) => {
-            if v.len() > 1_000_000 / n || v.iter().any(|h| !h.is_finite()) || !is_monotonic(z)? {
+            if v.len() > 1_000_000 / n || v.iter().any(|h| !h.is_finite()) {
                 return Err(Error::InvalidInput(
                     "height cuts require finite heights and a monotone tree",
                 ));
@@ -1284,29 +1312,58 @@ pub fn cut_tree(z: &[Vec<f64>], cut: Cut<'_>) -> Result<Vec<Vec<usize>>> {
             v.iter().map(|h| z.partition_point(|r| r[2] < *h)).collect()
         }
     };
-    let mut states = Vec::with_capacity(n);
-    let mut labels: Vec<usize> = (0..n).collect();
-    states.push(labels.clone());
-    for r in z {
-        let leaves = descendants(z, r[0] as usize)
-            .into_iter()
-            .chain(descendants(z, r[1] as usize))
-            .collect::<Vec<_>>();
-        let label = leaves.iter().map(|i| labels[*i]).min().unwrap();
-        for i in leaves {
-            labels[i] = label;
+    let mut requests: Vec<(usize, usize)> = stages
+        .into_iter()
+        .enumerate()
+        .map(|(column, stage)| (stage, column))
+        .collect();
+    requests.sort_unstable();
+    let mut out = vec![vec![0; requests.len()]; n];
+    let mut parent: Vec<usize> = (0..n).collect();
+    let mut sizes = vec![1; n];
+    // Every linkage node keeps a representative original leaf. Representatives
+    // remain valid even when their union-find root later changes.
+    let mut representative: Vec<usize> = (0..n).collect();
+    let mut seen = vec![usize::MAX; n];
+    let mut labels = vec![0; n];
+    let mut request = 0;
+
+    for stage in 0..n {
+        if request < requests.len() && requests[request].0 == stage {
+            seen.fill(usize::MAX);
+            let mut next_label = 0;
+            for (leaf, label) in labels.iter_mut().enumerate() {
+                let component = root(&mut parent, leaf);
+                if seen[component] == usize::MAX {
+                    seen[component] = next_label;
+                    next_label += 1;
+                }
+                *label = seen[component];
+            }
+            while request < requests.len() && requests[request].0 == stage {
+                let column = requests[request].1;
+                for (row, &label) in out.iter_mut().zip(&labels) {
+                    row[column] = label;
+                }
+                request += 1;
+            }
         }
-        let mut unique = labels.clone();
-        unique.sort_unstable();
-        unique.dedup();
-        for label in &mut labels {
-            *label = unique.binary_search(label).unwrap();
+        if stage == z.len() {
+            break;
         }
-        states.push(labels.clone());
+        let row = &z[stage];
+        let a_leaf = representative[row[0] as usize];
+        let b_leaf = representative[row[1] as usize];
+        let mut a = root(&mut parent, a_leaf);
+        let mut b = root(&mut parent, b_leaf);
+        if sizes[a] < sizes[b] {
+            std::mem::swap(&mut a, &mut b);
+        }
+        parent[b] = a;
+        sizes[a] += sizes[b];
+        representative.push(a_leaf);
     }
-    Ok((0..n)
-        .map(|i| stages.iter().map(|s| states[*s][i]).collect())
-        .collect())
+    Ok(out)
 }
 
 /// A shared, nonrecursive tree node; child indices refer to the node vector.
@@ -1353,15 +1410,16 @@ pub struct ClusterNode {
 /// [SciPy to_tree](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.to_tree.html).
 pub fn to_tree(z: &[Vec<f64>]) -> Result<Vec<ClusterNode>> {
     let n = validate(z)?;
-    let mut nodes = (0..n)
-        .map(|id| ClusterNode {
-            id,
-            left: None,
-            right: None,
-            distance: 0.0,
-            count: 1,
-        })
-        .collect::<Vec<_>>();
+    // Allocate all leaves and merges at once; growing after the leaves
+    // otherwise reallocates and copies the whole leaf block.
+    let mut nodes = Vec::with_capacity(n + z.len());
+    nodes.extend((0..n).map(|id| ClusterNode {
+        id,
+        left: None,
+        right: None,
+        distance: 0.0,
+        count: 1,
+    }));
     nodes.extend(z.iter().enumerate().map(|(i, r)| ClusterNode {
         id: n + i,
         left: Some(r[0] as usize),

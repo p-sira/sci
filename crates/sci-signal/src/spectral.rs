@@ -526,8 +526,17 @@ pub fn welch(
     detrend: bool,
     scaling: Scaling,
 ) -> Result<PowerSpectrum> {
-    let (f, p) = csd(x, x, window, overlap, nfft, fs, detrend, scaling)?;
-    Ok((f, p.into_iter().map(|v| v.re).collect()))
+    let count = spectral_parameters(x, window, overlap, nfft, fs)?;
+    let scale = spectral_scale(window, fs, scaling)? / count as f64;
+    let mut power = vec![0.; nfft / 2 + 1];
+    for i in 0..count {
+        let start = i * (window.len() - overlap);
+        let spectrum = segment(&x[start..start + window.len()], window, nfft, detrend);
+        for (k, value) in power.iter_mut().enumerate() {
+            *value += native(spectrum[k]).norm_sqr() * scale * doubling(k, nfft);
+        }
+    }
+    Ok((bins(nfft, fs), checked(power)?))
 }
 /// Estimates magnitude-squared coherence `|Pxy|²/(Pxx Pyy)`.
 ///
@@ -575,12 +584,36 @@ pub fn coherence(
     nfft: usize,
     fs: f64,
 ) -> Result<PowerSpectrum> {
-    let (f, pxy) = csd(x, y, window, overlap, nfft, fs, true, Scaling::Density)?;
-    let (_, pxx) = welch(x, window, overlap, nfft, fs, true, Scaling::Density)?;
-    let (_, pyy) = welch(y, window, overlap, nfft, fs, true, Scaling::Density)?;
+    if x.len() != y.len() {
+        return Err(Error::DimensionMismatch);
+    }
+    samples(y)?;
+    let count = spectral_parameters(x, window, overlap, nfft, fs)?;
+    let scale = spectral_scale(window, fs, Scaling::Density)? / count as f64;
+    let bins_len = nfft / 2 + 1;
+    let mut pxy = vec![Complex64::new(0., 0.); bins_len];
+    let mut pxx = vec![0.; bins_len];
+    let mut pyy = vec![0.; bins_len];
+    for i in 0..count {
+        let start = i * (window.len() - overlap);
+        let a = segment(&x[start..start + window.len()], window, nfft, true);
+        let b = segment(&y[start..start + window.len()], window, nfft, true);
+        for k in 0..bins_len {
+            let a = native(a[k]);
+            let b = native(b[k]);
+            let factor = scale * doubling(k, nfft);
+            pxy[k] += a.conj() * b * factor;
+            pxx[k] += a.norm_sqr() * factor;
+            pyy[k] += b.norm_sqr() * factor;
+        }
+    }
+    // Validate every accumulated spectrum before computing the ratio.
+    let pxy = complex_checked(pxy.into_iter().map(owned).collect())?;
+    let pxx = checked(pxx)?;
+    let pyy = checked(pyy)?;
     // Zero-power bins have undefined coherence, matching SciPy's NaN.
     Ok((
-        f,
+        bins(nfft, fs),
         pxy.iter()
             .zip(pxx)
             .zip(pyy)

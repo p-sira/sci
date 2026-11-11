@@ -447,19 +447,19 @@ fn traverse(a: &SparseMatrix, start: usize, directed: bool, depth: bool) -> Resu
     seen[start] = true;
     if depth {
         // Stack frames preserve recursive ascending-neighbor discovery order.
-        let mut stack = vec![(start, adj[start].keys().copied().collect::<Vec<_>>(), 0)];
-        while let Some((u, neighbors, pos)) = stack.last_mut() {
-            if *pos == neighbors.len() {
+        // Retain cursors into the sorted adjacency maps instead of allocating
+        // a separate neighbor vector for every discovered vertex.
+        let mut stack = vec![(start, adj[start].keys())];
+        while let Some((u, neighbors)) = stack.last_mut() {
+            if let Some(&v) = neighbors.next() {
+                if !seen[v] {
+                    seen[v] = true;
+                    predecessors[v] = Some(*u);
+                    order.push(v);
+                    stack.push((v, adj[v].keys()));
+                }
+            } else {
                 stack.pop();
-                continue;
-            }
-            let v = neighbors[*pos];
-            *pos += 1;
-            if !seen[v] {
-                seen[v] = true;
-                predecessors[v] = Some(*u);
-                order.push(v);
-                stack.push((v, adj[v].keys().copied().collect(), 0));
             }
         }
     } else {
@@ -482,30 +482,40 @@ fn traverse(a: &SparseMatrix, start: usize, directed: bool, depth: bool) -> Resu
 }
 fn tree(a: &SparseMatrix, pred: &[Option<usize>], directed: bool) -> Result<SparseMatrix> {
     let adj = adjacency(a, directed, false)?;
-    if pred.len() != a.rows {
-        return Err(Error::DimensionMismatch);
-    }
+    check_tree(&adj, pred)?;
     let mut triples = vec![];
     for (v, &p) in pred.iter().enumerate() {
         if let Some(u) = p {
-            node(u, a.rows)?;
+            triples.push((u, v, adj[u][&v]));
+        }
+    }
+    from_coo(a.rows, a.cols, &triples)
+}
+
+fn check_tree(adj: &Adj, pred: &[Option<usize>]) -> Result<()> {
+    let n = adj.len();
+    if pred.len() != n {
+        return Err(Error::DimensionMismatch);
+    }
+    for (v, &p) in pred.iter().enumerate() {
+        if let Some(u) = p {
+            node(u, n)?;
             if u == v {
                 return Err(Error::InvalidInput("self predecessor"));
             }
-            let &w = adj[u]
+            adj[u]
                 .get(&v)
                 .ok_or(Error::InvalidInput("predecessor does not describe an edge"))?;
-            triples.push((u, v, w));
         }
     }
     // Reject predecessor cycles rather than returning a non-tree graph.
-    for v in 0..a.rows {
+    for v in 0..n {
         let mut u = v;
-        for step in 0..=a.rows {
+        for step in 0..=n {
             match pred[u] {
                 None => break,
                 Some(p) => {
-                    if step == a.rows {
+                    if step == n {
                         return Err(Error::InvalidInput("cyclic predecessors"));
                     }
                     u = p;
@@ -513,7 +523,7 @@ fn tree(a: &SparseMatrix, pred: &[Option<usize>], directed: bool) -> Result<Spar
             }
         }
     }
-    from_coo(a.rows, a.cols, &triples)
+    Ok(())
 }
 fn components(a: &SparseMatrix, directed: bool, strong: bool) -> Result<Components> {
     let adj = adjacency(a, directed && strong, false)?;
@@ -531,13 +541,14 @@ fn components(a: &SparseMatrix, directed: bool, strong: bool) -> Result<Componen
     })
 }
 fn mst(a: &SparseMatrix) -> Result<SparseMatrix> {
-    validate(a)?;
-    let cleaned = from_coo(
-        a.rows,
-        a.cols,
-        &entries(a).filter(|&(_, _, w)| w != 0.0).collect::<Vec<_>>(),
-    )?;
-    let adj = adjacency(&cleaned, false, false)?;
+    check(a)?;
+    // Stored zeros do not take part in MST edge selection. Aggregate the
+    // nonzero edges directly so an opposite nonzero edge is not hidden by zero.
+    let mut adj = vec![BTreeMap::<usize, f64>::new(); a.rows];
+    for (r, c, w) in entries(a).filter(|&(_, _, w)| w != 0.0) {
+        adj[r].entry(c).and_modify(|v| *v = v.min(w)).or_insert(w);
+        adj[c].entry(r).and_modify(|v| *v = v.min(w)).or_insert(w);
+    }
     let mut g = Graph::<(), f64, Undirected>::new_undirected();
     for _ in &adj {
         g.add_node(());
@@ -708,7 +719,14 @@ fn lap(a: &SparseMatrix, normed: bool, out: bool, symmetrized: bool) -> Result<L
     } else {
         d.clone()
     };
-    let mut triples = vec![];
+    let mut result = SparseMatrix {
+        rows: a.rows,
+        cols: a.cols,
+        indptr: Vec::with_capacity(a.rows + 1),
+        indices: Vec::new(),
+        data: Vec::new(),
+    };
+    result.indptr.push(0);
     for r in 0..a.rows {
         for c in 0..a.rows {
             let v = if r == c {
@@ -719,19 +737,17 @@ fn lap(a: &SparseMatrix, normed: bool, out: bool, symmetrized: bool) -> Result<L
                 -weights[r][c]
             };
             if v != 0. {
-                triples.push((
-                    r,
-                    c,
-                    match v {
-                        value if value.is_finite() => Ok(value),
-                        _ => Err(crate::Error::NonFiniteEvaluation),
-                    }?,
-                ));
+                if !v.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
+                result.indices.push(c);
+                result.data.push(v);
             }
         }
+        result.indptr.push(result.data.len());
     }
     Ok(Laplacian {
-        matrix: from_coo(a.rows, a.cols, &triples)?,
+        matrix: result,
         diagonal,
     })
 }
@@ -880,7 +896,7 @@ fn distances_from_pred(
     let mut d = vec![vec![null; a.rows]; a.rows];
     for s in 0..a.rows {
         d[s][s] = 0.;
-        tree(a, &pred[s], directed)?;
+        check_tree(&adj, &pred[s])?;
         for v in 0..a.rows {
             if v == s || pred[s][v].is_none() {
                 continue;

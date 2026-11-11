@@ -161,6 +161,11 @@ path = "tests/fft_extended.rs"
 required-features = ["fft-hankel", "complex", "fft", "stats"]
 
 [[test]]
+name = "fft_real_optimized"
+path = "tests/fft_real_optimized.rs"
+required-features = ["fft", "complex"]
+
+[[test]]
 name = "fft_periodic"
 path = "tests/fft_periodic.rs"
 required-features = ["fft", "signal"]
@@ -473,6 +478,16 @@ required-features = ["optimize"]
 name = "filter"
 harness = false
 required-features = ["filter"]
+
+[[bench]]
+name = "sparse"
+harness = false
+required-features = ["sparse"]
+
+[[bench]]
+name = "graph"
+harness = false
+required-features = ["graph"]
 
 [[test]]
 name = "sparse"

@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Process second-order filter sections in one output buffer and evaluate short cosine windows with a harmonic recurrence. Use real half-spectrum FFTs in convolution and share spectral passes in Welch/coherence; check representative input modes against independent references.
+
 - Solve DPSS windows of order below 128 directly from their symmetric
   tridiagonal matrix with Faer QR eigenvectors rather than a redundant dense
   eigendecomposition. Keep the original nalgebra solver for larger windows

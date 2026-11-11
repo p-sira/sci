@@ -160,7 +160,9 @@ fn reshape<T: Clone>(x: &[T], columns: usize) -> Vec<Vec<T>> {
 /// Invalid sizes, shapes, axes, nonfinite inputs, work limits, or arithmetic overflow return shared errors.
 /// ## Numerical behavior
 ///
-/// Uses the private RustFFT backend, with O(N log N) transform work per selected axis. Floating-point roundoff grows with transform size and cancellation. No window, unit conversion, or sample-spacing factor is applied.
+/// Uses the private real FFT inverse backend, avoiding full complex-spectrum
+/// reconstruction. Floating-point roundoff grows with transform size and cancellation.
+/// No window, unit conversion, or sample-spacing factor is applied.
 /// # Examples
 ///
 /// ```
@@ -174,25 +176,7 @@ fn reshape<T: Clone>(x: &[T], columns: usize) -> Vec<Vec<T>> {
 #[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
 pub fn irfft<T: FftFloat>(input: &[Complex<T>], n: Option<usize>) -> Result<Vec<T>> {
     let n = inferred(input, n)?;
-    let mut full = vec![Complex { re: 0.0, im: 0.0 }; n];
-    for (k, &v) in input.iter().take(n / 2 + 1).enumerate() {
-        full[k] = v;
-        if k == 0 || n.is_multiple_of(2) && k == n / 2 {
-            full[k].im = 0.0;
-        } else {
-            full[n - k] = Complex {
-                re: v.re,
-                im: -v.im,
-            };
-        }
-    }
-    ifft(&full)
-        .iter()
-        .map(|v| match v.re {
-            value if value.is_finite() => Ok(value),
-            _ => Err(Error::NonFiniteEvaluation),
-        })
-        .collect()
+    fourier::inverse_real(input, n)
 }
 
 /// Transforms Hermitian time data to a real spectrum: `H(x)=n*irfft(conj(x))`.
@@ -211,7 +195,9 @@ pub fn irfft<T: FftFloat>(input: &[Complex<T>], n: Option<usize>) -> Result<Vec<
 /// Invalid sizes, shapes, axes, nonfinite inputs, work limits, or arithmetic overflow return shared errors.
 /// ## Numerical behavior
 ///
-/// Uses the private RustFFT backend, with O(N log N) transform work per selected axis. Floating-point roundoff grows with transform size and cancellation. No window, unit conversion, or sample-spacing factor is applied.
+/// Uses the private inverse real FFT backend. Floating-point roundoff grows
+/// with transform size and cancellation. No window, unit conversion, or
+/// sample-spacing factor is applied.
 /// # Examples
 ///
 /// ```
@@ -381,7 +367,9 @@ pub fn ifftn<T: FftFloat>(
 /// Invalid sizes, shapes, axes, nonfinite inputs, work limits, or arithmetic overflow return shared errors.
 /// ## Numerical behavior
 ///
-/// Uses the private RustFFT backend, with O(N log N) transform work per selected axis. Floating-point roundoff grows with transform size and cancellation. No window, unit conversion, or sample-spacing factor is applied.
+/// The last listed axis uses a real FFT, and the other axes transform the
+/// reduced spectrum. Floating-point roundoff grows with transform size and
+/// cancellation. No window or sample-spacing factor is applied.
 /// # Examples
 ///
 /// ```
@@ -401,17 +389,16 @@ pub fn rfftn<T: FftFloat>(
     tensor(shape, axes, input.len())?;
     is_finite_slice(input)?;
     let (small, axis) = reduced(shape, axes)?;
-    let complex = input
-        .iter()
-        .map(|v| Complex { re: *v, im: 0.0 })
-        .collect::<Vec<_>>();
-    let full = nd(&complex, shape, axes, false)?;
+    let n = shape[axis];
     let stride = shape[axis + 1..].iter().product::<usize>();
-    let block = shape[axis] * stride;
-    let out = full
-        .chunks(block)
-        .flat_map(|b| b[..small[axis] * stride].iter().copied())
-        .collect();
+    let mut out = vec![Complex { re: 0.0, im: 0.0 }; small.iter().product()];
+    fourier::real_strided(input, &mut out, n, stride);
+    if axes.len() > 1 {
+        // nd validates complex inputs before transforming the remaining axes.
+        out = nd(&out, &small, &axes[..axes.len() - 1], false)?;
+    } else {
+        values(&out)?;
+    }
     Ok((out, small))
 }
 
@@ -431,7 +418,9 @@ pub fn rfftn<T: FftFloat>(
 /// Invalid sizes, shapes, axes, nonfinite inputs, work limits, or arithmetic overflow return shared errors.
 /// ## Numerical behavior
 ///
-/// Uses the private RustFFT backend, with O(N log N) transform work per selected axis. Floating-point roundoff grows with transform size and cancellation. No window, unit conversion, or sample-spacing factor is applied.
+/// The other axes are inverted on the reduced spectrum, then a real inverse
+/// FFT restores the last listed axis without expanding the entire complex
+/// spectrum. Floating-point roundoff grows with transform size and cancellation.
 /// # Examples
 ///
 /// ```
@@ -457,34 +446,29 @@ pub fn irfftn<T: FftFloat>(
     let (small, axis) = reduced(shape, axes)?;
     tensor(&small, axes, input.len())?;
     values(input)?;
-    let intermediate = nd(input, &small, &axes[..axes.len() - 1], true)?;
+    let intermediate = if axes.len() > 1 {
+        nd(input, &small, &axes[..axes.len() - 1], true)?
+    } else {
+        input.to_vec()
+    };
     let n = shape[axis];
     let stride = shape[axis + 1..].iter().product::<usize>();
     let block = n * stride;
     let small_block = small[axis] * stride;
-    let mut out = Vec::with_capacity(full_len);
+    let mut out = vec![0.0; full_len];
     let mut line = vec![Complex { re: 0.0, im: 0.0 }; small[axis]];
-    let mut full = vec![Complex { re: 0.0, im: 0.0 }; full_len];
+    let mut restored = vec![0.0; n];
     for (outer, b) in intermediate.chunks(small_block).enumerate() {
         for offset in 0..stride {
             for (k, v) in line.iter_mut().enumerate() {
                 *v = b[offset + k * stride];
             }
-            for (k, &v) in line.iter().enumerate() {
-                let index = outer * block + offset + k * stride;
-                full[index] = v;
-                if k == 0 || n.is_multiple_of(2) && k == n / 2 {
-                    full[index].im = 0.0;
-                } else {
-                    full[outer * block + offset + (n - k) * stride] = Complex {
-                        re: v.re,
-                        im: -v.im,
-                    };
-                }
+            fourier::inverse_real_into(&line, &mut restored)?;
+            for (k, &v) in restored.iter().enumerate() {
+                out[outer * block + offset + k * stride] = v;
             }
         }
     }
-    out.extend(nd(&full, shape, &[axis], true)?.into_iter().map(|v| v.re));
     Ok(out)
 }
 

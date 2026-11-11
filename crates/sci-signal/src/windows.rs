@@ -102,7 +102,9 @@ simple_window!(
 ///
 /// ## Numerical behavior
 ///
-/// Uses f64 arithmetic. Cancellation and poorly conditioned filters or polynomial fits can reduce accuracy; no uniform relative-error guarantee is made. FFT routines use RustFFT, polynomial fits and DPSS use bounded private nalgebra solvers.
+/// Uses a short cosine recurrence for up to eight harmonics, requiring one
+/// transcendental cosine per sample. Longer series use direct evaluation to
+/// avoid accumulation of recurrence roundoff.
 ///
 /// # Examples
 ///
@@ -118,6 +120,19 @@ simple_window!(
 pub fn general_cosine(m: usize, coefficients: &[f64], symmetric: bool) -> Result<Vec<f64>> {
     super::nonempty(coefficients)?;
     work(m, coefficients.len())?;
+    if coefficients.len() <= 8 {
+        return evaluate(m, symmetric, |i, n| {
+            let cosine = (-PI + TAU * i / (n - 1.)).cos();
+            let mut previous = 1.;
+            let mut current = cosine;
+            let mut sum = coefficients[0];
+            for &a in &coefficients[1..] {
+                sum += a * current;
+                (previous, current) = (current, 2. * cosine * current - previous);
+            }
+            sum
+        });
+    }
     evaluate(m, symmetric, |i, n| {
         let angle = -PI + TAU * i / (n - 1.);
         coefficients

@@ -204,3 +204,29 @@ fn invalid_domains_and_overflow() {
     assert!(o::derivatives::check_grad(|x| x[0], |_| vec![f64::NAN], &[1.0], &[0.1]).is_err());
     assert!(o::derivatives::check_grad(|_| f64::INFINITY, |_| vec![1.0], &[1.0], &[0.1]).is_err());
 }
+
+#[test]
+fn rosen_hessian_product_matches_dense_matvec_and_large_analytic_case() {
+    for n in [2, 3, 7, 64, 255] {
+        let x: Vec<f64> = (0..n)
+            .map(|i| ((i * 17 % 29) as f64 - 13.0) / 11.0)
+            .collect();
+        let p: Vec<f64> = (0..n)
+            .map(|i| ((i * 11 % 31) as f64 - 15.0) / 19.0)
+            .collect();
+        let dense = o::derivatives::rosen_hess(&x).unwrap();
+        let expected = linalg::basic::matvec(&dense, &p).unwrap();
+        let actual = o::derivatives::rosen_hess_prod(&x, &p).unwrap();
+        for (a, b) in actual.iter().zip(expected) {
+            assert!((a - b).abs() <= 1e-12 * (1.0 + b.abs()));
+        }
+    }
+
+    // This exceeds the dense Hessian's dimension limit. At x = 1, diagonal
+    // entries are 802, 1002, ..., 1002, 200 and adjacent entries are -400.
+    let n = 65_536;
+    let actual = o::derivatives::rosen_hess_prod(&vec![1.0; n], &vec![1.0; n]).unwrap();
+    assert_eq!(actual[0], 402.0);
+    assert_eq!(actual[n - 1], -200.0);
+    assert!(actual[1..n - 1].iter().all(|&v| v == 202.0));
+}

@@ -1,7 +1,7 @@
 use super::{checked, nonempty, size, work};
 use crate::{
     Error, Result,
-    complex::{Complex, native, owned},
+    complex::{native, owned},
 };
 
 pub use sci_core::Mode;
@@ -95,7 +95,8 @@ pub fn convolve(x: &[f64], h: &[f64], mode: Mode) -> Result<Vec<f64>> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses f64 arithmetic. Cancellation and poorly conditioned filters or polynomial fits can reduce accuracy; no uniform relative-error guarantee is made. FFT routines use RustFFT, polynomial fits and DPSS use bounded private nalgebra solvers.
+/// Reverses the second input before evaluating the direct convolution.
+/// Arithmetic uses f64 and retained outputs preserve full-convolution order.
 ///
 /// # Examples
 ///
@@ -175,7 +176,8 @@ pub fn correlation_lags(n: usize, m: usize, mode: Mode) -> Result<Vec<isize>> {
 ///
 /// `pub fn fftconvolve(x: &[f64], h: &[f64], mode: Mode) -> Result<Vec<f64>>`
 ///
-/// Mode cropping agrees with convolve. Transform length is the next power of two of n+m-1; RustFFT is private.
+/// Mode cropping agrees with convolve. Transform length is the next power of
+/// two of n+m-1; real forward/inverse FFTs retain only nonnegative frequencies.
 ///
 /// ## Domain
 ///
@@ -211,11 +213,9 @@ pub fn fftconvolve(x: &[f64], h: &[f64], mode: Mode) -> Result<Vec<f64>> {
     let n = full.next_power_of_two();
     size(n)?;
     let padded = |values: &[f64]| {
-        let mut buffer = vec![Complex::default(); n];
-        for (v, &re) in buffer.iter_mut().zip(values) {
-            v.re = re;
-        }
-        super::fft(&buffer)
+        let mut buffer = vec![0.; n];
+        buffer[..values.len()].copy_from_slice(values);
+        super::rfft(&buffer)
     };
     let a = padded(x);
     let b = padded(h);
@@ -224,9 +224,9 @@ pub fn fftconvolve(x: &[f64], h: &[f64], mode: Mode) -> Result<Vec<f64>> {
         .zip(b)
         .map(|(a, b)| owned(native(a) * native(b)))
         .collect();
-    let output = super::ifft(&product);
+    let output = sci_fft::real::irfft(&product, Some(n))?;
     let (start, len) = range(x.len(), h.len(), mode);
-    checked(output[start..start + len].iter().map(|v| v.re).collect())
+    checked(output[start..start + len].to_vec())
 }
 
 /// Divides coefficient polynomials so that `x = convolve(h, quotient) + remainder`.
@@ -310,7 +310,8 @@ pub fn deconvolve(x: &[f64], h: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses f64 arithmetic. Cancellation and poorly conditioned filters or polynomial fits can reduce accuracy; no uniform relative-error guarantee is made. FFT routines use RustFFT, polynomial fits and DPSS use bounded private nalgebra solvers.
+/// Accumulates filter contributions in increasing input and tap order.
+/// Nonfinite intermediate sums remain errors.
 ///
 /// # Examples
 ///

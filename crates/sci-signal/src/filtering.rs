@@ -345,7 +345,8 @@ fn validate_sos(sos: &[[f64; 6]]) -> Result<()> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses f64 arithmetic. Cancellation and poorly conditioned filters or polynomial fits can reduce accuracy; no uniform relative-error guarantee is made. FFT routines use RustFFT, polynomial fits and DPSS use bounded private nalgebra solvers.
+/// Each section uses two transposed direct-form II states and updates one
+/// output buffer in place. Rounding and nonfinite checks remain per section.
 ///
 /// # Examples
 ///
@@ -362,8 +363,22 @@ pub fn sosfilt(sos: &[[f64; 6]], x: &[f64]) -> Result<Vec<f64>> {
     validate_sos(sos)?;
     samples(x)?;
     work(sos.len(), x.len())?;
-    sos.iter()
-        .try_fold(x.to_vec(), |x, row| lfilter(&row[..3], &row[3..], &x))
+    let mut output = x.to_vec();
+    for &[b0, b1, b2, _, a1, a2] in sos {
+        let (mut state0, mut state1) = (0., 0.);
+        for sample in &mut output {
+            let input = *sample;
+            let y = b0 * input + state0;
+            state0 = state1 + b1 * input - a1 * y;
+            state1 = b2 * input - a2 * y;
+            *sample = y;
+        }
+        super::check_real(&output)?;
+        if !state0.is_finite() || !state1.is_finite() {
+            return Err(Error::NonFiniteEvaluation);
+        }
+    }
+    Ok(output)
 }
 /// Constructs each section unit-step state, scaled by all preceding sections DC gains.
 ///

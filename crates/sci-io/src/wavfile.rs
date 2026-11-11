@@ -374,18 +374,57 @@ pub fn signal(audio: &Audio, channel: usize) -> Result<Vec<f64>> {
     if channel >= usize::from(audio.channels) {
         return Err(Error::InvalidData("WAV channel out of range"));
     }
-    let (offset, scale) = match audio.samples {
-        NumericData::U8(_) => (128.0, 128.0),
-        NumericData::I16(_) => (0.0, 32768.0),
-        NumericData::I32(_) => (0.0, 2147483648.0),
-        _ => (0.0, 1.0),
-    };
-    Ok(audio
-        .samples
-        .to_f64()
-        .into_iter()
-        .skip(channel)
-        .step_by(usize::from(audio.channels))
-        .map(|v| (v - offset) / scale)
-        .collect())
+    // Only convert the requested channel; a multichannel recording otherwise
+    // allocates and converts every sample before discarding the other channels.
+    macro_rules! selected {
+        ($samples:expr, $offset:expr, $scale:expr) => {
+            $samples
+                .iter()
+                .skip(channel)
+                .step_by(usize::from(audio.channels))
+                .map(|&value| (f64::from(value) - $offset) / $scale)
+                .collect()
+        };
+    }
+    Ok(match &audio.samples {
+        NumericData::U8(samples) => selected!(samples, 128.0, 128.0),
+        NumericData::I16(samples) => selected!(samples, 0.0, 32768.0),
+        NumericData::I32(samples) => selected!(samples, 0.0, 2147483648.0),
+        NumericData::F32(samples) => selected!(samples, 0.0, 1.0),
+        NumericData::F64(samples) => selected!(samples, 0.0, 1.0),
+        _ => unreachable!("validated WAV sample type"),
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn selected_channel_preserves_pcm_normalization_and_float_special_values() {
+        let pcm = Audio {
+            sample_rate: 48_000,
+            channels: 3,
+            bits_per_sample: 24,
+            samples: NumericData::I32(vec![i32::MIN, 0, i32::MAX & !255, 0, 256, -256]),
+        };
+        assert_eq!(signal(&pcm, 0).unwrap(), [-1., 0.]);
+        assert_eq!(signal(&pcm, 1).unwrap(), [0., 256. / 2147483648.]);
+        assert_eq!(
+            signal(&pcm, 2).unwrap(),
+            [(i32::MAX & !255) as f64 / 2147483648., -256. / 2147483648.,]
+        );
+
+        let float = Audio {
+            sample_rate: 44_100,
+            channels: 2,
+            bits_per_sample: 64,
+            samples: NumericData::F64(vec![1., -0.0, 2., f64::INFINITY, 3., f64::NAN]),
+        };
+        let selected = signal(&float, 1).unwrap();
+        assert_eq!(selected[0].to_bits(), (-0.0f64).to_bits());
+        assert_eq!(selected[1], f64::INFINITY);
+        assert!(selected[2].is_nan());
+        assert!(matches!(signal(&float, 2), Err(Error::InvalidData(_))));
+    }
 }

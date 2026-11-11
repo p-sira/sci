@@ -98,3 +98,26 @@ pub fn warm<T>(bencher: Bencher, mut f: impl FnMut() -> T) {
     black_box(f());
     bencher.bench_local(f);
 }
+
+/// Calls per measured iteration for workloads that finish in a few
+/// microseconds.
+///
+/// A single call of such a workload is short enough that fixed per-iteration
+/// costs, such as whether an allocation is served from the allocator's
+/// thread-local cache, can swing the result by tens of percent depending on
+/// what earlier benchmarks left behind. Repeating the call amortizes those
+/// costs so the measurement reflects the workload itself.
+pub const REPEAT: usize = 32;
+
+/// Like [`warm`], but each measured iteration calls `f` [`REPEAT`] times.
+///
+/// Use it for small workloads that would otherwise take only a few
+/// microseconds per iteration.
+pub fn repeated<T>(bencher: Bencher, mut f: impl FnMut() -> T) {
+    black_box(f());
+    bencher.bench_local(|| {
+        for _ in 0..REPEAT {
+            black_box(f());
+        }
+    });
+}

@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Reuse unit-weight distance inputs without allocating normalization buffers for each cosine/correlation pair; validate against the original weighted formulas.
+
 - Compute directed Hausdorff distances with a prevalidated sequential `hypot`
   kernel, avoiding per-pair unit-weight allocations and repeated coordinate
   validation. Preserve exhaustive search, tie indices, and overflow behavior;

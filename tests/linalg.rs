@@ -1368,6 +1368,101 @@ fn qr_adapters_validate_shapes_and_ranges() {
 }
 
 #[test]
+fn qr_multiply_matches_explicit_factors_for_rectangular_matrices() {
+    for (m, n) in [(7, 4), (4, 7), (6, 6)] {
+        let a: Matrix = (0..m)
+            .map(|i| {
+                (0..n)
+                    .map(|j| 0.3 * (1 + i * n + j) as f64 + f64::from(i == j))
+                    .collect()
+            })
+            .collect();
+        let factors = l::decompositions::qr(&a).unwrap();
+        let k = m.min(n);
+        let left: Matrix = (0..k)
+            .map(|i| (0..3).map(|j| (i + 2 * j + 1) as f64 * 0.2).collect())
+            .collect();
+        let right: Matrix = (0..3)
+            .map(|i| (0..m).map(|j| (i * m + j + 1) as f64 * -0.1).collect())
+            .collect();
+        let (left_product, left_r) = l::decompositions::qr_multiply(&a, &left, true).unwrap();
+        let (right_product, right_r) = l::decompositions::qr_multiply(&a, &right, false).unwrap();
+        check_matrix(&left_product, &mul(&factors.q, &left));
+        check_matrix(&right_product, &mul(&right, &factors.q));
+        check_matrix(&left_r, &factors.r);
+        check_matrix(&right_r, &factors.r);
+    }
+}
+
+#[test]
+fn tridiagonal_eigenvectors_satisfy_eigenpairs_across_backend_threshold() {
+    for n in [1_usize, 2, 16, 128, 256] {
+        let d: Vec<f64> = (0..n).map(|i| 0.75 + (i as f64 / n as f64) * 1.5).collect();
+        let e: Vec<f64> = (0..n.saturating_sub(1))
+            .map(|i| if i % 2 == 0 { 0.08 } else { -0.06 })
+            .collect();
+        let result = l::eigen::eigh_tridiagonal(&d, &e).unwrap();
+        let values_only = l::eigen::eigvalsh_tridiagonal(&d, &e).unwrap();
+        check_vector(&result.eigenvalues, &values_only);
+        assert_eq!(result.eigenvectors.len(), n);
+        for j in 0..n {
+            let lambda = result.eigenvalues[j];
+            let mut norm = 0.0;
+            for i in 0..n {
+                let v = result.eigenvectors[i][j];
+                norm += v * v;
+                let mut av = d[i] * v;
+                if i > 0 {
+                    av += e[i - 1] * result.eigenvectors[i - 1][j];
+                }
+                if i + 1 < n {
+                    av += e[i] * result.eigenvectors[i + 1][j];
+                }
+                assert!(
+                    (av - lambda * v).abs() < 1e-9 * (1.0 + lambda.abs()),
+                    "tridiagonal residual failed at n={n}, eigenpair={j}, row={i}"
+                );
+            }
+            assert!((norm - 1.0).abs() < 1e-9, "eigenvector norm at n={n}");
+        }
+    }
+    let zero = l::eigen::eigh_tridiagonal(&[0.0, -0.0], &[0.0]).unwrap();
+    assert!(zero.eigenvalues.iter().all(|&value| value == 0.0));
+    let tiny = l::eigen::eigh_tridiagonal(&[2e-300, 3e-300], &[1e-301]).unwrap();
+    assert!(tiny.eigenvalues[0] > 0.0 && tiny.eigenvalues[1] > tiny.eigenvalues[0]);
+}
+
+#[test]
+fn matmul_toeplitz_matches_explicit_rectangular_product() {
+    let column = [3.0, -0.4, 0.8, -1.2, 0.2, 0.6];
+    let row = [-7.0, 0.9, -0.3, 1.1]; // The first row entry is deliberately ignored.
+    for width in [1, 2, 4, 5, 16] {
+        let x: Matrix = (0..row.len())
+            .map(|i| {
+                (0..width)
+                    .map(|j| (i * width + j + 1) as f64 / (width + 3) as f64)
+                    .collect()
+            })
+            .collect();
+        let t = l::structured::toeplitz(&column, Some(&row)).unwrap();
+        let expected = mul(&t, &x);
+        check_matrix(
+            &l::structured::matmul_toeplitz(&column, Some(&row), &x).unwrap(),
+            &expected,
+        );
+    }
+    let column = [1.5, 0.25, -2.0];
+    let x = [[2.0, 1.0], [3.0, -1.0], [4.0, 0.5]];
+    let x_rows: Matrix = x.iter().map(|row| row.to_vec()).collect();
+    let expected = mul(&l::structured::toeplitz(&column, None).unwrap(), &x_rows);
+    check_matrix(
+        &l::structured::matmul_toeplitz(&column, None, &x).unwrap(),
+        &expected,
+    );
+    assert!(l::structured::matmul_toeplitz(&column, Some(&[f64::NAN, 0.0, 0.0]), &x).is_err());
+}
+
+#[test]
 fn advanced_domains_and_matrix_identities() {
     use sci::complex::Complex;
     let a = [vec![1., 2.], vec![0., 3.]];

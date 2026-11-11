@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Compute symmetric tridiagonal eigenpairs directly without materializing and reducing a dense matrix; preserve independent residual checks and the documented result ordering.
+
 - **Breaking:** Remove `basic::ishermitian`; call
   `basic::issymmetric(&a, atol, rtol)` for real-valued matrices.
   The same numerical behavior remains available through the canonical name.

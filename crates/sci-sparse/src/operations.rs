@@ -118,7 +118,33 @@ pub fn find(a: &SparseMatrix) -> Result<Vec<(usize, usize, f64)>> {
 /// # References
 /// [SciPy csr_array.eliminate_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_array.eliminate_zeros.html).
 pub fn eliminate_zeros(a: &SparseMatrix) -> Result<SparseMatrix> {
-    from_coo(a.rows, a.cols, &find(a)?)
+    filtered(a, |_, _, v| v != 0.0)
+}
+
+// Filtering canonical CSR preserves row and column order, so there is no need
+// to rebuild COO coordinates and perform another stable sort.
+fn filtered(a: &SparseMatrix, keep: impl Fn(usize, usize, f64) -> bool) -> Result<SparseMatrix> {
+    validate(a)?;
+    let mut out = SparseMatrix {
+        rows: a.rows,
+        cols: a.cols,
+        indptr: Vec::with_capacity(a.rows + 1),
+        indices: Vec::with_capacity(a.data.len()),
+        data: Vec::with_capacity(a.data.len()),
+    };
+    out.indptr.push(0);
+    for r in 0..a.rows {
+        for p in a.indptr[r]..a.indptr[r + 1] {
+            let c = a.indices[p];
+            let v = a.data[p];
+            if keep(r, c, v) {
+                out.indices.push(c);
+                out.data.push(v);
+            }
+        }
+        out.indptr.push(out.data.len());
+    }
+    Ok(out)
 }
 
 /// Retain `A[i,j]` where `j - i ≤ offset`; set other entries to zero.
@@ -132,7 +158,7 @@ pub fn eliminate_zeros(a: &SparseMatrix) -> Result<SparseMatrix> {
 /// # Errors
 /// Invalid CSR or crate limits.
 /// # Numerical behavior
-/// Exact filtering; O(n log n + rows) work for n retained entries.
+/// Exact filtering; O(rows + stored entries) work.
 /// # Examples
 /// ```
 /// assert_eq!(sci_sparse::operations::tril(&sci_sparse::construct::identity(2)?, 0)?.data, vec![1.0, 1.0]);
@@ -141,11 +167,7 @@ pub fn eliminate_zeros(a: &SparseMatrix) -> Result<SparseMatrix> {
 /// # References
 /// [SciPy tril](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.tril.html).
 pub fn tril(a: &SparseMatrix, offset: isize) -> Result<SparseMatrix> {
-    validate(a)?;
-    let coordinates: Vec<_> = entries(a)
-        .filter(|&(r, c, _)| c as i128 - r as i128 <= offset as i128)
-        .collect();
-    from_coo(a.rows, a.cols, &coordinates)
+    filtered(a, |r, c, _| c as i128 - r as i128 <= offset as i128)
 }
 
 /// Retain `A[i,j]` where `j - i ≥ offset`; set other entries to zero.
@@ -159,7 +181,7 @@ pub fn tril(a: &SparseMatrix, offset: isize) -> Result<SparseMatrix> {
 /// # Errors
 /// Invalid CSR or crate limits.
 /// # Numerical behavior
-/// Exact filtering; O(n log n + rows) work for n retained entries.
+/// Exact filtering; O(rows + stored entries) work.
 /// # Examples
 /// ```
 /// assert_eq!(sci_sparse::operations::triu(&sci_sparse::construct::identity(2)?, 0)?.data, vec![1.0, 1.0]);
@@ -168,11 +190,7 @@ pub fn tril(a: &SparseMatrix, offset: isize) -> Result<SparseMatrix> {
 /// # References
 /// [SciPy triu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.triu.html).
 pub fn triu(a: &SparseMatrix, offset: isize) -> Result<SparseMatrix> {
-    validate(a)?;
-    let coordinates: Vec<_> = entries(a)
-        .filter(|&(r, c, _)| c as i128 - r as i128 >= offset as i128)
-        .collect();
-    from_coo(a.rows, a.cols, &coordinates)
+    filtered(a, |r, c, _| c as i128 - r as i128 >= offset as i128)
 }
 
 /// Return `B[i,j] = factor × A[i,j]`.
@@ -399,7 +417,9 @@ pub fn matvec(a: &SparseMatrix, x: &[f64]) -> Result<Vec<f64>> {
 /// more than 20,000,000 scalar products, or more than 1,000,000 output entries.
 /// # Numerical behavior
 /// Sparse row accumulation in increasing k, with sorted output columns.
-/// Cancellation can reduce relative accuracy. O(input size + products × log(output columns + 1) + output rows).
+/// Cancellation can reduce relative accuracy. Uses a dense row accumulator for
+/// small results (fewer than 256 rows and columns), with a tree-map accumulator
+/// for larger results.
 /// # Examples
 /// ```
 /// let a = sci_sparse::construct::identity(2)?;
@@ -430,7 +450,53 @@ pub fn matmul(a: &SparseMatrix, b: &SparseMatrix) -> Result<SparseMatrix> {
         indices: Vec::new(),
         data: Vec::new(),
     };
+    // Sorting the touched columns and updating row markers wins on smaller
+    // outputs, but costs more than tree-map insertion at larger widths.
+    // Keep the original accumulator for results with either axis >= 256.
+    let use_workspace = a.rows < 256 && b.cols < 256;
+    let mut markers = if use_workspace {
+        vec![0usize; b.cols]
+    } else {
+        Vec::new()
+    };
+    let mut values = if use_workspace {
+        vec![0.0; b.cols]
+    } else {
+        Vec::new()
+    };
+    let mut touched = Vec::new();
     for r in 0..a.rows {
+        if use_workspace {
+            let stamp = r + 1;
+            for p in a.indptr[r]..a.indptr[r + 1] {
+                let k = a.indices[p];
+                for q in b.indptr[k]..b.indptr[k + 1] {
+                    let c = b.indices[q];
+                    if markers[c] != stamp {
+                        markers[c] = stamp;
+                        values[c] = 0.0;
+                        touched.push(c);
+                    }
+                    let product = a.data[p] * b.data[q];
+                    if !product.is_finite() {
+                        return Err(Error::NonFiniteEvaluation);
+                    }
+                    values[c] += product;
+                    if !values[c].is_finite() {
+                        return Err(Error::NonFiniteEvaluation);
+                    }
+                }
+            }
+            touched.sort_unstable();
+            for &c in &touched {
+                if values[c] != 0.0 {
+                    push(&mut out, c, values[c])?;
+                }
+            }
+            touched.clear();
+            out.indptr.push(out.data.len());
+            continue;
+        }
         let mut row = BTreeMap::<usize, f64>::new();
         for p in a.indptr[r]..a.indptr[r + 1] {
             let k = a.indices[p];

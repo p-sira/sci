@@ -2,6 +2,7 @@ use sci_core::{
     Error,
     csr::{from_coo, to_dense, validate},
 };
+use std::collections::BTreeMap;
 
 #[test]
 fn canonical_coo_stable_duplicate_summation_and_signed_zero() {
@@ -114,4 +115,48 @@ fn canonical_coo_and_csr_errors_are_precise() {
         to_dense(&oversized),
         Err(Error::InvalidInput("dense output exceeds 1,000,000 cells"))
     );
+}
+
+#[test]
+fn coo_row_bucketing_preserves_input_order_with_sparse_empty_rows() {
+    let mut entries = Vec::new();
+    let mut grouped = BTreeMap::<(usize, usize), Vec<f64>>::new();
+    for i in 0..4_000 {
+        let row = (i * 37) % 64;
+        let col = (i * 29) % 17;
+        let value = match i % 4 {
+            0 => 1e16,
+            1 => 1.,
+            2 => -1e16,
+            _ => -0.0,
+        };
+        entries.push((row, col, value));
+        grouped.entry((row, col)).or_default().push(value);
+    }
+    // Rows 64..127 contain no entries, and duplicate addition can be
+    // order-sensitive: independently fold each coordinate in insertion order.
+    let csr = from_coo(128, 23, &entries).unwrap();
+    validate(&csr).unwrap();
+    let expected: Vec<_> = grouped
+        .into_iter()
+        .map(|((row, col), values)| {
+            let mut values = values.into_iter();
+            let sum = values.next().unwrap();
+            (row, col, values.fold(sum, |sum, value| sum + value))
+        })
+        .collect();
+    let indices = &csr.indices;
+    let data = &csr.data;
+    let actual: Vec<_> = (0..csr.rows)
+        .flat_map(|row| {
+            (csr.indptr[row]..csr.indptr[row + 1])
+                .map(move |position| (row, indices[position], data[position]))
+        })
+        .collect();
+    assert_eq!(actual.len(), expected.len());
+    for (a, b) in actual.iter().zip(&expected) {
+        assert_eq!((a.0, a.1), (b.0, b.1));
+        assert_eq!(a.2.to_bits(), b.2.to_bits());
+    }
+    assert!(csr.indptr[64..].iter().all(|&end| end == csr.data.len()));
 }

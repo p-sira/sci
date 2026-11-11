@@ -1,4 +1,55 @@
 use sci_integrate::quadrature::{fixed_quad, newton_cotes};
+use sci_integrate::sampled::{cumulative_simpson, cumulative_trapezoid, simpson, trapezoid};
+
+#[test]
+fn uniform_spacing_integrals_and_cumulative_prefixes() {
+    let samples: Vec<f64> = (0..=128).map(|i| (i as f64).powi(2)).collect();
+    let exact_simpson = 128.0_f64.powi(3) / 3.0;
+    let exact_trapezoid = exact_simpson + 128.0 / 6.0;
+    let whole_trapezoid = trapezoid(&samples, None, 1.0).unwrap();
+    let whole_simpson = simpson(&samples, None, 1.0).unwrap();
+    assert!((whole_trapezoid - exact_trapezoid).abs() < 1e-9);
+    assert!((whole_simpson - exact_simpson).abs() < 1e-9);
+    assert_eq!(
+        cumulative_trapezoid(&samples, None, 1.0, None)
+            .unwrap()
+            .last(),
+        Some(&whole_trapezoid)
+    );
+    assert_eq!(
+        cumulative_simpson(&samples, None, 1.0, None)
+            .unwrap()
+            .last(),
+        Some(&whole_simpson)
+    );
+    assert_eq!(simpson(&samples[..2], None, -1.0).unwrap(), -0.5);
+    assert_eq!(simpson(&samples[..1], None, 1.0).unwrap(), 0.0);
+}
+
+#[test]
+fn gauss_legendre_rules_are_thread_safe_and_preserve_evaluations() {
+    std::thread::scope(|scope| {
+        for _ in 0..4 {
+            scope.spawn(|| {
+                for order in [17, 47, 127] {
+                    let calls = std::cell::Cell::new(0);
+                    let integral = fixed_quad(
+                        |x: f64| {
+                            calls.set(calls.get() + 1);
+                            x.exp()
+                        },
+                        0.0,
+                        1.0,
+                        order,
+                    );
+                    let integral = integral.unwrap();
+                    assert!((integral - (std::f64::consts::E - 1.0)).abs() < 3e-13);
+                    assert_eq!(calls.get(), order);
+                }
+            });
+        }
+    });
+}
 
 #[test]
 fn gauss_legendre_moments_through_order_256() {
