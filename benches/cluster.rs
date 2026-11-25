@@ -4,7 +4,7 @@
 
 mod common;
 
-use common::{points, repeated};
+use common::points;
 use divan::{Bencher, black_box};
 use sci::cluster::{hierarchy, vq};
 use sci::spatial;
@@ -195,7 +195,7 @@ mod inconsistency_benches {
     #[divan::bench]
     fn is_valid_im(bencher: Bencher) {
         let r = hierarchy::inconsistent(&tree(), 2).unwrap();
-        repeated(bencher, || hierarchy::is_valid_im(black_box(&r)));
+        bencher.bench(|| hierarchy::is_valid_im(black_box(&r)));
     }
 
     #[divan::bench]
