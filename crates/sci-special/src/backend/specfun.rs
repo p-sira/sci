@@ -3398,267 +3398,130 @@ pub(super) fn gmn(
     gd[0] = (gd1 + (xm * gd0));
 }
 
-pub(super) fn segv(
-    mut m: i32,
-    mut n: i32,
-    mut c: f64,
-    mut kd: i32,
-    cv: &mut [f64],
-    eg: &mut [f64],
-) -> i32 {
-    let mut i: i32 = 0;
-    let mut icm: i32 = 0;
-    let mut j: i32 = 0;
-    let mut k: i32 = 0;
-    let mut k1: i32 = 0;
-    let mut l: i32 = 0;
-    let mut nm: i32 = 0;
-    let mut nm1: i32 = 0;
-    let mut cs: f64 = 0.0;
-    let mut dk0: f64 = 0.0;
-    let mut dk1: f64 = 0.0;
-    let mut dk2: f64 = 0.0;
-    let mut d2k: f64 = 0.0;
-    let mut s: f64 = 0.0;
-    let mut t: f64 = 0.0;
-    let mut t1: f64 = 0.0;
-    let mut x1: f64 = 0.0;
-    let mut xa: f64 = 0.0;
-    let mut xb: f64 = 0.0;
-    if (c < 1e-10f64) {
-        {
-            i = 1;
-            while (i <= ((n - m) + 1)) {
-                {
-                    eg[(i - 1) as usize] = (((i + m) * ((i + m) - 1)) as f64);
-                }
-                {
-                    i += 1;
-                    i
-                };
-            }
-            cv[0] = eg[(n - m) as usize];
-            return 0;
+pub(super) fn segv(m: i32, n: i32, c: f64, kd: i32, cv: &mut [f64], eg: &mut [f64]) -> i32 {
+    if c < 1e-10 {
+        for i in 1..=n - m + 1 {
+            eg[(i - 1) as usize] = ((i + m) * (i + m - 1)) as f64;
         }
+        cv[0] = eg[(n - m) as usize];
+        return 0;
     }
-    let mut a = vec![0.0; spheroidal_work_len(m, n, c)];
-    let mut b = vec![0.0; spheroidal_work_len(m, n, c)];
-    let mut cv0 = vec![0.0; spheroidal_work_len(m, n, c)];
-    let mut d = vec![0.0; spheroidal_work_len(m, n, c)];
-    let mut e = vec![0.0; spheroidal_work_len(m, n, c)];
-    let mut f = vec![0.0; spheroidal_work_len(m, n, c)];
-    let mut g = vec![0.0; spheroidal_work_len(m, n, c)];
-    let mut h = vec![0.0; spheroidal_work_len(m, n, c)];
-    icm = (((n - m) + 2) / 2);
-    nm = (10 + (((0.5f64 * ((n - m) as f64)) + c) as i32));
-    cs = ((c * c) * ((kd) as f64));
-    k = 0;
-    l = 0;
-    while (l <= 1) {
-        {
-            i = 1;
-            while (i <= nm) {
-                {
-                    k = if (l == 0) {
-                        (2 * (i - 1))
-                    } else {
-                        ((2 * i) - 1)
-                    };
-                    dk0 = ((m + k) as f64);
-                    dk1 = (((m + k) + 1) as f64);
-                    dk2 = ((2 * (m + k)) as f64);
-                    d2k = (((2 * m) + k) as f64);
-                    a[(i - 1) as usize] = ((((d2k + 2.0f64) * (d2k + 1.0f64))
-                        / ((dk2 + 3.0f64) * (dk2 + 5.0f64)))
-                        * cs);
-                    d[(i - 1) as usize] = ((dk0 * dk1)
-                        + ((((((2.0f64 * dk0) * dk1)
-                            - ((2.0f64 * ((m) as f64)) * ((m) as f64)))
-                            - 1.0f64)
-                            / ((dk2 - 1.0f64) * (dk2 + 3.0f64)))
-                            * cs));
-                    g[(i - 1) as usize] = (((((k) as f64) * (((k) as f64) - 1.0f64))
-                        / ((dk2 - 3.0f64) * (dk2 - 1.0f64)))
-                        * cs);
-                }
-                {
-                    i += 1;
-                    i
-                };
+
+    let icm = ((n - m + 2) / 2) as usize;
+    let nm = (10 + (0.5 * f64::from(n - m) + c) as i32) as usize;
+    let cs = (c * c) * f64::from(kd);
+
+    // Each row contains the diagonal, subdiagonal, and its square. The
+    // preceding upper coefficient is all we need from the unsymmetrized
+    // recurrence, so there is no need to store separate a and g arrays.
+    let mut rows = Vec::with_capacity(nm);
+    let mut brackets = Vec::with_capacity(icm);
+    for l in 0..=1 {
+        rows.clear();
+        let mut previous_a = 0.0;
+        for i in 0..nm {
+            let k = 2 * i as i32 + l;
+            let dk0 = f64::from(m + k);
+            let dk1 = f64::from(m + k + 1);
+            let dk2 = f64::from(2 * (m + k));
+            let d2k = f64::from(2 * m + k);
+            let a = ((d2k + 2.0) * (d2k + 1.0)) / ((dk2 + 3.0) * (dk2 + 5.0)) * cs;
+            let d = dk0 * dk1
+                + ((2.0 * dk0 * dk1 - 2.0 * f64::from(m) * f64::from(m) - 1.0)
+                    / ((dk2 - 1.0) * (dk2 + 3.0)))
+                    * cs;
+            let g = (f64::from(k) * (f64::from(k) - 1.0)) / ((dk2 - 3.0) * (dk2 - 1.0)) * cs;
+            let e = if i == 0 { 0.0 } else { (previous_a * g).sqrt() };
+            // Retain the sqrt-then-square rounding of the original kernel.
+            rows.push((d, e, e * e));
+            previous_a = a;
+        }
+
+        let (d, e, _) = rows[nm - 1];
+        let mut xa = d + e.abs();
+        let mut xb = d - e.abs();
+        for pair in rows.windows(2) {
+            let (d, e, _) = pair[0];
+            let t = e.abs() + pair[1].1.abs();
+            let upper = d + t;
+            let lower = d - t;
+            if xa < upper {
+                xa = upper;
             }
-            k = 2;
-            while (k <= nm) {
-                {
-                    e[(k - 1) as usize] = (a[(k - 2) as usize] * g[(k - 1) as usize]).sqrt();
-                    f[(k - 1) as usize] = (e[(k - 1) as usize] * e[(k - 1) as usize]);
-                }
-                {
-                    k += 1;
-                    k
-                };
-            }
-            f[(0) as usize] = 0.0f64;
-            e[(0) as usize] = 0.0f64;
-            xa = (d[(nm - 1) as usize] + (e[(nm - 1) as usize]).abs());
-            xb = (d[(nm - 1) as usize] - (e[(nm - 1) as usize]).abs());
-            nm1 = (nm - 1);
-            i = 1;
-            while (i <= nm1) {
-                {
-                    t = ((e[(i - 1) as usize]).abs() + (e[(i) as usize]).abs());
-                    t1 = (d[(i - 1) as usize] + t);
-                    if (xa < t1) {
-                        {
-                            xa = t1;
-                        }
-                    }
-                    t1 = (d[(i - 1) as usize] - t);
-                    if (t1 < xb) {
-                        {
-                            xb = t1;
-                        }
-                    }
-                }
-                {
-                    i += 1;
-                    i
-                };
-            }
-            i = 1;
-            while (i <= icm) {
-                {
-                    b[(i - 1) as usize] = xa;
-                    h[(i - 1) as usize] = xb;
-                }
-                {
-                    i += 1;
-                    i
-                };
-            }
-            k = 1;
-            while (k <= icm) {
-                {
-                    k1 = k;
-                    while (k1 <= icm) {
-                        {
-                            if (b[(k1 - 1) as usize] < b[(k - 1) as usize]) {
-                                {
-                                    b[(k - 1) as usize] = b[(k1 - 1) as usize];
-                                    break;
-                                }
-                            }
-                        }
-                        {
-                            k1 += 1;
-                            k1
-                        };
-                    }
-                    if (k != 1) {
-                        {
-                            if (h[(k - 1) as usize] < h[(k - 2) as usize]) {
-                                {
-                                    h[(k - 1) as usize] = h[(k - 2) as usize];
-                                }
-                            }
-                        }
-                    }
-                    for iteration in 0..128 {
-                        if iteration == 127 {
-                            return 2;
-                        }
-                        {
-                            x1 = ((b[(k - 1) as usize] + h[(k - 1) as usize]) / 2.0f64);
-                            cv0[(k - 1) as usize] = x1;
-                            if (((b[(k - 1) as usize] - h[(k - 1) as usize]) / x1).abs() < 1e-14f64)
-                            {
-                                {
-                                    break;
-                                }
-                            }
-                            j = 0;
-                            s = 1.0f64;
-                            i = 1;
-                            while (i <= nm) {
-                                {
-                                    if (s == 0.0f64) {
-                                        {
-                                            s += 1e-30f64;
-                                        }
-                                    }
-                                    t = (f[(i - 1) as usize] / s);
-                                    s = ((d[(i - 1) as usize] - t) - x1);
-                                    if (s < 0.0f64) {
-                                        {
-                                            j += 1;
-                                            // The bracket update only distinguishes Sturm
-                                            // counts below icm. Once this many negative pivots
-                                            // have occurred, later pivots cannot affect it.
-                                            if j >= icm {
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                {
-                                    i += 1;
-                                    i
-                                };
-                            }
-                            if (j < k) {
-                                {
-                                    h[(k - 1) as usize] = x1;
-                                }
-                            } else {
-                                {
-                                    b[(k - 1) as usize] = x1;
-                                    if (j >= icm) {
-                                        {
-                                            b[(icm - 1) as usize] = x1;
-                                        }
-                                    } else {
-                                        {
-                                            if (h[(j) as usize] < x1) {
-                                                {
-                                                    h[(j) as usize] = x1;
-                                                }
-                                            }
-                                            if (x1 < b[(j - 1) as usize]) {
-                                                {
-                                                    b[(j - 1) as usize] = x1;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    cv0[(k - 1) as usize] = x1;
-                    let mut index: i32 = 0;
-                    if (l == 0) {
-                        index = ((2 * k) - 2);
-                    }
-                    if (l == 1) {
-                        index = ((2 * k) - 1);
-                    }
-                    if (index >= ((n - m) + 1)) {
-                        break;
-                    }
-                    eg[(index) as usize] = cv0[(k - 1) as usize];
-                }
-                {
-                    k += 1;
-                    k
-                };
+            if lower < xb {
+                xb = lower;
             }
         }
-        {
-            l += 1;
-            l
-        };
+
+        brackets.clear();
+        brackets.resize(icm, (xa, xb));
+        for k in 0..icm {
+            let mut upper = brackets[k].0;
+            for &(candidate, _) in &brackets[k..] {
+                if candidate < upper {
+                    upper = candidate;
+                    break;
+                }
+            }
+            brackets[k].0 = upper;
+            if k != 0 && brackets[k].1 < brackets[k - 1].1 {
+                brackets[k].1 = brackets[k - 1].1;
+            }
+
+            let mut x1 = 0.0;
+            for iteration in 0..128 {
+                if iteration == 127 {
+                    return 2;
+                }
+                let (upper, lower) = brackets[k];
+                x1 = (upper + lower) / 2.0;
+                if ((upper - lower) / x1).abs() < 1e-14 {
+                    break;
+                }
+
+                let mut j = 0;
+                let mut s = 1.0;
+                for &(d, _, f) in &rows {
+                    if s == 0.0 {
+                        s += 1e-30;
+                    }
+                    let t = f / s;
+                    s = (d - t) - x1;
+                    if s < 0.0 {
+                        j += 1;
+                        // Later pivots cannot affect the bracket update once
+                        // the Sturm count reaches the number of wanted values.
+                        if j >= icm {
+                            break;
+                        }
+                    }
+                }
+                if j <= k {
+                    brackets[k].1 = x1;
+                } else {
+                    brackets[k].0 = x1;
+                    if j >= icm {
+                        brackets[icm - 1].0 = x1;
+                    } else {
+                        if brackets[j].1 < x1 {
+                            brackets[j].1 = x1;
+                        }
+                        if x1 < brackets[j - 1].0 {
+                            brackets[j - 1].0 = x1;
+                        }
+                    }
+                }
+            }
+
+            let index = 2 * k + l as usize;
+            if index > (n - m) as usize {
+                break;
+            }
+            eg[index] = x1;
+        }
     }
     cv[0] = eg[(n - m) as usize];
-    return 0;
+    0
 }
 
 pub(super) fn mtu12(

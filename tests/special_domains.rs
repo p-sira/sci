@@ -679,11 +679,12 @@ fn legendre_public_endpoints_and_nonfinite_inputs() {
 
 #[test]
 fn mathieu_characteristic_values_match_references_across_starting_guesses() {
-    // References: 50-digit Sturm bisection of the DLMF 28.4 Fourier
-    // recurrences truncated at 260 rows. The points cover the small-q series,
-    // the transition region, the large-q expansion and negative q. Rounding in
-    // the recurrence limits the accuracy to about ε·max(1, |λ|, |q|).
-    let cases: [(bool, u32, f64, f64); 17] = [
+    // References: 50- or 75-digit Sturm bisection of the DLMF 28.4 Fourier
+    // recurrences truncated at 260 or 128 rows, respectively. The points cover
+    // the small-q series, the transition region, the large-q expansion and
+    // negative q. Rounding in the recurrence limits the accuracy to about
+    // ε·max(1, |λ|, |q|).
+    let cases: [(bool, u32, f64, f64); 23] = [
         (true, 0, 0.05, -0.001_249_658_399_651_797),
         (true, 0, 1.4, -0.831_453_509_824_812_9),
         (true, 0, 3.0, -2.834_391_889_904_311),
@@ -695,6 +696,12 @@ fn mathieu_characteristic_values_match_references_across_starting_guesses() {
         (false, 2, 4.8, 2.237_510_884_460_266),
         (true, 5, 9.5, 27.385_505_499_708_08),
         (false, 4, 9.5, 17.347_792_774_431_58),
+        (true, 4, 5.0, 17.096_581_684_366_047),
+        (false, 4, 5.0, 16.648_219_937_169_777),
+        (true, 0, 10.0, -13.936_979_956_658_925),
+        (false, 5, 10.0, 26.766_426_360_480_06),
+        (true, 5, -10.0, 26.766_426_360_480_06),
+        (false, 1, 10.0, -13.936_552_479_250_09),
         (true, 8, 100.0, 98.150_393_534_207_4),
         (false, 5, 100.0, -30.950_103_947_238_09),
         (true, 0, -75.0, -132.933_267_467_320_8),
