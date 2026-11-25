@@ -2,38 +2,25 @@
 
 ## 0.3.0
 
-- Compute symmetric tridiagonal eigenpairs directly without materializing and reducing a dense matrix; preserve independent residual checks and the documented result ordering.
+Use this release with `sci-core 0.3` and matching Sci crate releases when exchanging shared types.
 
-- **Breaking:** Remove `basic::ishermitian`; call
-  `basic::issymmetric(&a, atol, rtol)` for real-valued matrices.
-  The same numerical behavior remains available through the canonical name.
-- Compute eigenvalues directly from symmetric tridiagonal and narrow-banded
-  inputs in `eigvalsh_tridiagonal` and `eigvals_banded`, avoiding redundant
-  dense reduction and eigenvector construction. Preserve ordering, scaling,
-  bounds, and finite-result checks; the native 256-element benchmarks improved
-  approximately 2.3×.
-- Remove the direct `sci-special` dependency by embedding the validated fixed
-  16-point Gauss–Legendre rule used by the principal matrix logarithm. Preserve
-  the inverse-scaling limit, quadrature order, public results, and error behavior.
-- Remove find_best_blas_type, get_blas_funcs, get_lapack_funcs and their metadata/handle types. Call numerical functions directly. Remove solve_lyapunov in favor of solve_continuous_lyapunov.
-- Move the mutable SVD factor into pseudoinverse construction instead of cloning it, reuse Leslie-matrix row storage, and remove a duplicate matrix copy before interpolative QR.
-- Adapt numerical matrix inputs directly to faer, removing intermediate shared-row allocations while preserving interoperability and shared result types.
-- Borrow faer views, fixed arrays, and contiguous ndarray storage for compatible operations; retain owned workspaces for scaling and destructive algorithms. Preserve negative strides in solve refinement.
-- Use contiguous-storage triangular substitution for systems up to the existing size limit of 256. Borrow row-major, column-major, and doubly reversed views; reverse the right-hand side in place for negative strides and retain copying for other incompatible layouts.
-- Adapt packed LU factors once and reuse the solve buffer. Scan finite values directly in backend storage, remove discarded matrix copies from balancing, and inline input accessors for cross-crate callers.
-- Assemble packed bands in backend storage and borrow internal matrices between algorithms. Remove temporary Cholesky factor transposes, output submatrix copies, and singular-value vector clones.
-- Add native-storage benchmarks and run all SciPy reference cases through reversed borrowed views that reject intermediate row materialization. Test all triangular flag combinations on asymmetric reversed row-major and column-major storage.
-- Compute symmetric eigenvalues without eigenvectors in `eigvalsh`, `eigvalsh_tridiagonal`, and `eigvals_banded`. Preserve scaling, ascending order, finite-value validation, and existing work limits; results may differ from eigenvector-producing routines by roundoff.
-- Scale owned backend matrices in place, removing a temporary matrix allocation from decompositions and related algorithms while retaining division for very small scales.
-- Transpose directly from logical input entries into shared output rows, removing a temporary backend matrix while preserving strided inputs, empty axes, and IEEE values.
-- Add size-sweep performance benchmarks and independent SciPy regression cases for extreme scales and repeated eigenvalues.
+### Breaking changes
+
+- Move numerical functions into family modules, for example `solve` to `solvers::solve` and `svd` to `decompositions::svd`. See the [migration guide](../../MIGRATING.md).
+- Replace `ishermitian` with `basic::issymmetric(&a, atol, rtol)` for real matrices, and `solve_lyapunov` with `solvers::solve_continuous_lyapunov`.
+- Remove `find_best_blas_type`, `get_blas_funcs`, `get_lapack_funcs`, and their metadata/handle types. Call numerical functions directly; see the migration guide for differences in finite-value checking.
+
+### Improvements
+
+- Speed up symmetric tridiagonal eigenpairs and symmetric or banded eigenvalue-only calculations, with less temporary storage. Results retain ascending order and can differ from eigenvector-producing routines by roundoff.
+- Reduce copying for compatible faer, ndarray, fixed-array, and strided inputs, including reversed views. Improve triangular solves, LU reuse, pseudoinverses, decompositions, and transpose operations.
+- Reduce dependencies: dense linear algebra no longer pulls in `sci-special`.
+- Include the bundled SciPy-derived license notice in the published package.
 
 ## 0.2.0
 
-Changes since the repository tag `v0.1.0`.
-
-- Require `sci-core 0.2` and update Sci dependency requirements to matching releases. Shared error and numerical types are incompatible with those from `sci-core 0.1`.
-- Refine dense `solve` results with compensated product residuals and up to four updates that reuse the LU factors. Preserve explicit singular-system errors and finite-result checks.
+- Upgrade to shared `sci-core 0.2` types. Update cooperating Sci crates together; `sci-core 0.1` types are incompatible.
+- Improve dense `solve` accuracy through iterative refinement while retaining singular-system errors and finite-result checks.
 
 ## 0.1.0
 

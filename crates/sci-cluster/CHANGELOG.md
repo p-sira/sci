@@ -2,24 +2,21 @@
 
 ## 0.3.0
 
-- Build requested hierarchical partitions with union-find snapshots instead of sorting all merge stages; use direct threshold selection for max-cluster cuts and bottom-up leader aggregation. Add independent tied-height and label-order tests.
+Use this release with `sci-core 0.3` and matching Sci crate releases when exchanging shared types.
 
-- Reuse the label buffer during `kmeans2` iterations and compare bounded
-  squared distances for ordinary centroid assignments, falling back to the
-  original `hypot` comparison for extreme values and near ties. Preserve
-  first-centroid tie handling and nonfinite errors; the native `kmeans2`
-  benchmark improved approximately 2.2×.
-- Remove runtime dependencies on `sci-stats` and `sci-spatial` by retaining
-  equivalent bounded population standard deviation and Euclidean condensed
-  distance kernels, with parity tests for numerical edge cases.
-- Remove py_vq and maxRstat aliases; use vq and max_rstat.
-- Update workspace dependencies for the new minor releases.
+### Breaking changes
+
+- Replace `py_vq` with `vq` and `maxRstat` with `max_rstat`.
+
+### Improvements
+
+- Speed up `kmeans2` centroid assignment and reuse iteration storage while preserving first-centroid tie handling.
+- Speed up hierarchical partitioning, maximum-cluster cuts, and leader lookup, including datasets with tied merge heights.
+- Reduce dependencies: clustering no longer pulls in `sci-stats` or `sci-spatial`.
 
 ## 0.2.0
 
-Changes since the repository tag `v0.1.0`.
-
-- Require `sci-core 0.2` and update Sci dependency requirements to matching releases. Shared error and numerical types are incompatible with those from `sci-core 0.1`.
+- Upgrade to shared `sci-core 0.2` types. Update cooperating Sci crates together; `sci-core 0.1` types are incompatible.
 
 ## 0.1.0
 

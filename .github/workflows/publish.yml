@@ -5,10 +5,12 @@ on:
   workflow_dispatch:
     inputs:
       crate:
-        description: Crate to publish
+        description: Workspace or individual crate to publish
         required: true
         type: choice
+        default: workspace
         options:
+          - workspace
           - sci
           - sci-cluster
           - sci-complex
@@ -17,6 +19,7 @@ on:
           - sci-differentiate
           - sci-fft
           - sci-filter
+          - sci-graph
           - sci-integrate
           - sci-interpolate
           - sci-io
@@ -28,12 +31,17 @@ on:
           - sci-special
           - sci-stats
       version:
-        description: "Version to publish (e.g 0.1.0)"
+        description: "Prepared version (sci version for workspace releases)"
         required: true
         type: string
+      dry_run:
+        description: Validate packages without uploading
+        required: true
+        type: boolean
+        default: true
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: sci-publish
@@ -46,20 +54,35 @@ jobs:
       RELEASE_CRATE: ${{ inputs.crate }}
       RELEASE_VERSION: ${{ inputs.version }}
     steps:
-      - name: Validate version
-        shell: python
-        run: |
-          import os
-          import re
-
-          number = r"(?:0|[1-9][0-9]*)"
-          identifier = rf"(?:{number}|[0-9]*[A-Za-z-][0-9A-Za-z-]*)"
-          version = rf"{number}\.{number}\.{number}(?:-{identifier}(?:\.{identifier})*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
-          if not re.fullmatch(version, os.environ["RELEASE_VERSION"]):
-              raise SystemExit("Version must be an explicit SemVer value, e.g. 0.1.0 or 0.2.0-rc.1")
       - uses: actions/checkout@v7
         with:
-          fetch-depth: 0
+          persist-credentials: false
+      - name: Require main for uploads
+        if: ${{ !inputs.dry_run }}
+        run: test "$GITHUB_REF" = refs/heads/main
+      - name: Set up Rust
+        run: |
+          rustup toolchain install stable --profile minimal --component rustfmt
+          rustup default stable
+      - name: Validate prepared package versions
+        shell: python
+        run: |
+          import json
+          import os
+          import subprocess
+
+          metadata = json.loads(subprocess.check_output([
+              "cargo", "metadata", "--no-deps", "--locked", "--format-version", "1"
+          ]))
+          packages = {p["name"]: p["version"] for p in metadata["packages"]}
+          selected = os.environ["RELEASE_CRATE"]
+          name = "sci" if selected == "workspace" else selected
+          expected = os.environ["RELEASE_VERSION"]
+          if packages.get(name) != expected:
+              raise SystemExit(f"{name}: prepared version is {packages.get(name)}, expected {expected}")
+          for crate, version in sorted(packages.items()):
+              if selected == "workspace" or crate == selected:
+                  print(f"{crate} {version}")
       - uses: actions/cache@v6
         with:
           path: |
@@ -70,22 +93,26 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-release-cargo-
 
-      - uses: ./.github/actions/setup-native
       - name: Check formatting
         run: cargo fmt --all -- --check
       - name: Run tests before publishing
         run: cargo test --workspace --locked
-      - name: Configure Git identity
+      - name: Verify workspace packages
+        if: ${{ inputs.dry_run }}
         run: |
-          git config --global user.name 'github-actions'
-          git config --global user.email 'github-actions@github.com'
-      - name: Install cargo-release
-        run: |
-          rustup update stable
-          cargo install cargo-release --locked
-      - name: Publish selected crate
+          if [ "$RELEASE_CRATE" = workspace ]; then
+            cargo publish --workspace --locked --dry-run
+          else
+            cargo publish --package "$RELEASE_CRATE" --locked --dry-run
+          fi
+      - name: Publish prepared packages
+        if: ${{ !inputs.dry_run }}
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: |
           test -n "$CARGO_REGISTRY_TOKEN"
-          cargo release --package "$RELEASE_CRATE" --allow-branch '*' "$RELEASE_VERSION" --no-tag --no-confirm --execute
+          if [ "$RELEASE_CRATE" = workspace ]; then
+            cargo publish --workspace --locked
+          else
+            cargo publish --package "$RELEASE_CRATE" --locked
+          fi

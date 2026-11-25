@@ -12,7 +12,7 @@ repository = "https://github.com/p-sira/sci"
 categories = ["algorithms", "mathematics", "science"]
 keywords = ["linear-algebra", "matrices", "numerics", "scientific-computing", "faer"]
 readme = false
-include = ["/src/**", "/LICENSE"]
+include = ["/src/**", "/LICENSE", "/LICENSES/**"]
 
 [features]
 default = ["faer"]

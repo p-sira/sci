@@ -2,15 +2,19 @@
 
 ## 0.3.0
 
-- Make all finite-difference APIs generic over `Float`, preserving rounded-coordinate stencils, validation, and work limits.
+Use this release with `sci-core 0.3` and matching Sci crate releases when exchanging shared types.
 
-- Update shared Sci dependency requirements to the new minor versions.
+### Added
+
+- Support `f32` and `f64` throughout finite-difference derivatives, gradients, Jacobians, and Hessians. Callbacks evaluate in the selected precision.
+
+### Compatibility
+
+- Explicit generic arguments now include the scalar type, for example `derivative::<f32, _>(...)`. Choose steps and tolerances appropriate to the precision.
 
 ## 0.2.0
 
-Changes since the repository tag `v0.1.0`.
-
-- Require `sci-core 0.2` and update Sci dependency requirements to matching releases. Shared error and numerical types are incompatible with those from `sci-core 0.1`.
+- Upgrade to shared `sci-core 0.2` types. Update cooperating Sci crates together; `sci-core 0.1` types are incompatible.
 
 ## 0.1.0
 
