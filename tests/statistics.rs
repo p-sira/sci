@@ -951,6 +951,10 @@ fn scipy_references() {
                 // Parameter searches have flat objectives: binary64 objective
                 // noise limits position agreement even with tight stopping bounds.
                 let tolerance = match fields[1] {
+                    // Shared error functions eliminate the previous statrs
+                    // approximation error for these normal and Lévy tails.
+                    "ranksums" => 2e-14,
+                    "cdf" | "sf" if fields[6] == "Levy" => 2e-14,
                     "boxcox_normmax" | "yeojohnson_normmax" => 2e-6,
                     "ppcc_max" => 2e-5,
                     // Three-frequency covariance here has condition number
@@ -1312,8 +1316,7 @@ fn levy_identities_and_distribution_interoperability() -> Result<()> {
         let a = sf(levy, x)?;
         let b = sf(inverse_gamma, x)?;
         assert!(
-            // statrs erf and incomplete-gamma use different approximations;
-            // their ~5e-11 discrepancy is within the ordinary fixture tolerance.
+            // The error-function and incomplete-gamma kernels are independent.
             a > 0. && (a - b).abs() <= 2e-10 * b,
             "scale={scale:e}, sf={a:e}, inverse_gamma_sf={b:e}"
         );
@@ -1354,6 +1357,25 @@ fn levy_identities_and_distribution_interoperability() -> Result<()> {
     );
     assert!(pdf(levy, f64::NAN).is_err());
     assert!(ppf(levy, 1.1).is_err());
+    Ok(())
+}
+
+#[test]
+fn shared_normal_and_levy_tails_match_independent_references() -> Result<()> {
+    // Exact inputs from the refreshed SciPy comparison sweep.
+    let d = Distribution::Levy {
+        location: 10.,
+        scale: 0.01,
+    };
+    let x = 10.01483966966967;
+    // Independently evaluated using Python's math.erfc and math.erf.
+    assert!((cdf(d, x)? - 0.4117057856654586).abs() < 2e-15);
+    assert!((sf(d, x)? - 0.5882942143345413).abs() < 2e-15);
+    let first = [0.999, 1.998, 2.997, 3.996];
+    let second = [2., 1., 5., 6.];
+    let r = ranksums(&first, &second, Alternative::TwoSided)?;
+    assert!((r.statistic + 0.8660254037844387).abs() < 2e-15);
+    assert!((r.pvalue - 0.3864762307712327).abs() < 2e-15);
     Ok(())
 }
 

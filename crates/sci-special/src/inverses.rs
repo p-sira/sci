@@ -802,13 +802,83 @@ pub fn ncfdtrinc(dfn: f64, dfd: f64, p: f64, x: f64) -> f64 {
     )
 }
 
+// For t<0, integrate the positive conditional-normal probability against
+// the chi-square density, in u=ln(sqrt(V/df)). The log integrand is concave:
+// df*u - (df/2)*exp(2*u) + log(Phi(-nc-|t|*exp(u))) plus a constant.
+// Center and scale it at its mode so tiny tails do not underflow or suffer
+// from the absolute tolerance of the quadrature.
+fn nct_negative_tail(df: f64, nc: f64, t: f64) -> f64 {
+    let a = df / 2.0;
+    let log_t = (-t).ln();
+    let slope = |u: f64| {
+        let r = (log_t + u).exp();
+        let mills = (2.0 / std::f64::consts::PI).sqrt()
+            / super::erfcx((nc + r) * std::f64::consts::FRAC_1_SQRT_2);
+        -df * (2.0 * u).exp_m1() - r * mills
+    };
+    // The mode lies below zero; at the lower bound both r and exp(2u)
+    // are negligible even at the supported df/nc limits.
+    let mut lo = -log_t.max(0.0) - 20.0;
+    let mut hi = 0.0;
+    for _ in 0..60 {
+        let mid = (lo + hi) * 0.5;
+        if slope(mid) > 0.0 {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    let mode = (lo + hi) * 0.5;
+    let log_r = log_t + mode;
+    let v2 = (2.0 * mode).exp();
+    let peak_cdf = super::log_ndtr(-nc - log_r.exp());
+    let peak = std::f64::consts::LN_2 + a * a.ln() - gammaln(a) + df * mode - a * v2 + peak_cdf;
+    let log_relative = |d: f64| {
+        let delta_v2 = if d.abs() < 0.5 {
+            v2 * (2.0 * d).exp_m1()
+        } else {
+            (2.0 * (mode + d)).exp() - v2
+        };
+        df * d - a * delta_v2 + super::log_ndtr(-nc - (log_r + d).exp()) - peak_cdf
+    };
+    let step = df.sqrt().recip();
+    // Concavity bounds the discarded tails by exponential envelopes. Stop
+    // when each endpoint is at least 40 log units below the peak.
+    let endpoint = |mut d: f64| {
+        for _ in 0..32 {
+            if log_relative(d) < -40.0 {
+                return d;
+            }
+            d *= 2.0;
+        }
+        f64::NAN
+    };
+    let left = endpoint(-step);
+    let right = endpoint(step);
+    if !left.is_finite() || !right.is_finite() {
+        return f64::NAN;
+    }
+    let integrand = |d| log_relative(d).exp();
+    let tol = 2e-12 * step;
+    let area = adaptive_simpson(&integrand, left, 0.0, tol, 24)
+        + adaptive_simpson(&integrand, 0.0, right, tol, 24);
+    (peak + area.ln()).exp()
+}
+
 /// Noncentral Student t CDF E`[Φ(t√(V/df)−nc)]`, V~chi-square(df).
 ///
 /// ## Parameters and domain
 ///
-/// Finite df in `[0.01,10000]`, abs(nc)≤100, and real t. Uses Poisson-weighted incomplete beta series. Cancellation can reduce relative accuracy in extreme tails.
+/// Finite df in `[0.01,10000]`, abs(nc)≤100, and real t. Uses a
+/// Poisson-weighted incomplete beta series; negative-t probabilities below
+/// `1e-6` use positive conditional-normal quadrature to avoid subtraction.
 ///
 /// ## Numerical behavior
+///
+/// The tail quadrature uses 60 mode-bracketing iterations, at most 32
+/// endpoint expansions per side, and adaptive Simpson depth 24.
+/// Extreme-tail relative accuracy is limited by the underlying kernels and
+/// quadrature; no uniform error bound is implied.
 ///
 /// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
@@ -847,7 +917,22 @@ pub fn nctdtr(df: f64, nc: f64, t: f64) -> f64 {
         return super::stdtr(df, t);
     }
     if t < 0.0 {
-        return 1.0 - nctdtr(df, -nc, -t);
+        // When nc is positive, Phi(-nc) bounds this tail from above.
+        // Avoid a costly reflected mixture when the tail is already known
+        // to be small; underflow of that upper bound also implies zero.
+        let upper = ndtr(-nc);
+        if upper == 0.0 {
+            return 0.0;
+        }
+        if upper < 1e-6 {
+            return nct_negative_tail(df, nc, t);
+        }
+        let reflected = 1.0 - nctdtr(df, -nc, -t);
+        return if reflected < 1e-6 {
+            nct_negative_tail(df, nc, t)
+        } else {
+            reflected
+        };
     }
     let x = 1.0 / (1.0 + df / (t * t));
     let b = df / 2.0;

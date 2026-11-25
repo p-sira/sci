@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Improve Lévy probabilities and rank-sum p-values; preserve subnormal two-sided normal p-values.
+
 - Speed up non-sampling statistics with quantile selection, exact rank-pair
   sweeps, fewer redundant allocations and sorting passes, cached hypothesis-test
   tails, and reusable transform likelihood terms. Add matched SciPy benchmarks

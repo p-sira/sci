@@ -115,9 +115,9 @@ pub enum Distribution {
     /// and survival are zero, log density is −∞, and CDF is one. Quantile
     /// endpoints are μ and +∞. NaN arguments and invalid parameters are errors.
     /// Interior quantiles outside the finite range return an evaluation error.
-    /// Evaluation uses statrs 0.19's closed-form Lévy distribution privately;
-    /// its error-function approximations limit ordinary absolute accuracy to about
-    /// 1e-10, and underflow/rounding near the support boundary can lose accuracy.
+    /// Density and quantiles use statrs privately; probability tails use
+    /// Sci's shared error functions. Underflow/rounding near the support
+    /// boundary can lose accuracy.
     ///
     /// ```
     /// let d = sci_stats::distributions::Distribution::Levy { location: 0., scale: 1. };
@@ -341,8 +341,8 @@ fn levy_value(location: f64, scale: f64, x: f64, op: Operation) -> Result<f64> {
         let log_density =
             -0.5 * (2. * std::f64::consts::PI).ln() - 1.5 * log_delta + 0.5 * scale.ln();
         return match observation {
-            Observation::Cdf => Ok(statrs::function::erf::erfc(root)),
-            Observation::Sf => Ok(statrs::function::erf::erf(root)),
+            Observation::Cdf => Ok(crate::special::elementary::erfc(root)),
+            Observation::Sf => Ok(crate::special::elementary::erf(root)),
             Observation::LogDensity => Ok(log_density),
             Observation::Density => match log_density.exp() {
                 value if value.is_finite() => Ok(value),
@@ -351,8 +351,16 @@ fn levy_value(location: f64, scale: f64, x: f64, op: Operation) -> Result<f64> {
         };
     }
     match observation {
-        Observation::Cdf => Ok(standard.cdf(z)),
-        Observation::Sf => Ok(standard.sf(z)),
+        Observation::Cdf => Ok(if z <= 0. {
+            0.
+        } else {
+            crate::special::elementary::erfc(std::f64::consts::FRAC_1_SQRT_2 / z.sqrt())
+        }),
+        Observation::Sf => Ok(if z <= 0. {
+            1.
+        } else {
+            crate::special::elementary::erf(std::f64::consts::FRAC_1_SQRT_2 / z.sqrt())
+        }),
         Observation::LogDensity => Ok(standard.ln_pdf(z) - scale.ln()),
         Observation::Density => match (standard.ln_pdf(z) - scale.ln()).exp() {
             value if value.is_finite() => Ok(value),

@@ -8,6 +8,9 @@
 
 ## Sci-testing 0.3 numerical accuracy follow-up
 
+- Preserve representable subnormal normal-CDF and complementary-error-function tails.
+- Improve noncentral Student-t CDF accuracy in small negative tails.
+
 - Resolve seven finite-input `digammainv` failures caused by oscillating
   binary64 Newton iterates by retaining the minimum-residual iterate and
   detecting the roundoff floor; retain the iteration limit and invalid-domain

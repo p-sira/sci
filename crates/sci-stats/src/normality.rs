@@ -5,14 +5,10 @@ pub(super) fn normal_result(statistic: f64, alternative: Alternative) -> Result<
         f64::NAN
     } else {
         match alternative {
+            // Evaluate the complete probability before rounding. Doubling a
+            // rounded one-sided tail loses odd subnormal values.
             Alternative::TwoSided => {
-                2. * sf(
-                    Distribution::Normal {
-                        mean: 0.,
-                        std_dev: 1.,
-                    },
-                    statistic.abs(),
-                )?
+                crate::special::elementary::erfc(statistic.abs() * std::f64::consts::FRAC_1_SQRT_2)
             }
             Alternative::Less => cdf(
                 Distribution::Normal {
@@ -440,4 +436,33 @@ pub fn shapiro(values: &[f64]) -> Result<TestResult> {
         ));
     }
     Ok(TestResult { statistic, pvalue })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn two_sided_normal_probability_rounds_subnormal_tail_once() -> Result<()> {
+        // In units of 2^-1074, erfc(|z|/sqrt(2)) is approximately
+        // 1.23154 at 38.48, 0.83791 at 38.49, and 0.38776 at 38.51.
+        // Both of the first two round to one unit; the last rounds to zero.
+        for (z, bits) in [(38.48, 1), (38.49, 1), (38.51, 0)] {
+            for statistic in [z, -z] {
+                let result = normal_result(statistic, Alternative::TwoSided)?;
+                assert_eq!(result.statistic, statistic);
+                assert_eq!(result.pvalue.to_bits(), bits);
+            }
+        }
+        assert_eq!(normal_result(0., Alternative::TwoSided)?.pvalue, 1.);
+        for z in [f64::NEG_INFINITY, f64::INFINITY] {
+            assert_eq!(normal_result(z, Alternative::TwoSided)?.pvalue, 0.);
+        }
+        assert!(
+            normal_result(f64::NAN, Alternative::TwoSided)?
+                .pvalue
+                .is_nan()
+        );
+        Ok(())
+    }
 }
