@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+- Improve cosine and correlation distance accuracy for nearly parallel vectors.
+
 - Reuse unit-weight distance inputs without allocating normalization buffers for each cosine/correlation pair; validate against the original weighted formulas.
 
 - Compute directed Hausdorff distances with a prevalidated sequential `hypot`

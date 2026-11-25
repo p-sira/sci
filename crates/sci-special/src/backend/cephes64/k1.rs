@@ -1,41 +1,41 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     k1.c
-*
-*     Modified Bessel function, third kind, order one
-*
-*
-*
-* SYNOPSIS:
-*
-* double x, y, k1();
-*
-* y = k1( x );
-*
-*
-*
-* DESCRIPTION:
-*
-* Computes the modified Bessel function of the third kind
-* of order one of the argument.
-*
-* The range is partitioned into the two intervals [0,2] and
-* (2, infinity).  Chebyshev polynomial expansions are employed
-* in each interval.
-*
-*
-*
-* ACCURACY:
-*
-*                      Relative error:
-* arithmetic   domain     # trials      peak         rms
-*    IEEE      0, 30       30000       1.2e-15     1.6e-16
-*
-* ERROR MESSAGES:
-*
-*   message         condition      value returned
-* k1 domain          x <= 0          INFINITY
-*
-*/
+ *
+ *     Modified Bessel function, third kind, order one
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double x, y, k1();
+ *
+ * y = k1( x );
+ *
+ *
+ *
+ * DESCRIPTION:
+ *
+ * Computes the modified Bessel function of the third kind
+ * of order one of the argument.
+ *
+ * The range is partitioned into the two intervals [0,2] and
+ * (2, infinity).  Chebyshev polynomial expansions are employed
+ * in each interval.
+ *
+ *
+ *
+ * ACCURACY:
+ *
+ *                      Relative error:
+ * arithmetic   domain     # trials      peak         rms
+ *    IEEE      0, 30       30000       1.2e-15     1.6e-16
+ *
+ * ERROR MESSAGES:
+ *
+ *   message         condition      value returned
+ * k1 domain          x <= 0          INFINITY
+ *
+ */
 /*							k1e.c
  *
  *	Modified Bessel function, third kind, order one,
@@ -70,9 +70,9 @@
  */
 
 /*
-* Cephes Math Library Release 2.8:  June, 2000
-* Copyright 1984, 1987, 2000 by Stephen L. Moshier
-*/
+ * Cephes Math Library Release 2.8:  June, 2000
+ * Copyright 1984, 1987, 2000 by Stephen L. Moshier
+ */
 
 #![allow(clippy::excessive_precision)]
 
@@ -80,10 +80,10 @@
 use sci_core::Float;
 
 /* Chebyshev coefficients for x(K1(x) - log(x/2) I1(x))
-* in the interval [0,2].
-*
-* lim(x->0){ x(K1(x) - log(x/2) I1(x)) } = 1.
-*/
+ * in the interval [0,2].
+ *
+ * lim(x->0){ x(K1(x) - log(x/2) I1(x)) } = 1.
+ */
 
 const A: [f64; 11] = [
     -7.02386347938628759343E-18,
@@ -100,10 +100,10 @@ const A: [f64; 11] = [
 ];
 
 /* Chebyshev coefficients for exp(x) sqrt(x) K1(x)
-* in the interval [2,infinity].
-*
-* lim(x->inf){ exp(x) sqrt(x) K1(x) } = sqrt(pi/2).
-*/
+ * in the interval [2,infinity].
+ *
+ * lim(x->inf){ exp(x) sqrt(x) K1(x) } = sqrt(pi/2).
+ */
 const B: [f64; 25] = [
     -5.75674448366501715755E-18,
     1.79405087314755922667E-17,

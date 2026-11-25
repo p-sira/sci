@@ -1,59 +1,59 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     shichi.c
-*
-*     Hyperbolic sine and cosine integrals
-*
-*
-*
-* SYNOPSIS:
-*
-* double x, Chi, Shi, shichi();
-*
-* shichi( x, &Chi, &Shi );
-*
-*
-* DESCRIPTION:
-*
-* Approximates the integrals
-*
-*                            x
-*                            -
-*                           | |   cosh t - 1
-*   Chi(x) = eul + ln x +   |    -----------  dt,
-*                         | |          t
-*                          -
-*                          0
-*
-*               x
-*               -
-*              | |  sinh t
-*   Shi(x) =   |    ------  dt
-*            | |       t
-*             -
-*             0
-*
-* where eul = 0.57721566490153286061 is Euler's constant.
-* The integrals are evaluated by power series for x < 8
-* and by Chebyshev expansions for x between 8 and 88.
-* For large x, both functions approach exp(x)/2x.
-* Arguments greater than 88 in magnitude return INFINITY.
-*
-*
-* ACCURACY:
-*
-* Test interval 0 to 88.
-*                      Relative error:
-* arithmetic   function  # trials      peak         rms
-*    IEEE         Shi      30000       6.9e-16     1.6e-16
-*        Absolute error, except relative when |Chi| > 1:
-*    IEEE         Chi      30000       8.4e-16     1.4e-16
-*/
+ *
+ *     Hyperbolic sine and cosine integrals
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double x, Chi, Shi, shichi();
+ *
+ * shichi( x, &Chi, &Shi );
+ *
+ *
+ * DESCRIPTION:
+ *
+ * Approximates the integrals
+ *
+ *                            x
+ *                            -
+ *                           | |   cosh t - 1
+ *   Chi(x) = eul + ln x +   |    -----------  dt,
+ *                         | |          t
+ *                          -
+ *                          0
+ *
+ *               x
+ *               -
+ *              | |  sinh t
+ *   Shi(x) =   |    ------  dt
+ *            | |       t
+ *             -
+ *             0
+ *
+ * where eul = 0.57721566490153286061 is Euler's constant.
+ * The integrals are evaluated by power series for x < 8
+ * and by Chebyshev expansions for x between 8 and 88.
+ * For large x, both functions approach exp(x)/2x.
+ * Arguments greater than 88 in magnitude return INFINITY.
+ *
+ *
+ * ACCURACY:
+ *
+ * Test interval 0 to 88.
+ *                      Relative error:
+ * arithmetic   function  # trials      peak         rms
+ *    IEEE         Shi      30000       6.9e-16     1.6e-16
+ *        Absolute error, except relative when |Chi| > 1:
+ *    IEEE         Chi      30000       8.4e-16     1.4e-16
+ */
 
 /*
-* Cephes Math Library Release 2.0:  April, 1987
-* Copyright 1984, 1987 by Stephen L. Moshier
-* Direct inquiries to 30 Frost Street, Cambridge, MA 02140
-*/
+ * Cephes Math Library Release 2.0:  April, 1987
+ * Copyright 1984, 1987 by Stephen L. Moshier
+ * Direct inquiries to 30 Frost Street, Cambridge, MA 02140
+ */
 
 #![allow(clippy::excessive_precision)]
 
@@ -262,10 +262,10 @@ pub fn shichi(x: f64) -> (f64, f64) {
 }
 
 /*
-* Evaluate 3F0(a1, a2, a3; z)
-*
-* The series is only asymptotic, so this requires z large enough.
-*/
+ * Evaluate 3F0(a1, a2, a3; z)
+ *
+ * The series is only asymptotic, so this requires z large enough.
+ */
 fn hyp3f0(a1: f64, a2: f64, a3: f64, z: f64) -> f64 {
     let m = z.powf(-1.0 / 3.0);
     let maxiter = core::cmp::min(m as isize, 50);

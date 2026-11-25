@@ -48,3 +48,45 @@ fn scalar_weighted_correlation_keeps_centering_and_scale_invariance() {
             .is_nan()
     );
 }
+
+#[test]
+fn nearly_parallel_distances_retain_small_nonzero_values() {
+    // Independent 150-digit sci-testing references for the cosine cases
+    // expanded-0014, -0029, -0044 and -0059, evaluated on binary64 inputs.
+    for (n, expected) in [
+        (2, 7.999_999_870_760_465e-18),
+        (3, 3.316_326_485_564_879_3e-18),
+        (8, 2.438_965_752_506_786e-19),
+        (32, 4.370_247_269_479_72e-21),
+    ] {
+        let u: Vec<_> = (1..=n).map(f64::from).collect();
+        let mut v = u.clone();
+        v[0] = 1.000_000_01;
+        let d = distance::cosine(&u, &v, None).unwrap();
+        assert!((d / expected - 1.0).abs() < 2e-6, "n={n}: {d:e}");
+        assert_eq!(distance::cosine(&u, &u, None).unwrap(), 0.0);
+        let pair = vec![u.clone(), v.clone()];
+        assert_eq!(distance::pdist(&pair, Metric::Cosine).unwrap(), vec![d]);
+        assert_eq!(
+            distance::cdist(&[u], &[v], Metric::Cosine).unwrap(),
+            vec![vec![d]]
+        );
+    }
+
+    let u = [1.0, 2.0, 3.0];
+    let v = [1.000_000_01, 2.0, 3.0];
+    let w = [1.0, 0.25, 0.5];
+    // 100-digit mpmath evaluation of the weighted unit-vector identity.
+    for (centered, expected) in [
+        (false, 6.508_875_640_502_654e-18),
+        (true, 1.939_058_168_587_151_4e-18),
+    ] {
+        let d = distance::correlation(&u, &v, Some(&w), centered).unwrap();
+        assert!((d / expected - 1.0).abs() < 2e-6, "{centered}: {d:e}");
+    }
+    assert!(
+        distance::correlation(&[1.0; 3], &v, Some(&w), true)
+            .unwrap()
+            .is_nan()
+    );
+}

@@ -1,9 +1,9 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*
-* Cephes Math Library Release 2.0:  April, 1987
-* Copyright 1985, 1987 by Stephen L. Moshier
-* Direct inquiries to 30 Frost Street, Cambridge, MA 02140
-*/
+ * Cephes Math Library Release 2.0:  April, 1987
+ * Copyright 1985, 1987 by Stephen L. Moshier
+ * Direct inquiries to 30 Frost Street, Cambridge, MA 02140
+ */
 
 #![allow(clippy::excessive_precision)]
 
@@ -11,8 +11,8 @@
 use sci_core::Float;
 
 /* Chebyshev coefficients for reciprocal Gamma function
-* in interval 0 to 1.  Function is 1/(x Gamma(x)) - 1
-*/
+ * in interval 0 to 1.  Function is 1/(x Gamma(x)) - 1
+ */
 
 const R: [f64; 16] = [
     3.13173458231230000000E-17,

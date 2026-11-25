@@ -1,15 +1,15 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /* Cephes Math Library Release 1.1:  March, 1985
-* Copyright 1985 by Stephen L. Moshier
-* Direct inquiries to 30 Frost Street, Cambridge, MA 02140 */
+ * Copyright 1985 by Stephen L. Moshier
+ * Direct inquiries to 30 Frost Street, Cambridge, MA 02140 */
 
 /* Sources
-* [1] NIST, "The Digital Library of Mathematical Functions", dlmf.nist.gov
-*/
+ * [1] NIST, "The Digital Library of Mathematical Functions", dlmf.nist.gov
+ */
 
 /* Scipy changes:
-* - 09-10-2016: improved asymptotic expansion for large n
-*/
+ * - 09-10-2016: improved asymptotic expansion for large n
+ */
 
 #![allow(clippy::excessive_precision)]
 

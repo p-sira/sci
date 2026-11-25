@@ -1,65 +1,65 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     zeta.c
-*
-*     Riemann zeta function of two arguments
-*
-*
-*
-* SYNOPSIS:
-*
-* double x, q, y, zeta();
-*
-* y = zeta( x, q );
-*
-*
-*
-* DESCRIPTION:
-*
-*
-*
-*                 inf.
-*                  -        -x
-*   zeta(x,q)  =   >   (k+q)
-*                  -
-*                 k=0
-*
-* where x > 1 and q is not a negative integer or zero.
-* The Euler-Maclaurin summation formula is used to obtain
-* the expansion
-*
-*                n
-*                -       -x
-* zeta(x,q)  =   >  (k+q)
-*                -
-*               k=1
-*
-*           1-x                 inf.  B   x(x+1)...(x+2j)
-*      (n+q)           1         -     2j
-*  +  ---------  -  -------  +   >    --------------------
-*        x-1              x      -                   x+2j+1
-*                   2(n+q)      j=1       (2j)! (n+q)
-*
-* where the B2j are Bernoulli numbers.  Note that (see zetac.c)
-* zeta(x,1) = zetac(x) + 1.
-*
-*
-*
-* ACCURACY:
-*
-*
-*
-* REFERENCE:
-*
-* Gradshteyn, I. S., and I. M. Ryzhik, Tables of Integrals,
-* Series, and Products, p. 1073; Academic Press, 1980.
-*
-*/
+ *
+ *     Riemann zeta function of two arguments
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double x, q, y, zeta();
+ *
+ * y = zeta( x, q );
+ *
+ *
+ *
+ * DESCRIPTION:
+ *
+ *
+ *
+ *                 inf.
+ *                  -        -x
+ *   zeta(x,q)  =   >   (k+q)
+ *                  -
+ *                 k=0
+ *
+ * where x > 1 and q is not a negative integer or zero.
+ * The Euler-Maclaurin summation formula is used to obtain
+ * the expansion
+ *
+ *                n
+ *                -       -x
+ * zeta(x,q)  =   >  (k+q)
+ *                -
+ *               k=1
+ *
+ *           1-x                 inf.  B   x(x+1)...(x+2j)
+ *      (n+q)           1         -     2j
+ *  +  ---------  -  -------  +   >    --------------------
+ *        x-1              x      -                   x+2j+1
+ *                   2(n+q)      j=1       (2j)! (n+q)
+ *
+ * where the B2j are Bernoulli numbers.  Note that (see zetac.c)
+ * zeta(x,1) = zetac(x) + 1.
+ *
+ *
+ *
+ * ACCURACY:
+ *
+ *
+ *
+ * REFERENCE:
+ *
+ * Gradshteyn, I. S., and I. M. Ryzhik, Tables of Integrals,
+ * Series, and Products, p. 1073; Academic Press, 1980.
+ *
+ */
 
 /*
-* Cephes Math Library Release 2.0:  April, 1987
-* Copyright 1984, 1987 by Stephen L. Moshier
-* Direct inquiries to 30 Frost Street, Cambridge, MA 02140
-*/
+ * Cephes Math Library Release 2.0:  April, 1987
+ * Copyright 1984, 1987 by Stephen L. Moshier
+ * Direct inquiries to 30 Frost Street, Cambridge, MA 02140
+ */
 
 #![allow(clippy::excessive_precision)]
 
@@ -69,10 +69,10 @@ use sci_core::Float;
 use crate::backend::cephes64::consts::MACHEP;
 
 /* Expansion coefficients
-* for Euler-Maclaurin summation formula
-* (2k)! / B2k
-* where B2k are Bernoulli numbers
-*/
+ * for Euler-Maclaurin summation formula
+ * (2k)! / B2k
+ * where B2k are Bernoulli numbers
+ */
 const A: [f64; 12] = [
     12.0,
     -720.0,

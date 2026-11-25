@@ -1,8 +1,8 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*
-* Cephes Math Library Release 2.8:  June, 2000
-* Copyright 1984, 1987, 1989, 2000 by Stephen L. Moshier
-*/
+ * Cephes Math Library Release 2.8:  June, 2000
+ * Copyright 1984, 1987, 1989, 2000 by Stephen L. Moshier
+ */
 
 #![allow(clippy::excessive_precision)]
 

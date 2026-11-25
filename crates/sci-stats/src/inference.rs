@@ -1197,7 +1197,8 @@ pub fn friedmanchisquare(groups: &[&[f64]]) -> Result<TestResult> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses binary64 formulas with statrs tail probabilities. Extreme or nearly constant data can lose accuracy.
+/// Uses binary64 formulas with Sci's shared standard-normal tail probabilities.
+/// Extreme or nearly constant data can lose accuracy.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
@@ -1223,11 +1224,5 @@ pub fn ranksums(first: &[f64], second: &[f64], alternative: Alternative) -> Resu
     let n2 = second.len() as f64;
     let statistic = (r[..first.len()].iter().sum::<f64>() - n1 * (n1 + n2 + 1.) / 2.)
         / (n1 * n2 * (n1 + n2 + 1.) / 12.).sqrt();
-    let d = normal(0., 1.)?;
-    let pvalue = match alternative {
-        Alternative::TwoSided => 2. * d.sf(statistic.abs()),
-        Alternative::Less => d.cdf(statistic),
-        Alternative::Greater => d.sf(statistic),
-    };
-    Ok(TestResult { statistic, pvalue })
+    normality::normal_result(statistic, alternative)
 }

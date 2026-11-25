@@ -1,19 +1,19 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     unity.c
-*
-* Relative error approximations for function arguments near
-* unity.
-*
-*    log1p(x) = log(1+x)
-*    expm1(x) = exp(x) - 1
-*    cosm1(x) = cos(x) - 1
-*    lgam1p(x) = lgam(1+x)
-*
-*/
+ *
+ * Relative error approximations for function arguments near
+ * unity.
+ *
+ *    log1p(x) = log(1+x)
+ *    expm1(x) = exp(x) - 1
+ *    cosm1(x) = cos(x) - 1
+ *    lgam1p(x) = lgam(1+x)
+ *
+ */
 
 /* Scipy changes:
-* - 06-10-2016: added lgam1p
-*/
+ * - 06-10-2016: added lgam1p
+ */
 
 #![allow(clippy::excessive_precision)]
 
@@ -30,9 +30,9 @@ const MAXITER: isize = 500;
 /* log1p(x) = log(1 + x)  */
 
 /* Coefficients for log(1+x) = x - x**2/2 + x**3 P(x)/Q(x)
-* 1/sqrt(2) <= x < sqrt(2)
-* Theoretical peak relative error = 2.32e-20
-*/
+ * 1/sqrt(2) <= x < sqrt(2)
+ * Theoretical peak relative error = 2.32e-20
+ */
 const LP: [f64; 7] = [
     4.5270000862445199635215E-5,
     4.9854102823193375972212E-1,
@@ -88,8 +88,8 @@ pub fn log1pmx(x: f64) -> f64 {
 /* expm1(x) = exp(x) - 1  */
 
 /*  e^x =  1 + 2x P(x^2)/( Q(x^2) - P(x^2) )
-* -0.5 <= x <= 0.5
-*/
+ * -0.5 <= x <= 0.5
+ */
 
 const EP: [f64; 3] = [
     1.2617719307481059087798E-4,

@@ -1,50 +1,50 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     beta.c
-*
-*     Beta function
-*
-*
-*
-* SYNOPSIS:
-*
-* double a, b, y, beta();
-*
-* y = beta( a, b );
-*
-*
-*
-* DESCRIPTION:
-*
-*                   -     -
-*                  | (a) | (b)
-* beta( a, b )  =  -----------.
-*                     -
-*                    | (a+b)
-*
-* For large arguments the logarithm of the function is
-* evaluated using lgam(), then exponentiated.
-*
-*
-*
-* ACCURACY:
-*
-*                      Relative error:
-* arithmetic   domain     # trials      peak         rms
-*    IEEE       0,30       30000       8.1e-14     1.1e-14
-*
-* ERROR MESSAGES:
-*
-*   message         condition          value returned
-* beta overflow    log(beta) > MAXLOG       0.0
-*                  a or b <0 integer        0.0
-*
-*/
+ *
+ *     Beta function
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double a, b, y, beta();
+ *
+ * y = beta( a, b );
+ *
+ *
+ *
+ * DESCRIPTION:
+ *
+ *                   -     -
+ *                  | (a) | (b)
+ * beta( a, b )  =  -----------.
+ *                     -
+ *                    | (a+b)
+ *
+ * For large arguments the logarithm of the function is
+ * evaluated using lgam(), then exponentiated.
+ *
+ *
+ *
+ * ACCURACY:
+ *
+ *                      Relative error:
+ * arithmetic   domain     # trials      peak         rms
+ *    IEEE       0,30       30000       8.1e-14     1.1e-14
+ *
+ * ERROR MESSAGES:
+ *
+ *   message         condition          value returned
+ * beta overflow    log(beta) > MAXLOG       0.0
+ *                  a or b <0 integer        0.0
+ *
+ */
 
 /*
-* Cephes Math Library Release 2.0:  April, 1987
-* Copyright 1984, 1987 by Stephen L. Moshier
-* Direct inquiries to 30 Frost Street, Cambridge, MA 02140
-*/
+ * Cephes Math Library Release 2.0:  April, 1987
+ * Copyright 1984, 1987 by Stephen L. Moshier
+ * Direct inquiries to 30 Frost Street, Cambridge, MA 02140
+ */
 
 #![allow(clippy::excessive_precision)]
 
@@ -251,8 +251,8 @@ pub fn lbeta(a: f64, b: f64) -> f64 {
 }
 
 /*
-* Asymptotic expansion for  ln(|B(a, b)|) for a > ASYMP_FACTOR*max(|b|, 1).
-*/
+ * Asymptotic expansion for  ln(|B(a, b)|) for a > ASYMP_FACTOR*max(|b|, 1).
+ */
 fn lbeta_asymp(a: f64, b: f64, sgn: &mut isize) -> f64 {
     let mut r = lgam_sgn(b, sgn);
     r -= b * a.ln();
@@ -263,8 +263,8 @@ fn lbeta_asymp(a: f64, b: f64, sgn: &mut isize) -> f64 {
 }
 
 /*
-* Special case for a negative integer argument
-*/
+ * Special case for a negative integer argument
+ */
 
 fn beta_negint(a: isize, b: f64) -> f64 {
     if b == (b as isize) as f64 && (1 - a) as f64 - b > 0.0 {

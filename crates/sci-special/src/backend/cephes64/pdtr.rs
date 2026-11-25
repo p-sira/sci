@@ -2,51 +2,51 @@
 use sci_core::Float;
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*  pdtri()
-*
-*  Inverse Poisson distribution
-*
-*
-*
-* SYNOPSIS:
-*
-* int k;
-* double m, y, pdtr();
-*
-* m = pdtri( k, y );
-*
-*
-*
-*
-* DESCRIPTION:
-*
-* Finds the Poisson variable x such that the integral
-* from 0 to x of the Poisson density is equal to the
-* given probability y.
-*
-* This is accomplished using the inverse Gamma integral
-* function and the relation
-*
-*    m = igamci( k+1, y ).
-*
-*
-*
-*
-* ACCURACY:
-*
-* See igami.c.
-*
-* ERROR MESSAGES:
-*
-*   message         condition      value returned
-* pdtri domain    y < 0 or y >= 1       0.0
-*                     k < 0
-*
-*/
+ *
+ *  Inverse Poisson distribution
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * int k;
+ * double m, y, pdtr();
+ *
+ * m = pdtri( k, y );
+ *
+ *
+ *
+ *
+ * DESCRIPTION:
+ *
+ * Finds the Poisson variable x such that the integral
+ * from 0 to x of the Poisson density is equal to the
+ * given probability y.
+ *
+ * This is accomplished using the inverse Gamma integral
+ * function and the relation
+ *
+ *    m = igamci( k+1, y ).
+ *
+ *
+ *
+ *
+ * ACCURACY:
+ *
+ * See igami.c.
+ *
+ * ERROR MESSAGES:
+ *
+ *   message         condition      value returned
+ * pdtri domain    y < 0 or y >= 1       0.0
+ *                     k < 0
+ *
+ */
 
 /*
-* Cephes Math Library Release 2.3:  March, 1995
-* Copyright 1984, 1987, 1995 by Stephen L. Moshier
-*/
+ * Cephes Math Library Release 2.3:  March, 1995
+ * Copyright 1984, 1987, 1995 by Stephen L. Moshier
+ */
 
 use crate::backend::cephes64::igam::{igam, igamc};
 use crate::backend::cephes64::igami::igamci;

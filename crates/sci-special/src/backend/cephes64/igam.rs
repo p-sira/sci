@@ -1,67 +1,67 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*							igamc()
-*
-*	Complemented incomplete Gamma integral
-*
-*
-*
-* SYNOPSIS:
-*
-* double a, x, y, igamc();
-*
-* y = igamc( a, x );
-*
-* DESCRIPTION:
-*
-* The function is defined by
-*
-*
-*  igamc(a,x)   =   1 - igam(a,x)
-*
-*                            inf.
-*                              -
-*                     1       | |  -t  a-1
-*               =   -----     |   e   t   dt.
-*                    -      | |
-*                   | (a)    -
-*                             x
-*
-*
-* In this implementation both arguments must be positive.
-* The integral is evaluated by either a power series or
-* continued fraction expansion, depending on the relative
-* values of a and x.
-*
-* ACCURACY:
-*
-* Tested at random a, x.
-*                a         x                      Relative error:
-* arithmetic   domain   domain     # trials      peak         rms
-*    IEEE     0.5,100   0,100      200000       1.9e-14     1.7e-15
-*    IEEE     0.01,0.5  0,100      200000       1.4e-13     1.6e-15
-*/
+ *
+ *	Complemented incomplete Gamma integral
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double a, x, y, igamc();
+ *
+ * y = igamc( a, x );
+ *
+ * DESCRIPTION:
+ *
+ * The function is defined by
+ *
+ *
+ *  igamc(a,x)   =   1 - igam(a,x)
+ *
+ *                            inf.
+ *                              -
+ *                     1       | |  -t  a-1
+ *               =   -----     |   e   t   dt.
+ *                    -      | |
+ *                   | (a)    -
+ *                             x
+ *
+ *
+ * In this implementation both arguments must be positive.
+ * The integral is evaluated by either a power series or
+ * continued fraction expansion, depending on the relative
+ * values of a and x.
+ *
+ * ACCURACY:
+ *
+ * Tested at random a, x.
+ *                a         x                      Relative error:
+ * arithmetic   domain   domain     # trials      peak         rms
+ *    IEEE     0.5,100   0,100      200000       1.9e-14     1.7e-15
+ *    IEEE     0.01,0.5  0,100      200000       1.4e-13     1.6e-15
+ */
 
 /*
-* Cephes Math Library Release 2.0:  April, 1987
-* Copyright 1985, 1987 by Stephen L. Moshier
-* Direct inquiries to 30 Frost Street, Cambridge, MA 02140
-*/
+ * Cephes Math Library Release 2.0:  April, 1987
+ * Copyright 1985, 1987 by Stephen L. Moshier
+ * Direct inquiries to 30 Frost Street, Cambridge, MA 02140
+ */
 
 /* Sources
-* [1] "The Digital Library of Mathematical Functions", dlmf.nist.gov
-* [2] Maddock et. al., "Incomplete Gamma Functions",
-*     https://www.boost.org/doc/libs/1_61_0/libs/math/doc/html/math_toolkit/sf_gamma/igamma.html
-*/
+ * [1] "The Digital Library of Mathematical Functions", dlmf.nist.gov
+ * [2] Maddock et. al., "Incomplete Gamma Functions",
+ *     https://www.boost.org/doc/libs/1_61_0/libs/math/doc/html/math_toolkit/sf_gamma/igamma.html
+ */
 
 /* Scipy changes:
-* - 05-01-2016: added asymptotic expansion for igam to improve the
-*   a ~ x regime.
-* - 06-19-2016: additional series expansion added for igamc to
-*   improve accuracy at small arguments.
-* - 06-24-2016: better choice of domain for the asymptotic series;
-*   improvements in accuracy for the asymptotic series when a and x
-*   are very close.
-*/
+ * - 05-01-2016: added asymptotic expansion for igam to improve the
+ *   a ~ x regime.
+ * - 06-19-2016: additional series expansion added for igamc to
+ *   improve accuracy at small arguments.
+ * - 06-24-2016: better choice of domain for the asymptotic series;
+ *   improvements in accuracy for the asymptotic series when a and x
+ *   are very close.
+ */
 
 #![allow(clippy::excessive_precision)]
 
@@ -889,12 +889,12 @@ fn in_asymptotic_regime(a: f64, x: f64) -> bool {
 }
 
 /* Compute
-*
-* x^a * exp(-x) / gamma(a)
-*
-* corrected from (15) and (16) in [2] by replacing exp(x - a) with
-* exp(a - x).
-*/
+ *
+ * x^a * exp(-x) / gamma(a)
+ *
+ * corrected from (15) and (16) in [2] by replacing exp(x - a) with
+ * exp(a - x).
+ */
 pub fn igam_fac(a: f64, x: f64) -> f64 {
     if (a - x).abs() > 0.4 * a.abs() {
         let ax = a * x.ln() - x - lgam(a);
@@ -1003,8 +1003,8 @@ fn igam_series_fac(a: f64, x: f64) -> (f64, f64) {
 }
 
 /* Compute igamc using DLMF 8.7.3. This is related to the series in
-* igam_series but extra care is taken to avoid cancellation.
-*/
+ * igam_series but extra care is taken to avoid cancellation.
+ */
 fn igamc_series(a: f64, x: f64) -> f64 {
     let mut fac: f64 = 1.0;
     let mut sum: f64 = 0.0;

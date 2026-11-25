@@ -1,8 +1,8 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*
-* Cephes Math Library Release 2.8:  June, 2000
-* Copyright 1984, 1987, 1989, 1992, 2000 by Stephen L. Moshier
-*/
+ * Cephes Math Library Release 2.8:  June, 2000
+ * Copyright 1984, 1987, 1989, 1992, 2000 by Stephen L. Moshier
+ */
 
 #![allow(clippy::excessive_precision)]
 
@@ -226,8 +226,8 @@ pub fn jv(n: f64, x: f64) -> f64 {
 }
 
 /* Reduce the order by backward recurrence.
-* AMS55 #9.1.27 and 9.1.73.
-*/
+ * AMS55 #9.1.27 and 9.1.73.
+ */
 
 fn recur(n: &mut f64, x: f64, newn: &mut f64, cancel: isize) -> f64 {
     /* Continued fraction for Jn(x)/Jn-1(x)
@@ -361,8 +361,8 @@ fn recur(n: &mut f64, x: f64, newn: &mut f64, cancel: isize) -> f64 {
 }
 
 /* Ascending power series for Jv(x).
-* AMS55 #9.1.10.
-*/
+ * AMS55 #9.1.10.
+ */
 
 fn jvs(n: f64, x: f64) -> f64 {
     jvs_scaled(n, x, 1.0)
@@ -413,9 +413,9 @@ fn jvs_scaled(n: f64, x: f64, scale: f64) -> f64 {
 }
 
 /* Hankel's asymptotic expansion
-* for large x.
-* AMS55 #9.2.5.
-*/
+ * for large x.
+ * AMS55 #9.2.5.
+ */
 
 pub fn hankel(n: f64, x: f64) -> f64 {
     let m = 4.0 * n * n;
@@ -462,8 +462,8 @@ pub fn hankel(n: f64, x: f64) -> f64 {
 }
 
 /* Asymptotic expansion for large n.
-* AMS55 #9.3.35.
-*/
+ * AMS55 #9.3.35.
+ */
 
 const LAMBDA: [f64; 11] = [
     1.0,
@@ -673,9 +673,9 @@ fn jnx(n: f64, x: f64) -> f64 {
 }
 
 /* Asymptotic expansion for transition region,
-* n large and x close to n.
-* AMS55 #9.3.23.
-*/
+ * n large and x close to n.
+ * AMS55 #9.3.23.
+ */
 
 const PF2: [f64; 2] = [-9.0000000000000000000e-2, 8.5714285714285714286e-2];
 

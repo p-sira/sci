@@ -1,10 +1,10 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*
-* (C) Copyright John Maddock 2006.
-* Use, modification and distribution are subject to the
-* Boost Software License, Version 1.0. (See accompanying file
-*  LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
-*/
+ * (C) Copyright John Maddock 2006.
+ * Use, modification and distribution are subject to the
+ * Boost Software License, Version 1.0. (See accompanying file
+ *  LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
 
 #![allow(clippy::excessive_precision)]
 

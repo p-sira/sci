@@ -267,7 +267,24 @@ fn calculate_validated(u: &[f64], v: &[f64], metric: Metric<'_>, w: &[f64]) -> R
                 uu += w * a * a;
                 vv += w * b * b;
             }
-            (1.0 - uv / (uu.sqrt() * vv.sqrt())).clamp(0.0, 2.0)
+            let (nu, nv) = (uu.sqrt(), vv.sqrt());
+            let distance = 1.0 - uv / (nu * nv);
+            if distance < 0.125 {
+                // Near parallel vectors, subtracting the cosine from one
+                // loses the small distance. Half the squared distance between
+                // the weighted unit vectors is algebraically equivalent.
+                let mut squared = 0.0;
+                for ((&a, &b), &w) in u.iter().zip(v).zip(wn.iter()) {
+                    if w == 0.0 {
+                        continue;
+                    }
+                    let delta = (a / su - mu) / nu - (b / sv - mv) / nv;
+                    squared += w * delta * delta;
+                }
+                (0.5 * squared).clamp(0.0, 2.0)
+            } else {
+                distance.clamp(0.0, 2.0)
+            }
         }
         Metric::Jaccard
         | Metric::Dice

@@ -80,3 +80,42 @@ fn noncentral_t_domain_and_endpoint_behavior() {
     assert_eq!(nctdtr(3.0, 0.0, 0.0), 0.5);
     assert!((nctdtr(3.0, 0.5, 0.0) - 0.3085375387259869).abs() < 2e-15);
 }
+
+#[test]
+fn noncentral_t_negative_tail_matches_conditional_normal_integral() {
+    // Independent mpmath 70–85 decimal digit integration of
+    // Phi(t*v-nc) * 2*(df/2)^(df/2)/Gamma(df/2) * v^(df-1)
+    // * exp(-df*v*v/2), v>0. Scale the tiny integrands before integrating.
+    // The previous reflected series loses relative precision, or rounds
+    // completely to zero, in these tails.
+    let cases = [
+        (30.0, 5.0, -2.0, 6.0666455733842516e-12),
+        (30.0, 5.0, -4.0, 2.536349807354981e-16),
+        (30.0, 10.0, -2.0, 1.1355654978663298e-31),
+        (30.0, 20.0, -2.0, 2.9829912488370644e-102),
+        (10_000.0, 30.0, -2.0, 6.049442453792325e-225),
+        (0.01, 5.0, -1e100, 2.7377800279997187e-8),
+        (3.0, -5.0, -1000.0, 1.9347118900665458e-7),
+    ];
+    for (df, nc, t, expected) in cases {
+        let actual = nctdtr(df, nc, t);
+        assert!(
+            (actual / expected - 1.0).abs() < 2e-10,
+            "nctdtr({df}, {nc}, {t}) = {actual:e}, expected {expected:e}"
+        );
+    }
+    assert_eq!(nctdtr(0.01, 40.0, -2.0), 0.0);
+}
+
+#[test]
+fn noncentral_t_negative_tail_transition() {
+    // Independent conditional-normal integrals immediately on either side
+    // of the quadrature threshold, where the reflected branch remains safe.
+    for (t, expected) in [
+        (-5.141358682658483, 1.0099999999998825e-6),
+        (-5.148029306436635, 9.900000000000286e-7),
+    ] {
+        let actual = nctdtr(30.0, 0.5, t);
+        assert!((actual / expected - 1.0).abs() < 3e-9);
+    }
+}

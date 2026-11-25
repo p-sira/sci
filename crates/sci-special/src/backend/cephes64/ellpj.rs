@@ -1,13 +1,13 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*
-* Cephes Math Library Release 2.0:  April, 1987
-* Copyright 1984, 1987 by Stephen L. Moshier
-* Direct inquiries to 30 Frost Street, Cambridge, MA 02140
-*/
+ * Cephes Math Library Release 2.0:  April, 1987
+ * Copyright 1984, 1987 by Stephen L. Moshier
+ * Direct inquiries to 30 Frost Street, Cambridge, MA 02140
+ */
 
 /* Scipy changes:
-* - 07-18-2016: improve evaluation of dn near quarter periods
-*/
+ * - 07-18-2016: improve evaluation of dn near quarter periods
+ */
 
 #![allow(clippy::excessive_precision)]
 

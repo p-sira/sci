@@ -1,47 +1,47 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     j0.c
-*
-*     Bessel function of order zero
-*
-*
-*
-* SYNOPSIS:
-*
-* double x, y, j0();
-*
-* y = j0( x );
-*
-*
-*
-* DESCRIPTION:
-*
-* Returns Bessel function of order zero of the argument.
-*
-* The domain is divided into the intervals [0, 5] and
-* (5, infinity). In the first interval the following rational
-* approximation is used:
-*
-*
-*        2         2
-* (w - r  ) (w - r  ) P (w) / Q (w)
-*       1         2    3       8
-*
-*            2
-* where w = x  and the two r's are zeros of the function.
-*
-* In the second interval, the Hankel asymptotic expansion
-* is employed with two rational functions of degree 6/6
-* and 7/7.
-*
-*
-*
-* ACCURACY:
-*
-*                      Absolute error:
-* arithmetic   domain     # trials      peak         rms
-*    IEEE      0, 30       60000       4.2e-16     1.1e-16
-*
-*/
+ *
+ *     Bessel function of order zero
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double x, y, j0();
+ *
+ * y = j0( x );
+ *
+ *
+ *
+ * DESCRIPTION:
+ *
+ * Returns Bessel function of order zero of the argument.
+ *
+ * The domain is divided into the intervals [0, 5] and
+ * (5, infinity). In the first interval the following rational
+ * approximation is used:
+ *
+ *
+ *        2         2
+ * (w - r  ) (w - r  ) P (w) / Q (w)
+ *       1         2    3       8
+ *
+ *            2
+ * where w = x  and the two r's are zeros of the function.
+ *
+ * In the second interval, the Hankel asymptotic expansion
+ * is employed with two rational functions of degree 6/6
+ * and 7/7.
+ *
+ *
+ *
+ * ACCURACY:
+ *
+ *                      Absolute error:
+ * arithmetic   domain     # trials      peak         rms
+ *    IEEE      0, 30       60000       4.2e-16     1.1e-16
+ *
+ */
 /*							y0.c
  *
  *	Bessel function of the second kind, order zero
@@ -83,12 +83,12 @@
  */
 
 /*
-* Cephes Math Library Release 2.8:  June, 2000
-* Copyright 1984, 1987, 1989, 2000 by Stephen L. Moshier
-*/
+ * Cephes Math Library Release 2.8:  June, 2000
+ * Copyright 1984, 1987, 1989, 2000 by Stephen L. Moshier
+ */
 
 /* Note: all coefficients satisfy the relative error criterion
-* except YP, YQ which are designed for absolute error. */
+ * except YP, YQ which are designed for absolute error. */
 
 #![allow(clippy::excessive_precision)]
 
@@ -214,10 +214,10 @@ pub fn j0(x: f64) -> f64 {
 /* Bessel function of second kind, order zero  */
 
 /* Rational approximation coefficients YP[], YQ[] are used here.
-* The function computed is  y0(x)  -  2 * log(x) * j0(x) / M_PI,
-* whose value at x = 0 is  2 * ( log(0.5) + EUL ) / M_PI
-* = 0.073804295108687225.
-*/
+ * The function computed is  y0(x)  -  2 * log(x) * j0(x) / M_PI,
+ * whose value at x = 0 is  2 * ( log(0.5) + EUL ) / M_PI
+ * = 0.073804295108687225.
+ */
 
 pub fn y0(x: f64) -> f64 {
     if x <= 5.0 {

@@ -1,64 +1,64 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     ndtr.c
-*
-*     Normal distribution function
-*
-*
-*
-* SYNOPSIS:
-*
-* double x, y, ndtr();
-*
-* y = ndtr( x );
-*
-*
-*
-* DESCRIPTION:
-*
-* Returns the area under the Gaussian probability density
-* function, integrated from minus infinity to x:
-*
-*                            x
-*                             -
-*                   1        | |          2
-*    ndtr(x)  = ---------    |    exp( - t /2 ) dt
-*               sqrt(2pi)  | |
-*                           -
-*                          -inf.
-*
-*             =  ( 1 + erf(z) ) / 2
-*             =  erfc(z) / 2
-*
-* where z = x/sqrt(2). Computation is via the functions
-* erf and erfc.
-*
-*
-* ACCURACY:
-*
-*                      Relative error:
-* arithmetic   domain     # trials      peak         rms
-*    IEEE     -13,0        30000       3.4e-14     6.7e-15
-*
-*
-* ERROR MESSAGES:
-*
-*   message         condition         value returned
-* erfc underflow    x > 37.519379347       0.0
-*
-*/
+ *
+ *     Normal distribution function
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double x, y, ndtr();
+ *
+ * y = ndtr( x );
+ *
+ *
+ *
+ * DESCRIPTION:
+ *
+ * Returns the area under the Gaussian probability density
+ * function, integrated from minus infinity to x:
+ *
+ *                            x
+ *                             -
+ *                   1        | |          2
+ *    ndtr(x)  = ---------    |    exp( - t /2 ) dt
+ *               sqrt(2pi)  | |
+ *                           -
+ *                          -inf.
+ *
+ *             =  ( 1 + erf(z) ) / 2
+ *             =  erfc(z) / 2
+ *
+ * where z = x/sqrt(2). Computation is via the functions
+ * erf and erfc.
+ *
+ *
+ * ACCURACY:
+ *
+ *                      Relative error:
+ * arithmetic   domain     # trials      peak         rms
+ *    IEEE     -13,0        30000       3.4e-14     6.7e-15
+ *
+ *
+ * ERROR MESSAGES:
+ *
+ *   message         condition         value returned
+ * erfc underflow    x > 37.519379347       0.0
+ *
+ */
 
 /*
-* Cephes Math Library Release 2.2:  June, 1992
-* Copyright 1984, 1987, 1988, 1992 by Stephen L. Moshier
-* Direct inquiries to 30 Frost Street, Cambridge, MA 02140
-*/
+ * Cephes Math Library Release 2.2:  June, 1992
+ * Copyright 1984, 1987, 1988, 1992 by Stephen L. Moshier
+ * Direct inquiries to 30 Frost Street, Cambridge, MA 02140
+ */
 
 #![allow(clippy::excessive_precision)]
 
 #[allow(unused_imports)]
 use sci_core::Float;
 
-use crate::backend::cephes64::consts::{M_SQRT1_2, MAXLOG};
+use crate::backend::cephes64::consts::{M_SQRT1_2, MAXLOG, MINLOG};
 use crate::backend::cephes64::polevl::{p1evl, polevl};
 
 const P: [f64; 9] = [
@@ -134,6 +134,12 @@ pub fn ndtr(a: f64) -> f64 {
     let x = a * M_SQRT1_2;
     let z = x.abs();
 
+    if a < -37.0 {
+        // Evaluate the complete probability before rounding to subnormal
+        // precision. Form the exponent from a rather than the rounded a/√2.
+        return gaussian_tail(-0.5 * a, a, 0.5 * erfc_scaled(z));
+    }
+
     if z < M_SQRT1_2 {
         0.5 + 0.5 * erf(x)
     } else if x > 0.0 {
@@ -160,12 +166,11 @@ pub fn erfc(a: f64) -> f64 {
     let z = -a * a;
 
     if z < -MAXLOG {
-        //sf_error("erfc", SF_ERROR_UNDERFLOW, NULL);
-        if a < 0.0 {
-            return 2.0;
+        return if a < 0.0 {
+            2.0
         } else {
-            return 0.0;
-        }
+            gaussian_tail(-x, x, erfc_scaled(x))
+        };
     }
 
     let z = z.exp();
@@ -190,6 +195,19 @@ pub fn erfc(a: f64) -> f64 {
     } else {
         0.0
     }
+}
+
+// The factor is positive and less than one. Splitting exp(left * right)
+// keeps the intermediate products normal and rounds the final tail only once
+// in the subnormal range. Recover the rounding error of the exponent with FMA.
+fn gaussian_tail(left: f64, right: f64, factor: f64) -> f64 {
+    let exponent = left * right;
+    if exponent < MINLOG {
+        return 0.0;
+    }
+    let correction = left.mul_add(right, -exponent);
+    let half = (0.5 * exponent).exp();
+    (half * factor * correction.exp()) * half
 }
 
 pub fn erf(x: f64) -> f64 {

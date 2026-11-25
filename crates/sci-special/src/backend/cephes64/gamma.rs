@@ -1,9 +1,9 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*
-* Cephes Math Library Release 2.2:  July, 1992
-* Copyright 1984, 1987, 1989, 1992 by Stephen L. Moshier
-* Direct inquiries to 30 Frost Street, Cambridge, MA 02140
-*/
+ * Cephes Math Library Release 2.2:  July, 1992
+ * Copyright 1984, 1987, 1989, 1992 by Stephen L. Moshier
+ * Direct inquiries to 30 Frost Street, Cambridge, MA 02140
+ */
 
 #![allow(clippy::excessive_precision)]
 
@@ -50,8 +50,8 @@ use crate::backend::cephes64::consts::M_PI;
 use crate::backend::cephes64::polevl::{p1evl, polevl};
 
 /* Gamma function computed by Stirling's formula.
-* The polynomial STIR is valid for 33 <= x <= 172.
-*/
+ * The polynomial STIR is valid for 33 <= x <= 172.
+ */
 fn stirf(x: f64) -> f64 {
     if x >= MAXGAM {
         return f64::INFINITY;
@@ -160,8 +160,8 @@ pub fn gamma(x: f64) -> f64 {
 }
 
 /* A[]: Stirling's formula expansion of log Gamma
-* B[], C[]: log Gamma function between 2 and 3
-*/
+ * B[], C[]: log Gamma function between 2 and 3
+ */
 const A: [f64; 5] = [
     8.11614167470508450300E-4,
     -5.95061904284301438324E-4,
