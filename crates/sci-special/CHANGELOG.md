@@ -36,6 +36,7 @@ Use this release with `sci-core 0.3` and matching Sci crate releases when exchan
 - Use published numerical backends `bessel` 0.1.3, `hypergeometric` 0.1.4, `orthogonal` 0.2.2, and `ellip` 1.2.4. Improve Lambert W near zero through the updated `lambert_w` backend, retaining branch-point safeguards.
 - Speed up real modified Bessel functions, Bessel derivatives, hypergeometric functions, polynomial evaluation, elliptic integrals, and Gaussian quadrature.
 - Speed up Mathieu and Lamé calculations, noncentral-t inversion, exponential integrals, normal quantiles, and softmax/log-softmax reductions with less temporary storage.
+- Avoid dispatched fused multiply-add calls in moderate positive beta/log-beta, precompute positive exponential-integral series ratios, and reduce redundant Sturm recurrence work and workspace allocations in Mathieu and spheroidal calculations.
 - Replace dense Gaussian quadrature and Lamé eigenproblems with bounded symmetric tridiagonal solvers, removing the direct `nalgebra` dependency.
 - Improve near-endpoint Chebyshev accuracy. Numerical accuracy and supported-domain limits remain documented in the [special-function coverage guide](../../function_coverages/SPECIAL_COVERAGE.md).
 

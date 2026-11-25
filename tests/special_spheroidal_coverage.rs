@@ -45,6 +45,67 @@ fn spheroidal_characteristics_and_sequences_follow_scalar_limits() {
 }
 
 #[test]
+fn spheroidal_characteristics_obey_legendre_perturbation() {
+    // First-order perturbation of the associated Legendre eigenvalue by
+    // +/- c^2 x^2, using the orthonormal Legendre recurrence. At this c the
+    // omitted O(c^4) term is smaller than the tolerance below (the minimum
+    // unperturbed same-parity eigenvalue gap is 6).
+    let c = 1e-3_f64;
+    for (m, n) in [
+        (0, 0),
+        (0, 1),
+        (1, 3),
+        (2, 5),
+        (64, 65),
+        (0, 128),
+        (128, 128),
+    ] {
+        let mf = m as f64;
+        let nf = n as f64;
+        let next = nf + 1.0;
+        let lambda = nf * next;
+        let moment = (next * next - mf * mf) / ((2.0 * nf + 1.0) * (2.0 * nf + 3.0))
+            + (nf * nf - mf * mf) / ((2.0 * nf - 1.0) * (2.0 * nf + 1.0));
+        finite_close(
+            s::wave::pro_cv(m, n, c),
+            lambda + c * c * moment,
+            2e-12,
+            2e-14,
+        );
+        finite_close(
+            s::wave::obl_cv(m, n, c),
+            lambda - c * c * moment,
+            2e-12,
+            2e-14,
+        );
+    }
+}
+
+#[test]
+fn spheroidal_characteristics_match_independent_symmetric_eigenvalues() {
+    // The fixture uses SciPy's symmetric tridiagonal eigensolver in an
+    // orthonormal associated Legendre basis, with truncation convergence
+    // checked independently of the production kernel's recurrence size.
+    for row in common::rows(include_str!("fixtures/spheroidal_characteristics.csv")) {
+        let m = common::number(row[0]);
+        let n = common::number(row[1]);
+        let c = common::number(row[2]);
+        finite_close(
+            s::wave::pro_cv(m, n, c),
+            common::number(row[3]),
+            2e-11,
+            2e-11,
+        );
+        finite_close(
+            s::wave::obl_cv(m, n, c),
+            common::number(row[4]),
+            2e-11,
+            2e-11,
+        );
+    }
+}
+
+#[test]
 fn spheroidal_angular_cv_reuse_and_reflection_are_consistent() {
     // Cover both n-m parities and several azimuthal orders without approaching
     // the angular endpoints, where derivatives can be singular.

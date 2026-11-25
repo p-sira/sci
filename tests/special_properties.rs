@@ -946,6 +946,7 @@ fn mathieu_fourier_coefficients_satisfy_eigenvalue_recurrences_and_norms() {
         (2, 1.0),
         (3, 5.0),
         (3, 1.0001),
+        (4, 5.0),
         (4, 20.0),
         (7, 50.0),
         (30, 50.0),

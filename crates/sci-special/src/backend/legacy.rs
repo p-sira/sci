@@ -116,6 +116,7 @@ fn mathieu_spectrum<const VECTOR: bool>(
     if q == 0.0 {
         return vector(diagonal_at(rank));
     }
+    let start = mathieu_guess(kd, m, q);
     let b2 = q * q;
     let b2_first = if kd == 1 {
         (q * SQRT_2) * (q * SQRT_2)
@@ -156,6 +157,12 @@ fn mathieu_spectrum<const VECTOR: bool>(
                 pivot = -1e-300;
             }
             count += usize::from(pivot < 0.0);
+            // Search only uses the derivatives for counts rank or rank+1.
+            // Once more negative pivots have occurred, the remaining rows
+            // cannot change which side of the bracket this point belongs to.
+            if count > rank + 1 {
+                return (count, gradient, hessian, exact);
+            }
             inverse = 1.0 / pivot;
             let term = slope * inverse;
             gradient += term;
@@ -182,6 +189,10 @@ fn mathieu_spectrum<const VECTOR: bool>(
                 pivot = -1e-300;
             }
             count += usize::from(pivot < 0.0);
+            // Every caller compares the count with rank. It can only grow.
+            if count > rank {
+                break;
+            }
         }
         count
     };
@@ -308,7 +319,7 @@ fn mathieu_spectrum<const VECTOR: bool>(
         sorted(rank + 1) - center
     };
     if radius < 0.48 * gap_below.min(gap_above) {
-        let mut estimate = mathieu_guess(kd, m, q)
+        let mut estimate = start
             .filter(|v| v.is_finite() && (*v - center).abs() <= radius)
             .unwrap_or(center);
         for _ in 0..8 {
@@ -363,7 +374,7 @@ fn mathieu_spectrum<const VECTOR: bool>(
     if !VECTOR && m <= 5 && q.abs() <= 10.0 {
         let lower = center - radius;
         let upper = center + radius;
-        let mut estimate = mathieu_guess(kd, m, q)
+        let mut estimate = start
             .filter(|guess| guess.is_finite() && *guess >= lower && *guess <= upper)
             .unwrap_or(center);
         for _ in 0..9 {
@@ -392,7 +403,6 @@ fn mathieu_spectrum<const VECTOR: bool>(
             }
         }
     }
-    let start = mathieu_guess(kd, m, q);
     let eigenvalue = search(sorted(rank) - radius, sorted(rank) + radius, start)
         .or_else(|_| search(sorted(0) - radius, sorted(size - 1) + radius, None))
         .unwrap_or_else(|midpoint| midpoint);
@@ -518,9 +528,11 @@ fn mathieu_vector(
         return (eigenvalue, coefficients);
     }
     let shift = eigenvalue + 8.0 * f64::EPSILON * eigenvalue.abs().max(1.0);
-    // The two factorization buffers share one exact-sized allocation.
-    // Unlike fixed-size stack buffers, only the needed rows are initialized.
-    let mut workspace = vec![0.0; 2 * size];
+    // Reserve the returned coefficients and both factorization buffers in a
+    // single allocation. Only the active rows are initialized; the scratch
+    // portion is truncated before returning the result.
+    let mut result = vec![0.0; 3 * size];
+    let (coefficients, workspace) = result.split_at_mut(size);
     let (pivots, factors) = workspace.split_at_mut(size);
     pivots[0] = diagonal_at(0) - shift;
     if pivots[0].abs() < 1e-300 {
@@ -538,7 +550,6 @@ fn mathieu_vector(
     // with its eigenmode. With a shift within roundoff of the eigenvalue,
     // one inverse solve suppresses all other modes by the shift/gap ratio;
     // the second removes the remaining error in weakly excited harmonics.
-    let mut coefficients = vec![0.0; size];
     coefficients[rank] = 1.0;
     for _ in 0..2 {
         for j in 1..size {
@@ -563,7 +574,8 @@ fn mathieu_vector(
         1.0
     };
     coefficients.iter_mut().for_each(|x| *x *= phase);
-    (eigenvalue, coefficients)
+    result.truncate(size);
+    (eigenvalue, result)
 }
 /// Extra rows of the established coefficient-vector truncation.
 const COEFFICIENT_MARGIN: usize = 48;
