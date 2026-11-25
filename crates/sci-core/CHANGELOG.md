@@ -2,17 +2,20 @@
 
 ## 0.3.0
 
-- Construct canonical CSR storage from COO with stable row buckets and per-row sorting rather than a global coordinate sort; retain duplicate and signed-zero conventions.
+### Breaking changes
 
-- Remove the hidden `finite` helper; use `Float::is_finite()` for scalar checks. Rename `finite_slice` to `is_finite_slice` for shared slice validation.
+- Remove `finite`; use `value.is_finite()` for scalar checks. Rename `finite_slice` to `is_finite_slice`; it continues to return `Result<()>`.
 
-- Re-export the shared `Float` bound; make finite checks and matrix, spline, and sparse storage generic with `f64` defaults.
+### Added
 
-- Update shared Sci dependency requirements to the new minor versions.
+- Re-export the shared `Float` trait bound.
+- Support generic matrix, spline, and sparse storage with `f64` defaults, allowing supported numerical APIs to share `f32` data.
+
+### Improvements
+
+- Speed up COO-to-CSR construction while preserving duplicate-entry and signed-zero conventions.
 
 ## 0.2.0
-
-Changes since the repository tag `v0.1.0`.
 
 - Add shared `SparseMatrix` storage in canonical CSR format and `SparseArray` storage in COO format for ranks 1 through 32.
 - Release shared types and errors as `sci-core 0.2`; downstream crates must use the same core version to exchange these types.

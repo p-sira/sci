@@ -2,22 +2,25 @@
 
 ## 0.3.0
 
-- Skip redundant corners of singleton axes in multidimensional interpolation and reuse Cartesian B-spline bases in surface evaluation; compute repeated spline derivatives incrementally.
+Use this release with `sci-core 0.3` and matching Sci crate releases when exchanging shared types.
 
-- Solve well-conditioned B-spline interpolation systems with pivoted LU
-  instead of an unconditional SVD, retaining pivot/residual checks and the
-  SVD fallback for ill-conditioned systems. The native cubic interpolation
-  spline benchmark improved approximately 12.5×.
-- Make barycentric, Krogh, Lagrange, and PCHIP interpolation generic over `Float`.
+### Breaking changes
 
-- Remove splrep and splprep aliases; use make_splrep and make_splprep.
-- Reuse spline knots and coefficient buffers during tensor-product surface evaluation.
+- Move interpolation functions into family modules, for example `lagrange` to `polynomial::lagrange`. See the [migration guide](../../MIGRATING.md).
+- Replace `splrep` and `splprep` with `make_splrep` and `make_splprep`.
+
+### Added
+
+- Support `f32` and `f64` barycentric, Krogh, Lagrange, and PCHIP interpolation.
+
+### Improvements
+
+- Speed up B-spline interpolation construction for well-conditioned systems while retaining a fallback for ill-conditioned inputs.
+- Speed up multidimensional interpolation with singleton axes, tensor-product surface evaluation, and repeated spline derivatives.
 
 ## 0.2.0
 
-Changes since the repository tag `v0.1.0`.
-
-- Require `sci-core 0.2` and update Sci dependency requirements to matching releases. Shared error and numerical types are incompatible with those from `sci-core 0.1`.
+- Upgrade to shared `sci-core 0.2` types. Update cooperating Sci crates together; `sci-core 0.1` types are incompatible.
 
 ## 0.1.0
 

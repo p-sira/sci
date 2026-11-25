@@ -2,21 +2,24 @@
 
 ## 0.3.0
 
-- Replace direct `sci-special` Gaussian nodes with bounded Gauss–Legendre
-  root iteration and private `nalgebra` LU with a small pivoted Newton–Cotes
-  system solver. Remove both direct dependencies while retaining the supported
-  quadrature orders, finite error behavior, and public API.
+Use this release with `sci-core 0.3` and matching Sci crate releases when exchanging shared types.
 
-- Make sampled integration and fixed quadrature generic over `Float`; round backend-generated Gaussian nodes and weights to the selected precision.
+### Breaking changes
 
-- Update shared Sci dependency requirements to the new minor versions.
+- Move integration functions into family modules, for example `simpson` to `sampled::simpson`. See the [migration guide](../../MIGRATING.md).
+
+### Added
+
+- Support `f32` and `f64` sampled-data integration and fixed quadrature, including callbacks in the selected precision. Gaussian nodes and weights are generated in `f64` and rounded to the selected type.
+
+### Improvements
+
+- Reduce dependencies: integration no longer pulls in `sci-special` or `nalgebra`.
 
 ## 0.2.0
 
-Changes since the repository tag `v0.1.0`.
-
-- Require `sci-core 0.2` and update Sci dependency requirements to matching releases. Shared error and numerical types are incompatible with those from `sci-core 0.1`.
-- Use exact rational tabulations for uniform Newton–Cotes rules of orders 1 through 12, improving weights and error coefficients. Nonuniform rules retain the bounded Vandermonde solve.
+- Upgrade to shared `sci-core 0.2` types. Update cooperating Sci crates together; `sci-core 0.1` types are incompatible.
+- Improve weights and error coefficients for uniform Newton–Cotes rules of orders 1 through 12.
 
 ## 0.1.0
 

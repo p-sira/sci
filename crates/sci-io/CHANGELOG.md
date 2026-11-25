@@ -1,25 +1,22 @@
 # Changelog
 
-## Unreleased
-
-- Buffer Matrix Market serialization, encode MATLAB numeric payloads directly and normalize only the selected WAV channel; retain format, error and signed-value regression tests.
-
-- Read and write Matrix Market sparse matrices through shared `sci-core::csr`
-  operations, removing the `sci-sparse` dependency without changing the
-  canonical CSR representation, validation or error mapping.
-
 ## 0.2.0
 
-- Update shared Sci dependency requirements to the new minor versions.
-- Replace matrw with native numeric decoding through the existing bounded MATLAB
-  parser. Preserve scalar types, special values, both endian orders, compression,
-  shape ordering, and validation limits while removing the normalized-file copy.
+### Breaking changes
 
-- The Sci facade exposes each format through `io-matrix-market`, `io-wav`, and `io-matlab`. With facade defaults disabled, `io` alone provides shared I/O types without codecs. Matrix Market avoids sparse NPZ dependencies. MATLAB and NPZ share the Rust/miniz compression backend.
+- Move Matrix Market functions into `matrix_market` and MATLAB functions into `matlab`, for example `matrix_market::mmread` and `matlab::loadmat`. See the [migration guide](../../MIGRATING.md).
+- Use shared types from `sci-core 0.3`; they are incompatible with `sci-core 0.2` types.
+
+### Improvements
+
+- Read dense numeric MATLAB data with fewer copies while preserving scalar types, endianness, compression, and shape ordering.
+- Reduce allocations in Matrix Market writing, MATLAB encoding, and single-channel WAV normalization.
+- Use Matrix Market I/O without pulling in sparse solvers or `sci-sparse`.
+- Select facade codecs independently with `io-matrix-market`, `io-wav`, and `io-matlab`. With defaults disabled, the facade's `io` feature provides shared I/O types without codecs.
 
 ## 0.1.0
 
-- Initial release, added after the repository tag `v0.1.0`.
+- Initial release.
 - Add bounded Matrix Market reading, writing, and metadata inspection for real dense and sparse matrices.
 - Add WAV reading and writing and a dense numeric MATLAB subset with explicit format and size limits.
 - Provide independent `matrix-market`, `wav`, and `matlab` features, enabled by default; use shared `sci-core 0.2` matrix types.

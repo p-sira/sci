@@ -2,20 +2,21 @@
 
 ## 0.3.0
 
-- Skip unnecessary particle log-weight calculations outside likelihood updates and accept strictly positive-definite covariance matrices through Cholesky with the existing tolerant eigenvalue fallback. Add subnormal-weight and covariance-boundary tests.
+Use this release with `sci-core 0.3` and matching Sci crate releases when exchanging shared types.
 
-- Update shared Sci dependency requirements to the new minor versions.
-- Upgrade Smelly to 0.2 and reuse its particle propagation and weighted moments;
-  remove kalman_filters and its random dependencies. Preserve native log-weight
-  normalization, effective sample size, resampling boundaries, and callback errors.
+### Breaking changes
+
+- Move filter functions into family modules, for example `kalman_predict` to `kalman::kalman_predict`. See the [migration guide](../../MIGRATING.md).
+
+### Improvements
+
+- Reduce particle-filter work when likelihoods are not requested and speed up validation of positive-definite covariance matrices.
+- Reduce particle-filter dependencies by consolidating propagation and weighted moments on Smelly 0.2.
 
 ## 0.2.0
 
-Changes since the repository tag `v0.1.0`.
-
-- Require `sci-core 0.2` and update Sci dependency requirements to matching releases. Shared error and numerical types are incompatible with those from `sci-core 0.1`.
-- Use the shared nalgebra 0.35 dependency for filtering and covariance validation.
-- Add a regression test for covariance eigensolver work exhaustion.
+- Upgrade to shared `sci-core 0.2` types. Update cooperating Sci crates together; `sci-core 0.1` types are incompatible.
+- Use nalgebra 0.35 for filtering and covariance validation.
 
 ## 0.1.0
 
