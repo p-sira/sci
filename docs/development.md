@@ -42,6 +42,36 @@ the test profile for that invocation (this may trigger recompilation):
 CARGO_PROFILE_TEST_DEBUG=full cargo test -p sci --no-default-features --test core
 ```
 
+## Releasing
+
+Prepare package versions and matching internal dependency requirements in the
+workspace manifests before opening a release PR. Review each crate's changelog
+and the [migration guide](../MIGRATING.md), and verify the external
+[accuracy reports](https://github.com/p-sira/sci-testing) for the numerical
+revision being released.
+
+Run the workspace checks above and, with a current stable Cargo, verify all
+publication archives without uploading:
+
+```sh
+cargo publish --workspace --locked --dry-run
+```
+
+The workspace dry run verifies packaged sources against a temporary registry
+containing the prepared internal crates. It therefore works before those
+versions are published. Cargo orders the actual workspace upload by dependency,
+with `sci-core` before its dependents and the `sci` facade last. The standalone
+`sci-graph`, `sci-io`, and `sci-sparse` versions need not match the facade version.
+
+The manually dispatched **Publish** workflow accepts `workspace` (the default)
+or an individual crate. Enter the prepared facade or selected crate version
+and leave `dry_run` enabled for preflight. After release approval and merging
+the prepared revision to `main`, explicitly disable `dry_run` to upload.
+The workflow checks the manifest version and uses Cargo directly; it does not
+bump versions, push commits, or create tags. If an upload is interrupted, check
+which versions reached crates.io before retrying the remaining crates in
+dependency order. Never reuse a published version for modified contents.
+
 ## Benchmarks
 
 Benchmarks for representative functions of each module live in
@@ -107,11 +137,10 @@ enabled. Only `sci-special` enables its `lambert_w` feature; FFTLog needs only
 real log-gamma. Elliptic integrals continue to call `ellip` directly, without
 enabling `special/elliptic`.
 
-TODO: audit the overlapping incomplete gamma/beta functions and negative-argument
-digamma/trigamma before replacing their XSF calls. Replacing XSF for functions
-unsupported by `special` (including Bessel, Airy, Struve, hypergeometric,
-Faddeeva, Mathieu, and spheroidal functions) remains TODO. These functions
-retain their current implementations; `sci-special` still requires XSF.
+Sci's special-function implementations now use Rust kernels and the published
+`bessel`, `orthogonal`, `hypergeometric`, and `ellip` crates. The XSF C++ backend
+is no longer required. See the [special-function coverage guide](../function_coverages/SPECIAL_COVERAGE.md)
+for the supported domains and numerical limitations.
 
 ## Pre-commit formatting
 

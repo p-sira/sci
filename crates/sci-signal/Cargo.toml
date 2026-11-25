@@ -12,7 +12,7 @@ repository = "https://github.com/p-sira/sci"
 categories = ["algorithms", "mathematics", "science"]
 keywords = ["signal-processing", "filtering", "spectral-analysis", "numerics", "fourier-transform"]
 readme = false
-include = ["/src/**", "/LICENSE"]
+include = ["/src/**", "/LICENSE", "/LICENSES/**"]
 
 [dependencies]
 sci-core.workspace = true

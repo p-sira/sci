@@ -35,7 +35,7 @@ functions and remaining binary64 APIs.
 cargo add sci
 ```
 
-All 16 modules are enabled by default. Select only the modules you need with:
+All 17 modules are enabled by default. Select only the modules you need with:
 
 ```shell
 cargo add sci --no-default-features --features fft,complex
@@ -83,4 +83,5 @@ Sparse operations use shared CSR/COO storage, with direct and iterative solves, 
 - [Development, reference fixtures, and validation](docs/development.md).
 - [Design principles and crate boundaries](docs/design-principles.md).
 - [Numerical quality standard (proposed)](docs/numerical-quality-standard.md).
+- [Independent Sci 0.3 numerical accuracy comparisons](https://github.com/p-sira/sci-testing/tree/6f20104f14f44ac6a88a59378a4ee0455cf8eb7e/docs/accuracy).
 - [Roadmap for updating `sci-testing` to Sci 0.3](docs/sci-testing-roadmap.md).
