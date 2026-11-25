@@ -4,7 +4,7 @@
 
 /// Call a function with fixture scalars parsed into its parameter types.
 ///
-/// For example: `parsed_call!(sci::special::polygamma; args[0], args[1])`.
+/// For example: `parsed_call!(sci::special::gamma::polygamma; args[0], args[1])`.
 /// Parsing each argument separately preserves integer parameters and special f64 values.
 #[allow(unused_macros)]
 macro_rules! parsed_call {

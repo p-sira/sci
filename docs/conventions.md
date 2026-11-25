@@ -1,9 +1,15 @@
 # Data and numerical conventions
 
-Real scalars use `f64`; vectors accept `&[f64]` and return `Vec<f64>`.
-Matrices use `Vec<Vec<f64>>` with one vector per row. Jacobians use output
+Generic numerical APIs use `T: sci::Float`, following ellip's `num_traits::Float`
+convention. Vectors accept `&[T]` and return `Vec<T>`; matrices use
+`Matrix<T> = Vec<Vec<T>>` with one vector per row. Shared containers default to
+`f64`, and generic algorithms also compute natively in `f32`. Precision is
+inferred from typed inputs; empty inputs or unconstrained expressions may need
+an explicit type. FFTs use the `fft::FftFloat` bound for supported native types.
+See [precision coverage](../function_coverages/GENERIC_FLOAT_COVERAGE.md) for
+APIs that still require `f64`. Jacobians use output
 components as rows and input coordinates as columns. Complex values use
-`complex::Complex { re: f64, im: f64 }`. Fallible functions share
+`complex::Complex<T = f64> { re: T, im: T }`. Fallible functions share
 `sci::Error` and `sci::Result`.
 
 These conventions let differentiation feed optimization and matrix operations,
@@ -25,9 +31,9 @@ use sci::linalg::{self, MatrixInput};
 
 let a = ndarray::arr2(&[[2.0, 1.0], [0.0, 3.0]]);
 let b = nalgebra::DMatrix::identity(2, 2);
-let product = linalg::matmul(&a.view(), &b)?;
+let product = linalg::basic::matmul(&a.view(), &b)?;
 let matrix = product.to_faer()?;
-assert_eq!(linalg::solve(&matrix, &[5.0, 6.0])?, vec![1.5, 2.0]);
+assert_eq!(linalg::solvers::solve(&matrix, &[5.0, 6.0])?, vec![1.5, 2.0]);
 # Ok::<(), sci::Error>(())
 ```
 
@@ -43,8 +49,8 @@ Sparse matrices use `sci::SparseMatrix`, an owned CSR type shared with
 `sci-core` and `sci-sparse`. Row pointers and column indices are zero-based;
 columns are sorted and unique per row. Explicit zeros are retained. Sparse
 operations validate public storage before use and reject nonfinite inputs and
-results. `sparse::from_coo`, `from_csr`, and `from_csc` canonicalize storage;
-`from_dense` and `to_dense` connect sparse data with shared row matrices and
+results. `sparse::construct::{from_coo, from_csr, from_csc}` canonicalize storage;
+`sparse::construct::{from_dense, to_dense}` connect sparse data with shared row matrices and
 existing linear algebra adapters. `sci::SparseArray` supplies rank-1..32 COO
 coordinates for sparse axis operations. Graphs distinguish unstored non-edges
 from explicitly stored zero-weight edges; unreachable graph distances and

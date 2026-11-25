@@ -25,4 +25,13 @@ use sci_core as error;
 pub use sci_core::{Error, Result};
 #[path = "mod.rs"]
 mod implementation;
-pub use implementation::*;
+/// Distance metrics, distance matrices, and condensed-distance conversions.
+pub mod distance {
+    pub use crate::implementation::distance::*;
+    pub use crate::implementation::{distance_matrix, minkowski_distance, minkowski_distance_p};
+}
+
+/// Spatial interpolation, geometric transformations, and point location.
+pub mod transform {
+    pub use crate::implementation::{ProcrustesResult, geometric_slerp, procrustes, tsearch};
+}

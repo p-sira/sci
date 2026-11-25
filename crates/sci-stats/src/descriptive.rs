@@ -1,33 +1,35 @@
 use super::*;
+use sci_core::Float;
 
 /// One-dimensional sample summary returned by [`describe`].
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Description {
+pub struct Description<T = f64> {
     /// Number of observations.
     pub count: usize,
     /// Smallest observation.
-    pub min: f64,
+    pub min: T,
     /// Largest observation.
-    pub max: f64,
+    pub max: T,
     /// Arithmetic mean.
-    pub mean: f64,
+    pub mean: T,
     /// Variance using the requested ddof.
-    pub variance: f64,
+    pub variance: T,
     /// Skewness, with the requested bias convention.
-    pub skewness: f64,
+    pub skewness: T,
     /// Fisher excess kurtosis, with the requested bias convention.
-    pub kurtosis: f64,
+    pub kurtosis: T,
 }
 
-fn standardized_moments(x: &[f64]) -> Result<(f64, f64, f64, f64)> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn standardized_moments<T: Float>(x: &[T]) -> Result<(T, T, T, T)> {
     sample(x, 1)?;
     let (_, deviations) = centered_scaled(x)?;
-    let n = x.len() as f64;
+    let n = T::from(x.len()).unwrap();
     let (mut m2, mut m3, mut m4) = (0., 0., 0.);
     for d in deviations {
-        m2 += d * d / n;
-        m3 += d * d * d / n;
-        m4 += (d * d).powi(2) / n;
+        m2 = m2 + (d * d / n);
+        m3 = m3 + (d * d * d / n);
+        m4 = m4 + ((d * d).powi(2) / n);
     }
     Ok((n, m2, m3, m4))
 }
@@ -43,7 +45,7 @@ fn standardized_moments(x: &[f64]) -> Result<(f64, f64, f64, f64)> {
 ///
 /// ## Returns
 ///
-/// `f64`: standard deviation in observation units.
+/// `T`: standard deviation in observation units.
 ///
 /// ## Errors
 ///
@@ -53,22 +55,25 @@ fn standardized_moments(x: &[f64]) -> Result<(f64, f64, f64, f64)> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::std(&[1., 2., 3.], 1)?, 1.);
+/// assert_eq!(sci_stats::descriptive::std(&[1., 2., 3.], 1)?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [NumPy `std`](https://numpy.org/doc/stable/reference/generated/numpy.std.html).
-pub fn std(values: &[f64], ddof: usize) -> Result<f64> {
+pub fn std<T: Float>(values: &[T], ddof: usize) -> Result<T> {
     let (scale, normalized) = scaled_variance(values, ddof)?;
-    finite(normalized.sqrt() * scale)
+    match normalized.sqrt() * scale {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Standard error of the mean `sqrt(var(x,ddof)/n)`.
@@ -83,7 +88,7 @@ pub fn std(values: &[f64], ddof: usize) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: estimated standard error.
+/// `T`: estimated standard error.
 ///
 /// ## Errors
 ///
@@ -93,22 +98,22 @@ pub fn std(values: &[f64], ddof: usize) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::sem(&[1., 2., 3.], 1)? > 0.);
+/// assert!(sci_stats::descriptive::sem(&[1., 2., 3.], 1)? > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `sem`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sem.html).
-pub fn sem(values: &[f64], ddof: usize) -> Result<f64> {
+pub fn sem<T: Float>(values: &[T], ddof: usize) -> Result<T> {
     sample(values, 2)?;
-    Ok(std(values, ddof)? / (values.len() as f64).sqrt())
+    Ok(std(values, ddof)? / (T::from(values.len()).unwrap()).sqrt())
 }
 
 /// Coefficient of variation `std(x,ddof)/mean(x)`.
@@ -123,7 +128,7 @@ pub fn sem(values: &[f64], ddof: usize) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: dimensionless coefficient.
+/// `T`: dimensionless coefficient.
 ///
 /// ## Errors
 ///
@@ -133,20 +138,20 @@ pub fn sem(values: &[f64], ddof: usize) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::variation(&[2., 2.], 0)?, 0.);
+/// assert_eq!(sci_stats::descriptive::variation(&[2., 2.], 0)?, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `variation`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.variation.html).
-pub fn variation(values: &[f64], ddof: usize) -> Result<f64> {
+pub fn variation<T: Float>(values: &[T], ddof: usize) -> Result<T> {
     Ok(std(values, ddof)? / mean(values)?)
 }
 
@@ -162,7 +167,7 @@ pub fn variation(values: &[f64], ddof: usize) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: quantile in observation units.
+/// `T`: quantile in observation units.
 ///
 /// ## Errors
 ///
@@ -172,23 +177,70 @@ pub fn variation(values: &[f64], ddof: usize) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Sorting takes O(n log n) work; convex interpolation avoids subtracting distant endpoints.
+/// Selection takes expected O(n) work with O(n) scratch memory. Already ordered
+/// inputs are evaluated directly. Convex interpolation avoids subtracting distant endpoints.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::quantile(&[1., 3.], 0.5)?, 2.);
+/// assert_eq!(sci_stats::descriptive::quantile(&[1., 3.], 0.5)?, 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `quantile`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.quantile.html).
-pub fn quantile(values: &[f64], probability: f64) -> Result<f64> {
+pub fn quantile<T: Float>(values: &[T], probability: T) -> Result<T> {
     probability_check(probability)?;
-    let x = sorted(values)?;
-    Ok(interpolate(&x, probability))
+    sample(values, 1)?;
+    // The same total order as sorted() distinguishes -0 from +0.
+    // Monotone samples are common and need no allocation or selection.
+    if values
+        .windows(2)
+        .all(|pair| total_cmp(&pair[0], &pair[1]).is_le())
+    {
+        return Ok(interpolate(values, probability));
+    }
+    if values
+        .windows(2)
+        .all(|pair| total_cmp(&pair[0], &pair[1]).is_ge())
+    {
+        let h = T::from(values.len() - 1).unwrap() * probability;
+        let i = h.floor().to_usize().unwrap();
+        let j = h.ceil().to_usize().unwrap();
+        if i == j {
+            return Ok(values[values.len() - 1 - i]);
+        }
+        let f = h - T::from(i).unwrap();
+        return Ok((T::from(1.).unwrap() - f) * values[values.len() - 1 - i]
+            + f * values[values.len() - 1 - j]);
+    }
+    let mut scratch = values.to_vec();
+    Ok(quantile_select_in_place(&mut scratch, probability))
+}
+
+/// Quantile of a nonempty, finite scratch slice. Keep exactly interpolate()'s
+/// index calculation and convex arithmetic, but select only the two neighbors.
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn quantile_select_in_place<T: Float>(values: &mut [T], probability: T) -> T {
+    let h = T::from(values.len() - 1).unwrap() * probability;
+    let i = h.floor().to_usize().unwrap();
+    let j = h.ceil().to_usize().unwrap();
+    if i == j {
+        return *values.select_nth_unstable_by(i, total_cmp).1;
+    }
+    // The adjacent neighbor is an extremum of the smaller partition.
+    // Scanning it is cheaper than a second partitioning pass.
+    let (lower, upper) = if j < values.len() - i {
+        let (prefix, selected, _) = values.select_nth_unstable_by(j, total_cmp);
+        (prefix.iter().copied().max_by(total_cmp).unwrap(), *selected)
+    } else {
+        let (_, selected, suffix) = values.select_nth_unstable_by(i, total_cmp);
+        (*selected, suffix.iter().copied().min_by(total_cmp).unwrap())
+    };
+    let f = h - T::from(i).unwrap();
+    (1. - f) * lower + f * upper
 }
 
 /// Sample percentile `quantile(x, percentile/100)`.
@@ -203,7 +255,7 @@ pub fn quantile(values: &[f64], probability: f64) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: percentile in observation units.
+/// `T`: percentile in observation units.
 ///
 /// ## Errors
 ///
@@ -213,20 +265,21 @@ pub fn quantile(values: &[f64], probability: f64) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::scoreatpercentile(&[1., 3.], 50.)?, 2.);
+/// assert_eq!(sci_stats::descriptive::scoreatpercentile(&[1., 3.], 50.)?, 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `scoreatpercentile`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.scoreatpercentile.html).
-pub fn scoreatpercentile(values: &[f64], percentile: f64) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn scoreatpercentile<T: Float>(values: &[T], percentile: T) -> Result<T> {
     quantile(values, percentile / 100.)
 }
 
@@ -242,7 +295,7 @@ pub fn scoreatpercentile(values: &[f64], percentile: f64) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: sample median.
+/// `T`: sample median.
 ///
 /// ## Errors
 ///
@@ -252,21 +305,27 @@ pub fn scoreatpercentile(values: &[f64], percentile: f64) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
-/// Inputs are limited to 1,048,576 observations. No Python runtime is used.
+/// Expected O(n) selection with O(n) scratch memory; the input is not changed.
+/// Even counts use the same convex interpolation as `quantile(x, 0.5)`.
+/// Evaluated in the selected floating-point precision; rounding and cancellation
+/// can affect ill-conditioned data. Inputs are limited to 1,048,576 observations.
+/// No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::median(&[1., 3., 2.])?, 2.);
+/// assert_eq!(sci_stats::descriptive::median(&[1., 3., 2.])?, 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [NumPy `median`](https://numpy.org/doc/stable/reference/generated/numpy.median.html).
-pub fn median(values: &[f64]) -> Result<f64> {
-    quantile(values, 0.5)
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn median<T: Float>(values: &[T]) -> Result<T> {
+    sample(values, 1)?;
+    let mut scratch = values.to_vec();
+    Ok(median_select_in_place(&mut scratch))
 }
 
 /// Interquartile range `Q(3/4)−Q(1/4)`.
@@ -281,7 +340,7 @@ pub fn median(values: &[f64]) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: nonnegative range in observation units.
+/// `T`: nonnegative range in observation units.
 ///
 /// ## Errors
 ///
@@ -291,22 +350,26 @@ pub fn median(values: &[f64]) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::iqr(&[1., 2., 3., 4.])?, 1.5);
+/// assert_eq!(sci_stats::descriptive::iqr(&[1., 2., 3., 4.])?, 1.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `iqr`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.iqr.html).
-pub fn iqr(values: &[f64]) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn iqr<T: Float>(values: &[T]) -> Result<T> {
     let x = sorted(values)?;
-    finite(interpolate(&x, 0.75) - interpolate(&x, 0.25))
+    match interpolate(&x, 0.75) - interpolate(&x, 0.25) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Median absolute deviation `median(|x−median(x)|)/scale`.
@@ -321,7 +384,7 @@ pub fn iqr(values: &[f64]) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: scaled absolute deviation.
+/// `T`: scaled absolute deviation.
 ///
 /// ## Errors
 ///
@@ -331,27 +394,33 @@ pub fn iqr(values: &[f64]) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::median_abs_deviation(&[1., 2., 9.], 1.)?, 1.);
+/// assert_eq!(sci_stats::descriptive::median_abs_deviation(&[1., 2., 9.], 1.)?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `median_abs_deviation`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.median_abs_deviation.html).
-pub fn median_abs_deviation(values: &[f64], scale: f64) -> Result<f64> {
+pub fn median_abs_deviation<T: Float>(values: &[T], scale: T) -> Result<T> {
     positive(scale)?;
     let center = median(values)?;
-    let distances = values
+    let mut distances = values
         .iter()
-        .map(|x| (x - center).abs())
+        .map(|&x| (x - center).abs())
         .collect::<Vec<_>>();
-    finite(median(&distances)? / scale)
+    // The deviations are owned scratch storage. Select their median in place
+    // rather than making a second copy inside median().
+    sample(&distances, 1)?;
+    match median_select_in_place(&mut distances) / scale {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Geometric mean `exp(Σ ln(x)/n)`.
@@ -366,7 +435,7 @@ pub fn median_abs_deviation(values: &[f64], scale: f64) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: geometric mean.
+/// `T`: geometric mean.
 ///
 /// ## Errors
 ///
@@ -376,20 +445,21 @@ pub fn median_abs_deviation(values: &[f64], scale: f64) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert!((sci_stats::gmean(&[1., 4.])? - 2.).abs() < 1e-14);
+/// assert!((sci_stats::descriptive::gmean(&[1.0_f64, 4.])? - 2.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `gmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gmean.html).
-pub fn gmean(values: &[f64]) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gmean<T: Float>(values: &[T]) -> Result<T> {
     sample(values, 1)?;
     if values.iter().any(|x| *x < 0.) {
         return Err(Error::InvalidInput(
@@ -400,7 +470,10 @@ pub fn gmean(values: &[f64]) -> Result<f64> {
         return Ok(0.);
     }
     let logs = values.iter().map(|x| x.ln()).collect::<Vec<_>>();
-    finite(mean(&logs)?.exp())
+    match mean(&logs)?.exp() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Harmonic mean `n/Σ(1/x)`.
@@ -415,7 +488,7 @@ pub fn gmean(values: &[f64]) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: harmonic mean.
+/// `T`: harmonic mean.
 ///
 /// ## Errors
 ///
@@ -431,25 +504,35 @@ pub fn gmean(values: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::hmean(&[1., 1.])?, 1.);
+/// assert_eq!(sci_stats::descriptive::hmean(&[1., 1.])?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `hmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.hmean.html).
-pub fn hmean(values: &[f64]) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn hmean<T: Float>(values: &[T]) -> Result<T> {
     sample(values, 1)?;
     if values.iter().any(|x| *x < 0.) {
         return Err(Error::InvalidInput(
             "harmonic mean requires nonnegative values",
         ));
     }
-    let minimum = values.iter().copied().fold(f64::INFINITY, f64::min);
+    let minimum = values.iter().copied().fold(T::infinity(), T::min);
     if minimum == 0. {
         return Ok(0.);
     }
-    finite(minimum / (values.iter().map(|x| minimum / x).sum::<f64>() / values.len() as f64))
+    match minimum
+        / (values
+            .iter()
+            .map(|&x| minimum / x)
+            .fold(T::zero(), |a, b| a + b)
+            / T::from(values.len()).unwrap())
+    {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Geometric standard deviation `exp(std(ln(x),ddof))`.
@@ -464,7 +547,7 @@ pub fn hmean(values: &[f64]) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: dimensionless multiplicative spread.
+/// `T`: dimensionless multiplicative spread.
 ///
 /// ## Errors
 ///
@@ -474,27 +557,31 @@ pub fn hmean(values: &[f64]) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::gstd(&[2., 2.], 1)?, 1.);
+/// assert_eq!(sci_stats::descriptive::gstd(&[2., 2.], 1)?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `gstd`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gstd.html).
-pub fn gstd(values: &[f64], ddof: usize) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gstd<T: Float>(values: &[T], ddof: usize) -> Result<T> {
     sample(values, 1)?;
     if values.iter().any(|x| *x <= 0.) {
         return Err(Error::InvalidInput(
             "geometric standard deviation requires positive values",
         ));
     }
-    finite(std(&values.iter().map(|x| x.ln()).collect::<Vec<_>>(), ddof)?.exp())
+    match std(&values.iter().map(|x| x.ln()).collect::<Vec<_>>(), ddof)?.exp() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Central moment `m_k=Σ(x−mean(x))^k/n`.
@@ -509,7 +596,7 @@ pub fn gstd(values: &[f64], ddof: usize) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: central moment, in observation units raised to `order`.
+/// `T`: central moment, in observation units raised to `order`.
 ///
 /// ## Errors
 ///
@@ -527,14 +614,15 @@ pub fn gstd(values: &[f64], ddof: usize) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::moment(&[1., 2., 3.], 1)?, 0.);
+/// assert_eq!(sci_stats::descriptive::moment(&[1., 2., 3.], 1)?, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `moment`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.moment.html).
-pub fn moment(values: &[f64], order: usize) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn moment<T: Float>(values: &[T], order: usize) -> Result<T> {
     sample(values, 1)?;
     if order > 64 {
         return Err(Error::InvalidInput("moment order exceeds 64"));
@@ -555,7 +643,10 @@ pub fn moment(values: &[f64], order: usize) -> Result<f64> {
         .collect::<Vec<_>>();
     let mut value = mean(&terms)?;
     for _ in 0..order {
-        value = finite(value * scale)?;
+        value = match value * scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
     }
     Ok(value)
 }
@@ -572,7 +663,7 @@ pub fn moment(values: &[f64], order: usize) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: dimensionless skewness.
+/// `T`: dimensionless skewness.
 ///
 /// ## Errors
 ///
@@ -588,24 +679,30 @@ pub fn moment(values: &[f64], order: usize) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::skew(&[1., 2., 3.], true)?.abs() < 1e-14);
+/// assert!(sci_stats::descriptive::skew(&[1.0_f64, 2., 3.], true)?.abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `skew`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.skew.html).
-pub fn skew(values: &[f64], bias: bool) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn skew<T: Float>(values: &[T], bias: bool) -> Result<T> {
     let (n, m2, m3, _) = standardized_moments(values)?;
+    Ok(skew_from_moments(n, m2, m3, bias))
+}
+
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn skew_from_moments<T: Float>(n: T, m2: T, m3: T, bias: bool) -> T {
     if m2 == 0. {
-        return Ok(f64::NAN);
+        return T::nan();
     }
     let g = m3 / m2.powf(1.5);
-    Ok(if !bias && n > 2. {
+    if !bias && n > 2. {
         g * (n * (n - 1.)).sqrt() / (n - 2.)
     } else {
         g
-    })
+    }
 }
 
 /// Kurtosis `m₄/m₂²`; Fisher excess subtracts three.
@@ -620,7 +717,7 @@ pub fn skew(values: &[f64], bias: bool) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `f64`: dimensionless kurtosis.
+/// `T`: dimensionless kurtosis.
 ///
 /// ## Errors
 ///
@@ -636,23 +733,29 @@ pub fn skew(values: &[f64], bias: bool) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_stats::kurtosis(&[1., 2., 3.], true, true)? + 1.5).abs() < 1e-14);
+/// assert!((sci_stats::descriptive::kurtosis(&[1.0_f64, 2., 3.], true, true)? + 1.5).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `kurtosis`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kurtosis.html).
-pub fn kurtosis(values: &[f64], fisher: bool, bias: bool) -> Result<f64> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn kurtosis<T: Float>(values: &[T], fisher: bool, bias: bool) -> Result<T> {
     let (n, m2, _, m4) = standardized_moments(values)?;
+    Ok(kurtosis_from_moments(n, m2, m4, fisher, bias))
+}
+
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+fn kurtosis_from_moments<T: Float>(n: T, m2: T, m4: T, fisher: bool, bias: bool) -> T {
     if m2 == 0. {
-        return Ok(f64::NAN);
+        return T::nan();
     }
     let mut k = m4 / (m2 * m2);
     if !bias && n > 3. {
         k = ((n * n - 1.) * k - 3. * (n - 1.).powi(2)) / ((n - 2.) * (n - 3.)) + 3.;
     }
-    Ok(if fisher { k - 3. } else { k })
+    if fisher { k - 3. } else { k }
 }
 
 /// Standardized scores `z_i=(x_i−mean(x))/std(x,ddof)`.
@@ -667,7 +770,7 @@ pub fn kurtosis(values: &[f64], fisher: bool, bias: bool) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `Vec<f64>`: one dimensionless score per observation.
+/// `Vec<T>`: one dimensionless score per observation.
 ///
 /// ## Errors
 ///
@@ -686,14 +789,14 @@ pub fn kurtosis(values: &[f64], fisher: bool, bias: bool) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::zscore(&[1., 2., 3.], 1)?, vec![-1., 0., 1.]);
+/// assert_eq!(sci_stats::descriptive::zscore(&[1., 2., 3.], 1)?, vec![-1., 0., 1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `zscore`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.zscore.html).
-pub fn zscore(values: &[f64], ddof: usize) -> Result<Vec<f64>> {
+pub fn zscore<T: Float>(values: &[T], ddof: usize) -> Result<Vec<T>> {
     zmap(values, values, ddof)
 }
 
@@ -715,7 +818,7 @@ pub fn zscore(values: &[f64], ddof: usize) -> Result<Vec<f64>> {
 ///
 /// ## Returns
 ///
-/// `Vec<f64>`: standardized scores in original order.
+/// `Vec<T>`: standardized scores in original order.
 ///
 /// ## Errors
 ///
@@ -735,14 +838,15 @@ pub fn zscore(values: &[f64], ddof: usize) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::zmap(&[2.], &[1., 2., 3.], 1)?, vec![0.]);
+/// assert_eq!(sci_stats::descriptive::zmap(&[2.], &[1., 2., 3.], 1)?, vec![0.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `zmap`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.zmap.html).
-pub fn zmap(scores: &[f64], compare: &[f64], ddof: usize) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn zmap<T: Float>(scores: &[T], compare: &[T], ddof: usize) -> Result<Vec<T>> {
     sample(scores, 0)?;
     if ddof >= compare.len() {
         return Err(Error::InvalidInput(
@@ -764,10 +868,10 @@ pub fn zmap(scores: &[f64], compare: &[f64], ddof: usize) -> Result<Vec<f64>> {
             let coordinate = if delta.is_finite() {
                 delta / reference.scale
             } else {
-                x / reference.scale - reference.origin / reference.scale
+                *x / reference.scale - reference.origin / reference.scale
             };
             let score = (coordinate - reference.center) / spread;
-            finite(if score.is_finite() {
+            match if score.is_finite() {
                 score
             } else {
                 // A coordinate may overflow although division by a spread
@@ -775,10 +879,13 @@ pub fn zmap(scores: &[f64], compare: &[f64], ddof: usize) -> Result<Vec<f64>> {
                 let displacement = if delta.is_finite() {
                     (delta / spread) / reference.scale
                 } else {
-                    (x / spread) / reference.scale - (reference.origin / spread) / reference.scale
+                    (*x / spread) / reference.scale - (reference.origin / spread) / reference.scale
                 };
                 displacement - reference.center / spread
-            })
+            } {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }
         })
         .collect()
 }
@@ -795,7 +902,7 @@ pub fn zmap(scores: &[f64], compare: &[f64], ddof: usize) -> Result<Vec<f64>> {
 ///
 /// ## Returns
 ///
-/// `Vec<f64>`: dimensionless log-space scores.
+/// `Vec<T>`: dimensionless log-space scores.
 ///
 /// ## Errors
 ///
@@ -813,14 +920,15 @@ pub fn zmap(scores: &[f64], compare: &[f64], ddof: usize) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::gzscore(&[1., 2., 4.], 1)?[1], 0.);
+/// assert_eq!(sci_stats::descriptive::gzscore(&[1., 2., 4.], 1)?[1], 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `gzscore`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.gzscore.html).
-pub fn gzscore(values: &[f64], ddof: usize) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn gzscore<T: Float>(values: &[T], ddof: usize) -> Result<Vec<T>> {
     sample(values, 1)?;
     if values.iter().any(|x| *x <= 0.) {
         return Err(Error::InvalidInput(
@@ -842,7 +950,7 @@ pub fn gzscore(values: &[f64], ddof: usize) -> Result<Vec<f64>> {
 ///
 /// ## Returns
 ///
-/// `Vec<f64>`: retained observations, ascending.
+/// `Vec<T>`: retained observations, ascending.
 ///
 /// ## Errors
 ///
@@ -852,28 +960,34 @@ pub fn gzscore(values: &[f64], ddof: usize) -> Result<Vec<f64>> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::trimboth(&[4., 2., 1., 3.], 0.25)?, vec![2., 3.]);
+/// assert_eq!(sci_stats::descriptive::trimboth(&[4., 2., 1., 3.], 0.25)?, vec![2., 3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `trimboth`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.trimboth.html).
-pub fn trimboth(values: &[f64], proportion: f64) -> Result<Vec<f64>> {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn trimboth<T: Float>(values: &[T], proportion: T) -> Result<Vec<T>> {
     sample(values, 0)?;
     if !proportion.is_finite() || !(0. ..0.5).contains(&proportion) {
         return Err(Error::InvalidInput("trim proportion must be in [0,0.5)"));
     }
     let mut x = values.to_vec();
-    x.sort_by(f64::total_cmp);
-    let k = (x.len() as f64 * proportion).floor() as usize;
-    Ok(x[k..x.len() - k].to_vec())
+    x.sort_by(total_cmp);
+    let k = (T::from(x.len()).unwrap() * proportion)
+        .floor()
+        .to_usize()
+        .unwrap();
+    x.truncate(x.len() - k);
+    x.drain(..k);
+    Ok(x)
 }
 
 /// Trimmed mean of the middle `n−2 floor(n*proportion)` observations.
@@ -888,7 +1002,7 @@ pub fn trimboth(values: &[f64], proportion: f64) -> Result<Vec<f64>> {
 ///
 /// ## Returns
 ///
-/// `f64`: arithmetic mean after sorting and trimming.
+/// `T`: arithmetic mean after sorting and trimming.
 ///
 /// ## Errors
 ///
@@ -898,20 +1012,20 @@ pub fn trimboth(values: &[f64], proportion: f64) -> Result<Vec<f64>> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::trim_mean(&[1., 2., 3., 100.], 0.25)?, 2.5);
+/// assert_eq!(sci_stats::descriptive::trim_mean(&[1., 2., 3., 100.], 0.25)?, 2.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `trim_mean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.trim_mean.html).
-pub fn trim_mean(values: &[f64], proportion: f64) -> Result<f64> {
+pub fn trim_mean<T: Float>(values: &[T], proportion: T) -> Result<T> {
     mean(&trimboth(values, proportion)?)
 }
 
@@ -927,7 +1041,7 @@ pub fn trim_mean(values: &[f64], proportion: f64) -> Result<f64> {
 ///
 /// ## Returns
 ///
-/// `(f64, usize)`: modal observation and its count.
+/// `(T, usize)`: modal observation and its count.
 ///
 /// ## Errors
 ///
@@ -943,14 +1057,14 @@ pub fn trim_mean(values: &[f64], proportion: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::mode(&[2., 1., 2.])?, (2., 2));
+/// assert_eq!(sci_stats::descriptive::mode(&[2., 1., 2.])?, (2., 2));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `mode`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.mode.html).
-pub fn mode(values: &[f64]) -> Result<(f64, usize)> {
+pub fn mode<T: Float>(values: &[T]) -> Result<(T, usize)> {
     let x = sorted(values)?;
     let mut best = (x[0], 1);
     let mut start = 0;
@@ -989,28 +1103,399 @@ pub fn mode(values: &[f64]) -> Result<(f64, usize)> {
 ///
 /// ## Numerical behavior
 ///
-/// Evaluated in binary64; rounding and cancellation can affect ill-conditioned data.
+/// Evaluated in the selected floating-point precision; rounding and cancellation can affect ill-conditioned data.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::describe(&[1., 2., 3.], 1, true)?.count, 3);
+/// assert_eq!(sci_stats::descriptive::describe(&[1., 2., 3.], 1, true)?.count, 3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
 /// # References
 ///
 /// [SciPy `describe`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.describe.html).
-pub fn describe(values: &[f64], ddof: usize, bias: bool) -> Result<Description> {
+pub fn describe<T: Float>(values: &[T], ddof: usize, bias: bool) -> Result<Description<T>> {
     sample(values, 1)?;
+    let min = values.iter().copied().fold(T::infinity(), T::min);
+    let max = values.iter().copied().fold(T::neg_infinity(), T::max);
+    let mean = mean(values)?;
+    let variance = variance(values, ddof)?;
+    // Skewness and kurtosis require the same three standardized moments.
+    // Reuse their common calculation without changing either formula.
+    let (n, m2, m3, m4) = standardized_moments(values)?;
     Ok(Description {
         count: values.len(),
-        min: values.iter().copied().fold(f64::INFINITY, f64::min),
-        max: values.iter().copied().fold(f64::NEG_INFINITY, f64::max),
-        mean: mean(values)?,
-        variance: variance(values, ddof)?,
-        skewness: skew(values, bias)?,
-        kurtosis: kurtosis(values, true, bias)?,
+        min,
+        max,
+        mean,
+        variance,
+        skewness: skew_from_moments(n, m2, m3, bias),
+        kurtosis: kurtosis_from_moments(n, m2, m4, true, bias),
     })
+}
+
+#[cfg(test)]
+mod quantile_selection_tests {
+    use super::*;
+
+    fn check<T: Float>(values: &[T], probabilities: &[T]) {
+        let input_bits: Vec<_> = values
+            .iter()
+            .map(|v| v.to_f64().unwrap().to_bits())
+            .collect();
+        let mut reference = values.to_vec();
+        reference.sort_by(total_cmp);
+        for &p in probabilities {
+            let expected = interpolate(&reference, p).to_f64().unwrap().to_bits();
+            let actual = quantile(values, p).unwrap().to_f64().unwrap().to_bits();
+            assert_eq!(actual, expected, "n={}, p={:?}", values.len(), p.to_f64());
+
+            // Exercise the selection path even when the public API recognizes
+            // already sorted input and skips partitioning.
+            let mut scratch = values.to_vec();
+            let selected = quantile_select_in_place(&mut scratch, p)
+                .to_f64()
+                .unwrap()
+                .to_bits();
+            assert_eq!(
+                selected,
+                expected,
+                "selection n={}, p={:?}",
+                values.len(),
+                p.to_f64()
+            );
+        }
+        assert_eq!(
+            values
+                .iter()
+                .map(|v| v.to_f64().unwrap().to_bits())
+                .collect::<Vec<_>>(),
+            input_bits,
+            "quantile must leave its input unchanged"
+        );
+    }
+
+    #[test]
+    fn quantile_selection_matches_sorted_bits_f64() {
+        let probabilities = [
+            -0.0,
+            0.0,
+            f64::from_bits(1),
+            f64::EPSILON,
+            0.001,
+            0.1,
+            0.3,
+            0.5,
+            0.7,
+            0.9,
+            0.999,
+            f64::from_bits(1.0_f64.to_bits() - 1),
+            1.0,
+        ];
+        for values in [
+            vec![-0.0],
+            vec![0.0, -0.0],
+            vec![-0.0, 0.0, -0.0, 0.0],
+            vec![f64::MIN_POSITIVE, f64::from_bits(1)],
+            vec![-f64::MAX, -1.0, -0.0, 0.0, 1.0, f64::MAX],
+            vec![-f64::MAX, f64::MAX],
+            vec![f64::MAX, f64::MAX],
+            vec![3.0; 17],
+        ] {
+            check(&values, &probabilities);
+        }
+        for n in 1..=128 {
+            let mut values = (0..n)
+                .map(|i| ((i * 37 + 11) % 23) as f64 - 11.0)
+                .collect::<Vec<_>>();
+            check(&values, &probabilities);
+            values.sort_by(f64::total_cmp);
+            check(&values, &probabilities);
+            values.reverse();
+            check(&values, &probabilities);
+        }
+        for n in [127, 128, 255, 256, 2048, 8192] {
+            let mut state = 0x245e_91b3_82ae_99dfu64;
+            let values = (0..n)
+                .map(|_| {
+                    state ^= state << 13;
+                    state ^= state >> 7;
+                    state ^= state << 17;
+                    (state >> 11) as f64 / (1_u64 << 53) as f64
+                })
+                .collect::<Vec<_>>();
+            check(&values, &probabilities);
+        }
+    }
+
+    #[test]
+    fn quantile_selection_matches_sorted_bits_f32() {
+        let probabilities = [
+            -0.0_f32,
+            0.0,
+            f32::from_bits(1),
+            f32::EPSILON,
+            0.001,
+            0.1,
+            0.3,
+            0.5,
+            0.7,
+            0.9,
+            0.999,
+            f32::from_bits(1.0_f32.to_bits() - 1),
+            1.0,
+        ];
+        for values in [
+            vec![-0.0_f32],
+            vec![0.0_f32, -0.0],
+            vec![-0.0_f32, 0.0, -0.0, 0.0],
+            vec![f32::MIN_POSITIVE, f32::from_bits(1)],
+            vec![-f32::MAX, -1.0, -0.0, 0.0, 1.0, f32::MAX],
+            vec![-f32::MAX, f32::MAX],
+            vec![f32::MAX, f32::MAX],
+            vec![3.0_f32; 17],
+        ] {
+            check(&values, &probabilities);
+        }
+        for n in 1..=128 {
+            let mut values = (0..n)
+                .map(|i| ((i * 37 + 11) % 23) as f32 - 11.0)
+                .collect::<Vec<_>>();
+            check(&values, &probabilities);
+            values.sort_by(f32::total_cmp);
+            check(&values, &probabilities);
+            values.reverse();
+            check(&values, &probabilities);
+        }
+        for n in [127, 128, 255, 256, 2048, 8192] {
+            let mut state = 0x245e_91b3_82ae_99dfu64;
+            let values = (0..n)
+                .map(|_| {
+                    state ^= state << 13;
+                    state ^= state >> 7;
+                    ((state >> 11) as f64 / (1_u64 << 53) as f64) as f32
+                })
+                .collect::<Vec<_>>();
+            check(&values, &probabilities);
+        }
+    }
+
+    #[test]
+    fn quantile_selection_preserves_validation_and_endpoints() {
+        assert!(quantile::<f64>(&[], 0.5).is_err());
+        assert!(quantile::<f32>(&[], 0.5).is_err());
+        for invalid in [f64::NAN, f64::NEG_INFINITY, f64::INFINITY, -0.1, 1.1] {
+            assert!(quantile(&[0.0, 1.0], invalid).is_err());
+        }
+        for invalid in [f32::NAN, f32::NEG_INFINITY, f32::INFINITY, -0.1, 1.1] {
+            assert!(quantile(&[0.0_f32, 1.0], invalid).is_err());
+        }
+        for invalid in [f64::NAN, f64::NEG_INFINITY, f64::INFINITY] {
+            assert!(quantile(&[0.0, invalid], 0.3).is_err());
+        }
+        for invalid in [f32::NAN, f32::NEG_INFINITY, f32::INFINITY] {
+            assert!(quantile(&[0.0_f32, invalid], 0.3).is_err());
+        }
+        assert!(quantile(&vec![1.0_f64; MAX_SAMPLES + 1], 0.3).is_err());
+        let x: [f64; 4] = [0.0, -0.0, -1.0, 1.0];
+        assert_eq!(quantile(&x, 0.0).unwrap().to_bits(), (-1.0_f64).to_bits());
+        assert_eq!(quantile(&x, 1.0).unwrap().to_bits(), 1.0_f64.to_bits());
+    }
+}
+
+#[cfg(test)]
+mod median_selection_tests {
+    use super::*;
+
+    fn check_f64(values: &[f64]) {
+        let original_bits = values.iter().map(|x| x.to_bits()).collect::<Vec<_>>();
+        let mut sorted = values.to_vec();
+        sorted.sort_by(f64::total_cmp);
+        let expected = interpolate(&sorted, 0.5).to_bits();
+        let mut selected = values.to_vec();
+        assert_eq!(median_select_in_place(&mut selected).to_bits(), expected);
+        assert_eq!(median(values).unwrap().to_bits(), expected);
+        assert_eq!(
+            values.iter().map(|x| x.to_bits()).collect::<Vec<_>>(),
+            original_bits
+        );
+    }
+
+    fn check_f32(values: &[f32]) {
+        let original_bits = values.iter().map(|x| x.to_bits()).collect::<Vec<_>>();
+        let mut sorted = values.to_vec();
+        sorted.sort_by(f32::total_cmp);
+        let expected = interpolate(&sorted, 0.5).to_bits();
+        let mut selected = values.to_vec();
+        assert_eq!(median_select_in_place(&mut selected).to_bits(), expected);
+        assert_eq!(median(values).unwrap().to_bits(), expected);
+        assert_eq!(
+            values.iter().map(|x| x.to_bits()).collect::<Vec<_>>(),
+            original_bits
+        );
+    }
+
+    #[test]
+    fn f64_median_selection_matches_sorted_bits() {
+        for values in [
+            vec![-0.0],
+            vec![0.0, -0.0],
+            vec![-0.0, -0.0],
+            vec![0.0, 0.0],
+            vec![0.0, -0.0, -0.0],
+            vec![-0.0, 0.0, 0.0, -0.0],
+            vec![-f64::MAX, f64::MAX],
+            vec![-f64::MAX, -f64::MAX],
+            vec![f64::MAX, f64::MAX],
+            vec![f64::MIN_POSITIVE, f64::from_bits(1)],
+            vec![-f64::MAX, -1.0, 0.0, 1.0, f64::MAX],
+            vec![3.0, 3.0, 3.0, 3.0],
+        ] {
+            check_f64(&values);
+        }
+        for n in 1..=33 {
+            let mut values = (0..n)
+                .map(|i| ((i * 19 + 3) % 13 - 6) as f64)
+                .collect::<Vec<_>>();
+            check_f64(&values);
+            values.reverse();
+            check_f64(&values);
+        }
+    }
+
+    #[test]
+    fn f32_median_selection_matches_sorted_bits() {
+        for values in [
+            vec![-0.0_f32],
+            vec![0.0_f32, -0.0],
+            vec![-0.0_f32, -0.0],
+            vec![0.0_f32, 0.0],
+            vec![0.0_f32, -0.0, -0.0],
+            vec![-0.0_f32, 0.0, 0.0, -0.0],
+            vec![-f32::MAX, f32::MAX],
+            vec![-f32::MAX, -f32::MAX],
+            vec![f32::MAX, f32::MAX],
+            vec![f32::MIN_POSITIVE, f32::from_bits(1)],
+            vec![-f32::MAX, -1.0, 0.0, 1.0, f32::MAX],
+            vec![3.0_f32, 3.0, 3.0, 3.0],
+        ] {
+            check_f32(&values);
+        }
+        for n in 1..=33 {
+            let mut values = (0..n)
+                .map(|i| ((i * 19 + 3) % 13 - 6) as f32)
+                .collect::<Vec<_>>();
+            check_f32(&values);
+            values.reverse();
+            check_f32(&values);
+        }
+    }
+
+    #[test]
+    fn median_selection_retains_input_validation() {
+        assert!(median::<f64>(&[]).is_err());
+        assert!(median::<f32>(&[]).is_err());
+        for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert!(median(&[0.0, invalid]).is_err());
+        }
+        for invalid in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            assert!(median(&[0.0_f32, invalid]).is_err());
+        }
+        assert!(median(&vec![1.0_f64; MAX_SAMPLES + 1]).is_err());
+    }
+}
+
+#[cfg(test)]
+mod shared_moments_tests {
+    use super::*;
+
+    fn assert_same_float<T: Float>(actual: T, expected: T) {
+        if expected.is_nan() {
+            assert!(actual.is_nan());
+        } else {
+            // f32 and f64 convert to f64 exactly, including signed zero.
+            assert_eq!(
+                actual.to_f64().unwrap().to_bits(),
+                expected.to_f64().unwrap().to_bits()
+            );
+        }
+    }
+
+    fn check_description<T: Float>(values: &[T]) {
+        for ddof in [0, 1] {
+            if ddof >= values.len() {
+                continue;
+            }
+            for bias in [false, true] {
+                let summary = describe(values, ddof, bias).unwrap();
+                assert_eq!(summary.count, values.len());
+                assert_same_float(summary.mean, mean(values).unwrap());
+                assert_same_float(summary.variance, variance(values, ddof).unwrap());
+                assert_same_float(summary.skewness, skew(values, bias).unwrap());
+                assert_same_float(summary.kurtosis, kurtosis(values, true, bias).unwrap());
+            }
+        }
+    }
+
+    #[test]
+    fn describe_reused_moments_match_separate_statistics_bitwise() {
+        for values in [
+            vec![0.0_f64],
+            vec![-0.0, 0.0, -0.0, 0.0],
+            vec![2.0, 2.0, 2.0, 2.0],
+            vec![-11.0, -3.0, 0.0, 4.0, 5.0, 100.0],
+            vec![1e-100, 3e-100, 2e-100, 1e-100],
+            vec![-1e150, -1e100, 3e100, 1e150],
+        ] {
+            check_description(&values);
+        }
+        for values in [
+            vec![0.0_f32],
+            vec![-0.0_f32, 0.0, -0.0, 0.0],
+            vec![3.0_f32; 5],
+            vec![-11.0_f32, -3.0, 0.0, 4.0, 5.0, 100.0],
+            vec![1e-15_f32, 3e-15, 2e-15, 1e-15],
+            vec![-1e15_f32, -1e10, 3e10, 1e15],
+        ] {
+            check_description(&values);
+        }
+        assert!(describe::<f64>(&[], 0, false).is_err());
+        assert!(describe(&[1.0, 2.0], 2, true).is_err());
+        assert!(describe(&[1.0, f64::NAN], 0, false).is_err());
+    }
+
+    #[test]
+    fn mad_in_place_matches_previous_double_copy_selection() {
+        for values in [
+            vec![-0.0_f64],
+            vec![-0.0, 0.0, -0.0, 0.0],
+            vec![1.0, 1.0, 1.0],
+            vec![9.0, 1.0, 3.0, 1.0, -1.0],
+            vec![-100.0, -3.0, 0.0, 4.0, 75.0, 200.0],
+            vec![1e-120, -1e-120, 2e-120, 3e-120],
+        ] {
+            let center = median(&values).unwrap();
+            let distances = values
+                .iter()
+                .map(|&x| (x - center).abs())
+                .collect::<Vec<_>>();
+            for scale in [0.5, 1.0, 1.4826] {
+                let expected = median(&distances).unwrap() / scale;
+                let actual = median_abs_deviation(&values, scale).unwrap();
+                assert_eq!(actual.to_bits(), expected.to_bits());
+            }
+        }
+        let values = [-0.0_f32, 0.0, -4.0, 2.0, 6.0];
+        let center = median(&values).unwrap();
+        let distances = values.map(|x| (x - center).abs());
+        assert_eq!(
+            median_abs_deviation(&values, 1.0_f32).unwrap().to_bits(),
+            median(&distances).unwrap().to_bits()
+        );
+        assert!(median_abs_deviation(&[-f64::MAX, f64::MAX, f64::MAX], 1.0).is_err());
+        assert!(median_abs_deviation(&[1.0, f64::NAN], 1.0).is_err());
+        assert!(median_abs_deviation(&[1.0], 0.0).is_err());
+    }
 }

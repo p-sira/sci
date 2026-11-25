@@ -1,0 +1,173 @@
+//! Hypergeometric functions reusing Bessel kernels and shared precision arithmetic.
+use crate::backend::{StrErr, double_double::Dd};
+use sci_core::Float;
+
+const ERROR: StrErr =
+    "hyp0f1: Requires finite arguments and a parameter outside the nonpositive integers.";
+
+fn validate(v: f64) -> Result<(), StrErr> {
+    if !v.is_finite() || (v <= 0.0 && v == v.floor()) {
+        Err(ERROR)
+    } else {
+        Ok(())
+    }
+}
+/// Double-double power series for real `z`. Returns `None` when the series
+/// is outside its range or loses too much precision to cancellation.
+/// Full-precision anchors retain terms to 1e-32 and require a 1e-26 relative
+/// roundoff estimate; ordinary scalar evaluation keeps its existing thresholds.
+pub(super) fn series_real<const FULL_PRECISION: bool>(v: f64, z: f64) -> Option<Dd> {
+    let norm = z.abs();
+    if norm > 100.0 && !(v > 0.0 && norm / v < 16.0) {
+        return None;
+    }
+    let mut real = Dd::from(1.0);
+    // Positive and negative terms are accumulated separately, so every
+    // accumulation is the cheaper same-sign double-double addition; one full
+    // addition combines them at the end.
+    let (mut positive, mut negative) = (real, Dd::from(0.0));
+    let mut peak: f64 = 1.0;
+    for k in 1..=4096 {
+        // term_k = term_(k-1) z / ((v + k - 1) k); v + k - 1 is exact in
+        // double-double and the integer factor k needs no promotion.
+        let kf = k as f64;
+        let denominator = Dd::sum(v, kf - 1.0).mul_f64(kf);
+        real = real.mul_f64(z).div_dd(denominator);
+        if real.hi >= 0.0 {
+            positive = positive.add_same_sign(real);
+        } else {
+            negative = negative.add_same_sign(real);
+        }
+        let term = real.hi.abs();
+        let magnitude = (positive.hi + negative.hi).abs();
+        peak = peak.max(term);
+        if !magnitude.is_finite() {
+            return None;
+        }
+        // Once the next ratio |z| / ((v + k) (k + 1)) is below one half, the
+        // remaining tail is at most twice the current term, so terms below
+        // 1e-20 of the sum are beyond binary64 resolution.
+        let tail_bounded = (v + kf) * (kf + 1.0) > 2.0 * norm;
+        let tolerance = if FULL_PRECISION { 1e-32 } else { 1e-20 };
+        if (tail_bounded && term <= tolerance * magnitude)
+            || term <= 1e-32 * magnitude
+            || term == 0.0
+        {
+            let sum = positive + negative;
+            let accuracy = if FULL_PRECISION { 1e-26 } else { 1e-13 };
+            if peak * 1e-30 > accuracy * sum.hi.abs() {
+                return None;
+            }
+            return Some(sum);
+        }
+    }
+    None
+}
+
+// Certify compensated binary64 summation using an absolute-term forward-error
+// bound. The same bound works for alternating terms, provided the final result
+// is not too small relative to the term magnitudes; cancellation-sensitive
+// cases fall through to the existing double-double/Bessel kernels.
+fn compensated_series(v: f64, z: f64) -> Option<f64> {
+    if v <= 0.0 || !(-10.0..=100.0).contains(&z) {
+        return None;
+    }
+    let (mut term, mut sum, mut correction, mut weighted) = (1.0, 1.0, 0.0, 2.0);
+    for k in 1..=256 {
+        let kf = k as f64;
+        term *= z / ((v + (kf - 1.0)) * kf);
+        let adjusted = term - correction;
+        let next = sum + adjusted;
+        correction = (next - sum) - adjusted;
+        sum = next;
+        // Four rounded operations per term, and two eps for compensated sum.
+        weighted += (4.0 * kf + 2.0) * term.abs();
+        if !sum.is_finite() {
+            return None;
+        }
+        if (v + kf) * (kf + 1.0) > 2.0 * z.abs() && term.abs() <= 0.125 * f64::EPSILON * sum.abs() {
+            // gamma_(4k) <= (4k)*eps/(1-1024*eps), since k <= 256.
+            let error = f64::EPSILON * weighted / (1.0 - 1024.0 * f64::EPSILON) + 2.0 * term.abs();
+            return (error <= 16.0 * f64::EPSILON * sum.abs()).then_some(sum);
+        }
+    }
+    None
+}
+
+fn real_kernel(v: f64, z: f64) -> Result<f64, StrErr> {
+    validate(v)?;
+    if !z.is_finite() {
+        return Err(ERROR);
+    }
+    if z == 0.0 {
+        return Ok(1.0);
+    }
+    // Large negative arguments with |z| > v have strongly alternating
+    // terms. The strict binary64 error bound usually rejects this region;
+    // go directly to the higher-precision series to avoid a redundant pass.
+    let cancellation_prone = v > 0.0 && z < -3.0 && v < -z;
+    if !cancellation_prone && let Some(value) = compensated_series(v, z) {
+        return Ok(value);
+    }
+    if let Some(value) = series_real::<false>(v, z) {
+        return Ok(value.hi);
+    }
+    let root = z.abs().sqrt();
+    let bessel = if z > 0.0 {
+        crate::backend::bessel::ive(v - 1.0, 2.0 * root)?
+    } else {
+        crate::backend::cyl_bessel_j(v - 1.0, 2.0 * root)?
+    };
+    if bessel == 0.0 {
+        return Err("hyp0f1: Bessel kernel underflow prevents reliable rescaling.");
+    }
+    let logarithm = crate::backend::cephes64::lgam(v)
+        + (1.0 - v) * root.ln()
+        + if z > 0.0 { 2.0 * root } else { 0.0 };
+    Ok((logarithm + bessel.abs().ln()).exp() * crate::backend::gammasgn(v)? * bessel.signum())
+}
+
+// Taylor continuation across the real axis from z*f''+v*f'-f=0.
+// Keeping powers of the transverse displacement inside the recurrence avoids
+// subtracting almost equal Bessel phases to obtain a small imaginary component.
+
+/// Confluent hypergeometric limit function 0F1(;v;z) for real arguments.
+///
+/// Requires finite arguments; nonpositive integer `v` is a pole. Uses
+/// double-double series near zero and exponentially scaled Bessel kernels
+/// elsewhere, combining prefactors logarithmically to avoid intermediate overflow.
+pub fn hyp0f1<T: Float>(v: T, z: T) -> Result<T, StrErr> {
+    let v = v.to_f64().ok_or(ERROR)?;
+    let z = z.to_f64().ok_or(ERROR)?;
+    crate::backend::utils::finish(real_kernel(v, z)?, ERROR)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{compensated_series, real_kernel};
+
+    #[test]
+    fn negative_shortcut_preserves_any_certified_binary64_result() {
+        // The expensive fallback must agree whenever the previous, stricter
+        // binary64 bound could certify the result, even outside benchmark inputs.
+        let parameters = [0.01, 0.05, 0.125, 0.5, 1.0, 1.5, 2.5, 3.0, 5.0, 10.0, 25.0];
+        let arguments = [
+            -3.0000001, -3.001, -3.01, -3.1, -3.25, -3.5, -4.0, -5.0, -7.5, -10.0, -20.0, -50.0,
+            -100.0,
+        ];
+        for v in parameters {
+            for z in arguments {
+                if v < -z {
+                    let candidate = real_kernel(v, z).unwrap();
+                    if let Some(certified) = compensated_series(v, z) {
+                        assert!(
+                            (candidate - certified).abs()
+                                <= 4e-13 * candidate.abs().max(certified.abs()).max(1.0),
+                            "0F1(;{v};{z})={candidate}, certified={certified}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+}

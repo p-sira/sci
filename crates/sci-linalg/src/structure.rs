@@ -26,7 +26,7 @@ use crate::{Error, Result};
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::bandwidth(&[vec![1.,2.],vec![0.,3.]])?,(0,1));
+/// assert_eq!(sci_linalg::basic::bandwidth(&[vec![1.,2.],vec![0.,3.]])?,(0,1));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -34,13 +34,14 @@ use crate::{Error, Result};
 ///
 /// [SciPy `bandwidth`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.bandwidth.html).
 pub fn bandwidth(a: &(impl super::MatrixInput + ?Sized)) -> Result<(usize, usize)> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    shape(a)?;
+    let (m, n) = shape(a)?;
     let (mut l, mut u) = (0, 0);
-    for (i, row) in a.iter().enumerate() {
-        crate::error::finite_slice(row)?;
-        for (j, &v) in row.iter().enumerate() {
+    for i in 0..m {
+        for j in 0..n {
+            let v = a.matrix_entry(i, j);
+            if !v.is_finite() {
+                return Err(Error::InvalidInput("coordinates must be finite"));
+            }
             if v != 0.0 {
                 l = l.max(i.saturating_sub(j));
                 u = u.max(j.saturating_sub(i));
@@ -74,7 +75,7 @@ pub fn bandwidth(a: &(impl super::MatrixInput + ?Sized)) -> Result<(usize, usize
 /// # Examples
 ///
 /// ```
-/// assert!(sci_linalg::issymmetric(&[vec![1.,2.],vec![2.,3.]],None,None)?);
+/// assert!(sci_linalg::basic::issymmetric(&[vec![1.,2.],vec![2.,3.]],None,None)?);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -86,8 +87,6 @@ pub fn issymmetric(
     atol: Option<f64>,
     rtol: Option<f64>,
 ) -> Result<bool> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let (m, n) = shape(a)?;
     if m != n {
         return Err(Error::DimensionMismatch);
@@ -95,12 +94,12 @@ pub fn issymmetric(
     let exact = atol.is_none() && rtol.is_none();
     let atol = tolerance(atol.unwrap_or(0.0))?;
     let rtol = tolerance(rtol.unwrap_or(0.0))?;
-    for (i, row) in a.iter().enumerate() {
-        for (j, other) in a.iter().enumerate() {
+    for i in 0..n {
+        for j in 0..n {
             if exact && i == j {
                 continue;
             }
-            let (x, y) = (row[j], other[i]);
+            let (x, y) = (a.matrix_entry(i, j), a.matrix_entry(j, i));
             if x == y {
                 continue;
             }
@@ -111,7 +110,3 @@ pub fn issymmetric(
     }
     Ok(true)
 }
-/// Real-valued alias of [`issymmetric`]: Hermitian symmetry is `A=Aᵀ`.
-/// Parameters, IEEE special values, errors, work limits, and conventions are identical.
-/// Complex input is unsupported; SciPy's complex Hermitian test is not reproduced.
-pub use issymmetric as ishermitian;

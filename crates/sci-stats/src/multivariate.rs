@@ -60,7 +60,7 @@ fn coordinates(x: &[f64], mean: &[f64]) -> Result<()> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::multivariate_normal_pdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]])?.is_finite());
+/// assert!(sci_stats::multivariate::multivariate_normal_pdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -76,7 +76,10 @@ pub fn multivariate_normal_pdf(
     let cov = matrix(covariance, x.len())?;
     let d = MultivariateNormal::new_from_nalgebra(DVector::from_column_slice(location), cov)
         .map_err(|_| Error::InvalidInput("covariance must be positive definite"))?;
-    finite(d.pdf(&DVector::from_column_slice(x)))
+    match d.pdf(&DVector::from_column_slice(x)) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Natural logarithm of `exp(−(x−μ)ᵀΣ⁻¹(x−μ)/2)/sqrt((2π)^d det(Σ))`.
 ///
@@ -107,7 +110,7 @@ pub fn multivariate_normal_pdf(
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::multivariate_normal_logpdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]])?.is_finite());
+/// assert!(sci_stats::multivariate::multivariate_normal_logpdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -123,7 +126,10 @@ pub fn multivariate_normal_logpdf(
     let cov = matrix(covariance, x.len())?;
     let d = MultivariateNormal::new_from_nalgebra(DVector::from_column_slice(location), cov)
         .map_err(|_| Error::InvalidInput("covariance must be positive definite"))?;
-    finite(d.ln_pdf(&DVector::from_column_slice(x)))
+    match d.ln_pdf(&DVector::from_column_slice(x)) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Density `Γ((ν+d)/2)/(Γ(ν/2)*(νπ)^(d/2)*sqrt(det(S)))*(1+δ/ν)^(-(ν+d)/2), δ=(x−μ)ᵀS⁻¹(x−μ)`.
 ///
@@ -154,7 +160,7 @@ pub fn multivariate_normal_logpdf(
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::multivariate_t_pdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]], 4.)?.is_finite());
+/// assert!(sci_stats::multivariate::multivariate_t_pdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]], 4.)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -175,7 +181,10 @@ pub fn multivariate_t_pdf(
     }
     let d = MultivariateStudent::new_from_nalgebra(DVector::from_column_slice(location), cov, df)
         .map_err(|_| Error::InvalidInput("covariance must be positive definite"))?;
-    finite(d.pdf(&DVector::from_column_slice(x)))
+    match d.pdf(&DVector::from_column_slice(x)) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Natural logarithm of `Γ((ν+d)/2)/(Γ(ν/2)*(νπ)^(d/2)*sqrt(det(S)))*(1+δ/ν)^(-(ν+d)/2), δ=(x−μ)ᵀS⁻¹(x−μ)`.
 ///
@@ -206,7 +215,7 @@ pub fn multivariate_t_pdf(
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::multivariate_t_logpdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]], 4.)?.is_finite());
+/// assert!(sci_stats::multivariate::multivariate_t_logpdf(&[0., 0.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]], 4.)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -227,7 +236,10 @@ pub fn multivariate_t_logpdf(
     }
     let d = MultivariateStudent::new_from_nalgebra(DVector::from_column_slice(location), cov, df)
         .map_err(|_| Error::InvalidInput("covariance must be positive definite"))?;
-    finite(d.ln_pdf(&DVector::from_column_slice(x)))
+    match d.ln_pdf(&DVector::from_column_slice(x)) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Dirichlet density `Γ(Σα)/ΠΓ(α_i)*Πx_i^(α_i−1)`.
 ///
@@ -259,7 +271,7 @@ pub fn multivariate_t_logpdf(
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::dirichlet_pdf(&[0.3, 0.7], &[2., 3.])?.is_finite());
+/// assert!(sci_stats::multivariate::dirichlet_pdf(&[0.3, 0.7], &[2., 3.])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -283,7 +295,10 @@ pub fn dirichlet_pdf(x: &[f64], alpha: &[f64]) -> Result<f64> {
     }
     let d = Dirichlet::new(alpha.to_vec())
         .map_err(|_| Error::InvalidInput("invalid concentrations"))?;
-    finite(d.pdf(&DVector::from_column_slice(x)))
+    match d.pdf(&DVector::from_column_slice(x)) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Logarithm of Dirichlet density `Γ(Σα)/ΠΓ(α_i)*Πx_i^(α_i−1)`.
 ///
@@ -315,7 +330,7 @@ pub fn dirichlet_pdf(x: &[f64], alpha: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::dirichlet_logpdf(&[0.3, 0.7], &[2., 3.])?.is_finite());
+/// assert!(sci_stats::multivariate::dirichlet_logpdf(&[0.3, 0.7], &[2., 3.])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -339,7 +354,10 @@ pub fn dirichlet_logpdf(x: &[f64], alpha: &[f64]) -> Result<f64> {
     }
     let d = Dirichlet::new(alpha.to_vec())
         .map_err(|_| Error::InvalidInput("invalid concentrations"))?;
-    finite(d.ln_pdf(&DVector::from_column_slice(x)))
+    match d.ln_pdf(&DVector::from_column_slice(x)) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// multinomial probability `n!/Πk_i!*Πp_i^k_i`, n=Σk_i.
 ///
@@ -371,7 +389,7 @@ pub fn dirichlet_logpdf(x: &[f64], alpha: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::multinomial_pmf(&[1., 2.], &[0.5, 0.5])?.is_finite());
+/// assert!(sci_stats::multivariate::multinomial_pmf(&[1., 2.], &[0.5, 0.5])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -411,7 +429,7 @@ pub fn multinomial_pmf(counts: &[f64], probabilities: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::multinomial_logpmf(&[1., 2.], &[0.5, 0.5])?.is_finite());
+/// assert!(sci_stats::multivariate::multinomial_logpmf(&[1., 2.], &[0.5, 0.5])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -454,7 +472,10 @@ pub fn multinomial_logpmf(counts: &[f64], probabilities: &[f64]) -> Result<f64> 
             value += count as f64 * p.ln();
         }
     }
-    finite(value)
+    match value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Categorical probability `P(X=k)=weight_k/Σweight`.
 ///
@@ -486,7 +507,7 @@ pub fn multinomial_logpmf(counts: &[f64], probabilities: &[f64]) -> Result<f64> 
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::categorical_pmf(&[1., 1.], 0.)?, 0.5);
+/// assert_eq!(sci_stats::multivariate::categorical_pmf(&[1., 1.], 0.)?, 0.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -541,7 +562,7 @@ pub fn categorical_pmf(weights: &[f64], category: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::categorical_cdf(&[1., 1.], 0.)?, 0.5);
+/// assert_eq!(sci_stats::multivariate::categorical_cdf(&[1., 1.], 0.)?, 0.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

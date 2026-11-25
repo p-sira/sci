@@ -1,10 +1,10 @@
 # `linalg` coverage and SciPy adaptations
 
-The `linalg` namespace exports **96 of 96** top-level
+The `linalg` namespace exports **91 of 96** top-level
 `scipy.linalg` inventory function names. The nine
 `scipy.linalg.interpolative` names are also exported in their own namespace.
-Every name has at least two independent reference cases, for **570 cases**
-total across 105 qualified APIs. These APIs have documented functional
+Every retained name has at least two independent reference cases, for **572 cases**
+total across 101 qualified reference labels (including the removed solve_lyapunov spelling, tested through solve_continuous_lyapunov). These APIs have documented functional
 signatures and limitations; name coverage does not establish full SciPy
 behavioral parity. There are no placeholder implementations.
 
@@ -12,9 +12,7 @@ The source of truth is [SCIPY_FUNCTIONS.md](SCIPY_FUNCTIONS.md) and its
 [linear algebra inventory](scipy-func-list/scipy.linalg.md). Deprecated
 `basic`, `decomp*`, `matfuncs`, `misc`, and `special_matrices` paths repeat the
 same top-level names; they do not require duplicate implementations.
-The BLAS/LAPACK/Cython binding namespaces remain absent. Top-level dispatchers
-return typed function handles for a documented subset of real operations;
-backend types remain private. Python classes and methods are not counted
+The BLAS/LAPACK/Cython binding namespaces remain absent. Runtime dispatchers are intentionally omitted; backend types remain private. Python classes and methods are not counted
 as free functions.
 
 ## Backend and adapter features
@@ -44,6 +42,15 @@ vectors/views, and faer rows/columns/views. Matrix collections also accept these
 types, including mixed libraries through `&dyn MatrixInput`. Existing aliases
 reuse the same adapters. Faer is the private computational backend independently of
 input storage; inputs are read-only and results retain shared Sci types.
+Numerical entry points pass storage directly to private backend adapters,
+without converting through shared rows. Faer views (including negative strides),
+fixed arrays, and contiguous C/F-order ndarray matrices can be borrowed.
+Shared rows, nalgebra storage, and other ndarray layouts copy directly to faer.
+Algorithms that scale or overwrite working matrices retain an owned copy.
+Internal real backend matrices are passed between algorithms through private
+borrowed adapters, including with interoperability features disabled.
+Cholesky reads the selected input triangle directly; output conversion reads
+backend views without temporary transposes or submatrix copies.
 
 The traits provide owned conversions to shared rows/vectors and each library.
 Logical indexing preserves row/column order for strided and transposed views,
@@ -54,12 +61,11 @@ logical shapes directly. Shared output rows retain this representation limit.
 Input conversions and basic helpers bound each axis and entry count at
 1,000,000; numerical algorithms retain their existing tighter bounds.
 
-All **570 cases** run through shared, ndarray, nalgebra, and faer storage.
+All **572 cases** run through shared, ndarray, nalgebra, and faer storage.
 Additional independently generated SciPy BLAS fixtures test basic products,
 transpose, and dot products. Rust tests exercise mixed libraries, strided and
 mutable views, fixed storage, empty axes, IEEE conversion, cross-module results,
-validation, and allocation bounds. Optional vector parameters, typed dispatch
-function pointers, and complex conversion inputs retain existing slice/row
+validation, and allocation bounds. Optional vector parameters and complex conversion inputs retain existing slice/row
 signatures. Untyped empty literals and stored generic function items may require
 explicit type annotations. This adds storage interoperability without expanding
 SciPy numerical coverage or introducing another algorithm backend.
@@ -85,11 +91,11 @@ repeated eigenvalues. References are generated with NumPy 2.5.4 and SciPy 1.18.1
 | SVD and rank | `svd`, `svdvals`, `diagsvd`, `pinv`, `pinvh`, `lstsq`, `orth`, `null_space` |
 | Subspaces and alignment | `polar`, `orthogonal_procrustes`, `subspace_angles` |
 | Matrix functions | `expm`, `sinm`, `cosm`, `tanm`, `sinhm`, `coshm`, `tanhm`, `expm_frechet`, `expm_cond`, `sqrtm`, `logm`, `signm`, `funm`, `fractional_matrix_power` |
-| Matrix equations | `solve_sylvester`, `solve_continuous_lyapunov`, `solve_lyapunov`, `solve_discrete_lyapunov`, `solve_continuous_are`, `solve_discrete_are` |
+| Matrix equations | `solve_sylvester`, `solve_continuous_lyapunov`, `solve_discrete_lyapunov`, `solve_continuous_are`, `solve_discrete_are` |
 | Structured matrices | `toeplitz`, `hankel`, `circulant`, `hilbert`, `invhilbert`, `pascal`, `invpascal`, `hadamard`, `helmert`, `fiedler`, `companion`, `fiedler_companion`, `leslie`, `block_diag`, `convolution_matrix`, `dft`, `khatri_rao` |
 | Sketching | `clarkson_woodruff_transform` |
-| Typed dispatch | `find_best_blas_type`, `get_blas_funcs`, `get_lapack_funcs` |
-| Norms and structure | `norm`, `bandwidth`, `issymmetric`, `ishermitian` |
+| Removed compatibility dispatch | `find_best_blas_type`, `get_blas_funcs`, `get_lapack_funcs`; call numerical APIs directly |
+| Norms and structure | `norm`, `bandwidth`, `issymmetric` |
 
 The existing `dot`, `matvec`, `matmul`, and `transpose` helpers remain available
 and are exercised by interoperability and reconstruction tests. They are not
@@ -120,6 +126,11 @@ option are unsupported. `rsf2csf` separately converts real Schur factors,
 and `qz`/`ordqz` return complex generalized Schur factors. Eigenvalues
 from symmetric problems are ascending; SVD values are descending; general
 eigenvalues are in unspecified Schur order. Eigenvectors are columns.
+
+`eigvalsh`, `eigvalsh_tridiagonal`, and `eigvals_banded` use the scaled
+eigenvalues-only backend path. They do not form eigenvectors; results may
+differ from vector-producing routines by roundoff. Banded and tridiagonal
+inputs still expand to dense storage and retain the 256-axis work bound.
 
 Pseudoinverses always return `(matrix, rank)` and retain values strictly above
 `atol + rtol*largest_magnitude`. Optional pseudoinverse/range/null-space relative
@@ -212,7 +223,9 @@ can be severely ill-conditioned. Fiedler and coefficient-ratio overflow is an er
 Structure predicates are deliberate IEEE exceptions: exact symmetry ignores the
 diagonal, equal infinities compare true, and off-diagonal NaN compares false.
 Providing either tolerance activates allclose semantics including the diagonal.
-`ishermitian` is the real-valued alias of `issymmetric`; complex Hermitian inputs
+`issymmetric` is the sole public predicate for real matrix symmetry, which
+coincides with Hermitian symmetry for real scalars. The previous
+`ishermitian` spelling is removed in Sci 0.3.0; complex Hermitian inputs
 are unsupported. `bandwidth` tests exact nonzero finite entries.
 
 SciPy-derived companion layouts and principal-angle identities retain their
@@ -220,11 +233,11 @@ BSD-3-Clause notice in [LICENSES/scipy-linalg.txt](LICENSES/scipy-linalg.txt).
 
 ## Verification
 
-Input-only cases live in `tests/scipy/linalg_cases.json`. The generator pins
+Input-only cases live in `tests/scipy/linalg_cases.jsonl`. The generator pins
 **SciPy 1.18.1 / NumPy 2.5.4**, uses their public APIs, and writes separate
 checked-in input/expected CSVs. Normal Rust tests require no Python.
 
-The **570** cases exercise all 105 qualified APIs, shapes, output ordering, triangle/band
+The **572** cases exercise all 101 qualified reference labels (including the removed solve_lyapunov spelling, tested through solve_continuous_lyapunov), shapes, output ordering, triangle/band
 layouts, normalization, rectangular and rank-deficient systems, explicit cutoffs,
 zero-rank spaces, and near-zero subspace angles. Well-conditioned small systems
 use **3e-11 absolute plus 3e-11 relative** tolerances for different dense
@@ -332,15 +345,11 @@ are omitted. Independent uniform draws are required for the usual probability
 bound; supplied arbitrary maps have no norm-preservation guarantee. Reference
 inputs contain NumPy RNG draws and are evaluated by SciPy's public transform.
 
-`find_best_blas_type` reports the fixed double-real prefix and row-major storage
-of the shared matrices, including an empty input list. It inspects shapes only
-and accepts IEEE entries. `get_blas_funcs` returns typed callable handles for
-`dot`, `nrm2`, `gemv`, `gemm`; `get_lapack_funcs` supports `gesv`, `getrf`, `getrs`,
-`potrf`, `potrs`, `geev`, `syev`, `syevd`, `gesvd`, `gesdd`, and `gges`. Optional d
-prefixes are accepted. Driver aliases reuse the same Rust backend. These handles
-use the owned functional signatures rather than raw work buffers, leading
-dimensions, mutable results, or Python tuples. Unsupported names return errors.
-This is limited dispatcher coverage; raw low-level BLAS/LAPACK parity is absent.
+`find_best_blas_type`, `get_blas_funcs`, and `get_lapack_funcs` are intentionally
+removed in 0.3.0: scalar precision is fixed by the Rust API, and numerical
+operations are called directly. `solve_lyapunov` is also removed; its references
+exercise `solve_continuous_lyapunov`. These four names are inventory exclusions,
+not implemented exports. Raw BLAS/LAPACK and Cython bindings remain unsupported.
 
 ## Interpolative namespace
 
@@ -368,7 +377,7 @@ zero identity, avoiding SciPy's undefined projection from division by zero.
 Nonunique IDs are checked by residuals; eigen/Schur/CS factors by reconstruction,
 orthogonality and spectra, with separate structure checks. NaN/infinity,
 singularity, invalid permutations, callback outputs, work bounds, branch values,
-very small/large scales, rank-zero shapes, and dispatch invocation are tested.
+very small/large scales, rank-zero shapes, and direct numerical calls are tested.
 
 ## Remaining behavioral gaps
 

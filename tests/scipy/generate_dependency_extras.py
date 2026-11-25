@@ -13,9 +13,9 @@ No Sci or Rust backend is used. Tolerances allow binary64 rounding and digamma
 approximation; integer-valued small coefficients are also tested exactly.
 """
 import csv
-import json
 import math
 from pathlib import Path
+from case_catalog import read_cases
 
 import numpy as np
 import scipy
@@ -53,7 +53,7 @@ def main():
     if (np.__version__, scipy.__version__) != ("2.5.4", "1.18.1"):
         raise RuntimeError("Use NumPy 2.5.4 and SciPy 1.18.1")
     directory = Path(__file__).resolve().parent
-    cases = json.loads((directory / "dependency_extras_cases.json").read_text())
+    cases = read_cases(directory / "dependency_extras_cases.jsonl")
     with (directory.parent / "fixtures" / "dependency_extras.csv").open("w", newline="") as output:
         writer = csv.writer(output, lineterminator="\n")
         writer.writerow(["function", "arguments", "expected"])

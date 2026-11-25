@@ -84,7 +84,7 @@ fn complete(columns: Vec<Mat<f64>>, n: usize) -> Result<(Mat<f64>, usize)> {
 /// # Examples
 ///
 /// ```
-/// let f = sci_linalg::cossin(&[vec![0.6,-0.8],vec![0.8,0.6]],1,1)?;
+/// let f = sci_linalg::decompositions::cossin(&[vec![0.6,-0.8],vec![0.8,0.6]],1,1)?;
 /// assert!((f.theta[0]-0.8_f64.atan2(0.6)).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -93,8 +93,6 @@ fn complete(columns: Vec<Mat<f64>>, n: usize) -> Result<(Mat<f64>, usize)> {
 ///
 /// [SciPy `cossin`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cossin.html).
 pub fn cossin(x: &(impl super::MatrixInput + ?Sized), p: usize, q: usize) -> Result<CsResult> {
-    let x_input = super::input::matrix_rows(x)?;
-    let x = x_input.as_ref();
     let x = square(x)?;
     let n = x.nrows();
     if p == 0 || q == 0 || p >= n || q >= n {

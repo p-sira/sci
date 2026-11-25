@@ -4,13 +4,13 @@
 # ///
 """Generate sparse references: uv run tests/scipy/generate_sparse.py.
 
-Input-only cases are in sparse_cases.json. No Sci or Rust backend is used.
+Input-only cases are in sparse_cases.jsonl. No Sci or Rust backend is used.
 Comparisons use 3e-12 absolute plus relative tolerance for small well-conditioned
 LU solves, products, and norms. Structural/index outputs are compared exactly.
 """
 import csv
-import json
 from pathlib import Path
+from case_catalog import read_cases
 import numpy as np
 import scipy
 from scipy import sparse as s
@@ -35,7 +35,7 @@ with (ROOT/'fixtures/sparse_inputs.csv').open('w', newline='') as fi, (ROOT/'fix
     iw, ew = csv.writer(fi, lineterminator='\n'), csv.writer(fe, lineterminator='\n')
     iw.writerow(['id','api','rows','cols','a','brows','bcols','b','x','k'])
     ew.writerow(['id','rows','cols','values'])
-    for c in json.loads(Path(__file__).with_name('sparse_cases.json').read_text()):
+    for c in read_cases(Path(__file__).with_name('sparse_cases.jsonl')):
         api=c['api']; a=matrix(c); b=matrix(c,'b') if 'b' in c else None
         x=c.get('x',[]); k=c.get('k',0)
         iw.writerow([c['id'],api,c['rows'],c['cols'],triples(c.get('a',[])),c.get('brows',0),c.get('bcols',0),triples(c.get('b',[])),triples(x) if api in ('diags','diags_array') else encode(x),encode(k)])

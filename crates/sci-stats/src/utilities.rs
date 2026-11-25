@@ -9,96 +9,7 @@ pub struct DirectionalStats {
     /// Length of the mean of supplied or normalized observations.
     pub mean_resultant_length: f64,
 }
-/// Computes `|x|`.
-///
-/// ## Parameters
-///
-/// Scalar real x; this is the scalar adaptation of SciPy's NumPy callable alias.
-///
-/// ## Domain
-///
-/// All IEEE values; NaN propagates; both signed zeros return +0.
-///
-/// ## Returns
-///
-/// Scalar f64 value.
-///
-/// ## Numerical behavior
-///
-/// Uses the standard library; floating-point platform rounding applies.
-///
-/// # Examples
-///
-/// ```
-/// assert_eq!(sci_stats::abs(-2.), 2.);
-/// ```
-///
-/// # References
-///
-/// [NumPy `abs`](https://numpy.org/doc/stable/reference/generated/numpy.abs.html).
-pub fn abs(x: f64) -> f64 {
-    x.abs()
-}
-/// Computes `e^x`.
-///
-/// ## Parameters
-///
-/// Scalar real x; this is the scalar adaptation of SciPy's NumPy callable alias.
-///
-/// ## Domain
-///
-/// All IEEE values; NaN propagates, exp(−∞)=0, exp(+∞)=+∞; overflow returns +∞.
-///
-/// ## Returns
-///
-/// Scalar f64 value.
-///
-/// ## Numerical behavior
-///
-/// Uses the standard library; floating-point platform rounding applies.
-///
-/// # Examples
-///
-/// ```
-/// assert_eq!(sci_stats::exp(0.), 1.);
-/// ```
-///
-/// # References
-///
-/// [NumPy `exp`](https://numpy.org/doc/stable/reference/generated/numpy.exp.html).
-pub fn exp(x: f64) -> f64 {
-    x.exp()
-}
-/// Computes `ln(x)`.
-///
-/// ## Parameters
-///
-/// Scalar real x; this is the scalar adaptation of SciPy's NumPy callable alias.
-///
-/// ## Domain
-///
-/// x>0; log(0)=−∞; negative x and NaN return NaN; log(+∞)=+∞.
-///
-/// ## Returns
-///
-/// Scalar f64 value.
-///
-/// ## Numerical behavior
-///
-/// Uses the standard library; floating-point platform rounding applies.
-///
-/// # Examples
-///
-/// ```
-/// assert_eq!(sci_stats::log(1.), 0.);
-/// ```
-///
-/// # References
-///
-/// [NumPy `log`](https://numpy.org/doc/stable/reference/generated/numpy.log.html).
-pub fn log(x: f64) -> f64 {
-    x.ln()
-}
+
 /// Exact binomial test of `H₀:p=probability`; two-sided sums masses no larger than the observed mass.
 ///
 /// ## Parameters
@@ -127,7 +38,7 @@ pub fn log(x: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{binomtest, Alternative};
+/// use sci_stats::{inference::binomtest, inference::Alternative};
 /// assert_eq!(binomtest(5, 10, 0.5, Alternative::TwoSided)?.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -201,7 +112,7 @@ pub fn binomtest(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::directional_stats(&[vec![1., 0.], vec![1., 0.]], true)?.mean_resultant_length, 1.);
+/// assert_eq!(sci_stats::descriptive::directional_stats(&[vec![1., 0.], vec![1., 0.]], true)?.mean_resultant_length, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -242,7 +153,10 @@ pub fn directional_stats(observations: &[Vec<f64>], normalize: bool) -> Result<D
             m[j] += (row[j] / length) / n;
         }
     }
-    let length = finite(m.iter().fold(0_f64, |s, x| s.hypot(*x)))?;
+    let length = match m.iter().fold(0_f64, |s, x| s.hypot(*x)) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     let direction = m.iter().map(|x| x / length).collect();
     Ok(DirectionalStats {
         mean_direction: direction,
@@ -277,7 +191,7 @@ pub fn directional_stats(observations: &[Vec<f64>], normalize: bool) -> Result<D
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::differential_entropy(&[1., 2., 3., 4., 5.], 1, None)?.is_finite());
+/// assert!(sci_stats::descriptive::differential_entropy(&[1., 2., 3., 4., 5.], 1, None)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -301,10 +215,16 @@ pub fn differential_entropy(values: &[f64], window: usize, base: Option<f64>) ->
     } else {
         1.
     };
+    // The window scaling is constant for every spacing. Evaluate its
+    // logarithm once while preserving the per-observation addition order.
+    let log_spacing_scale = (n as f64 / (2. * window as f64)).ln();
     let mut sum = 0.;
     for i in 0..n {
-        let distance = finite(x[(i + window).min(n - 1)] - x[i.saturating_sub(window)])?;
-        sum += distance.ln() + (n as f64 / (2. * window as f64)).ln();
+        let distance = match x[(i + window).min(n - 1)] - x[i.saturating_sub(window)] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
+        sum += distance.ln() + log_spacing_scale;
     }
     Ok(sum / n as f64 / denominator)
 }
@@ -337,7 +257,7 @@ pub fn differential_entropy(values: &[f64], window: usize, base: Option<f64>) ->
 /// # Examples
 ///
 /// ```
-/// assert!((sci_stats::lmoment(&[1., 2., 3., 4.], 1, false)? - 2.5).abs() < 1e-14);
+/// assert!((sci_stats::descriptive::lmoment(&[1., 2., 3., 4.], 1, false)? - 2.5).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -388,6 +308,52 @@ pub fn lmoment(values: &[f64], order: usize, standardize: bool) -> Result<f64> {
     if standardize && order > 2 {
         Ok(l / l2)
     } else {
-        finite(l * scale)
+        match l * scale {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }
+    }
+}
+
+#[cfg(test)]
+mod entropy_scale_tests {
+    use super::*;
+
+    fn reference(values: &[f64], window: usize, base: Option<f64>) -> f64 {
+        let x = sorted(values).unwrap();
+        let n = x.len();
+        let denominator = base.map_or(1., f64::ln);
+        let mut sum = 0.;
+        for i in 0..n {
+            let distance = x[(i + window).min(n - 1)] - x[i.saturating_sub(window)];
+            sum += distance.ln() + (n as f64 / (2. * window as f64)).ln();
+        }
+        sum / n as f64 / denominator
+    }
+
+    #[test]
+    fn hoisted_entropy_log_matches_per_spacing_evaluation_bitwise() {
+        for data in [
+            vec![1.0, 2.0, 3.0, 4.0, 5.0],
+            vec![0.0, -0.0, 0.0, 0.0, 0.0, 0.0],
+            vec![-7.0, -3.0, -1.0, 0.0, 1.0, 3.0, 7.0],
+            vec![1e-100, 2e-100, 3e-100, 4e-100, 5e-100, 6e-100],
+            (0..1024).map(|i| (i * 43 % 1021) as f64).collect(),
+        ] {
+            for window in 1..data.len().div_ceil(2) {
+                for base in [None, Some(2.0), Some(0.5)] {
+                    let actual = differential_entropy(&data, window, base).unwrap();
+                    let expected = reference(&data, window, base);
+                    assert_eq!(
+                        actual.to_bits(),
+                        expected.to_bits(),
+                        "n={}, window={window}, base={base:?}",
+                        data.len()
+                    );
+                }
+            }
+        }
+        assert!(differential_entropy(&[1., 2., 3.], 0, None).is_err());
+        assert!(differential_entropy(&[1., 2., 3.], 1, Some(1.)).is_err());
     }
 }

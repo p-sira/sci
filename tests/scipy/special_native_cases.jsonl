@@ -1,0 +1,988 @@
+{"name": "log1pmx", "args": [-0.999]}
+{"name": "log1pmx", "args": [-0.5]}
+{"name": "log1pmx", "args": [-0.1]}
+{"name": "log1pmx", "args": [-1e-05]}
+{"name": "log1pmx", "args": [-1e-15]}
+{"name": "log1pmx", "args": [-1e-30]}
+{"name": "log1pmx", "args": [0]}
+{"name": "log1pmx", "args": [1e-30]}
+{"name": "log1pmx", "args": [1e-15]}
+{"name": "log1pmx", "args": [1e-05]}
+{"name": "log1pmx", "args": [0.1]}
+{"name": "log1pmx", "args": [0.49]}
+{"name": "log1pmx", "args": [0.5]}
+{"name": "log1pmx", "args": [1]}
+{"name": "log1pmx", "args": [100]}
+{"name": "log1pmx", "args": [1e+30]}
+{"name": "digammainv", "args": [-1e+30]}
+{"name": "digammainv", "args": [-1000]}
+{"name": "digammainv", "args": [-100]}
+{"name": "digammainv", "args": [-10]}
+{"name": "digammainv", "args": [-3]}
+{"name": "digammainv", "args": [-2.22]}
+{"name": "digammainv", "args": [-1]}
+{"name": "digammainv", "args": [0]}
+{"name": "digammainv", "args": [1]}
+{"name": "digammainv", "args": [5]}
+{"name": "digammainv", "args": [20]}
+{"name": "digammainv", "args": [36]}
+{"name": "digammainv", "args": [50]}
+{"name": "digammainv", "args": [80]}
+{"name": "gamma_ratio", "args": [1, 1]}
+{"name": "gamma_ratio", "args": [1, 2]}
+{"name": "gamma_ratio", "args": [0.5, 1.5]}
+{"name": "gamma_ratio", "args": [1.5, 0.5]}
+{"name": "gamma_ratio", "args": [0.3, 4.2]}
+{"name": "gamma_ratio", "args": [4.2, 0.3]}
+{"name": "gamma_ratio", "args": [201, 200]}
+{"name": "gamma_ratio", "args": [200, 201]}
+{"name": "gamma_ratio", "args": [1000, 1001]}
+{"name": "gamma_ratio", "args": [1001, 1000]}
+{"name": "gamma_ratio", "args": [10000, 10001]}
+{"name": "gamma_ratio", "args": [10001, 10000]}
+{"name": "gamma_ratio", "args": [100, 200]}
+{"name": "gamma_ratio", "args": [200, 100]}
+{"name": "scaled_exp1", "args": [0]}
+{"name": "scaled_exp1", "args": [1e-30]}
+{"name": "scaled_exp1", "args": [1e-10]}
+{"name": "scaled_exp1", "args": [0.01]}
+{"name": "scaled_exp1", "args": [0.1]}
+{"name": "scaled_exp1", "args": [1]}
+{"name": "scaled_exp1", "args": [1.001]}
+{"name": "scaled_exp1", "args": [2]}
+{"name": "scaled_exp1", "args": [10]}
+{"name": "scaled_exp1", "args": [100]}
+{"name": "scaled_exp1", "args": [1000]}
+{"name": "scaled_exp1", "args": [1250]}
+{"name": "scaled_exp1", "args": [10000000000.0]}
+{"name": "scaled_exp1", "args": [1e+30]}
+{"name": "iv_ratio", "args": [0.5, 1e-06]}
+{"name": "iv_ratio", "args": [0.5, 0.1]}
+{"name": "iv_ratio", "args": [0.5, 1]}
+{"name": "iv_ratio", "args": [0.5, 10]}
+{"name": "iv_ratio", "args": [0.5, 100]}
+{"name": "iv_ratio", "args": [0.5, 1000]}
+{"name": "iv_ratio", "args": [0.51, 1e-06]}
+{"name": "iv_ratio", "args": [0.51, 0.1]}
+{"name": "iv_ratio", "args": [0.51, 1]}
+{"name": "iv_ratio", "args": [0.51, 10]}
+{"name": "iv_ratio", "args": [0.51, 100]}
+{"name": "iv_ratio", "args": [0.51, 1000]}
+{"name": "iv_ratio", "args": [0.75, 1e-06]}
+{"name": "iv_ratio", "args": [0.75, 0.1]}
+{"name": "iv_ratio", "args": [0.75, 1]}
+{"name": "iv_ratio", "args": [0.75, 10]}
+{"name": "iv_ratio", "args": [0.75, 100]}
+{"name": "iv_ratio", "args": [0.75, 1000]}
+{"name": "iv_ratio", "args": [1, 1e-06]}
+{"name": "iv_ratio", "args": [1, 0.1]}
+{"name": "iv_ratio", "args": [1, 1]}
+{"name": "iv_ratio", "args": [1, 10]}
+{"name": "iv_ratio", "args": [1, 100]}
+{"name": "iv_ratio", "args": [1, 1000]}
+{"name": "iv_ratio", "args": [2, 1e-06]}
+{"name": "iv_ratio", "args": [2, 0.1]}
+{"name": "iv_ratio", "args": [2, 1]}
+{"name": "iv_ratio", "args": [2, 10]}
+{"name": "iv_ratio", "args": [2, 100]}
+{"name": "iv_ratio", "args": [2, 1000]}
+{"name": "iv_ratio", "args": [10, 1e-06]}
+{"name": "iv_ratio", "args": [10, 0.1]}
+{"name": "iv_ratio", "args": [10, 1]}
+{"name": "iv_ratio", "args": [10, 10]}
+{"name": "iv_ratio", "args": [10, 100]}
+{"name": "iv_ratio", "args": [10, 1000]}
+{"name": "iv_ratio", "args": [100, 1e-06]}
+{"name": "iv_ratio", "args": [100, 0.1]}
+{"name": "iv_ratio", "args": [100, 1]}
+{"name": "iv_ratio", "args": [100, 10]}
+{"name": "iv_ratio", "args": [100, 100]}
+{"name": "iv_ratio", "args": [100, 1000]}
+{"name": "iv_ratio", "args": [1000, 1e-06]}
+{"name": "iv_ratio", "args": [1000, 0.1]}
+{"name": "iv_ratio", "args": [1000, 1]}
+{"name": "iv_ratio", "args": [1000, 10]}
+{"name": "iv_ratio", "args": [1000, 100]}
+{"name": "iv_ratio", "args": [1000, 1000]}
+{"name": "iv_ratio", "args": [0.51, 1000000.0]}
+{"name": "iv_ratio", "args": [0.51, 10000000000.0]}
+{"name": "iv_ratio", "args": [0.51, 1e+30]}
+{"name": "iv_ratio", "args": [0.75, 1000000.0]}
+{"name": "iv_ratio", "args": [0.75, 10000000000.0]}
+{"name": "iv_ratio", "args": [0.75, 1e+30]}
+{"name": "iv_ratio", "args": [1, 1000000.0]}
+{"name": "iv_ratio", "args": [1, 10000000000.0]}
+{"name": "iv_ratio", "args": [1, 1e+30]}
+{"name": "iv_ratio", "args": [2, 1000000.0]}
+{"name": "iv_ratio", "args": [2, 10000000000.0]}
+{"name": "iv_ratio", "args": [2, 1e+30]}
+{"name": "iv_ratio", "args": [10, 1000000.0]}
+{"name": "iv_ratio", "args": [10, 10000000000.0]}
+{"name": "iv_ratio", "args": [10, 1e+30]}
+{"name": "iv_ratio_c", "args": [0.5, 1e-06]}
+{"name": "iv_ratio_c", "args": [0.5, 0.1]}
+{"name": "iv_ratio_c", "args": [0.5, 1]}
+{"name": "iv_ratio_c", "args": [0.5, 10]}
+{"name": "iv_ratio_c", "args": [0.5, 100]}
+{"name": "iv_ratio_c", "args": [0.5, 1000]}
+{"name": "iv_ratio_c", "args": [0.51, 1e-06]}
+{"name": "iv_ratio_c", "args": [0.51, 0.1]}
+{"name": "iv_ratio_c", "args": [0.51, 1]}
+{"name": "iv_ratio_c", "args": [0.51, 10]}
+{"name": "iv_ratio_c", "args": [0.51, 100]}
+{"name": "iv_ratio_c", "args": [0.51, 1000]}
+{"name": "iv_ratio_c", "args": [0.75, 1e-06]}
+{"name": "iv_ratio_c", "args": [0.75, 0.1]}
+{"name": "iv_ratio_c", "args": [0.75, 1]}
+{"name": "iv_ratio_c", "args": [0.75, 10]}
+{"name": "iv_ratio_c", "args": [0.75, 100]}
+{"name": "iv_ratio_c", "args": [0.75, 1000]}
+{"name": "iv_ratio_c", "args": [1, 1e-06]}
+{"name": "iv_ratio_c", "args": [1, 0.1]}
+{"name": "iv_ratio_c", "args": [1, 1]}
+{"name": "iv_ratio_c", "args": [1, 10]}
+{"name": "iv_ratio_c", "args": [1, 100]}
+{"name": "iv_ratio_c", "args": [1, 1000]}
+{"name": "iv_ratio_c", "args": [2, 1e-06]}
+{"name": "iv_ratio_c", "args": [2, 0.1]}
+{"name": "iv_ratio_c", "args": [2, 1]}
+{"name": "iv_ratio_c", "args": [2, 10]}
+{"name": "iv_ratio_c", "args": [2, 100]}
+{"name": "iv_ratio_c", "args": [2, 1000]}
+{"name": "iv_ratio_c", "args": [10, 1e-06]}
+{"name": "iv_ratio_c", "args": [10, 0.1]}
+{"name": "iv_ratio_c", "args": [10, 1]}
+{"name": "iv_ratio_c", "args": [10, 10]}
+{"name": "iv_ratio_c", "args": [10, 100]}
+{"name": "iv_ratio_c", "args": [10, 1000]}
+{"name": "iv_ratio_c", "args": [100, 1e-06]}
+{"name": "iv_ratio_c", "args": [100, 0.1]}
+{"name": "iv_ratio_c", "args": [100, 1]}
+{"name": "iv_ratio_c", "args": [100, 10]}
+{"name": "iv_ratio_c", "args": [100, 100]}
+{"name": "iv_ratio_c", "args": [100, 1000]}
+{"name": "iv_ratio_c", "args": [1000, 1e-06]}
+{"name": "iv_ratio_c", "args": [1000, 0.1]}
+{"name": "iv_ratio_c", "args": [1000, 1]}
+{"name": "iv_ratio_c", "args": [1000, 10]}
+{"name": "iv_ratio_c", "args": [1000, 100]}
+{"name": "iv_ratio_c", "args": [1000, 1000]}
+{"name": "iv_ratio_c", "args": [0.51, 1000000.0]}
+{"name": "iv_ratio_c", "args": [0.51, 10000000000.0]}
+{"name": "iv_ratio_c", "args": [0.51, 1e+30]}
+{"name": "iv_ratio_c", "args": [0.75, 1000000.0]}
+{"name": "iv_ratio_c", "args": [0.75, 10000000000.0]}
+{"name": "iv_ratio_c", "args": [0.75, 1e+30]}
+{"name": "iv_ratio_c", "args": [1, 1000000.0]}
+{"name": "iv_ratio_c", "args": [1, 10000000000.0]}
+{"name": "iv_ratio_c", "args": [1, 1e+30]}
+{"name": "iv_ratio_c", "args": [2, 1000000.0]}
+{"name": "iv_ratio_c", "args": [2, 10000000000.0]}
+{"name": "iv_ratio_c", "args": [2, 1e+30]}
+{"name": "iv_ratio_c", "args": [10, 1000000.0]}
+{"name": "iv_ratio_c", "args": [10, 10000000000.0]}
+{"name": "iv_ratio_c", "args": [10, 1e+30]}
+{"name": "iv_ratioinv", "args": [0.5, 1e-05]}
+{"name": "iv_ratioinv", "args": [0.5, 0.1]}
+{"name": "iv_ratioinv", "args": [0.5, 0.5]}
+{"name": "iv_ratioinv", "args": [0.5, 0.9]}
+{"name": "iv_ratioinv", "args": [0.5, 0.99]}
+{"name": "iv_ratioinv", "args": [0.51, 1e-05]}
+{"name": "iv_ratioinv", "args": [0.51, 0.1]}
+{"name": "iv_ratioinv", "args": [0.51, 0.5]}
+{"name": "iv_ratioinv", "args": [0.51, 0.9]}
+{"name": "iv_ratioinv", "args": [0.51, 0.99]}
+{"name": "iv_ratioinv", "args": [1, 1e-05]}
+{"name": "iv_ratioinv", "args": [1, 0.1]}
+{"name": "iv_ratioinv", "args": [1, 0.5]}
+{"name": "iv_ratioinv", "args": [1, 0.9]}
+{"name": "iv_ratioinv", "args": [1, 0.99]}
+{"name": "iv_ratioinv", "args": [10, 1e-05]}
+{"name": "iv_ratioinv", "args": [10, 0.1]}
+{"name": "iv_ratioinv", "args": [10, 0.5]}
+{"name": "iv_ratioinv", "args": [10, 0.9]}
+{"name": "iv_ratioinv", "args": [10, 0.99]}
+{"name": "iv_ratioinv", "args": [1000, 1e-05]}
+{"name": "iv_ratioinv", "args": [1000, 0.1]}
+{"name": "iv_ratioinv", "args": [1000, 0.5]}
+{"name": "iv_ratioinv", "args": [1000, 0.9]}
+{"name": "iv_ratioinv", "args": [1000, 0.99]}
+{"name": "normalized_gen_harmonic", "args": [1, 1, 1, 2]}
+{"name": "normalized_gen_harmonic", "args": [1, 5, 5, 2]}
+{"name": "normalized_gen_harmonic", "args": [2, 4, 5, 0]}
+{"name": "normalized_gen_harmonic", "args": [2, 4, 5, 2]}
+{"name": "normalized_gen_harmonic", "args": [2, 4, 5, -2]}
+{"name": "normalized_gen_harmonic", "args": [5, 5, 5, -1000]}
+{"name": "normalized_gen_harmonic", "args": [1, 1, 5, 1000]}
+{"name": "normalized_gen_harmonic", "args": [3, 7, 10, 0.25]}
+{"name": "normalized_gen_harmonic", "args": [3, 7, 10, -0.25]}
+{"name": "normalized_gen_harmonic", "args": [98, 99, 100, -1000]}
+{"name": "complex.gamma", "args": [0.1, 0.1]}
+{"name": "complex.gamma", "args": [1, 0.5]}
+{"name": "complex.gamma", "args": [-1.3, 1]}
+{"name": "complex.gamma", "args": [-2.2, -0.5]}
+{"name": "complex.gamma", "args": [3, -2]}
+{"name": "complex.gamma", "args": [0.001, -0.002]}
+{"name": "complex.erf", "args": [0.1, 0.1]}
+{"name": "complex.erf", "args": [1, 0.5]}
+{"name": "complex.erf", "args": [-1.3, 1]}
+{"name": "complex.erf", "args": [-2.2, -0.5]}
+{"name": "complex.erf", "args": [3, -2]}
+{"name": "complex.erf", "args": [0.001, -0.002]}
+{"name": "complex.erfc", "args": [0.1, 0.1]}
+{"name": "complex.erfc", "args": [1, 0.5]}
+{"name": "complex.erfc", "args": [-1.3, 1]}
+{"name": "complex.erfc", "args": [-2.2, -0.5]}
+{"name": "complex.erfc", "args": [3, -2]}
+{"name": "complex.erfc", "args": [0.001, -0.002]}
+{"name": "complex.wofz", "args": [0.1, 0.1]}
+{"name": "complex.wofz", "args": [1, 0.5]}
+{"name": "complex.wofz", "args": [-1.3, 1]}
+{"name": "complex.wofz", "args": [-2.2, -0.5]}
+{"name": "complex.wofz", "args": [3, -2]}
+{"name": "complex.wofz", "args": [0.001, -0.002]}
+{"name": "complex.fresnel", "args": [0.1, 0.1]}
+{"name": "complex.fresnel", "args": [1, 0.5]}
+{"name": "complex.fresnel", "args": [-1.3, 1]}
+{"name": "complex.fresnel", "args": [-2.2, -0.5]}
+{"name": "complex.fresnel", "args": [3, -2]}
+{"name": "complex.fresnel", "args": [0.001, -0.002]}
+{"name": "complex.airy", "args": [0.1, 0.1]}
+{"name": "complex.airy", "args": [1, 0.5]}
+{"name": "complex.airy", "args": [-1.3, 1]}
+{"name": "complex.airy", "args": [-2.2, -0.5]}
+{"name": "complex.airy", "args": [3, -2]}
+{"name": "complex.airy", "args": [0.001, -0.002]}
+{"name": "complex.airye", "args": [0.1, 0.1]}
+{"name": "complex.airye", "args": [1, 0.5]}
+{"name": "complex.airye", "args": [-1.3, 1]}
+{"name": "complex.airye", "args": [-2.2, -0.5]}
+{"name": "complex.airye", "args": [3, -2]}
+{"name": "complex.airye", "args": [0.001, -0.002]}
+{"name": "complex.jv", "args": [-2, 1, 0.5]}
+{"name": "complex.jv", "args": [-2, -2, 0.1]}
+{"name": "complex.jv", "args": [-2, -2, -0.1]}
+{"name": "complex.jv", "args": [-2, 0.01, -0.01]}
+{"name": "complex.jv", "args": [-0.5, 1, 0.5]}
+{"name": "complex.jv", "args": [-0.5, -2, 0.1]}
+{"name": "complex.jv", "args": [-0.5, -2, -0.1]}
+{"name": "complex.jv", "args": [-0.5, 0.01, -0.01]}
+{"name": "complex.jv", "args": [0, 1, 0.5]}
+{"name": "complex.jv", "args": [0, -2, 0.1]}
+{"name": "complex.jv", "args": [0, -2, -0.1]}
+{"name": "complex.jv", "args": [0, 0.01, -0.01]}
+{"name": "complex.jv", "args": [0.5, 1, 0.5]}
+{"name": "complex.jv", "args": [0.5, -2, 0.1]}
+{"name": "complex.jv", "args": [0.5, -2, -0.1]}
+{"name": "complex.jv", "args": [0.5, 0.01, -0.01]}
+{"name": "complex.jv", "args": [2.3, 1, 0.5]}
+{"name": "complex.jv", "args": [2.3, -2, 0.1]}
+{"name": "complex.jv", "args": [2.3, -2, -0.1]}
+{"name": "complex.jv", "args": [2.3, 0.01, -0.01]}
+{"name": "complex.jve", "args": [-2, 1, 0.5]}
+{"name": "complex.jve", "args": [-2, -2, 0.1]}
+{"name": "complex.jve", "args": [-2, -2, -0.1]}
+{"name": "complex.jve", "args": [-2, 0.01, -0.01]}
+{"name": "complex.jve", "args": [-0.5, 1, 0.5]}
+{"name": "complex.jve", "args": [-0.5, -2, 0.1]}
+{"name": "complex.jve", "args": [-0.5, -2, -0.1]}
+{"name": "complex.jve", "args": [-0.5, 0.01, -0.01]}
+{"name": "complex.jve", "args": [0, 1, 0.5]}
+{"name": "complex.jve", "args": [0, -2, 0.1]}
+{"name": "complex.jve", "args": [0, -2, -0.1]}
+{"name": "complex.jve", "args": [0, 0.01, -0.01]}
+{"name": "complex.jve", "args": [0.5, 1, 0.5]}
+{"name": "complex.jve", "args": [0.5, -2, 0.1]}
+{"name": "complex.jve", "args": [0.5, -2, -0.1]}
+{"name": "complex.jve", "args": [0.5, 0.01, -0.01]}
+{"name": "complex.jve", "args": [2.3, 1, 0.5]}
+{"name": "complex.jve", "args": [2.3, -2, 0.1]}
+{"name": "complex.jve", "args": [2.3, -2, -0.1]}
+{"name": "complex.jve", "args": [2.3, 0.01, -0.01]}
+{"name": "complex.yv", "args": [-2, 1, 0.5]}
+{"name": "complex.yv", "args": [-2, -2, 0.1]}
+{"name": "complex.yv", "args": [-2, -2, -0.1]}
+{"name": "complex.yv", "args": [-2, 0.01, -0.01]}
+{"name": "complex.yv", "args": [-0.5, 1, 0.5]}
+{"name": "complex.yv", "args": [-0.5, -2, 0.1]}
+{"name": "complex.yv", "args": [-0.5, -2, -0.1]}
+{"name": "complex.yv", "args": [-0.5, 0.01, -0.01]}
+{"name": "complex.yv", "args": [0, 1, 0.5]}
+{"name": "complex.yv", "args": [0, -2, 0.1]}
+{"name": "complex.yv", "args": [0, -2, -0.1]}
+{"name": "complex.yv", "args": [0, 0.01, -0.01]}
+{"name": "complex.yv", "args": [0.5, 1, 0.5]}
+{"name": "complex.yv", "args": [0.5, -2, 0.1]}
+{"name": "complex.yv", "args": [0.5, -2, -0.1]}
+{"name": "complex.yv", "args": [0.5, 0.01, -0.01]}
+{"name": "complex.yv", "args": [2.3, 1, 0.5]}
+{"name": "complex.yv", "args": [2.3, -2, 0.1]}
+{"name": "complex.yv", "args": [2.3, -2, -0.1]}
+{"name": "complex.yv", "args": [2.3, 0.01, -0.01]}
+{"name": "complex.yve", "args": [-2, 1, 0.5]}
+{"name": "complex.yve", "args": [-2, -2, 0.1]}
+{"name": "complex.yve", "args": [-2, -2, -0.1]}
+{"name": "complex.yve", "args": [-2, 0.01, -0.01]}
+{"name": "complex.yve", "args": [-0.5, 1, 0.5]}
+{"name": "complex.yve", "args": [-0.5, -2, 0.1]}
+{"name": "complex.yve", "args": [-0.5, -2, -0.1]}
+{"name": "complex.yve", "args": [-0.5, 0.01, -0.01]}
+{"name": "complex.yve", "args": [0, 1, 0.5]}
+{"name": "complex.yve", "args": [0, -2, 0.1]}
+{"name": "complex.yve", "args": [0, -2, -0.1]}
+{"name": "complex.yve", "args": [0, 0.01, -0.01]}
+{"name": "complex.yve", "args": [0.5, 1, 0.5]}
+{"name": "complex.yve", "args": [0.5, -2, 0.1]}
+{"name": "complex.yve", "args": [0.5, -2, -0.1]}
+{"name": "complex.yve", "args": [0.5, 0.01, -0.01]}
+{"name": "complex.yve", "args": [2.3, 1, 0.5]}
+{"name": "complex.yve", "args": [2.3, -2, 0.1]}
+{"name": "complex.yve", "args": [2.3, -2, -0.1]}
+{"name": "complex.yve", "args": [2.3, 0.01, -0.01]}
+{"name": "complex.iv", "args": [-2, 1, 0.5]}
+{"name": "complex.iv", "args": [-2, -2, 0.1]}
+{"name": "complex.iv", "args": [-2, -2, -0.1]}
+{"name": "complex.iv", "args": [-2, 0.01, -0.01]}
+{"name": "complex.iv", "args": [-0.5, 1, 0.5]}
+{"name": "complex.iv", "args": [-0.5, -2, 0.1]}
+{"name": "complex.iv", "args": [-0.5, -2, -0.1]}
+{"name": "complex.iv", "args": [-0.5, 0.01, -0.01]}
+{"name": "complex.iv", "args": [0, 1, 0.5]}
+{"name": "complex.iv", "args": [0, -2, 0.1]}
+{"name": "complex.iv", "args": [0, -2, -0.1]}
+{"name": "complex.iv", "args": [0, 0.01, -0.01]}
+{"name": "complex.iv", "args": [0.5, 1, 0.5]}
+{"name": "complex.iv", "args": [0.5, -2, 0.1]}
+{"name": "complex.iv", "args": [0.5, -2, -0.1]}
+{"name": "complex.iv", "args": [0.5, 0.01, -0.01]}
+{"name": "complex.iv", "args": [2.3, 1, 0.5]}
+{"name": "complex.iv", "args": [2.3, -2, 0.1]}
+{"name": "complex.iv", "args": [2.3, -2, -0.1]}
+{"name": "complex.iv", "args": [2.3, 0.01, -0.01]}
+{"name": "complex.ive", "args": [-2, 1, 0.5]}
+{"name": "complex.ive", "args": [-2, -2, 0.1]}
+{"name": "complex.ive", "args": [-2, -2, -0.1]}
+{"name": "complex.ive", "args": [-2, 0.01, -0.01]}
+{"name": "complex.ive", "args": [-0.5, 1, 0.5]}
+{"name": "complex.ive", "args": [-0.5, -2, 0.1]}
+{"name": "complex.ive", "args": [-0.5, -2, -0.1]}
+{"name": "complex.ive", "args": [-0.5, 0.01, -0.01]}
+{"name": "complex.ive", "args": [0, 1, 0.5]}
+{"name": "complex.ive", "args": [0, -2, 0.1]}
+{"name": "complex.ive", "args": [0, -2, -0.1]}
+{"name": "complex.ive", "args": [0, 0.01, -0.01]}
+{"name": "complex.ive", "args": [0.5, 1, 0.5]}
+{"name": "complex.ive", "args": [0.5, -2, 0.1]}
+{"name": "complex.ive", "args": [0.5, -2, -0.1]}
+{"name": "complex.ive", "args": [0.5, 0.01, -0.01]}
+{"name": "complex.ive", "args": [2.3, 1, 0.5]}
+{"name": "complex.ive", "args": [2.3, -2, 0.1]}
+{"name": "complex.ive", "args": [2.3, -2, -0.1]}
+{"name": "complex.ive", "args": [2.3, 0.01, -0.01]}
+{"name": "complex.kv", "args": [-2, 1, 0.5]}
+{"name": "complex.kv", "args": [-2, -2, 0.1]}
+{"name": "complex.kv", "args": [-2, -2, -0.1]}
+{"name": "complex.kv", "args": [-2, 0.01, -0.01]}
+{"name": "complex.kv", "args": [-0.5, 1, 0.5]}
+{"name": "complex.kv", "args": [-0.5, -2, 0.1]}
+{"name": "complex.kv", "args": [-0.5, -2, -0.1]}
+{"name": "complex.kv", "args": [-0.5, 0.01, -0.01]}
+{"name": "complex.kv", "args": [0, 1, 0.5]}
+{"name": "complex.kv", "args": [0, -2, 0.1]}
+{"name": "complex.kv", "args": [0, -2, -0.1]}
+{"name": "complex.kv", "args": [0, 0.01, -0.01]}
+{"name": "complex.kv", "args": [0.5, 1, 0.5]}
+{"name": "complex.kv", "args": [0.5, -2, 0.1]}
+{"name": "complex.kv", "args": [0.5, -2, -0.1]}
+{"name": "complex.kv", "args": [0.5, 0.01, -0.01]}
+{"name": "complex.kv", "args": [2.3, 1, 0.5]}
+{"name": "complex.kv", "args": [2.3, -2, 0.1]}
+{"name": "complex.kv", "args": [2.3, -2, -0.1]}
+{"name": "complex.kv", "args": [2.3, 0.01, -0.01]}
+{"name": "complex.kve", "args": [-2, 1, 0.5]}
+{"name": "complex.kve", "args": [-2, -2, 0.1]}
+{"name": "complex.kve", "args": [-2, -2, -0.1]}
+{"name": "complex.kve", "args": [-2, 0.01, -0.01]}
+{"name": "complex.kve", "args": [-0.5, 1, 0.5]}
+{"name": "complex.kve", "args": [-0.5, -2, 0.1]}
+{"name": "complex.kve", "args": [-0.5, -2, -0.1]}
+{"name": "complex.kve", "args": [-0.5, 0.01, -0.01]}
+{"name": "complex.kve", "args": [0, 1, 0.5]}
+{"name": "complex.kve", "args": [0, -2, 0.1]}
+{"name": "complex.kve", "args": [0, -2, -0.1]}
+{"name": "complex.kve", "args": [0, 0.01, -0.01]}
+{"name": "complex.kve", "args": [0.5, 1, 0.5]}
+{"name": "complex.kve", "args": [0.5, -2, 0.1]}
+{"name": "complex.kve", "args": [0.5, -2, -0.1]}
+{"name": "complex.kve", "args": [0.5, 0.01, -0.01]}
+{"name": "complex.kve", "args": [2.3, 1, 0.5]}
+{"name": "complex.kve", "args": [2.3, -2, 0.1]}
+{"name": "complex.kve", "args": [2.3, -2, -0.1]}
+{"name": "complex.kve", "args": [2.3, 0.01, -0.01]}
+{"name": "complex.hankel1", "args": [-2, 1, 0.5]}
+{"name": "complex.hankel1", "args": [-2, -2, 0.1]}
+{"name": "complex.hankel1", "args": [-2, -2, -0.1]}
+{"name": "complex.hankel1", "args": [-2, 0.01, -0.01]}
+{"name": "complex.hankel1", "args": [-0.5, 1, 0.5]}
+{"name": "complex.hankel1", "args": [-0.5, -2, 0.1]}
+{"name": "complex.hankel1", "args": [-0.5, -2, -0.1]}
+{"name": "complex.hankel1", "args": [-0.5, 0.01, -0.01]}
+{"name": "complex.hankel1", "args": [0, 1, 0.5]}
+{"name": "complex.hankel1", "args": [0, -2, 0.1]}
+{"name": "complex.hankel1", "args": [0, -2, -0.1]}
+{"name": "complex.hankel1", "args": [0, 0.01, -0.01]}
+{"name": "complex.hankel1", "args": [0.5, 1, 0.5]}
+{"name": "complex.hankel1", "args": [0.5, -2, 0.1]}
+{"name": "complex.hankel1", "args": [0.5, -2, -0.1]}
+{"name": "complex.hankel1", "args": [0.5, 0.01, -0.01]}
+{"name": "complex.hankel1", "args": [2.3, 1, 0.5]}
+{"name": "complex.hankel1", "args": [2.3, -2, 0.1]}
+{"name": "complex.hankel1", "args": [2.3, -2, -0.1]}
+{"name": "complex.hankel1", "args": [2.3, 0.01, -0.01]}
+{"name": "complex.hankel1e", "args": [-2, 1, 0.5]}
+{"name": "complex.hankel1e", "args": [-2, -2, 0.1]}
+{"name": "complex.hankel1e", "args": [-2, -2, -0.1]}
+{"name": "complex.hankel1e", "args": [-2, 0.01, -0.01]}
+{"name": "complex.hankel1e", "args": [-0.5, 1, 0.5]}
+{"name": "complex.hankel1e", "args": [-0.5, -2, 0.1]}
+{"name": "complex.hankel1e", "args": [-0.5, -2, -0.1]}
+{"name": "complex.hankel1e", "args": [-0.5, 0.01, -0.01]}
+{"name": "complex.hankel1e", "args": [0, 1, 0.5]}
+{"name": "complex.hankel1e", "args": [0, -2, 0.1]}
+{"name": "complex.hankel1e", "args": [0, -2, -0.1]}
+{"name": "complex.hankel1e", "args": [0, 0.01, -0.01]}
+{"name": "complex.hankel1e", "args": [0.5, 1, 0.5]}
+{"name": "complex.hankel1e", "args": [0.5, -2, 0.1]}
+{"name": "complex.hankel1e", "args": [0.5, -2, -0.1]}
+{"name": "complex.hankel1e", "args": [0.5, 0.01, -0.01]}
+{"name": "complex.hankel1e", "args": [2.3, 1, 0.5]}
+{"name": "complex.hankel1e", "args": [2.3, -2, 0.1]}
+{"name": "complex.hankel1e", "args": [2.3, -2, -0.1]}
+{"name": "complex.hankel1e", "args": [2.3, 0.01, -0.01]}
+{"name": "complex.hankel2", "args": [-2, 1, 0.5]}
+{"name": "complex.hankel2", "args": [-2, -2, 0.1]}
+{"name": "complex.hankel2", "args": [-2, -2, -0.1]}
+{"name": "complex.hankel2", "args": [-2, 0.01, -0.01]}
+{"name": "complex.hankel2", "args": [-0.5, 1, 0.5]}
+{"name": "complex.hankel2", "args": [-0.5, -2, 0.1]}
+{"name": "complex.hankel2", "args": [-0.5, -2, -0.1]}
+{"name": "complex.hankel2", "args": [-0.5, 0.01, -0.01]}
+{"name": "complex.hankel2", "args": [0, 1, 0.5]}
+{"name": "complex.hankel2", "args": [0, -2, 0.1]}
+{"name": "complex.hankel2", "args": [0, -2, -0.1]}
+{"name": "complex.hankel2", "args": [0, 0.01, -0.01]}
+{"name": "complex.hankel2", "args": [0.5, 1, 0.5]}
+{"name": "complex.hankel2", "args": [0.5, -2, 0.1]}
+{"name": "complex.hankel2", "args": [0.5, -2, -0.1]}
+{"name": "complex.hankel2", "args": [0.5, 0.01, -0.01]}
+{"name": "complex.hankel2", "args": [2.3, 1, 0.5]}
+{"name": "complex.hankel2", "args": [2.3, -2, 0.1]}
+{"name": "complex.hankel2", "args": [2.3, -2, -0.1]}
+{"name": "complex.hankel2", "args": [2.3, 0.01, -0.01]}
+{"name": "complex.hankel2e", "args": [-2, 1, 0.5]}
+{"name": "complex.hankel2e", "args": [-2, -2, 0.1]}
+{"name": "complex.hankel2e", "args": [-2, -2, -0.1]}
+{"name": "complex.hankel2e", "args": [-2, 0.01, -0.01]}
+{"name": "complex.hankel2e", "args": [-0.5, 1, 0.5]}
+{"name": "complex.hankel2e", "args": [-0.5, -2, 0.1]}
+{"name": "complex.hankel2e", "args": [-0.5, -2, -0.1]}
+{"name": "complex.hankel2e", "args": [-0.5, 0.01, -0.01]}
+{"name": "complex.hankel2e", "args": [0, 1, 0.5]}
+{"name": "complex.hankel2e", "args": [0, -2, 0.1]}
+{"name": "complex.hankel2e", "args": [0, -2, -0.1]}
+{"name": "complex.hankel2e", "args": [0, 0.01, -0.01]}
+{"name": "complex.hankel2e", "args": [0.5, 1, 0.5]}
+{"name": "complex.hankel2e", "args": [0.5, -2, 0.1]}
+{"name": "complex.hankel2e", "args": [0.5, -2, -0.1]}
+{"name": "complex.hankel2e", "args": [0.5, 0.01, -0.01]}
+{"name": "complex.hankel2e", "args": [2.3, 1, 0.5]}
+{"name": "complex.hankel2e", "args": [2.3, -2, 0.1]}
+{"name": "complex.hankel2e", "args": [2.3, -2, -0.1]}
+{"name": "complex.hankel2e", "args": [2.3, 0.01, -0.01]}
+{"name": "gamma_ratio", "args": [100, 1e-30]}
+{"name": "gamma_ratio", "args": [1e-30, 100]}
+{"name": "gamma_ratio", "args": [20001, 1]}
+{"name": "gamma_ratio", "args": [1, 20001]}
+{"name": "complex.loggamma", "args": [1, 0]}
+{"name": "complex.loggamma", "args": [1, -0.0]}
+{"name": "complex.loggamma", "args": [2, 0]}
+{"name": "complex.loggamma", "args": [0.1, 0.3]}
+{"name": "complex.loggamma", "args": [0.5, -0.5]}
+{"name": "complex.loggamma", "args": [3.2, 4.1]}
+{"name": "complex.loggamma", "args": [-0.5, 0.25]}
+{"name": "complex.loggamma", "args": [-4.7, 0.3]}
+{"name": "complex.loggamma", "args": [-4.7, -0.3]}
+{"name": "complex.loggamma", "args": [-20.1, 7.1]}
+{"name": "complex.loggamma", "args": [-20.1, -7.1]}
+{"name": "complex.loggamma", "args": [7, 7]}
+{"name": "complex.loggamma", "args": [8, 8]}
+{"name": "complex.loggamma", "args": [100, 20]}
+{"name": "complex.loggamma", "args": [1000, 1000]}
+{"name": "complex.loggamma", "args": [1e-20, 1e-20]}
+{"name": "complex.loggamma", "args": [-1, 1e-12]}
+{"name": "complex.loggamma", "args": [-1, -1e-12]}
+{"name": "complex.loggamma", "args": [-2.25, 0.0]}
+{"name": "complex.loggamma", "args": [-2.25, -0.0]}
+{"name": "complex.loggamma", "args": [-100.25, 0.0]}
+{"name": "complex.loggamma", "args": [-100.25, -0.0]}
+{"name": "complex.loggamma", "args": [1.00001, 1e-06]}
+{"name": "complex.loggamma", "args": [1.99999, -1e-06]}
+{"name": "complex.loggamma", "args": [0.001, 700]}
+{"name": "complex.loggamma", "args": [-100, 700]}
+{"name": "complex.loggamma", "args": [1e+20, 1e+20]}
+{"name": "complex.rgamma", "args": [1, 0]}
+{"name": "complex.rgamma", "args": [1, -0.0]}
+{"name": "complex.rgamma", "args": [2, 0]}
+{"name": "complex.rgamma", "args": [0.1, 0.3]}
+{"name": "complex.rgamma", "args": [0.5, -0.5]}
+{"name": "complex.rgamma", "args": [3.2, 4.1]}
+{"name": "complex.rgamma", "args": [-0.5, 0.25]}
+{"name": "complex.rgamma", "args": [-4.7, 0.3]}
+{"name": "complex.rgamma", "args": [-4.7, -0.3]}
+{"name": "complex.rgamma", "args": [-20.1, 7.1]}
+{"name": "complex.rgamma", "args": [-20.1, -7.1]}
+{"name": "complex.rgamma", "args": [7, 7]}
+{"name": "complex.rgamma", "args": [8, 8]}
+{"name": "complex.rgamma", "args": [1e-20, 1e-20]}
+{"name": "complex.rgamma", "args": [-1, 1e-12]}
+{"name": "complex.rgamma", "args": [-1, -1e-12]}
+{"name": "complex.rgamma", "args": [-2.25, 0.0]}
+{"name": "complex.rgamma", "args": [-2.25, -0.0]}
+{"name": "complex.rgamma", "args": [1.00001, 1e-06]}
+{"name": "complex.rgamma", "args": [1.99999, -1e-06]}
+{"name": "complex.rgamma", "args": [172, 0.5]}
+{"name": "complex.rgamma", "args": [35, 0]}
+{"name": "complex.rgamma", "args": [0, 0]}
+{"name": "complex.rgamma", "args": [-1, 0]}
+{"name": "complex.rgamma", "args": [-20, 0]}
+{"name": "complex.rgamma", "args": [1e-30, 0]}
+{"name": "complex.digamma", "args": [1, 0]}
+{"name": "complex.digamma", "args": [1, -0.0]}
+{"name": "complex.digamma", "args": [2, 0]}
+{"name": "complex.digamma", "args": [0.1, 0.3]}
+{"name": "complex.digamma", "args": [0.5, -0.5]}
+{"name": "complex.digamma", "args": [3.2, 4.1]}
+{"name": "complex.digamma", "args": [-0.5, 0.25]}
+{"name": "complex.digamma", "args": [-4.7, 0.3]}
+{"name": "complex.digamma", "args": [-4.7, -0.3]}
+{"name": "complex.digamma", "args": [-20.1, 7.1]}
+{"name": "complex.digamma", "args": [-20.1, -7.1]}
+{"name": "complex.digamma", "args": [7, 7]}
+{"name": "complex.digamma", "args": [8, 8]}
+{"name": "complex.digamma", "args": [100, 20]}
+{"name": "complex.digamma", "args": [1000, 1000]}
+{"name": "complex.digamma", "args": [1e-20, 1e-20]}
+{"name": "complex.digamma", "args": [-1, 1e-12]}
+{"name": "complex.digamma", "args": [-1, -1e-12]}
+{"name": "complex.digamma", "args": [-2.25, 0.0]}
+{"name": "complex.digamma", "args": [-2.25, -0.0]}
+{"name": "complex.digamma", "args": [-100.25, 0.0]}
+{"name": "complex.digamma", "args": [-100.25, -0.0]}
+{"name": "complex.digamma", "args": [1.00001, 1e-06]}
+{"name": "complex.digamma", "args": [1.99999, -1e-06]}
+{"name": "complex.digamma", "args": [0.001, 700]}
+{"name": "complex.digamma", "args": [-100, 700]}
+{"name": "complex.digamma", "args": [1e+20, 1e+20]}
+{"name": "complex.digamma", "args": [1.4616321449683622, 1e-14]}
+{"name": "complex.digamma", "args": [-0.5040830082644554, 1e-14]}
+{"name": "complex.digamma", "args": [-100, 1e-20]}
+{"name": "complex.erfcx", "args": [0.0, 0.0]}
+{"name": "complex.erfcx", "args": [-0.0, -0.0]}
+{"name": "complex.erfcx", "args": [1e-30, -2e-30]}
+{"name": "complex.erfcx", "args": [1e-200, -2e-200]}
+{"name": "complex.erfcx", "args": [0.001, 0.002]}
+{"name": "complex.erfcx", "args": [0.0049, 0.0049]}
+{"name": "complex.erfcx", "args": [0.0051, 0.0051]}
+{"name": "complex.erfcx", "args": [0.1, 0.2]}
+{"name": "complex.erfcx", "args": [1.0, 0.5]}
+{"name": "complex.erfcx", "args": [-1.0, 0.5]}
+{"name": "complex.erfcx", "args": [1.0, -0.5]}
+{"name": "complex.erfcx", "args": [-1.0, -0.5]}
+{"name": "complex.erfcx", "args": [3.0, 2.0]}
+{"name": "complex.erfcx", "args": [-3.0, 2.0]}
+{"name": "complex.erfcx", "args": [3.0, -2.0]}
+{"name": "complex.erfcx", "args": [-3.0, -2.0]}
+{"name": "complex.erfcx", "args": [6.0, 1e-12]}
+{"name": "complex.erfcx", "args": [-6.0, 1e-12]}
+{"name": "complex.erfcx", "args": [1e-12, 6.0]}
+{"name": "complex.erfcx", "args": [1e-12, -6.0]}
+{"name": "complex.erfcx", "args": [1.0, 7.01]}
+{"name": "complex.erfcx", "args": [7.01, 0.11]}
+{"name": "complex.erfcx", "args": [8.01, 0.11]}
+{"name": "complex.erfcx", "args": [6.01, 0.099]}
+{"name": "complex.erfcx", "args": [6.01, 0.101]}
+{"name": "complex.erfcx", "args": [8.0, 8.0]}
+{"name": "complex.erfcx", "args": [-8.0, 8.0]}
+{"name": "complex.erfcx", "args": [8.0, -8.0]}
+{"name": "complex.erfcx", "args": [-8.0, -8.0]}
+{"name": "complex.erfcx", "args": [-8.0, 0.0]}
+{"name": "complex.erfcx", "args": [-1.0, 0.0]}
+{"name": "complex.erfcx", "args": [1.0, 0.0]}
+{"name": "complex.erfcx", "args": [8.0, 0.0]}
+{"name": "complex.erfcx", "args": [0.0, -8.0]}
+{"name": "complex.erfcx", "args": [0.0, -1.0]}
+{"name": "complex.erfcx", "args": [0.0, 1.0]}
+{"name": "complex.erfcx", "args": [0.0, 8.0]}
+{"name": "complex.erfcx", "args": [30.0, 0.5]}
+{"name": "complex.erfcx", "args": [100.0, 1e-12]}
+{"name": "complex.erfcx", "args": [100000000.0, 1e-12]}
+{"name": "complex.erfcx", "args": [1e+30, 0.0]}
+{"name": "complex.erfcx", "args": [1e+30, 1e-12]}
+{"name": "complex.erfcx", "args": [4001.0, 1.0]}
+{"name": "complex.erfi", "args": [0.0, 0.0]}
+{"name": "complex.erfi", "args": [-0.0, -0.0]}
+{"name": "complex.erfi", "args": [1e-30, -2e-30]}
+{"name": "complex.erfi", "args": [1e-200, -2e-200]}
+{"name": "complex.erfi", "args": [0.001, 0.002]}
+{"name": "complex.erfi", "args": [0.0049, 0.0049]}
+{"name": "complex.erfi", "args": [0.0051, 0.0051]}
+{"name": "complex.erfi", "args": [0.1, 0.2]}
+{"name": "complex.erfi", "args": [1.0, 0.5]}
+{"name": "complex.erfi", "args": [-1.0, 0.5]}
+{"name": "complex.erfi", "args": [1.0, -0.5]}
+{"name": "complex.erfi", "args": [-1.0, -0.5]}
+{"name": "complex.erfi", "args": [3.0, 2.0]}
+{"name": "complex.erfi", "args": [-3.0, 2.0]}
+{"name": "complex.erfi", "args": [3.0, -2.0]}
+{"name": "complex.erfi", "args": [-3.0, -2.0]}
+{"name": "complex.erfi", "args": [6.0, 1e-12]}
+{"name": "complex.erfi", "args": [-6.0, 1e-12]}
+{"name": "complex.erfi", "args": [1e-12, 6.0]}
+{"name": "complex.erfi", "args": [1e-12, -6.0]}
+{"name": "complex.erfi", "args": [1.0, 7.01]}
+{"name": "complex.erfi", "args": [7.01, 0.11]}
+{"name": "complex.erfi", "args": [8.01, 0.11]}
+{"name": "complex.erfi", "args": [6.01, 0.099]}
+{"name": "complex.erfi", "args": [6.01, 0.101]}
+{"name": "complex.erfi", "args": [8.0, 8.0]}
+{"name": "complex.erfi", "args": [-8.0, 8.0]}
+{"name": "complex.erfi", "args": [8.0, -8.0]}
+{"name": "complex.erfi", "args": [-8.0, -8.0]}
+{"name": "complex.erfi", "args": [-8.0, 0.0]}
+{"name": "complex.erfi", "args": [-1.0, 0.0]}
+{"name": "complex.erfi", "args": [1.0, 0.0]}
+{"name": "complex.erfi", "args": [8.0, 0.0]}
+{"name": "complex.erfi", "args": [0.0, -8.0]}
+{"name": "complex.erfi", "args": [0.0, -1.0]}
+{"name": "complex.erfi", "args": [0.0, 1.0]}
+{"name": "complex.erfi", "args": [0.0, 8.0]}
+{"name": "complex.erfi", "args": [0.5, 30.0]}
+{"name": "complex.erfi", "args": [1e-12, 100.0]}
+{"name": "complex.erfi", "args": [0.0, 1e+30]}
+{"name": "complex.dawsn", "args": [0.0, 0.0]}
+{"name": "complex.dawsn", "args": [-0.0, -0.0]}
+{"name": "complex.dawsn", "args": [1e-30, -2e-30]}
+{"name": "complex.dawsn", "args": [1e-200, -2e-200]}
+{"name": "complex.dawsn", "args": [0.001, 0.002]}
+{"name": "complex.dawsn", "args": [0.0049, 0.0049]}
+{"name": "complex.dawsn", "args": [0.0051, 0.0051]}
+{"name": "complex.dawsn", "args": [0.1, 0.2]}
+{"name": "complex.dawsn", "args": [1.0, 0.5]}
+{"name": "complex.dawsn", "args": [-1.0, 0.5]}
+{"name": "complex.dawsn", "args": [1.0, -0.5]}
+{"name": "complex.dawsn", "args": [-1.0, -0.5]}
+{"name": "complex.dawsn", "args": [3.0, 2.0]}
+{"name": "complex.dawsn", "args": [-3.0, 2.0]}
+{"name": "complex.dawsn", "args": [3.0, -2.0]}
+{"name": "complex.dawsn", "args": [-3.0, -2.0]}
+{"name": "complex.dawsn", "args": [6.0, 1e-12]}
+{"name": "complex.dawsn", "args": [-6.0, 1e-12]}
+{"name": "complex.dawsn", "args": [1e-12, 6.0]}
+{"name": "complex.dawsn", "args": [1e-12, -6.0]}
+{"name": "complex.dawsn", "args": [1.0, 7.01]}
+{"name": "complex.dawsn", "args": [7.01, 0.11]}
+{"name": "complex.dawsn", "args": [8.01, 0.11]}
+{"name": "complex.dawsn", "args": [6.01, 0.099]}
+{"name": "complex.dawsn", "args": [6.01, 0.101]}
+{"name": "complex.dawsn", "args": [8.0, 8.0]}
+{"name": "complex.dawsn", "args": [-8.0, 8.0]}
+{"name": "complex.dawsn", "args": [8.0, -8.0]}
+{"name": "complex.dawsn", "args": [-8.0, -8.0]}
+{"name": "complex.dawsn", "args": [-8.0, 0.0]}
+{"name": "complex.dawsn", "args": [-1.0, 0.0]}
+{"name": "complex.dawsn", "args": [1.0, 0.0]}
+{"name": "complex.dawsn", "args": [8.0, 0.0]}
+{"name": "complex.dawsn", "args": [0.0, -8.0]}
+{"name": "complex.dawsn", "args": [0.0, -1.0]}
+{"name": "complex.dawsn", "args": [0.0, 1.0]}
+{"name": "complex.dawsn", "args": [0.0, 8.0]}
+{"name": "complex.dawsn", "args": [30.0, 0.5]}
+{"name": "complex.dawsn", "args": [100.0, 1e-12]}
+{"name": "complex.dawsn", "args": [100000000.0, 1e-12]}
+{"name": "complex.dawsn", "args": [1e+30, 0.0]}
+{"name": "complex.dawsn", "args": [1e+30, 1e-12]}
+{"name": "complex.dawsn", "args": [4001.0, 1.0]}
+{"name": "complex.dawsn", "args": [-30.0, 0.5]}
+{"name": "complex.dawsn", "args": [50000000.0, 0.004]}
+{"name": "complex.dawsn", "args": [50100000.0, 0.004]}
+{"name": "complex.erfcx", "args": [43.05882352941177, 0.0]}
+{"name": "complex.erfcx", "args": [38.10526315789474, 0.0]}
+{"name": "complex.erfcx", "args": [34.095238095238095, 0.0]}
+{"name": "complex.erfcx", "args": [30.782608695652172, 0.0]}
+{"name": "complex.erfcx", "args": [28.0, 0.0]}
+{"name": "complex.erfcx", "args": [25.62962962962963, 0.0]}
+{"name": "complex.erfcx", "args": [23.586206896551722, 0.0]}
+{"name": "complex.erfcx", "args": [21.806451612903224, 0.0]}
+{"name": "complex.erfcx", "args": [20.242424242424242, 0.0]}
+{"name": "complex.erfcx", "args": [18.857142857142858, 0.0]}
+{"name": "complex.erfcx", "args": [17.62162162162162, 0.0]}
+{"name": "complex.erfcx", "args": [16.512820512820515, 0.0]}
+{"name": "complex.erfcx", "args": [15.512195121951219, 0.0]}
+{"name": "complex.erfcx", "args": [14.604651162790699, 0.0]}
+{"name": "complex.erfcx", "args": [13.777777777777779, 0.0]}
+{"name": "complex.erfcx", "args": [13.02127659574468, 0.0]}
+{"name": "complex.erfcx", "args": [12.326530612244898, 0.0]}
+{"name": "complex.erfcx", "args": [11.686274509803921, 0.0]}
+{"name": "complex.erfcx", "args": [11.09433962264151, 0.0]}
+{"name": "complex.erfcx", "args": [10.545454545454545, 0.0]}
+{"name": "complex.erfcx", "args": [10.035087719298245, 0.0]}
+{"name": "complex.erfcx", "args": [9.559322033898304, 0.0]}
+{"name": "complex.erfcx", "args": [9.114754098360656, 0.0]}
+{"name": "complex.erfcx", "args": [8.698412698412698, 0.0]}
+{"name": "complex.erfcx", "args": [8.307692307692308, 0.0]}
+{"name": "complex.erfcx", "args": [7.940298507462687, 0.0]}
+{"name": "complex.erfcx", "args": [7.594202898550725, 0.0]}
+{"name": "complex.erfcx", "args": [7.267605633802816, 0.0]}
+{"name": "complex.erfcx", "args": [6.9589041095890405, 0.0]}
+{"name": "complex.erfcx", "args": [6.666666666666666, 0.0]}
+{"name": "complex.erfcx", "args": [6.3896103896103895, 0.0]}
+{"name": "complex.erfcx", "args": [6.126582278481013, 0.0]}
+{"name": "complex.erfcx", "args": [5.876543209876543, 0.0]}
+{"name": "complex.erfcx", "args": [5.638554216867471, 0.0]}
+{"name": "complex.erfcx", "args": [5.411764705882353, 0.0]}
+{"name": "complex.erfcx", "args": [5.195402298850574, 0.0]}
+{"name": "complex.erfcx", "args": [4.988764044943821, 0.0]}
+{"name": "complex.erfcx", "args": [4.791208791208792, 0.0]}
+{"name": "complex.erfcx", "args": [4.602150537634408, 0.0]}
+{"name": "complex.erfcx", "args": [4.421052631578947, 0.0]}
+{"name": "complex.erfcx", "args": [4.24742268041237, 0.0]}
+{"name": "complex.erfcx", "args": [4.080808080808081, 0.0]}
+{"name": "complex.erfcx", "args": [3.9207920792079207, 0.0]}
+{"name": "complex.erfcx", "args": [3.766990291262136, 0.0]}
+{"name": "complex.erfcx", "args": [3.6190476190476186, 0.0]}
+{"name": "complex.erfcx", "args": [3.4766355140186915, 0.0]}
+{"name": "complex.erfcx", "args": [3.339449541284404, 0.0]}
+{"name": "complex.erfcx", "args": [3.2072072072072073, 0.0]}
+{"name": "complex.erfcx", "args": [3.0796460176991154, 0.0]}
+{"name": "complex.erfcx", "args": [2.9565217391304346, 0.0]}
+{"name": "complex.erfcx", "args": [2.8376068376068373, 0.0]}
+{"name": "complex.erfcx", "args": [2.722689075630252, 0.0]}
+{"name": "complex.erfcx", "args": [2.6115702479338845, 0.0]}
+{"name": "complex.erfcx", "args": [2.5040650406504064, 0.0]}
+{"name": "complex.erfcx", "args": [2.4000000000000004, 0.0]}
+{"name": "complex.erfcx", "args": [2.299212598425197, 0.0]}
+{"name": "complex.erfcx", "args": [2.2015503875968996, 0.0]}
+{"name": "complex.erfcx", "args": [2.106870229007634, 0.0]}
+{"name": "complex.erfcx", "args": [2.015037593984962, 0.0]}
+{"name": "complex.erfcx", "args": [1.9259259259259256, 0.0]}
+{"name": "complex.erfcx", "args": [1.8394160583941606, 0.0]}
+{"name": "complex.erfcx", "args": [1.7553956834532372, 0.0]}
+{"name": "complex.erfcx", "args": [1.6737588652482271, 0.0]}
+{"name": "complex.erfcx", "args": [1.5944055944055942, 0.0]}
+{"name": "complex.erfcx", "args": [1.5172413793103452, 0.0]}
+{"name": "complex.erfcx", "args": [1.4421768707482991, 0.0]}
+{"name": "complex.erfcx", "args": [1.3691275167785237, 0.0]}
+{"name": "complex.erfcx", "args": [1.298013245033113, 0.0]}
+{"name": "complex.erfcx", "args": [1.2287581699346406, 0.0]}
+{"name": "complex.erfcx", "args": [1.161290322580645, 0.0]}
+{"name": "complex.erfcx", "args": [1.095541401273885, 0.0]}
+{"name": "complex.erfcx", "args": [1.031446540880503, 0.0]}
+{"name": "complex.erfcx", "args": [0.9689440993788816, 0.0]}
+{"name": "complex.erfcx", "args": [0.9079754601226995, 0.0]}
+{"name": "complex.erfcx", "args": [0.8484848484848486, 0.0]}
+{"name": "complex.erfcx", "args": [0.7904191616766463, 0.0]}
+{"name": "complex.erfcx", "args": [0.7337278106508878, 0.0]}
+{"name": "complex.erfcx", "args": [0.678362573099415, 0.0]}
+{"name": "complex.erfcx", "args": [0.6242774566473992, 0.0]}
+{"name": "complex.erfcx", "args": [0.5714285714285712, 0.0]}
+{"name": "complex.erfcx", "args": [0.5197740112994351, 0.0]}
+{"name": "complex.erfcx", "args": [0.4692737430167595, 0.0]}
+{"name": "complex.erfcx", "args": [0.4198895027624312, 0.0]}
+{"name": "complex.erfcx", "args": [0.3715846994535523, 0.0]}
+{"name": "complex.erfcx", "args": [0.32432432432432456, 0.0]}
+{"name": "complex.erfcx", "args": [0.27807486631016065, 0.0]}
+{"name": "complex.erfcx", "args": [0.23280423280423257, 0.0]}
+{"name": "complex.erfcx", "args": [0.18848167539267013, 0.0]}
+{"name": "complex.erfcx", "args": [0.1450777202072535, 0.0]}
+{"name": "complex.erfcx", "args": [0.1025641025641022, 0.0]}
+{"name": "complex.erfcx", "args": [0.060913705583756084, 0.0]}
+{"name": "complex.erfcx", "args": [0.020100502512562457, 0.0]}
+{"name": "complex.dawsn", "args": [199.0, 0.0]}
+{"name": "complex.dawsn", "args": [65.66666666666667, 0.0]}
+{"name": "complex.dawsn", "args": [39.0, 0.0]}
+{"name": "complex.dawsn", "args": [27.571428571428573, 0.0]}
+{"name": "complex.dawsn", "args": [21.22222222222222, 0.0]}
+{"name": "complex.dawsn", "args": [17.181818181818183, 0.0]}
+{"name": "complex.dawsn", "args": [14.384615384615385, 0.0]}
+{"name": "complex.dawsn", "args": [12.333333333333334, 0.0]}
+{"name": "complex.dawsn", "args": [10.764705882352942, 0.0]}
+{"name": "complex.dawsn", "args": [9.526315789473685, 0.0]}
+{"name": "complex.dawsn", "args": [8.523809523809524, 0.0]}
+{"name": "complex.dawsn", "args": [7.695652173913043, 0.0]}
+{"name": "complex.dawsn", "args": [7.0, 0.0]}
+{"name": "complex.dawsn", "args": [6.407407407407407, 0.0]}
+{"name": "complex.dawsn", "args": [5.896551724137931, 0.0]}
+{"name": "complex.dawsn", "args": [5.451612903225806, 0.0]}
+{"name": "complex.dawsn", "args": [5.0606060606060606, 0.0]}
+{"name": "complex.dawsn", "args": [4.714285714285714, 0.0]}
+{"name": "complex.dawsn", "args": [4.405405405405405, 0.0]}
+{"name": "complex.dawsn", "args": [4.128205128205129, 0.0]}
+{"name": "complex.dawsn", "args": [3.8780487804878048, 0.0]}
+{"name": "complex.dawsn", "args": [3.6511627906976747, 0.0]}
+{"name": "complex.dawsn", "args": [3.4444444444444446, 0.0]}
+{"name": "complex.dawsn", "args": [3.25531914893617, 0.0]}
+{"name": "complex.dawsn", "args": [3.0816326530612246, 0.0]}
+{"name": "complex.dawsn", "args": [2.9215686274509802, 0.0]}
+{"name": "complex.dawsn", "args": [2.7735849056603774, 0.0]}
+{"name": "complex.dawsn", "args": [2.6363636363636362, 0.0]}
+{"name": "complex.dawsn", "args": [2.508771929824561, 0.0]}
+{"name": "complex.dawsn", "args": [2.389830508474576, 0.0]}
+{"name": "complex.dawsn", "args": [2.278688524590164, 0.0]}
+{"name": "complex.dawsn", "args": [2.1746031746031744, 0.0]}
+{"name": "complex.dawsn", "args": [2.076923076923077, 0.0]}
+{"name": "complex.dawsn", "args": [1.9850746268656718, 0.0]}
+{"name": "complex.dawsn", "args": [1.8985507246376812, 0.0]}
+{"name": "complex.dawsn", "args": [1.816901408450704, 0.0]}
+{"name": "complex.dawsn", "args": [1.7397260273972601, 0.0]}
+{"name": "complex.dawsn", "args": [1.6666666666666665, 0.0]}
+{"name": "complex.dawsn", "args": [1.5974025974025974, 0.0]}
+{"name": "complex.dawsn", "args": [1.5316455696202533, 0.0]}
+{"name": "complex.dawsn", "args": [1.4691358024691357, 0.0]}
+{"name": "complex.dawsn", "args": [1.4096385542168677, 0.0]}
+{"name": "complex.dawsn", "args": [1.3529411764705883, 0.0]}
+{"name": "complex.dawsn", "args": [1.2988505747126435, 0.0]}
+{"name": "complex.dawsn", "args": [1.2471910112359552, 0.0]}
+{"name": "complex.dawsn", "args": [1.197802197802198, 0.0]}
+{"name": "complex.dawsn", "args": [1.150537634408602, 0.0]}
+{"name": "complex.dawsn", "args": [1.1052631578947367, 0.0]}
+{"name": "complex.dawsn", "args": [1.0618556701030926, 0.0]}
+{"name": "complex.dawsn", "args": [1.0202020202020203, 0.0]}
+{"name": "complex.dawsn", "args": [0.9801980198019802, 0.0]}
+{"name": "complex.dawsn", "args": [0.941747572815534, 0.0]}
+{"name": "complex.dawsn", "args": [0.9047619047619047, 0.0]}
+{"name": "complex.dawsn", "args": [0.8691588785046729, 0.0]}
+{"name": "complex.dawsn", "args": [0.834862385321101, 0.0]}
+{"name": "complex.dawsn", "args": [0.8018018018018018, 0.0]}
+{"name": "complex.dawsn", "args": [0.7699115044247788, 0.0]}
+{"name": "complex.dawsn", "args": [0.7391304347826086, 0.0]}
+{"name": "complex.dawsn", "args": [0.7094017094017093, 0.0]}
+{"name": "complex.dawsn", "args": [0.680672268907563, 0.0]}
+{"name": "complex.dawsn", "args": [0.6528925619834711, 0.0]}
+{"name": "complex.dawsn", "args": [0.6260162601626016, 0.0]}
+{"name": "complex.dawsn", "args": [0.6000000000000001, 0.0]}
+{"name": "complex.dawsn", "args": [0.5748031496062993, 0.0]}
+{"name": "complex.dawsn", "args": [0.5503875968992249, 0.0]}
+{"name": "complex.dawsn", "args": [0.5267175572519085, 0.0]}
+{"name": "complex.dawsn", "args": [0.5037593984962405, 0.0]}
+{"name": "complex.dawsn", "args": [0.4814814814814814, 0.0]}
+{"name": "complex.dawsn", "args": [0.45985401459854014, 0.0]}
+{"name": "complex.dawsn", "args": [0.4388489208633093, 0.0]}
+{"name": "complex.dawsn", "args": [0.4184397163120568, 0.0]}
+{"name": "complex.dawsn", "args": [0.39860139860139854, 0.0]}
+{"name": "complex.dawsn", "args": [0.3793103448275863, 0.0]}
+{"name": "complex.dawsn", "args": [0.3605442176870748, 0.0]}
+{"name": "complex.dawsn", "args": [0.34228187919463093, 0.0]}
+{"name": "complex.dawsn", "args": [0.32450331125827825, 0.0]}
+{"name": "complex.dawsn", "args": [0.30718954248366015, 0.0]}
+{"name": "complex.dawsn", "args": [0.29032258064516125, 0.0]}
+{"name": "complex.dawsn", "args": [0.2738853503184713, 0.0]}
+{"name": "complex.dawsn", "args": [0.25786163522012573, 0.0]}
+{"name": "complex.dawsn", "args": [0.2422360248447204, 0.0]}
+{"name": "complex.dawsn", "args": [0.22699386503067487, 0.0]}
+{"name": "complex.dawsn", "args": [0.21212121212121215, 0.0]}
+{"name": "complex.dawsn", "args": [0.19760479041916157, 0.0]}
+{"name": "complex.dawsn", "args": [0.18343195266272194, 0.0]}
+{"name": "complex.dawsn", "args": [0.16959064327485374, 0.0]}
+{"name": "complex.dawsn", "args": [0.1560693641618498, 0.0]}
+{"name": "complex.dawsn", "args": [0.1428571428571428, 0.0]}
+{"name": "complex.dawsn", "args": [0.12994350282485878, 0.0]}
+{"name": "complex.dawsn", "args": [0.11731843575418988, 0.0]}
+{"name": "complex.dawsn", "args": [0.1049723756906078, 0.0]}
+{"name": "complex.dawsn", "args": [0.09289617486338808, 0.0]}
+{"name": "complex.dawsn", "args": [0.08108108108108114, 0.0]}
+{"name": "complex.dawsn", "args": [0.06951871657754016, 0.0]}
+{"name": "complex.dawsn", "args": [0.05820105820105814, 0.0]}
+{"name": "complex.dawsn", "args": [0.04712041884816753, 0.0]}
+{"name": "complex.dawsn", "args": [0.03626943005181338, 0.0]}
+{"name": "complex.dawsn", "args": [0.02564102564102555, 0.0]}
+{"name": "complex.dawsn", "args": [0.015228426395939021, 0.0]}
+{"name": "complex.dawsn", "args": [0.005025125628140614, 0.0]}
+{"name": "complex.fresnel", "args": [-12.25, 0.0]}
+{"name": "complex.fresnel", "args": [0.0, -12.25]}
+{"name": "complex.fresnel", "args": [-12.25, -0.0]}
+{"name": "complex.fresnel", "args": [-0.0, -12.25]}
+{"name": "complex.fresnel", "args": [-12.25, 1e-08]}
+{"name": "complex.fresnel", "args": [1e-08, -12.25]}
+{"name": "complex.fresnel", "args": [-12.25, -1e-08]}
+{"name": "complex.fresnel", "args": [-1e-08, -12.25]}
+{"name": "complex.fresnel", "args": [-1.3, 0.0]}
+{"name": "complex.fresnel", "args": [0.0, -1.3]}
+{"name": "complex.fresnel", "args": [-1.3, -0.0]}
+{"name": "complex.fresnel", "args": [-0.0, -1.3]}
+{"name": "complex.fresnel", "args": [-1.3, 1e-08]}
+{"name": "complex.fresnel", "args": [1e-08, -1.3]}
+{"name": "complex.fresnel", "args": [-1.3, -1e-08]}
+{"name": "complex.fresnel", "args": [-1e-08, -1.3]}
+{"name": "complex.fresnel", "args": [0.0, 0.0]}
+{"name": "complex.fresnel", "args": [0.0, -0.0]}
+{"name": "complex.fresnel", "args": [-0.0, 0.0]}
+{"name": "complex.fresnel", "args": [0.0, 1e-08]}
+{"name": "complex.fresnel", "args": [1e-08, 0.0]}
+{"name": "complex.fresnel", "args": [0.0, -1e-08]}
+{"name": "complex.fresnel", "args": [-1e-08, 0.0]}
+{"name": "complex.fresnel", "args": [1.3, 0.0]}
+{"name": "complex.fresnel", "args": [0.0, 1.3]}
+{"name": "complex.fresnel", "args": [1.3, -0.0]}
+{"name": "complex.fresnel", "args": [-0.0, 1.3]}
+{"name": "complex.fresnel", "args": [1.3, 1e-08]}
+{"name": "complex.fresnel", "args": [1e-08, 1.3]}
+{"name": "complex.fresnel", "args": [1.3, -1e-08]}
+{"name": "complex.fresnel", "args": [-1e-08, 1.3]}
+{"name": "complex.fresnel", "args": [12.25, 0.0]}
+{"name": "complex.fresnel", "args": [0.0, 12.25]}
+{"name": "complex.fresnel", "args": [12.25, -0.0]}
+{"name": "complex.fresnel", "args": [-0.0, 12.25]}
+{"name": "complex.fresnel", "args": [12.25, 1e-08]}
+{"name": "complex.fresnel", "args": [1e-08, 12.25]}
+{"name": "complex.fresnel", "args": [12.25, -1e-08]}
+{"name": "complex.fresnel", "args": [-1e-08, 12.25]}
+{"name": "complex.wofz", "args": [12.0, 1e-12]}
+{"name": "complex.wofz", "args": [12.0, -1e-12]}
+{"name": "complex.wofz", "args": [20.0, 0.1]}
+{"name": "complex.wofz", "args": [20.0, -0.1]}
+{"name": "complex.wofz", "args": [1e-08, 6.5]}
+{"name": "complex.wofz", "args": [1e-08, -6.5]}
+{"name": "complex.wofz", "args": [1e-08, 1e-08]}
+{"name": "complex.wofz", "args": [-1e-08, -1e-08]}
+{"name": "complex.wofz", "args": [100.0, 1.0]}
+{"name": "complex.wofz", "args": [-100.0, 1.0]}
+{"name": "complex.erf", "args": [12.0, 1e-12]}
+{"name": "complex.erf", "args": [12.0, -1e-12]}
+{"name": "complex.erf", "args": [20.0, 0.1]}
+{"name": "complex.erf", "args": [20.0, -0.1]}
+{"name": "complex.erf", "args": [1e-08, 6.5]}
+{"name": "complex.erf", "args": [1e-08, -6.5]}
+{"name": "complex.erf", "args": [1e-08, 1e-08]}
+{"name": "complex.erf", "args": [-1e-08, -1e-08]}
+{"name": "complex.erf", "args": [100.0, 1.0]}
+{"name": "complex.erf", "args": [-100.0, 1.0]}
+{"name": "complex.erfc", "args": [12.0, 1e-12]}
+{"name": "complex.erfc", "args": [12.0, -1e-12]}
+{"name": "complex.erfc", "args": [20.0, 0.1]}
+{"name": "complex.erfc", "args": [20.0, -0.1]}
+{"name": "complex.erfc", "args": [1e-08, 6.5]}
+{"name": "complex.erfc", "args": [1e-08, -6.5]}
+{"name": "complex.erfc", "args": [1e-08, 1e-08]}
+{"name": "complex.erfc", "args": [-1e-08, -1e-08]}
+{"name": "complex.erfc", "args": [100.0, 1.0]}
+{"name": "complex.erfc", "args": [-100.0, 1.0]}
+{"name": "complex.dawsn", "args": [12.0, 1e-12]}
+{"name": "complex.dawsn", "args": [12.0, -1e-12]}
+{"name": "complex.dawsn", "args": [20.0, 0.1]}
+{"name": "complex.dawsn", "args": [20.0, -0.1]}
+{"name": "complex.dawsn", "args": [1e-08, 6.5]}
+{"name": "complex.dawsn", "args": [1e-08, -6.5]}
+{"name": "complex.dawsn", "args": [1e-08, 1e-08]}
+{"name": "complex.dawsn", "args": [-1e-08, -1e-08]}
+{"name": "complex.dawsn", "args": [100.0, 1.0]}
+{"name": "complex.dawsn", "args": [-100.0, 1.0]}

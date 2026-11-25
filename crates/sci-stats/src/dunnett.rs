@@ -25,7 +25,7 @@ impl DunnettQuadrature {
         };
         let normal = cache
             .get_or_init(|| {
-                let (nodes, weights) = crate::special::roots_hermitenorm(order)?;
+                let (nodes, weights) = crate::special::orthogonal::roots_hermitenorm(order)?;
                 let normalizer = (2. * std::f64::consts::PI).sqrt();
                 Ok(Arc::new(
                     nodes
@@ -36,8 +36,8 @@ impl DunnettQuadrature {
                 ))
             })
             .clone()?;
-        let (nodes, weights) = crate::special::roots_genlaguerre(order, df / 2. - 1.)?;
-        let log_gamma = crate::special::gammaln(df / 2.);
+        let (nodes, weights) = crate::special::orthogonal::roots_genlaguerre(order, df / 2. - 1.)?;
+        let log_gamma = crate::special::gamma::gammaln(df / 2.);
         let scales = nodes
             .into_iter()
             .zip(weights)
@@ -97,7 +97,10 @@ fn dunnett_probability(
         }
         probability += weight * conditional;
     }
-    finite((1. - probability).clamp(0., 1.))
+    match (1. - probability).clamp(0., 1.) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 
 /// Dunnett multiple treatment-versus-control t tests with a shared control.
@@ -143,7 +146,7 @@ fn dunnett_probability(
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::dunnett(&[1.,2.,3.],&[&[4.,5.,6.]],sci_stats::Alternative::TwoSided)?;
+/// let r = sci_stats::inference::dunnett(&[1.,2.,3.],&[&[4.,5.,6.]],sci_stats::inference::Alternative::TwoSided)?;
 /// assert!(r.pvalue[0] < 0.05);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -194,7 +197,10 @@ pub fn dunnett(
     let mut correlations = Vec::with_capacity(treatments.len());
     for (i, treatment) in treatments.iter().enumerate() {
         let factor = 1. / nc + 1. / treatment.len() as f64;
-        statistic.push(finite((means[i + 1] - means[0]) / (mse * factor).sqrt())?);
+        statistic.push(match (means[i + 1] - means[0]) / (mse * factor).sqrt() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?);
         let r = ((1. / nc) / factor).sqrt();
         correlations.push((r, (1. - r * r).sqrt()));
     }

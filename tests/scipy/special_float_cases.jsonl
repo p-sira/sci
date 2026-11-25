@@ -1,0 +1,407 @@
+{"name": "agm", "args": [1, 2], "types": ["T", "T"]}
+{"name": "binom", "args": [5, 2], "types": ["T", "T"]}
+{"name": "erfcx", "args": [0.5], "types": ["T"]}
+{"name": "erfi", "args": [0.5], "types": ["T"]}
+{"name": "erfcinv", "args": [0.3], "types": ["T"]}
+{"name": "dawsn", "args": [0.5], "types": ["T"]}
+{"name": "gammasgn", "args": [-0.5], "types": ["T"]}
+{"name": "gammaincc", "args": [2.5, 3], "types": ["T", "T"]}
+{"name": "gammaincinv", "args": [2.5, 0.3], "types": ["T", "T"]}
+{"name": "gammainccinv", "args": [2.5, 0.3], "types": ["T", "T"]}
+{"name": "loggamma", "args": [2.5], "types": ["T"]}
+{"name": "rgamma", "args": [-2], "types": ["T"]}
+{"name": "jv", "args": [0.5, 2], "types": ["T", "T"]}
+{"name": "jve", "args": [0.5, 2], "types": ["T", "T"]}
+{"name": "yv", "args": [0.5, 2], "types": ["T", "T"]}
+{"name": "yve", "args": [0.5, 2], "types": ["T", "T"]}
+{"name": "iv", "args": [0.5, 2], "types": ["T", "T"]}
+{"name": "ive", "args": [0.5, 2], "types": ["T", "T"]}
+{"name": "kv", "args": [0.5, 2], "types": ["T", "T"]}
+{"name": "kve", "args": [0.5, 2], "types": ["T", "T"]}
+{"name": "j0", "args": [2], "types": ["T"]}
+{"name": "j1", "args": [2], "types": ["T"]}
+{"name": "y0", "args": [2], "types": ["T"]}
+{"name": "y1", "args": [2], "types": ["T"]}
+{"name": "i0", "args": [2], "types": ["T"]}
+{"name": "i1", "args": [2], "types": ["T"]}
+{"name": "i0e", "args": [2], "types": ["T"]}
+{"name": "i1e", "args": [2], "types": ["T"]}
+{"name": "k0", "args": [2], "types": ["T"]}
+{"name": "k1", "args": [2], "types": ["T"]}
+{"name": "k0e", "args": [2], "types": ["T"]}
+{"name": "k1e", "args": [2], "types": ["T"]}
+{"name": "struve", "args": [0.5, 2], "types": ["T", "T"]}
+{"name": "modstruve", "args": [0.5, 2], "types": ["T", "T"]}
+{"name": "hyp0f1", "args": [2.5, 0.5], "types": ["T", "T"]}
+{"name": "exp1", "args": [0.5], "types": ["T"]}
+{"name": "expi", "args": [0.5], "types": ["T"]}
+{"name": "expn", "args": [3, 0.5], "types": ["u32", "T"]}
+{"name": "spence", "args": [0.5], "types": ["T"]}
+{"name": "zeta", "args": [2.5, 1.5], "types": ["T", "T"]}
+{"name": "zetac", "args": [2.5], "types": ["T"]}
+{"name": "wrightomega", "args": [0.5], "types": ["T"]}
+{"name": "voigt_profile", "args": [0.5, 1, 0.3], "types": ["T", "T", "T"]}
+{"name": "bdtr", "args": [2, 5, 0.3], "types": ["T", "i32", "T"]}
+{"name": "bdtrc", "args": [2, 5, 0.3], "types": ["T", "i32", "T"]}
+{"name": "bdtri", "args": [2, 5, 0.3], "types": ["T", "i32", "T"]}
+{"name": "chdtr", "args": [3, 2.5], "types": ["T", "T"]}
+{"name": "chdtrc", "args": [3, 2.5], "types": ["T", "T"]}
+{"name": "chdtri", "args": [3, 0.3], "types": ["T", "T"]}
+{"name": "fdtr", "args": [3, 5, 2.5], "types": ["T", "T", "T"]}
+{"name": "fdtrc", "args": [3, 5, 2.5], "types": ["T", "T", "T"]}
+{"name": "fdtri", "args": [3, 5, 0.3], "types": ["T", "T", "T"]}
+{"name": "gdtr", "args": [1.5, 2.5, 0.5], "types": ["T", "T", "T"]}
+{"name": "gdtrc", "args": [1.5, 2.5, 0.5], "types": ["T", "T", "T"]}
+{"name": "nbdtr", "args": [2, 5, 0.3], "types": ["i32", "i32", "T"]}
+{"name": "nbdtrc", "args": [2, 5, 0.3], "types": ["i32", "i32", "T"]}
+{"name": "nbdtri", "args": [2, 5, 0.3], "types": ["i32", "i32", "T"]}
+{"name": "ndtr", "args": [0.5], "types": ["T"]}
+{"name": "ndtri", "args": [0.3], "types": ["T"]}
+{"name": "log_ndtr", "args": [-30], "types": ["T"]}
+{"name": "ndtri_exp", "args": [-100], "types": ["T"]}
+{"name": "pdtr", "args": [2, 1.5], "types": ["T", "T"]}
+{"name": "pdtrc", "args": [2, 1.5], "types": ["T", "T"]}
+{"name": "pdtri", "args": [2, 0.3], "types": ["i32", "T"]}
+{"name": "kolmogorov", "args": [0.5], "types": ["T"]}
+{"name": "kolmogi", "args": [0.3], "types": ["T"]}
+{"name": "tklmbda", "args": [0.5, 0.3], "types": ["T", "T"]}
+{"name": "ber", "args": [0.5], "types": ["T"]}
+{"name": "bei", "args": [0.5], "types": ["T"]}
+{"name": "ker", "args": [0.5], "types": ["T"]}
+{"name": "kei", "args": [0.5], "types": ["T"]}
+{"name": "berp", "args": [0.5], "types": ["T"]}
+{"name": "beip", "args": [0.5], "types": ["T"]}
+{"name": "kerp", "args": [0.5], "types": ["T"]}
+{"name": "keip", "args": [0.5], "types": ["T"]}
+{"name": "legendre_p", "args": [3, 0.3], "types": ["i32", "T"]}
+{"name": "boxcox", "args": [2, 0.3], "types": ["T", "T"]}
+{"name": "boxcox1p", "args": [1e-06, 0.3], "types": ["T", "T"]}
+{"name": "eval_jacobi", "args": [3, 0.5, 0.3, 0.2], "types": ["i32", "T", "T", "T"]}
+{"name": "eval_legendre", "args": [3, 0.2], "types": ["i32", "T"]}
+{"name": "eval_gegenbauer", "args": [3, 0.5, 0.2], "types": ["i32", "T", "T"]}
+{"name": "eval_genlaguerre", "args": [3, 0.5, 0.2], "types": ["i32", "T", "T"]}
+{"name": "eval_laguerre", "args": [3, 0.2], "types": ["i32", "T"]}
+{"name": "eval_chebyt", "args": [3, 0.2], "types": ["i32", "T"]}
+{"name": "eval_chebyu", "args": [3, 0.2], "types": ["i32", "T"]}
+{"name": "eval_hermite", "args": [3, 0.2], "types": ["i32", "T"]}
+{"name": "eval_hermitenorm", "args": [3, 0.2], "types": ["i32", "T"]}
+{"name": "spherical_jn", "args": [2, 0.5, false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_yn", "args": [2, 0.5, false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_in", "args": [2, 0.5, false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_kn", "args": [2, 0.5, false], "types": ["i64", "T", "bool"]}
+{"name": "comb", "args": [5, 2], "types": ["T", "T"]}
+{"name": "poch", "args": [2.5, 3], "types": ["T", "T"]}
+{"name": "gamma", "args": [2.5], "types": ["T"]}
+{"name": "gammaln", "args": [2.5], "types": ["T"]}
+{"name": "digamma", "args": [2.5], "types": ["T"]}
+{"name": "erf", "args": [0.5], "types": ["T"]}
+{"name": "erfc", "args": [0.5], "types": ["T"]}
+{"name": "erfinv", "args": [0.5], "types": ["T"]}
+{"name": "betainc", "args": [2.5, 3.5, 0.4], "types": ["T", "T", "T"]}
+{"name": "betaincinv", "args": [2.5, 3.5, 0.4], "types": ["T", "T", "T"]}
+{"name": "gammainc", "args": [2.5, 0.5], "types": ["T", "T"]}
+{"name": "lambertw", "args": [0.5], "types": ["T"]}
+{"name": "lambertwm1", "args": [-0.1], "types": ["T"]}
+{"name": "digamma", "args": [-2.3], "types": ["T"]}
+{"name": "digamma", "args": [-0.5], "types": ["T"]}
+{"name": "digamma", "args": [1e-08], "types": ["T"]}
+{"name": "digamma", "args": [50], "types": ["T"]}
+{"name": "lambertw", "args": [-0.36], "types": ["T"]}
+{"name": "lambertw", "args": [-1e-12], "types": ["T"]}
+{"name": "lambertw", "args": [0.0], "types": ["T"]}
+{"name": "lambertw", "args": [1e-300], "types": ["T"]}
+{"name": "lambertw", "args": [1.0], "types": ["T"]}
+{"name": "lambertw", "args": [1e+100], "types": ["T"]}
+{"name": "lambertw", "args": [1e+300], "types": ["T"]}
+{"name": "lambertwm1", "args": [-0.36], "types": ["T"]}
+{"name": "lambertwm1", "args": [-1e-12], "types": ["T"]}
+{"name": "lambertwm1", "args": [-1e-100], "types": ["T"]}
+{"name": "lambertwm1", "args": [-1e-300], "types": ["T"]}
+{"name": "lambertw", "args": [-0.001], "types": ["T"]}
+{"name": "lambertw", "args": [0.001], "types": ["T"]}
+{"name": "gamma", "args": [0.0], "types": ["T"]}
+{"name": "gamma", "args": [-0.0], "types": ["T"]}
+{"name": "digamma", "args": [-1.0], "types": ["T"]}
+{"name": "erfinv", "args": [2.0], "types": ["T"]}
+{"name": "jv", "args": [0.5, -1.0], "types": ["T", "T"]}
+{"name": "kv", "args": [1.0, 0.0], "types": ["T", "T"]}
+{"name": "hyp0f1", "args": [-1.0, 0.5], "types": ["T", "T"]}
+{"name": "struve", "args": [0.5, -1.0], "types": ["T", "T"]}
+{"name": "ndtri", "args": [0.0], "types": ["T"]}
+{"name": "ndtri", "args": [1.0], "types": ["T"]}
+{"name": "gammaincinv", "args": [2.0, 0.0], "types": ["T", "T"]}
+{"name": "gammaincinv", "args": [2.0, 1.0], "types": ["T", "T"]}
+{"name": "betainc", "args": [-1.0, 2.0, 0.5], "types": ["T", "T", "T"]}
+{"name": "spherical_jn", "args": [0, 0.0, false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_jn", "args": [0, 0.0, true], "types": ["i64", "T", "bool"]}
+{"name": "agm", "args": ["nan", 2], "types": ["T", "T"]}
+{"name": "agm", "args": ["inf", 2], "types": ["T", "T"]}
+{"name": "agm", "args": ["-inf", 2], "types": ["T", "T"]}
+{"name": "binom", "args": ["nan", 2], "types": ["T", "T"]}
+{"name": "binom", "args": ["inf", 2], "types": ["T", "T"]}
+{"name": "binom", "args": ["-inf", 2], "types": ["T", "T"]}
+{"name": "erfcx", "args": ["nan"], "types": ["T"]}
+{"name": "erfcx", "args": ["inf"], "types": ["T"]}
+{"name": "erfcx", "args": ["-inf"], "types": ["T"]}
+{"name": "erfi", "args": ["nan"], "types": ["T"]}
+{"name": "erfi", "args": ["inf"], "types": ["T"]}
+{"name": "erfi", "args": ["-inf"], "types": ["T"]}
+{"name": "erfcinv", "args": ["nan"], "types": ["T"]}
+{"name": "erfcinv", "args": ["inf"], "types": ["T"]}
+{"name": "erfcinv", "args": ["-inf"], "types": ["T"]}
+{"name": "dawsn", "args": ["nan"], "types": ["T"]}
+{"name": "dawsn", "args": ["inf"], "types": ["T"]}
+{"name": "dawsn", "args": ["-inf"], "types": ["T"]}
+{"name": "gammasgn", "args": ["nan"], "types": ["T"]}
+{"name": "gammasgn", "args": ["inf"], "types": ["T"]}
+{"name": "gammasgn", "args": ["-inf"], "types": ["T"]}
+{"name": "gammaincc", "args": ["nan", 3], "types": ["T", "T"]}
+{"name": "gammaincc", "args": ["inf", 3], "types": ["T", "T"]}
+{"name": "gammaincc", "args": ["-inf", 3], "types": ["T", "T"]}
+{"name": "gammaincinv", "args": ["nan", 0.3], "types": ["T", "T"]}
+{"name": "gammaincinv", "args": ["inf", 0.3], "types": ["T", "T"]}
+{"name": "gammaincinv", "args": ["-inf", 0.3], "types": ["T", "T"]}
+{"name": "gammainccinv", "args": ["nan", 0.3], "types": ["T", "T"]}
+{"name": "gammainccinv", "args": ["inf", 0.3], "types": ["T", "T"]}
+{"name": "gammainccinv", "args": ["-inf", 0.3], "types": ["T", "T"]}
+{"name": "loggamma", "args": ["nan"], "types": ["T"]}
+{"name": "loggamma", "args": ["inf"], "types": ["T"]}
+{"name": "loggamma", "args": ["-inf"], "types": ["T"]}
+{"name": "rgamma", "args": ["nan"], "types": ["T"]}
+{"name": "jv", "args": ["nan", 2], "types": ["T", "T"]}
+{"name": "jve", "args": ["nan", 2], "types": ["T", "T"]}
+{"name": "jve", "args": ["inf", 2], "types": ["T", "T"]}
+{"name": "jve", "args": ["-inf", 2], "types": ["T", "T"]}
+{"name": "yv", "args": ["nan", 2], "types": ["T", "T"]}
+{"name": "yv", "args": ["inf", 2], "types": ["T", "T"]}
+{"name": "yv", "args": ["-inf", 2], "types": ["T", "T"]}
+{"name": "yve", "args": ["nan", 2], "types": ["T", "T"]}
+{"name": "yve", "args": ["inf", 2], "types": ["T", "T"]}
+{"name": "yve", "args": ["-inf", 2], "types": ["T", "T"]}
+{"name": "iv", "args": ["nan", 2], "types": ["T", "T"]}
+{"name": "ive", "args": ["nan", 2], "types": ["T", "T"]}
+{"name": "ive", "args": ["inf", 2], "types": ["T", "T"]}
+{"name": "ive", "args": ["-inf", 2], "types": ["T", "T"]}
+{"name": "kv", "args": ["nan", 2], "types": ["T", "T"]}
+{"name": "kv", "args": ["inf", 2], "types": ["T", "T"]}
+{"name": "kv", "args": ["-inf", 2], "types": ["T", "T"]}
+{"name": "kve", "args": ["nan", 2], "types": ["T", "T"]}
+{"name": "kve", "args": ["inf", 2], "types": ["T", "T"]}
+{"name": "kve", "args": ["-inf", 2], "types": ["T", "T"]}
+{"name": "j0", "args": ["nan"], "types": ["T"]}
+{"name": "j0", "args": ["inf"], "types": ["T"]}
+{"name": "j0", "args": ["-inf"], "types": ["T"]}
+{"name": "j1", "args": ["nan"], "types": ["T"]}
+{"name": "j1", "args": ["inf"], "types": ["T"]}
+{"name": "j1", "args": ["-inf"], "types": ["T"]}
+{"name": "y0", "args": ["nan"], "types": ["T"]}
+{"name": "y0", "args": ["inf"], "types": ["T"]}
+{"name": "y0", "args": ["-inf"], "types": ["T"]}
+{"name": "y1", "args": ["nan"], "types": ["T"]}
+{"name": "y1", "args": ["inf"], "types": ["T"]}
+{"name": "y1", "args": ["-inf"], "types": ["T"]}
+{"name": "i0", "args": ["nan"], "types": ["T"]}
+{"name": "i1", "args": ["nan"], "types": ["T"]}
+{"name": "i0e", "args": ["nan"], "types": ["T"]}
+{"name": "i0e", "args": ["inf"], "types": ["T"]}
+{"name": "i0e", "args": ["-inf"], "types": ["T"]}
+{"name": "i1e", "args": ["nan"], "types": ["T"]}
+{"name": "i1e", "args": ["inf"], "types": ["T"]}
+{"name": "i1e", "args": ["-inf"], "types": ["T"]}
+{"name": "k0", "args": ["nan"], "types": ["T"]}
+{"name": "k0", "args": ["inf"], "types": ["T"]}
+{"name": "k0", "args": ["-inf"], "types": ["T"]}
+{"name": "k1", "args": ["nan"], "types": ["T"]}
+{"name": "k1", "args": ["inf"], "types": ["T"]}
+{"name": "k1", "args": ["-inf"], "types": ["T"]}
+{"name": "k0e", "args": ["nan"], "types": ["T"]}
+{"name": "k0e", "args": ["inf"], "types": ["T"]}
+{"name": "k0e", "args": ["-inf"], "types": ["T"]}
+{"name": "k1e", "args": ["nan"], "types": ["T"]}
+{"name": "k1e", "args": ["inf"], "types": ["T"]}
+{"name": "k1e", "args": ["-inf"], "types": ["T"]}
+{"name": "struve", "args": ["nan", 2], "types": ["T", "T"]}
+{"name": "modstruve", "args": ["nan", 2], "types": ["T", "T"]}
+{"name": "hyp0f1", "args": ["nan", 0.5], "types": ["T", "T"]}
+{"name": "exp1", "args": ["nan"], "types": ["T"]}
+{"name": "exp1", "args": ["inf"], "types": ["T"]}
+{"name": "exp1", "args": ["-inf"], "types": ["T"]}
+{"name": "expi", "args": ["nan"], "types": ["T"]}
+{"name": "expi", "args": ["inf"], "types": ["T"]}
+{"name": "expi", "args": ["-inf"], "types": ["T"]}
+{"name": "expn", "args": [3, "nan"], "types": ["u32", "T"]}
+{"name": "expn", "args": [3, "inf"], "types": ["u32", "T"]}
+{"name": "expn", "args": [3, "-inf"], "types": ["u32", "T"]}
+{"name": "spence", "args": ["nan"], "types": ["T"]}
+{"name": "spence", "args": ["inf"], "types": ["T"]}
+{"name": "spence", "args": ["-inf"], "types": ["T"]}
+{"name": "zeta", "args": ["nan", 1.5], "types": ["T", "T"]}
+{"name": "zeta", "args": ["inf", 1.5], "types": ["T", "T"]}
+{"name": "zeta", "args": ["-inf", 1.5], "types": ["T", "T"]}
+{"name": "zetac", "args": ["nan"], "types": ["T"]}
+{"name": "zetac", "args": ["inf"], "types": ["T"]}
+{"name": "zetac", "args": ["-inf"], "types": ["T"]}
+{"name": "wrightomega", "args": ["nan"], "types": ["T"]}
+{"name": "wrightomega", "args": ["inf"], "types": ["T"]}
+{"name": "wrightomega", "args": ["-inf"], "types": ["T"]}
+{"name": "voigt_profile", "args": ["nan", 1, 0.3], "types": ["T", "T", "T"]}
+{"name": "voigt_profile", "args": ["inf", 1, 0.3], "types": ["T", "T", "T"]}
+{"name": "voigt_profile", "args": ["-inf", 1, 0.3], "types": ["T", "T", "T"]}
+{"name": "bdtr", "args": ["nan", 5, 0.3], "types": ["T", "i32", "T"]}
+{"name": "bdtr", "args": ["inf", 5, 0.3], "types": ["T", "i32", "T"]}
+{"name": "bdtr", "args": ["-inf", 5, 0.3], "types": ["T", "i32", "T"]}
+{"name": "bdtrc", "args": ["nan", 5, 0.3], "types": ["T", "i32", "T"]}
+{"name": "bdtrc", "args": ["inf", 5, 0.3], "types": ["T", "i32", "T"]}
+{"name": "bdtrc", "args": ["-inf", 5, 0.3], "types": ["T", "i32", "T"]}
+{"name": "bdtri", "args": ["nan", 5, 0.3], "types": ["T", "i32", "T"]}
+{"name": "bdtri", "args": ["inf", 5, 0.3], "types": ["T", "i32", "T"]}
+{"name": "bdtri", "args": ["-inf", 5, 0.3], "types": ["T", "i32", "T"]}
+{"name": "chdtr", "args": ["nan", 2.5], "types": ["T", "T"]}
+{"name": "chdtr", "args": ["inf", 2.5], "types": ["T", "T"]}
+{"name": "chdtr", "args": ["-inf", 2.5], "types": ["T", "T"]}
+{"name": "chdtrc", "args": ["nan", 2.5], "types": ["T", "T"]}
+{"name": "chdtrc", "args": ["inf", 2.5], "types": ["T", "T"]}
+{"name": "chdtrc", "args": ["-inf", 2.5], "types": ["T", "T"]}
+{"name": "chdtri", "args": ["nan", 0.3], "types": ["T", "T"]}
+{"name": "chdtri", "args": ["inf", 0.3], "types": ["T", "T"]}
+{"name": "chdtri", "args": ["-inf", 0.3], "types": ["T", "T"]}
+{"name": "fdtr", "args": ["nan", 5, 2.5], "types": ["T", "T", "T"]}
+{"name": "fdtr", "args": ["inf", 5, 2.5], "types": ["T", "T", "T"]}
+{"name": "fdtr", "args": ["-inf", 5, 2.5], "types": ["T", "T", "T"]}
+{"name": "fdtrc", "args": ["nan", 5, 2.5], "types": ["T", "T", "T"]}
+{"name": "fdtri", "args": ["nan", 5, 0.3], "types": ["T", "T", "T"]}
+{"name": "fdtri", "args": ["inf", 5, 0.3], "types": ["T", "T", "T"]}
+{"name": "fdtri", "args": ["-inf", 5, 0.3], "types": ["T", "T", "T"]}
+{"name": "gdtr", "args": ["nan", 2.5, 0.5], "types": ["T", "T", "T"]}
+{"name": "gdtr", "args": ["inf", 2.5, 0.5], "types": ["T", "T", "T"]}
+{"name": "gdtr", "args": ["-inf", 2.5, 0.5], "types": ["T", "T", "T"]}
+{"name": "gdtrc", "args": ["nan", 2.5, 0.5], "types": ["T", "T", "T"]}
+{"name": "gdtrc", "args": ["inf", 2.5, 0.5], "types": ["T", "T", "T"]}
+{"name": "gdtrc", "args": ["-inf", 2.5, 0.5], "types": ["T", "T", "T"]}
+{"name": "nbdtr", "args": [2, 5, "nan"], "types": ["i32", "i32", "T"]}
+{"name": "nbdtr", "args": [2, 5, "inf"], "types": ["i32", "i32", "T"]}
+{"name": "nbdtr", "args": [2, 5, "-inf"], "types": ["i32", "i32", "T"]}
+{"name": "nbdtrc", "args": [2, 5, "nan"], "types": ["i32", "i32", "T"]}
+{"name": "nbdtrc", "args": [2, 5, "inf"], "types": ["i32", "i32", "T"]}
+{"name": "nbdtrc", "args": [2, 5, "-inf"], "types": ["i32", "i32", "T"]}
+{"name": "nbdtri", "args": [2, 5, "nan"], "types": ["i32", "i32", "T"]}
+{"name": "nbdtri", "args": [2, 5, "inf"], "types": ["i32", "i32", "T"]}
+{"name": "nbdtri", "args": [2, 5, "-inf"], "types": ["i32", "i32", "T"]}
+{"name": "ndtr", "args": ["nan"], "types": ["T"]}
+{"name": "ndtr", "args": ["inf"], "types": ["T"]}
+{"name": "ndtr", "args": ["-inf"], "types": ["T"]}
+{"name": "ndtri", "args": ["nan"], "types": ["T"]}
+{"name": "ndtri", "args": ["inf"], "types": ["T"]}
+{"name": "ndtri", "args": ["-inf"], "types": ["T"]}
+{"name": "log_ndtr", "args": ["nan"], "types": ["T"]}
+{"name": "log_ndtr", "args": ["inf"], "types": ["T"]}
+{"name": "log_ndtr", "args": ["-inf"], "types": ["T"]}
+{"name": "ndtri_exp", "args": ["nan"], "types": ["T"]}
+{"name": "ndtri_exp", "args": ["inf"], "types": ["T"]}
+{"name": "ndtri_exp", "args": ["-inf"], "types": ["T"]}
+{"name": "pdtr", "args": ["nan", 1.5], "types": ["T", "T"]}
+{"name": "pdtr", "args": ["inf", 1.5], "types": ["T", "T"]}
+{"name": "pdtr", "args": ["-inf", 1.5], "types": ["T", "T"]}
+{"name": "pdtrc", "args": ["nan", 1.5], "types": ["T", "T"]}
+{"name": "pdtrc", "args": ["inf", 1.5], "types": ["T", "T"]}
+{"name": "pdtrc", "args": ["-inf", 1.5], "types": ["T", "T"]}
+{"name": "pdtri", "args": [2, "nan"], "types": ["i32", "T"]}
+{"name": "pdtri", "args": [2, "inf"], "types": ["i32", "T"]}
+{"name": "pdtri", "args": [2, "-inf"], "types": ["i32", "T"]}
+{"name": "kolmogorov", "args": ["nan"], "types": ["T"]}
+{"name": "kolmogorov", "args": ["inf"], "types": ["T"]}
+{"name": "kolmogorov", "args": ["-inf"], "types": ["T"]}
+{"name": "kolmogi", "args": ["nan"], "types": ["T"]}
+{"name": "kolmogi", "args": ["inf"], "types": ["T"]}
+{"name": "kolmogi", "args": ["-inf"], "types": ["T"]}
+{"name": "tklmbda", "args": ["nan", 0.3], "types": ["T", "T"]}
+{"name": "tklmbda", "args": ["inf", 0.3], "types": ["T", "T"]}
+{"name": "tklmbda", "args": ["-inf", 0.3], "types": ["T", "T"]}
+{"name": "ber", "args": ["nan"], "types": ["T"]}
+{"name": "ber", "args": ["inf"], "types": ["T"]}
+{"name": "ber", "args": ["-inf"], "types": ["T"]}
+{"name": "bei", "args": ["nan"], "types": ["T"]}
+{"name": "bei", "args": ["inf"], "types": ["T"]}
+{"name": "bei", "args": ["-inf"], "types": ["T"]}
+{"name": "ker", "args": ["nan"], "types": ["T"]}
+{"name": "ker", "args": ["inf"], "types": ["T"]}
+{"name": "ker", "args": ["-inf"], "types": ["T"]}
+{"name": "kei", "args": ["nan"], "types": ["T"]}
+{"name": "kei", "args": ["inf"], "types": ["T"]}
+{"name": "kei", "args": ["-inf"], "types": ["T"]}
+{"name": "berp", "args": ["nan"], "types": ["T"]}
+{"name": "berp", "args": ["inf"], "types": ["T"]}
+{"name": "berp", "args": ["-inf"], "types": ["T"]}
+{"name": "beip", "args": ["nan"], "types": ["T"]}
+{"name": "beip", "args": ["inf"], "types": ["T"]}
+{"name": "beip", "args": ["-inf"], "types": ["T"]}
+{"name": "kerp", "args": ["nan"], "types": ["T"]}
+{"name": "kerp", "args": ["inf"], "types": ["T"]}
+{"name": "kerp", "args": ["-inf"], "types": ["T"]}
+{"name": "keip", "args": ["nan"], "types": ["T"]}
+{"name": "keip", "args": ["inf"], "types": ["T"]}
+{"name": "keip", "args": ["-inf"], "types": ["T"]}
+{"name": "legendre_p", "args": [3, "nan"], "types": ["i32", "T"]}
+{"name": "boxcox", "args": ["nan", 0.3], "types": ["T", "T"]}
+{"name": "boxcox", "args": ["inf", 0.3], "types": ["T", "T"]}
+{"name": "boxcox", "args": ["-inf", 0.3], "types": ["T", "T"]}
+{"name": "boxcox1p", "args": ["nan", 0.3], "types": ["T", "T"]}
+{"name": "boxcox1p", "args": ["inf", 0.3], "types": ["T", "T"]}
+{"name": "boxcox1p", "args": ["-inf", 0.3], "types": ["T", "T"]}
+{"name": "eval_jacobi", "args": [3, "nan", 0.3, 0.2], "types": ["i32", "T", "T", "T"]}
+{"name": "eval_jacobi", "args": [3, "inf", 0.3, 0.2], "types": ["i32", "T", "T", "T"]}
+{"name": "eval_jacobi", "args": [3, "-inf", 0.3, 0.2], "types": ["i32", "T", "T", "T"]}
+{"name": "eval_legendre", "args": [3, "nan"], "types": ["i32", "T"]}
+{"name": "eval_gegenbauer", "args": [3, "nan", 0.2], "types": ["i32", "T", "T"]}
+{"name": "eval_gegenbauer", "args": [3, "inf", 0.2], "types": ["i32", "T", "T"]}
+{"name": "eval_gegenbauer", "args": [3, "-inf", 0.2], "types": ["i32", "T", "T"]}
+{"name": "eval_genlaguerre", "args": [3, "nan", 0.2], "types": ["i32", "T", "T"]}
+{"name": "eval_laguerre", "args": [3, "nan"], "types": ["i32", "T"]}
+{"name": "eval_chebyt", "args": [3, "nan"], "types": ["i32", "T"]}
+{"name": "eval_chebyu", "args": [3, "nan"], "types": ["i32", "T"]}
+{"name": "eval_hermite", "args": [3, "nan"], "types": ["i32", "T"]}
+{"name": "eval_hermitenorm", "args": [3, "nan"], "types": ["i32", "T"]}
+{"name": "spherical_jn", "args": [2, "nan", false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_jn", "args": [2, "inf", false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_jn", "args": [2, "-inf", false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_yn", "args": [2, "nan", false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_yn", "args": [2, "inf", false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_yn", "args": [2, "-inf", false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_in", "args": [2, "nan", false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_in", "args": [2, "inf", false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_in", "args": [2, "-inf", false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_kn", "args": [2, "nan", false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_kn", "args": [2, "inf", false], "types": ["i64", "T", "bool"]}
+{"name": "spherical_kn", "args": [2, "-inf", false], "types": ["i64", "T", "bool"]}
+{"name": "comb", "args": ["inf", 2], "types": ["T", "T"]}
+{"name": "comb", "args": ["-inf", 2], "types": ["T", "T"]}
+{"name": "poch", "args": ["nan", 3], "types": ["T", "T"]}
+{"name": "poch", "args": ["inf", 3], "types": ["T", "T"]}
+{"name": "poch", "args": ["-inf", 3], "types": ["T", "T"]}
+{"name": "gamma", "args": ["nan"], "types": ["T"]}
+{"name": "gamma", "args": ["inf"], "types": ["T"]}
+{"name": "gamma", "args": ["-inf"], "types": ["T"]}
+{"name": "gammaln", "args": ["nan"], "types": ["T"]}
+{"name": "gammaln", "args": ["inf"], "types": ["T"]}
+{"name": "gammaln", "args": ["-inf"], "types": ["T"]}
+{"name": "digamma", "args": ["nan"], "types": ["T"]}
+{"name": "digamma", "args": ["inf"], "types": ["T"]}
+{"name": "digamma", "args": ["-inf"], "types": ["T"]}
+{"name": "erf", "args": ["nan"], "types": ["T"]}
+{"name": "erf", "args": ["inf"], "types": ["T"]}
+{"name": "erf", "args": ["-inf"], "types": ["T"]}
+{"name": "erfc", "args": ["nan"], "types": ["T"]}
+{"name": "erfc", "args": ["inf"], "types": ["T"]}
+{"name": "erfc", "args": ["-inf"], "types": ["T"]}
+{"name": "erfinv", "args": ["nan"], "types": ["T"]}
+{"name": "erfinv", "args": ["inf"], "types": ["T"]}
+{"name": "erfinv", "args": ["-inf"], "types": ["T"]}
+{"name": "betainc", "args": ["nan", 3.5, 0.4], "types": ["T", "T", "T"]}
+{"name": "betaincinv", "args": ["nan", 3.5, 0.4], "types": ["T", "T", "T"]}
+{"name": "betaincinv", "args": ["inf", 3.5, 0.4], "types": ["T", "T", "T"]}
+{"name": "betaincinv", "args": ["-inf", 3.5, 0.4], "types": ["T", "T", "T"]}
+{"name": "gammainc", "args": ["nan", 0.5], "types": ["T", "T"]}
+{"name": "lambertw", "args": ["nan"], "types": ["T"]}
+{"name": "lambertw", "args": ["inf"], "types": ["T"]}
+{"name": "lambertw", "args": ["-inf"], "types": ["T"]}
+{"name": "lambertwm1", "args": ["nan"], "types": ["T"]}

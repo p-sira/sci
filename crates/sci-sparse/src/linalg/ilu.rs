@@ -25,7 +25,7 @@ impl SparseIlu {
     /// Two bounded sparse triangular solves; no residual refinement.
     /// # Examples
     /// ```
-    /// let lu=sci_sparse::linalg::spilu(&sci_sparse::identity(2)?,1e-4,2.)?;
+    /// let lu=sci_sparse::linalg::spilu(&sci_sparse::construct::identity(2)?,1e-4,2.)?;
     /// assert_eq!(lu.solve(&[2.,3.])?,[2.,3.]);
     /// # Ok::<(), sci_core::Error>(())
     /// ```
@@ -82,7 +82,7 @@ fn retain(row: &mut [f64], start: usize, end: usize, tol: f64, cap: usize) {
 /// Lower drop tolerances and larger fill generally improve approximation.
 /// # Examples
 /// ```
-/// let factor=sci_sparse::linalg::spilu(&sci_sparse::identity(3)?,0.,1.)?;
+/// let factor=sci_sparse::linalg::spilu(&sci_sparse::construct::identity(3)?,0.,1.)?;
 /// assert_eq!(factor.solve(&[1.,2.,3.])?,[1.,2.,3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -119,14 +119,20 @@ pub fn spilu(a: &SparseMatrix, drop_tol: f64, fill_factor: f64) -> Result<Sparse
             if u[j][j] == 0. {
                 return Err(Error::NumericalFailure("incomplete LU has a zero pivot"));
             }
-            let factor = finite(row[j] / u[j][j])?;
+            let factor = match row[j] / u[j][j] {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?;
             row[j] = 0.;
             if factor.abs() <= drop_tol {
                 continue;
             }
             l[i][j] = factor;
             for (k, v) in row.iter_mut().enumerate().skip(j + 1) {
-                *v = finite(*v - factor * u[j][k])?;
+                *v = match *v - factor * u[j][k] {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?;
             }
         }
         if row[i] == 0. {

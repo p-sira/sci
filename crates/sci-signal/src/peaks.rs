@@ -36,7 +36,7 @@ pub enum EdgeMode {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::peaks::*;
 /// let _result = argrelextrema(&[1.,3.,1.],|a,b|a>b,1,EdgeMode::Clip)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -96,7 +96,7 @@ pub fn argrelextrema(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::peaks::*;
 /// let _result = argrelmax(&[1.,3.,1.],1,EdgeMode::Clip)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -134,7 +134,7 @@ pub fn argrelmax(x: &[f64], order: usize, mode: EdgeMode) -> Result<Vec<usize>> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::peaks::*;
 /// let _result = argrelmin(&[3.,1.,3.],1,EdgeMode::Clip)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -173,7 +173,7 @@ pub fn argrelmin(x: &[f64], order: usize, mode: EdgeMode) -> Result<Vec<usize>> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::peaks::*;
 /// let _result = find_peaks(&[1.,3.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -237,7 +237,7 @@ pub struct Prominences {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::peaks::*;
 /// let _result = peak_prominences(&[1.,3.,1.],&[1],None)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -285,9 +285,10 @@ pub fn peak_prominences(x: &[f64], peaks: &[usize], window: Option<usize>) -> Re
                 right = i;
             }
         }
-        result
-            .values
-            .push(crate::error::finite(x[p] - x[left].max(x[right]))?);
+        result.values.push(match x[p] - x[left].max(x[right]) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?);
         result.left_bases.push(left);
         result.right_bases.push(right);
     }
@@ -332,7 +333,7 @@ pub struct PeakWidths {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::peaks::*;
 /// let _result = peak_widths(&[1.,3.,1.],&[1],0.5,None)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -359,7 +360,10 @@ pub fn peak_widths(
         right_ips: vec![],
     };
     for (j, &p) in peaks.iter().enumerate() {
-        let height = crate::error::finite(x[p] - prominence.values[j] * relative_height)?;
+        let height = match x[p] - prominence.values[j] * relative_height {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         let mut l = p;
         let mut r = p;
         while l > prominence.left_bases[j] && x[l] > height {

@@ -34,17 +34,15 @@ fn shared_errors_preserve_messages_and_have_no_source() {
 }
 
 #[test]
-fn finite_checks_preserve_ieee_values_and_reject_nonfinite_inputs() {
+fn is_finite_slice_accepts_finite_values_and_rejects_nonfinite_inputs() {
     for value in [-0.0_f64, 0.0, f64::from_bits(1), -f64::MAX, f64::MAX] {
-        assert_eq!(sci_core::finite(value).unwrap().to_bits(), value.to_bits());
-        assert_eq!(sci_core::finite_slice(&[value]), Ok(()));
+        assert_eq!(sci_core::is_finite_slice(&[value]), Ok(()));
     }
-    assert_eq!(sci_core::finite_slice(&[]), Ok(()));
+    assert_eq!(sci_core::is_finite_slice::<f64>(&[]), Ok(()));
     for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-        assert_eq!(sci_core::finite(bad), Err(Error::NonFiniteEvaluation));
         for values in [[bad, 1.0], [1.0, bad]] {
             assert_eq!(
-                sci_core::finite_slice(&values),
+                sci_core::is_finite_slice(&values),
                 Err(Error::InvalidInput("coordinates must be finite"))
             );
         }

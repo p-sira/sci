@@ -5,8 +5,8 @@
 //! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Linear and extended Kalman steps and the scaled unscented filter delegate to
-//! private Smelly backends. Particle propagation and moments use kalman_filters;
-//! log-weight normalization and reproducible systematic resampling are native.
+//! private Smelly backends, including particle propagation and moments;
+//! weight normalization, effective sample size, and systematic resampling are native.
 //! Sample filtering and FIR/IIR design remain in `sci-signal`.
 //!
 //! Every call validates finite values, shapes, covariance matrices, and work
@@ -19,7 +19,7 @@
 //! than converted to a plausible estimate.
 //!
 //! ```
-//! use sci_filter::{Gaussian, kalman_predict, kalman_update};
+//! use sci_filter::{Gaussian, kalman::{kalman_predict, kalman_update}};
 //! let prior = Gaussian { mean: vec![0.], covariance: vec![vec![1.]] };
 //! let predicted = kalman_predict(&prior, &[vec![1.]], &[vec![0.1]])?;
 //! let updated = kalman_update(&predicted, &[2.], &[vec![1.]], &[vec![0.5]])?;
@@ -29,8 +29,7 @@
 //!
 //! ## Acknowledgments
 //!
-//! We thank `smelly`, `kalman_filters`, and
-//! `nalgebra` for their state-estimation algorithms.
+//! We thank `smelly` and `nalgebra` for their state-estimation algorithms.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]
@@ -38,10 +37,11 @@
 use nalgebra::{DMatrix, DVector};
 pub use sci_core::{Error, Matrix, Result};
 
-mod kalman;
-mod particle;
-pub use kalman::*;
-pub use particle::*;
+/// Linear, extended, and unscented Kalman filtering.
+pub mod kalman;
+/// Particle filtering, weighting, estimation, and resampling.
+pub mod particle;
+pub use particle::ParticleSet;
 
 /// A Gaussian state estimate, with covariance in squared coordinate units.
 ///
@@ -123,14 +123,16 @@ fn matrix(a: &[Vec<f64>], rows: usize, cols: usize) -> Result<DMatrix<f64>> {
 // Scale the eigensystem so that covariance validation itself cannot overflow.
 // Tiny negative eigenvalues from roundoff are tolerated, never projected away.
 fn covariance(a: &[Vec<f64>], n: usize) -> Result<DMatrix<f64>> {
-    covariance_with_iterations(a, n, 10_000)
+    covariance_with_iterations(a, n, 10_000, true)
 }
 
-// Keep the solver's work bound explicit so exhaustion is reproducibly testable.
+// Keep the eigensolver's work bound and fast-path choice explicit so exhaustion
+// is reproducibly testable even for an otherwise positive-definite matrix.
 fn covariance_with_iterations(
     a: &[Vec<f64>],
     n: usize,
     max_iterations: usize,
+    allow_cholesky: bool,
 ) -> Result<DMatrix<f64>> {
     let mut a = matrix(a, n, n)?;
     let scale = a.iter().map(|v| v.abs()).fold(0., f64::max);
@@ -148,7 +150,13 @@ fn covariance_with_iterations(
             a[(j, i)] = average;
         }
     }
-    let eigen = nalgebra::linalg::SymmetricEigen::try_new(&a / scale, f64::EPSILON, max_iterations)
+    let scaled = &a / scale;
+    // A successful Cholesky factorization certifies strict positive definiteness.
+    // Semidefinite/near-boundary inputs still take the tolerant eigenvalue path.
+    if allow_cholesky && scaled.clone().cholesky().is_some() {
+        return Ok(a);
+    }
+    let eigen = nalgebra::linalg::SymmetricEigen::try_new(scaled, f64::EPSILON, max_iterations)
         .ok_or(Error::NumericalFailure(
             "covariance validation did not converge",
         ))?;
@@ -202,6 +210,9 @@ fn backend(e: smelly::FilterError) -> Error {
             Error::NumericalFailure("sigma points require positive definite covariance")
         }
         InvalidSigmaPointScaling => Error::InvalidInput("invalid sigma-point scaling"),
+        InvalidParticles => Error::NonFiniteEvaluation,
+        InvalidParticleWeights => Error::NumericalFailure("invalid particle weights"),
+        InvalidResamplingOffset => Error::InvalidInput("resampling offset must be in [0,1)"),
         PredictRequired => Error::NumericalFailure("unscented prediction is missing"),
     }
 }
@@ -214,11 +225,36 @@ mod tests {
     fn covariance_reports_exhausted_eigensolver_work() {
         let matrix = vec![vec![4., 1., 1.], vec![1., 3., 0.5], vec![1., 0.5, 2.]];
         assert_eq!(
-            covariance_with_iterations(&matrix, 3, 1),
+            covariance_with_iterations(&matrix, 3, 1, false),
             Err(Error::NumericalFailure(
                 "covariance validation did not converge"
             ))
         );
         assert!(covariance(&matrix, 3).is_ok());
+    }
+
+    #[test]
+    fn covariance_cholesky_path_agrees_with_eigenvalue_validation() {
+        let base = [[4., 1., 0.5], [1., 3., 0.25], [0.5, 0.25, 2.]];
+        for scale in [1e-250, 1.0, 1e250] {
+            let p: Vec<Vec<f64>> = base
+                .iter()
+                .map(|row| row.iter().map(|value| value * scale).collect())
+                .collect();
+            assert_eq!(
+                covariance_with_iterations(&p, 3, 10_000, true),
+                covariance_with_iterations(&p, 3, 10_000, false)
+            );
+        }
+        for p in [
+            vec![vec![1., 1.], vec![1., 1.]],
+            vec![vec![1., 2.], vec![2., 1.]],
+            vec![vec![0., 0.], vec![0., 0.]],
+        ] {
+            assert_eq!(
+                covariance_with_iterations(&p, 2, 10_000, true),
+                covariance_with_iterations(&p, 2, 10_000, false)
+            );
+        }
     }
 }

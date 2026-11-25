@@ -93,7 +93,7 @@ weighted LSQ criterion.
 
 ## Verification
 
-[interpolation_cases.json](tests/scipy/interpolation_cases.json) contains inputs
+[interpolation_cases.jsonl](tests/scipy/interpolation_cases.jsonl) contains inputs
 only. The [pinned generator](tests/scipy/generate_interpolation.py) uses SciPy
 1.18.1 and NumPy 2.5.4 to write separate input/expected CSVs. Ordinary Rust tests
 read these committed fixtures without Python. The new 124 reference cases cover

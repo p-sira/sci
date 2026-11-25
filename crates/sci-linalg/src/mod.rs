@@ -2,7 +2,6 @@ mod advanced;
 mod backend;
 mod cs;
 mod dense;
-mod dispatch;
 mod extra;
 mod functions;
 mod input;
@@ -12,12 +11,12 @@ mod principal;
 mod qr;
 mod riccati;
 mod structure;
-mod structured;
+#[path = "structured.rs"]
+mod structured_impl;
 
 pub use advanced::*;
 pub use cs::*;
 pub use dense::*;
-pub use dispatch::*;
 pub use extra::*;
 pub use functions::*;
 pub use input::{MatrixInput, VectorInput};
@@ -26,7 +25,71 @@ pub use principal::*;
 pub use qr::*;
 pub use riccati::*;
 pub use structure::*;
-pub use structured::*;
+pub use structured_impl::*;
+
+/// Basic matrix and vector operations, matrix inverses, norms and properties.
+///
+/// For example, [`matmul`] computes a matrix product and [`norm`] evaluates
+/// the requested matrix norm. Matrix and vector inputs use the shared
+/// [`crate::MatrixInput`] and [`crate::VectorInput`] adapters.
+pub mod basic {
+    pub use super::{
+        MatrixNorm, bandwidth, det, dot, inv, issymmetric, khatri_rao, matmul, matvec, norm, pinv,
+        pinvh, transpose,
+    };
+}
+
+/// Factorizations of dense, structured and banded matrices.
+///
+/// Result types accompany their associated decomposition functions.
+pub mod decompositions {
+    pub use super::{
+        CholeskyFactor, CsResult, LdlResult, LuFactor, LuResult, QrResult, SvdResult, cho_factor,
+        cholesky, cholesky_banded, cossin, hessenberg, ldl, lu, lu_factor, matrix_balance, polar,
+        qr, qr_delete, qr_insert, qr_multiply, qr_update, rq, rsf2csf, schur, svd, svdvals,
+    };
+}
+
+/// Linear systems, least squares, and matrix equations.
+pub mod solvers {
+    pub use super::{
+        LeastSquaresResult, cho_solve, cho_solve_banded, lstsq, lu_solve, solve, solve_banded,
+        solve_circulant, solve_continuous_are, solve_continuous_lyapunov, solve_discrete_are,
+        solve_discrete_lyapunov, solve_sylvester, solve_toeplitz, solve_triangular, solveh_banded,
+    };
+}
+
+/// Standard and generalized eigenvalue problems.
+pub mod eigen {
+    pub use super::{
+        ComplexMatrix, EigenResult, GeneralEigenResult, QzResult, cdf2rdf, eig, eig_banded, eigh,
+        eigh_tridiagonal, eigvals, eigvals_banded, eigvalsh, eigvalsh_tridiagonal, ordqz, qz,
+    };
+}
+
+/// Matrix-valued functions and their numerical derivatives and condition estimates.
+pub mod matrix_functions {
+    pub use super::{
+        coshm, cosm, expm, expm_cond, expm_frechet, fractional_matrix_power, funm, logm, signm,
+        sinhm, sinm, sqrtm, tanhm, tanm,
+    };
+}
+
+/// Structured matrix constructors and their specialized products.
+pub mod structured {
+    pub use super::{
+        DftScale, PascalKind, block_diag, circulant, companion, convolution_matrix, dft, diagsvd,
+        fiedler, fiedler_companion, hadamard, hankel, helmert, hilbert, invhilbert, invpascal,
+        leslie, matmul_toeplitz, pascal, toeplitz,
+    };
+}
+
+/// Orthogonal subspaces, geometric comparisons, and sketching.
+pub mod subspaces {
+    pub use super::{
+        clarkson_woodruff_transform, null_space, orth, orthogonal_procrustes, subspace_angles,
+    };
+}
 
 use crate::{Error, Result};
 
@@ -46,7 +109,7 @@ use crate::{Error, Result};
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::dot(&[1.0, 2.0], &[3.0, 4.0])?, 11.0);
+/// assert_eq!(sci_linalg::basic::dot(&[1.0, 2.0], &[3.0, 4.0])?, 11.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 pub fn dot(x: &(impl VectorInput + ?Sized), y: &(impl VectorInput + ?Sized)) -> Result<f64> {
@@ -78,7 +141,7 @@ pub fn dot(x: &(impl VectorInput + ?Sized), y: &(impl VectorInput + ?Sized)) -> 
 ///
 /// ```
 /// let a = vec![vec![1.0, 2.0], vec![3.0, 4.0]];
-/// assert_eq!(sci_linalg::matvec(&a, &[2.0, 1.0])?, vec![4.0, 10.0]);
+/// assert_eq!(sci_linalg::basic::matvec(&a, &[2.0, 1.0])?, vec![4.0, 10.0]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 pub fn matvec(
@@ -87,11 +150,12 @@ pub fn matvec(
 ) -> Result<Vec<f64>> {
     let vector_input = input::vector_slice(vector)?;
     let vector = vector_input.as_ref();
-    let matrix = input::faer_matrix(matrix)?;
+    let matrix = input::faer_input(matrix)?;
+    let matrix = matrix.as_ref();
     if matrix.ncols() != vector.len() {
         return Err(Error::DimensionMismatch);
     }
-    Ok((&matrix * faer::ColRef::from_slice(vector))
+    Ok((matrix * faer::ColRef::from_slice(vector))
         .iter()
         .copied()
         .collect())
@@ -127,15 +191,16 @@ pub fn matvec(
 /// ## Numerical behavior
 ///
 /// Private faer multiplication takes O(rows × inner_dimension × columns)
-/// work. Inputs are copied into contiguous storage; reductions use f64 and
-/// can lose accuracy through cancellation or overflow.
+/// work. Compatible native storage is borrowed, including strided faer views;
+/// other inputs copy directly to backend storage. Reductions use f64 and can
+/// lose accuracy through cancellation or overflow.
 ///
 /// # Examples
 ///
 /// ```
 /// let a = vec![vec![1.0, 2.0]];
 /// let b = vec![vec![3.0], vec![4.0]];
-/// assert_eq!(sci_linalg::matmul(&a, &b)?, vec![vec![11.0]]);
+/// assert_eq!(sci_linalg::basic::matmul(&a, &b)?, vec![vec![11.0]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 pub fn matmul(
@@ -156,9 +221,9 @@ pub fn matmul(
             "matrix multiplication work exceeds 16777216",
         ));
     }
-    let left = input::faer_matrix(left)?;
-    let right = input::faer_matrix(right)?;
-    let product = &left * &right;
+    let left = input::faer_input(left)?;
+    let right = input::faer_input(right)?;
+    let product = left.as_ref() * right.as_ref();
     Ok((0..m)
         .map(|i| (0..n).map(|j| product[(i, j)]).collect())
         .collect())
@@ -181,21 +246,21 @@ pub fn matmul(
 /// transpose to an empty matrix, whose representation cannot retain a column count.
 /// Returns [`Error::InvalidInput`] when the input exceeds the work bound.
 ///
+/// ## Numerical behavior
+///
+/// Copies logical entries directly into output rows in O(rows × columns) work,
+/// without an intermediate backend matrix or floating-point arithmetic.
+///
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::transpose(&[vec![1.0, 2.0]])?,
+/// assert_eq!(sci_linalg::basic::transpose(&[vec![1.0, 2.0]])?,
 ///            vec![vec![1.0], vec![2.0]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 pub fn transpose(matrix: &(impl MatrixInput + ?Sized)) -> Result<Vec<Vec<f64>>> {
-    let matrix = input::faer_matrix(matrix)?;
-    let transposed = matrix.transpose();
-    Ok((0..transposed.nrows())
-        .map(|i| {
-            (0..transposed.ncols())
-                .map(|j| transposed[(i, j)])
-                .collect()
-        })
+    let (m, n) = input::checked_shape(matrix)?;
+    Ok((0..n)
+        .map(|j| (0..m).map(|i| matrix.matrix_entry(i, j)).collect())
         .collect())
 }

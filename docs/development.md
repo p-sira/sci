@@ -1,5 +1,11 @@
 # Development and verification
 
+See the [design principles](design-principles.md) for the rationale behind
+the full-featured umbrella, focused domain crates, and upstream integrations.
+The [numerical quality standard](numerical-quality-standard.md) describes
+proposed evidence requirements, and the [sci-testing modernization plan](sci-testing-roadmap.md)
+explains the external comparison suite's relationship to checked-in fixtures.
+
 ## Implementation approach
 
 Prefer established Rust crates maintained by domain experts for complex
@@ -26,6 +32,46 @@ python tests/check_features.py
 
 Documentation-only changes do not require fixture regeneration.
 
+The workspace's test profile uses `debug = "line-tables-only"`: test failures
+retain source locations and backtraces, but GDB/LLDB cannot reliably inspect
+local variables or Rust type layouts. The ordinary development profile is
+unchanged. To reproduce a failing test with full debug information, override
+the test profile for that invocation (this may trigger recompilation):
+
+```sh
+CARGO_PROFILE_TEST_DEBUG=full cargo test -p sci --no-default-features --test core
+```
+
+## Releasing
+
+Prepare package versions and matching internal dependency requirements in the
+workspace manifests before opening a release PR. Review each crate's changelog
+and the [migration guide](../MIGRATING.md), and verify the external
+[accuracy reports](https://github.com/p-sira/sci-testing) for the numerical
+revision being released.
+
+Run the workspace checks above and, with a current stable Cargo, verify all
+publication archives without uploading:
+
+```sh
+cargo publish --workspace --locked --dry-run
+```
+
+The workspace dry run verifies packaged sources against a temporary registry
+containing the prepared internal crates. It therefore works before those
+versions are published. Cargo orders the actual workspace upload by dependency,
+with `sci-core` before its dependents and the `sci` facade last. The standalone
+`sci-graph`, `sci-io`, and `sci-sparse` versions need not match the facade version.
+
+The manually dispatched **Publish** workflow accepts `workspace` (the default)
+or an individual crate. Enter the prepared facade or selected crate version
+and leave `dry_run` enabled for preflight. After release approval and merging
+the prepared revision to `main`, explicitly disable `dry_run` to upload.
+The workflow checks the manifest version and uses Cargo directly; it does not
+bump versions, push commits, or create tags. If an upload is interrupted, check
+which versions reached crates.io before retrying the remaining crates in
+dependency order. Never reuse a published version for modified contents.
+
 ## Benchmarks
 
 Benchmarks for representative functions of each module live in
@@ -45,6 +91,56 @@ measurement locally, install `cargo-codspeed` and run:
 cargo codspeed build -m simulation -p sci
 cargo codspeed run -p sci
 ```
+
+## Build footprint
+
+All capabilities remain enabled by default. For smaller dependency graphs,
+set `default-features = false` and select facade module features plus any
+required capabilities: `fft-hankel`, `io-matrix-market`, `io-wav`, `io-matlab`,
+and `sparse-npz`. The domain crates keep these capabilities in their defaults;
+the workspace disables domain defaults on shared dependencies to prevent
+signal processing or Matrix Market from enabling Hankel or NPZ transitively.
+Cargo still combines features requested elsewhere in a consumer's graph.
+
+`tests/check_features.py` compiles each facade feature and isolated sparse
+configuration, checking selected architectural dependency boundaries without
+freezing backend implementations. Documentation is tested separately by the
+regular CI documentation job, not regenerated for every feature combination.
+The FFT extended reference suite and benchmark require `fft-hankel`; sparse
+parity requires `sparse-npz`;
+the I/O integration suite requires all three format features. Numerical
+APIs retain their existing conventions. FFTLog now uses private Rust translations
+of SciPy/XSF's complex log-gamma and Cephes gamma-ratio algorithms, with the
+existing `special` crate supplying real log-gamma. The gamma work is bounded
+independently of order and bias. This removes XSF from every FFT build.
+Expanded independent SciPy fixtures exercise reflection, Taylor and asymptotic
+regions, negative spacing, gamma poles, and the bounded ratio fallback.
+Large-order comparisons have explicit tolerances for log-gamma cancellation.
+`uv run tests/scipy/generate_fftlog_accuracy.py` regenerates 16 independent
+discrete FFTLog references using mpmath dense DFTs at 100 and 160 digits. Their
+inputs and tolerances are stored in `fft_cases.jsonl`; ordinary Rust tests read
+the committed CSV. These measure the discrete mapping's roundoff, rather than
+the discretization error of the continuous Hankel integral.
+
+MATLAB and NPZ share flate2's Rust/miniz backend. ZIP selects `deflate-flate2`,
+and each format explicitly enables the workspace flate2 backend. This avoids compiling
+zlib-rs alongside miniz. Archive bytes may differ while decoded values and
+format compatibility remain the same.
+
+Particle propagation and moments reuse Smelly 0.2 without a random generator.
+MATLAB numeric decoding reuses Sci's native bounded format parser. Statrs keeps
+its `std` and `nalgebra` features with sampling disabled; sparse generation uses
+seeded `StdRng` without OS entropy or thread-local RNG features.
+
+The workspace uses `special` 0.14 with default features disabled and `std`
+enabled. Only `sci-special` enables its `lambert_w` feature; FFTLog needs only
+real log-gamma. Elliptic integrals continue to call `ellip` directly, without
+enabling `special/elliptic`.
+
+Sci's special-function implementations now use Rust kernels and the published
+`bessel`, `orthogonal`, `hypergeometric`, and `ellip` crates. The XSF C++ backend
+is no longer required. See the [special-function coverage guide](../function_coverages/SPECIAL_COVERAGE.md)
+for the supported domains and numerical limitations.
 
 ## Pre-commit formatting
 
@@ -79,9 +175,13 @@ python tests/scipy/audit_signal.py
 Python and SciPy are required only for fixture generation. Ordinary Rust tests
 read the checked-in CSVs. Comparisons use absolute and relative tolerances;
 Statrs' approximate normal CDF is checked at a relative tolerance of `1e-10`.
-Special-function cases are defined in `tests/scipy/special_cases.json`, which
-contains inputs only. Expected values come from SciPy; ellip-only functions use
-SciPy elliptic identities or independent SciPy quadrature. CSV rows carry
+Special-function input cases are defined in
+`tests/scipy/special_cases.jsonl`, with one independent JSON object per
+line. Other large input catalogs use the same JSON Lines format. Run
+`python tests/scipy/case_catalog.py` to check their canonical formatting.
+Expected values are kept in separately generated CSV fixtures for Rust
+tests to use without Python. References come from SciPy, elliptic
+identities, or independent SciPy quadrature. CSV rows carry
 relative and absolute tolerances, normally `2e-11`. Noncentral F parameter
 inverses use `1e-4` relative tolerance because SciPy's CDFLIB inversion is
 approximate; noncentral t comparisons use `5e-6` relative / `1e-7` absolute.
@@ -105,7 +205,8 @@ The `core`, `coverage`, `linalg_coverage`, and `statistics_coverage` integration
 targets supplement the module reference suites with validation, overflow,
 support, callback, and independent property checks. `core` runs without optional features;
 `linalg_coverage` requires only `linalg`; `statistics_coverage` requires only
-`stats`; `coverage` requires all numerical module features except `stats`.
+`stats`; `coverage` requires all numerical module features except `stats`,
+plus `fft-hankel`.
 
 Install cargo-llvm-cov and LLVM tools, then run the same workspace coverage
 command as CI. Integration tests and their helpers are excluded from the report

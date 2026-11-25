@@ -13,71 +13,73 @@ pub struct LuFactor {
     /// This replaces SciPy's step-by-step pivot array.
     pub row_permutation: Vec<usize>,
 }
-fn band(ab: &[Vec<f64>], l: usize, u: usize) -> Result<Matrix> {
-    let ab = dense(ab)?;
+fn band(
+    ab: &(impl super::MatrixInput + ?Sized),
+    l: usize,
+    u: usize,
+) -> Result<super::input::FaerInput<'static>> {
+    let ab = dense_ref(ab)?;
+    let ab = ab.as_ref();
     let n = ab.ncols();
     if l >= n || u >= n || l.checked_add(u).and_then(|v| v.checked_add(1)) != Some(ab.nrows()) {
         return Err(Error::DimensionMismatch);
     }
-    Ok((0..n)
-        .map(|i| {
-            (0..n)
-                .map(|j| {
-                    if i + u >= j && j + l >= i {
-                        ab[(u + i - j, j)]
-                    } else {
-                        0.0
-                    }
-                })
-                .collect()
-        })
-        .collect())
+    Ok(super::input::FaerInput::Owned(Mat::from_fn(
+        n,
+        n,
+        |i, j| {
+            if i + u >= j && j + l >= i {
+                ab[(u + i - j, j)]
+            } else {
+                0.0
+            }
+        },
+    )))
 }
-fn symmetric_band(ab: &[Vec<f64>], lower: bool) -> Result<Matrix> {
-    let ab = dense(ab)?;
+fn symmetric_band(
+    ab: &(impl super::MatrixInput + ?Sized),
+    lower: bool,
+) -> Result<super::input::FaerInput<'static>> {
+    let ab = dense_ref(ab)?;
+    let ab = ab.as_ref();
     let (k, n) = (ab.nrows() - 1, ab.ncols());
     if k >= n {
         return Err(Error::DimensionMismatch);
     }
-    Ok((0..n)
-        .map(|i| {
-            (0..n)
-                .map(|j| {
-                    let (r, c) = if lower {
-                        (i.max(j), i.min(j))
-                    } else {
-                        (i.min(j), i.max(j))
-                    };
-                    if r.abs_diff(c) > k {
-                        0.0
-                    } else if lower {
-                        ab[(r - c, c)]
-                    } else {
-                        ab[(k + r - c, c)]
-                    }
-                })
-                .collect()
-        })
-        .collect())
+    Ok(super::input::FaerInput::Owned(Mat::from_fn(
+        n,
+        n,
+        |i, j| {
+            let (r, c) = if lower {
+                (i.max(j), i.min(j))
+            } else {
+                (i.min(j), i.max(j))
+            };
+            if r.abs_diff(c) > k {
+                0.0
+            } else if lower {
+                ab[(r - c, c)]
+            } else {
+                ab[(k + r - c, c)]
+            }
+        },
+    )))
 }
-fn triangular_band(ab: &[Vec<f64>], lower: bool) -> Result<Matrix> {
-    let a = symmetric_band(ab, lower)?;
-    Ok(a.into_iter()
-        .enumerate()
-        .map(|(i, row)| {
-            row.into_iter()
-                .enumerate()
-                .map(|(j, v)| {
-                    if (lower && i >= j) || (!lower && i <= j) {
-                        v
-                    } else {
-                        0.0
-                    }
-                })
-                .collect()
-        })
-        .collect())
+fn triangular_band(
+    ab: &(impl super::MatrixInput + ?Sized),
+    lower: bool,
+) -> Result<super::input::FaerInput<'static>> {
+    let mut a = symmetric_band(ab, lower)?.into_owned();
+    for i in 0..a.nrows() {
+        for j in 0..a.ncols() {
+            if (lower && i < j) || (!lower && i > j) {
+                a[(i, j)] = 0.0;
+            }
+        }
+    }
+    Ok(super::input::FaerInput::Owned(a))
 }
+
 /// Factors `Pᵀ A=L U`, storing U and strict lower L in one matrix.
 ///
 /// ## Parameters
@@ -103,8 +105,8 @@ fn triangular_band(ab: &[Vec<f64>], lower: bool) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// let f=sci_linalg::lu_factor(&[vec![2.]])?;
-/// assert_eq!(sci_linalg::lu_solve(&f,&[6.],false)?,vec![3.]);
+/// let f=sci_linalg::decompositions::lu_factor(&[vec![2.]])?;
+/// assert_eq!(sci_linalg::solvers::lu_solve(&f,&[6.],false)?,vec![3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -112,8 +114,6 @@ fn triangular_band(ab: &[Vec<f64>], lower: bool) -> Result<Matrix> {
 ///
 /// [SciPy `lu_factor`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lu_factor.html).
 pub fn lu_factor(a: &(impl super::MatrixInput + ?Sized)) -> Result<LuFactor> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = square(a)?;
     let n = a.nrows();
     let d = lu_factors(a)?;
@@ -149,8 +149,8 @@ pub fn lu_factor(a: &(impl super::MatrixInput + ?Sized)) -> Result<LuFactor> {
 /// # Examples
 ///
 /// ```
-/// let f=sci_linalg::lu_factor(&[vec![2.]])?;
-/// assert_eq!(sci_linalg::lu_solve(&f,&[6.],true)?,vec![3.]);
+/// let f=sci_linalg::decompositions::lu_factor(&[vec![2.]])?;
+/// assert_eq!(sci_linalg::solvers::lu_solve(&f,&[6.],true)?,vec![3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -164,12 +164,13 @@ pub fn lu_solve(
 ) -> Result<Vec<f64>> {
     let b_input = super::input::vector_slice(b)?;
     let b = b_input.as_ref();
-    let a = square(&factor.packed)?;
+    let a_input = square_ref(&factor.packed)?;
+    let a = a_input.as_ref();
     let n = a.nrows();
     if factor.row_permutation.len() != n || b.len() != n {
         return Err(Error::DimensionMismatch);
     }
-    crate::error::finite_slice(b)?;
+    crate::error::is_finite_slice(b)?;
     let mut seen = vec![false; n];
     for &p in &factor.row_permutation {
         if p >= n || seen[p] {
@@ -179,18 +180,31 @@ pub fn lu_solve(
         }
         seen[p] = true;
     }
+    let finite = |x: &[f64]| {
+        if x.iter().all(|v| v.is_finite()) {
+            Ok(())
+        } else {
+            Err(Error::NonFiniteEvaluation)
+        }
+    };
     if transpose {
-        let y = solve_triangular(&factor.packed, b, false, false, true)?;
-        let z = solve_triangular(&factor.packed, &y, true, true, true)?;
+        let mut z = b.to_vec();
+        substitute(a, &mut z, false, false, true)?;
+        finite(&z)?;
+        substitute(a, &mut z, true, true, true)?;
+        finite(&z)?;
         let mut x = vec![0.0; n];
         for (i, &p) in factor.row_permutation.iter().enumerate() {
             x[p] = z[i];
         }
         Ok(x)
     } else {
-        let pb: Vec<_> = factor.row_permutation.iter().map(|&i| b[i]).collect();
-        let y = solve_triangular(&factor.packed, &pb, true, true, false)?;
-        solve_triangular(&factor.packed, &y, false, false, false)
+        let mut x: Vec<_> = factor.row_permutation.iter().map(|&i| b[i]).collect();
+        substitute(a, &mut x, true, true, false)?;
+        finite(&x)?;
+        substitute(a, &mut x, false, false, false)?;
+        finite(&x)?;
+        Ok(x)
     }
 }
 /// Solves `A x=b` using general band storage `ab[u+i-j,j]=A[i,j]`.
@@ -218,7 +232,7 @@ pub fn lu_solve(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::solve_banded(0,0,&[vec![2.,4.]],&[6.,8.])?,vec![3.,2.]);
+/// assert_eq!(sci_linalg::solvers::solve_banded(0,0,&[vec![2.,4.]],&[6.,8.])?,vec![3.,2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -231,8 +245,6 @@ pub fn solve_banded(
     ab: &(impl super::MatrixInput + ?Sized),
     b: &(impl super::VectorInput + ?Sized),
 ) -> Result<Vec<f64>> {
-    let ab_input = super::input::matrix_rows(ab)?;
-    let ab = ab_input.as_ref();
     let b_input = super::input::vector_slice(b)?;
     let b = b_input.as_ref();
     solve(&band(ab, l, u)?, b)
@@ -262,7 +274,7 @@ pub fn solve_banded(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::solveh_banded(&[vec![4.,9.]],&[8.,18.],true)?,vec![2.,2.]);
+/// assert_eq!(sci_linalg::solvers::solveh_banded(&[vec![4.,9.]],&[8.,18.],true)?,vec![2.,2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -274,8 +286,6 @@ pub fn solveh_banded(
     b: &(impl super::VectorInput + ?Sized),
     lower: bool,
 ) -> Result<Vec<f64>> {
-    let ab_input = super::input::matrix_rows(ab)?;
-    let ab = ab_input.as_ref();
     let b_input = super::input::vector_slice(b)?;
     let b = b_input.as_ref();
     cho_solve(&cho_factor(&symmetric_band(ab, lower)?, lower)?, b)
@@ -305,7 +315,7 @@ pub fn solveh_banded(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::cholesky_banded(&[vec![4.,9.]],true)?,vec![vec![2.,3.]]);
+/// assert_eq!(sci_linalg::decompositions::cholesky_banded(&[vec![4.,9.]],true)?,vec![vec![2.,3.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -313,10 +323,9 @@ pub fn solveh_banded(
 ///
 /// [SciPy `cholesky_banded`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cholesky_banded.html).
 pub fn cholesky_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<Matrix> {
-    let ab_input = super::input::matrix_rows(ab)?;
-    let ab = ab_input.as_ref();
     let factor = cholesky(&symmetric_band(ab, lower)?, lower)?;
-    let (k, n) = (ab.len() - 1, ab[0].len());
+    let (rows, n) = shape(ab)?;
+    let k = rows - 1;
     Ok((0..=k)
         .map(|r| {
             (0..n)
@@ -358,7 +367,7 @@ pub fn cholesky_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> 
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::cho_solve_banded(&[vec![2.,3.]],&[8.,18.],true)?,vec![2.,2.]);
+/// assert_eq!(sci_linalg::solvers::cho_solve_banded(&[vec![2.,3.]],&[8.,18.],true)?,vec![2.,2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -370,17 +379,7 @@ pub fn cho_solve_banded(
     b: &(impl super::VectorInput + ?Sized),
     lower: bool,
 ) -> Result<Vec<f64>> {
-    let cb_input = super::input::matrix_rows(cb)?;
-    let cb = cb_input.as_ref();
-    let b_input = super::input::vector_slice(b)?;
-    let b = b_input.as_ref();
-    cho_solve(
-        &CholeskyFactor {
-            factor: triangular_band(cb, lower)?,
-            lower,
-        },
-        b,
-    )
+    solve_cholesky(&triangular_band(cb, lower)?, b, lower)
 }
 /// Solves `A V=V diag(w)` for a real symmetric band matrix.
 ///
@@ -407,7 +406,7 @@ pub fn cho_solve_banded(
 /// # Examples
 ///
 /// ```
-/// let e=sci_linalg::eig_banded(&[vec![2.,3.]],true)?;
+/// let e=sci_linalg::eigen::eig_banded(&[vec![2.,3.]],true)?;
 /// assert!(e.eigenvalues.iter().zip([2.,3.]).all(|(a,b)| (a-b).abs()<1e-14));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -416,8 +415,6 @@ pub fn cho_solve_banded(
 ///
 /// [SciPy `eig_banded`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eig_banded.html).
 pub fn eig_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<EigenResult> {
-    let ab_input = super::input::matrix_rows(ab)?;
-    let ab = ab_input.as_ref();
     eigh(&symmetric_band(ab, lower)?, lower)
 }
 /// Computes ascending eigenvalues of a symmetric band matrix.
@@ -440,12 +437,15 @@ pub fn eig_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> Resul
 ///
 /// ## Numerical behavior
 ///
-/// Uses f64 and the shared private backend, with bounded backend-specific SVD/eigen sweep limits. Ill-conditioned inputs can lose accuracy. Reuses the bounded dense symmetric eigensolver.
+/// Diagonal and tridiagonal bands use sorted diagonal values or faer's scaled
+/// symmetric tridiagonal QR eigensolver, respectively. Wider bands retain the
+/// dense O(n³) eigenvalues-only path. Backend sweep limits bound iteration;
+/// results can differ from [`eig_banded`] by roundoff near repeated eigenvalues.
 ///
 /// # Examples
 ///
 /// ```
-/// let values=sci_linalg::eigvals_banded(&[vec![2.,3.]],true)?;
+/// let values=sci_linalg::eigen::eigvals_banded(&[vec![2.,3.]],true)?;
 /// assert!(values.iter().zip([2.,3.]).all(|(a,b)| (a-b).abs()<1e-14));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -454,9 +454,32 @@ pub fn eig_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> Resul
 ///
 /// [SciPy `eigvals_banded`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eigvals_banded.html).
 pub fn eigvals_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<Vec<f64>> {
-    let ab_input = super::input::matrix_rows(ab)?;
-    let ab = ab_input.as_ref();
-    Ok(eig_banded(ab, lower)?.eigenvalues)
+    let input = dense_ref(ab)?;
+    let input = input.as_ref();
+    let (k, n) = (input.nrows() - 1, input.ncols());
+    if k >= n {
+        return Err(Error::DimensionMismatch);
+    }
+    if k <= 1 {
+        let diagonal: Vec<f64> = (0..n)
+            .map(|i| input[(if lower { 0 } else { k }, i)])
+            .collect();
+        let off_diagonal: Vec<f64> = if k == 0 {
+            vec![0.0; n - 1]
+        } else {
+            (0..n - 1)
+                .map(|i| {
+                    if lower {
+                        input[(1, i)]
+                    } else {
+                        input[(0, i + 1)]
+                    }
+                })
+                .collect()
+        };
+        return tridiagonal_eigenvalues(&diagonal, &off_diagonal);
+    }
+    eigvalsh(&symmetric_band(ab, lower)?, lower)
 }
 /// Computes principal angles between column spaces: `cos(θi)=si(QAᵀ QB)`.
 ///
@@ -483,7 +506,7 @@ pub fn eigvals_banded(ab: &(impl super::MatrixInput + ?Sized), lower: bool) -> R
 /// # Examples
 ///
 /// ```
-/// let angles=sci_linalg::subspace_angles(&[vec![1.],vec![0.]],&[vec![0.],vec![1.]])?;
+/// let angles=sci_linalg::subspaces::subspace_angles(&[vec![1.],vec![0.]],&[vec![0.],vec![1.]])?;
 /// assert!((angles[0]-std::f64::consts::FRAC_PI_2).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -495,10 +518,6 @@ pub fn subspace_angles(
     a: &(impl super::MatrixInput + ?Sized),
     b: &(impl super::MatrixInput + ?Sized),
 ) -> Result<Vec<f64>> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let b_input = super::input::matrix_rows(b)?;
-    let b = b_input.as_ref();
     let qa = orth(a, None)?;
     let qb = orth(b, None)?;
     if qa.len() != qb.len() {
@@ -510,13 +529,13 @@ pub fn subspace_angles(
     let qa = dense(&qa)?;
     let qb = dense(&qb)?;
     let c = qa.transpose() * &qb;
-    let cos = svdvals(&rows(&c)?)?;
+    let cos = svdvals(&native(&c))?;
     let residual = if qa.ncols() >= qb.ncols() {
         qb - &qa * c
     } else {
         qa - &qb * c.transpose()
     };
-    let sin = svdvals(&rows(&residual)?)?;
+    let sin = svdvals(&native(&residual))?;
     Ok(cos
         .iter()
         .rev()
@@ -555,7 +574,7 @@ pub fn subspace_angles(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::solve_sylvester(&[vec![2.]],&[vec![3.]],&[vec![10.]])?,vec![vec![2.]]);
+/// assert_eq!(sci_linalg::solvers::solve_sylvester(&[vec![2.]],&[vec![3.]],&[vec![10.]])?,vec![vec![2.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -567,12 +586,6 @@ pub fn solve_sylvester(
     b: &(impl super::MatrixInput + ?Sized),
     q: &(impl super::MatrixInput + ?Sized),
 ) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let b_input = super::input::matrix_rows(b)?;
-    let b = b_input.as_ref();
-    let q_input = super::input::matrix_rows(q)?;
-    let q = q_input.as_ref();
     let a = square(a)?;
     let b = square(b)?;
     let q = dense(q)?;
@@ -622,7 +635,7 @@ pub fn solve_sylvester(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::solve_continuous_lyapunov(&[vec![-2.]],&[vec![8.]])?,vec![vec![-2.]]);
+/// assert_eq!(sci_linalg::solvers::solve_continuous_lyapunov(&[vec![-2.]],&[vec![8.]])?,vec![vec![-2.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -633,12 +646,8 @@ pub fn solve_continuous_lyapunov(
     a: &(impl super::MatrixInput + ?Sized),
     q: &(impl super::MatrixInput + ?Sized),
 ) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let q_input = super::input::matrix_rows(q)?;
-    let q = q_input.as_ref();
     let a = square(a)?;
-    solve_sylvester(&rows(&a)?, &rows(&a.transpose())?, q)
+    solve_sylvester(&native(&a), &native(&a.transpose()), q)
 }
 /// Solves `A X Aᵀ-X+Q=0`, equivalently `X-A X Aᵀ=Q`.
 ///
@@ -665,7 +674,7 @@ pub fn solve_continuous_lyapunov(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::solve_discrete_lyapunov(&[vec![0.5]],&[vec![3.]])?,vec![vec![4.]]);
+/// assert_eq!(sci_linalg::solvers::solve_discrete_lyapunov(&[vec![0.5]],&[vec![3.]])?,vec![vec![4.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -676,10 +685,6 @@ pub fn solve_discrete_lyapunov(
     a: &(impl super::MatrixInput + ?Sized),
     q: &(impl super::MatrixInput + ?Sized),
 ) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let q_input = super::input::matrix_rows(q)?;
-    let q = q_input.as_ref();
     let a = square(a)?;
     let q = square(q)?;
     if a.shape() != q.shape() {
@@ -703,6 +708,3 @@ pub fn solve_discrete_lyapunov(
     ))?;
     rows(&Mat::from_fn(n, n, |i, j| x[(i * n + j, 0)]))
 }
-/// Alias of [`solve_continuous_lyapunov`], matching SciPy's compatibility spelling.
-/// All definitions, conventions, domains, bounds, and errors are identical.
-pub use solve_continuous_lyapunov as solve_lyapunov;

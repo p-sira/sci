@@ -1,5 +1,5 @@
 use crate::backend::{self, MAX_DEGREE, MAX_KNOTS};
-use crate::error::{finite, finite_slice};
+use crate::error::is_finite_slice;
 use crate::{Error, Result, Spline};
 
 /// Behavior outside a spline's closed base interval, matching SciPy `ext=0..3`.
@@ -40,8 +40,8 @@ pub enum SplineExtension {
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
-/// assert_eq!(sci_interpolate::splev(&[0.5],&s,0,sci_interpolate::SplineExtension::Error)?,vec![1.]);
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
+/// assert_eq!(sci_interpolate::spline::splev(&[0.5],&s,0,sci_interpolate::spline::SplineExtension::Error)?,vec![1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -61,7 +61,7 @@ pub fn splev(
         spline.degree.saturating_add(1),
     ])?;
     backend::validate(spline)?;
-    finite_slice(x)?;
+    is_finite_slice(x)?;
     let s = splder(spline, derivative)?;
     let lo = s.knots[s.degree];
     let hi = s.knots[s.coefficients.len()];
@@ -107,8 +107,8 @@ pub fn splev(
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
-/// let d=sci_interpolate::splder(&s,1)?;
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
+/// let d=sci_interpolate::spline::splder(&s,1)?;
 /// assert_eq!(d.degree,0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -133,9 +133,12 @@ pub fn splder(spline: &Spline, order: usize) -> Result<Spline> {
                     "spline is not differentiable at repeated knots",
                 ));
             }
-            c.push(finite(
-                (s.coefficients[i + 1] - s.coefficients[i]) * (k as f64 / width),
-            )?);
+            c.push(
+                match (s.coefficients[i + 1] - s.coefficients[i]) * (k as f64 / width) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?,
+            );
         }
         s = Spline {
             knots: s.knots[1..s.knots.len() - 1].to_vec(),
@@ -172,8 +175,8 @@ pub fn splder(spline: &Spline, order: usize) -> Result<Spline> {
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.], &[2.,2.],1)?;
-/// let a=sci_interpolate::splantider(&s,1)?;
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.], &[2.,2.],1)?;
+/// let a=sci_interpolate::spline::splantider(&s,1)?;
 /// assert_eq!(a.degree,2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -196,10 +199,13 @@ pub fn splantider(spline: &Spline, order: usize) -> Result<Spline> {
     for _ in 0..order {
         let mut c = vec![0.0];
         for i in 0..s.coefficients.len() {
-            c.push(finite(
-                c[i] + s.coefficients[i]
-                    * ((s.knots[i + s.degree + 1] - s.knots[i]) / (s.degree + 1) as f64),
-            )?);
+            c.push(match c[i]
+                + s.coefficients[i]
+                    * ((s.knots[i + s.degree + 1] - s.knots[i]) / (s.degree + 1) as f64)
+            {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?);
         }
         let mut t = vec![s.knots[0]];
         t.extend_from_slice(&s.knots);
@@ -234,13 +240,15 @@ pub fn splantider(spline: &Spline, order: usize) -> Result<Spline> {
 ///
 /// ## Numerical behavior
 ///
-/// Reuses splder and local evaluation, bounding query × (degree+1)^3 work by 10,000,000. Repeated-knot nondifferentiability fails.
+/// Builds successive derivative splines incrementally and evaluates locally,
+/// bounding query × (degree+1)^3 work by 10,000,000.
+/// Repeated-knot nondifferentiability fails.
 ///
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
-/// assert_eq!(sci_interpolate::spalde(&[0.5],&s)?,vec![vec![1.,2.]]);
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
+/// assert_eq!(sci_interpolate::spline::spalde(&[0.5],&s)?,vec![vec![1.,2.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -251,12 +259,20 @@ pub fn splantider(spline: &Spline, order: usize) -> Result<Spline> {
 pub fn spalde(x: &[f64], spline: &Spline) -> Result<Vec<Vec<f64>>> {
     backend::validate(spline)?;
     backend::bound(&[x.len(), (spline.degree + 1).pow(3)])?;
-    finite_slice(x)?;
+    is_finite_slice(x)?;
     let mut result = vec![Vec::with_capacity(spline.degree + 1); x.len()];
+    let lo = spline.knots[spline.degree];
+    let hi = spline.knots[spline.coefficients.len()];
+    let mut derivative = spline.clone();
     for j in 0..=spline.degree {
-        let values = splev(x, spline, j, SplineExtension::Error)?;
-        for (row, value) in result.iter_mut().zip(values) {
-            row.push(value);
+        for (row, &query) in result.iter_mut().zip(x) {
+            if query < lo || query > hi {
+                return Err(Error::InvalidInput("query outside spline domain"));
+            }
+            row.push(backend::evaluate(&derivative, query)?);
+        }
+        if j < spline.degree {
+            derivative = splder(&derivative, 1)?;
         }
     }
     Ok(result)
@@ -287,8 +303,8 @@ pub fn spalde(x: &[f64], spline: &Spline) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
-/// assert!((sci_interpolate::splint(0.,1.,&s)?-1.).abs()<1e-12);
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
+/// assert!((sci_interpolate::spline::splint(0.,1.,&s)?-1.).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -298,11 +314,14 @@ pub fn spalde(x: &[f64], spline: &Spline) -> Result<Vec<Vec<f64>>> {
 /// Carl de Boor, *A Practical Guide to Splines* (2001); Paul Dierckx, *Curve and Surface Fitting with Splines* (1993).
 pub fn splint(a: f64, b: f64, spline: &Spline) -> Result<f64> {
     backend::validate(spline)?;
-    finite_slice(&[a, b])?;
+    is_finite_slice(&[a, b])?;
     let s = splantider(spline, 1)?;
     let lo = spline.knots[spline.degree];
     let hi = spline.knots[spline.coefficients.len()];
-    finite(backend::evaluate(&s, b.clamp(lo, hi))? - backend::evaluate(&s, a.clamp(lo, hi))?)
+    match backend::evaluate(&s, b.clamp(lo, hi))? - backend::evaluate(&s, a.clamp(lo, hi))? {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Refines a spline knot vector while preserving `S(x)=Σ c[i] B[i,k](x)`.
@@ -330,8 +349,8 @@ pub fn splint(a: f64, b: f64, spline: &Spline) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
-/// assert_eq!(sci_interpolate::insert(0.5,&s,1)?.knots.len(),s.knots.len()+1);
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
+/// assert_eq!(sci_interpolate::spline::insert(0.5,&s,1)?.knots.len(),s.knots.len()+1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -341,7 +360,7 @@ pub fn splint(a: f64, b: f64, spline: &Spline) -> Result<f64> {
 /// Carl de Boor, *A Practical Guide to Splines* (2001); Paul Dierckx, *Curve and Surface Fitting with Splines* (1993).
 pub fn insert(x: f64, spline: &Spline, multiplicity: usize) -> Result<Spline> {
     backend::validate(spline)?;
-    finite_slice(&[x])?;
+    is_finite_slice(&[x])?;
     if multiplicity == 0
         || multiplicity > spline.degree + 1
         || spline.knots.len() + multiplicity > MAX_KNOTS
@@ -367,7 +386,10 @@ pub fn insert(x: f64, spline: &Spline, multiplicity: usize) -> Result<Spline> {
             .skip(span - k + 1)
         {
             let alpha = (x - s.knots[i]) / (s.knots[i + k] - s.knots[i]);
-            *ci = finite(alpha * s.coefficients[i] + (1.0 - alpha) * s.coefficients[i - 1])?;
+            *ci = match alpha * s.coefficients[i] + (1.0 - alpha) * s.coefficients[i - 1] {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
         }
         s.knots.insert(span + 1, x);
         s.coefficients = c;
@@ -401,8 +423,8 @@ pub fn insert(x: f64, spline: &Spline, multiplicity: usize) -> Result<Spline> {
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.,2.,3.], &[-1.,0.,1.,2.],3)?;
-/// let roots=sci_interpolate::sproot(&s)?;
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.,2.,3.], &[-1.,0.,1.,2.],3)?;
+/// let roots=sci_interpolate::spline::sproot(&s)?;
 /// assert!(roots.iter().any(|r|(*r-1.).abs()<1e-10));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -432,13 +454,22 @@ pub fn sproot(spline: &Spline) -> Result<Vec<f64>> {
         let mut factor = 1.0;
         for (j, d) in derivatives.iter().enumerate() {
             if j > 0 {
-                factor = finite(factor * (width / j as f64))?;
+                factor = match factor * (width / j as f64) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
             }
-            c.push(finite(factor * backend::evaluate(d, pair[0])?)?);
+            c.push(match factor * backend::evaluate(d, pair[0])? {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?);
         }
         for u in backend::polynomial_roots(&c)? {
             if (-1e-12..=1.0 + 1e-12).contains(&u) {
-                roots.push(finite(pair[0] + width * u.clamp(0.0, 1.0))?);
+                roots.push(match pair[0] + width * u.clamp(0.0, 1.0) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?);
             }
         }
     }

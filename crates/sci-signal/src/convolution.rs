@@ -1,7 +1,7 @@
 use super::{checked, nonempty, size, work};
 use crate::{
     Error, Result,
-    complex::{Complex, native, owned},
+    complex::{native, owned},
 };
 
 pub use sci_core::Mode;
@@ -45,7 +45,7 @@ fn range(n: usize, m: usize, mode: Mode) -> (usize, usize) {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::convolution::*;
 /// let _result = convolve(&[1.,2.], &[1.,-1.], Mode::Full)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -95,12 +95,13 @@ pub fn convolve(x: &[f64], h: &[f64], mode: Mode) -> Result<Vec<f64>> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses f64 arithmetic. Cancellation and poorly conditioned filters or polynomial fits can reduce accuracy; no uniform relative-error guarantee is made. FFT routines use RustFFT, polynomial fits and DPSS use bounded private nalgebra solvers.
+/// Reverses the second input before evaluating the direct convolution.
+/// Arithmetic uses f64 and retained outputs preserve full-convolution order.
 ///
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::convolution::*;
 /// let _result = correlate(&[1.,2.], &[1.], Mode::Full)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -141,7 +142,7 @@ pub fn correlate(x: &[f64], y: &[f64], mode: Mode) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::convolution::*;
 /// let _result = correlation_lags(3,2,Mode::Full)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -175,7 +176,8 @@ pub fn correlation_lags(n: usize, m: usize, mode: Mode) -> Result<Vec<isize>> {
 ///
 /// `pub fn fftconvolve(x: &[f64], h: &[f64], mode: Mode) -> Result<Vec<f64>>`
 ///
-/// Mode cropping agrees with convolve. Transform length is the next power of two of n+m-1; RustFFT is private.
+/// Mode cropping agrees with convolve. Transform length is the next power of
+/// two of n+m-1; real forward/inverse FFTs retain only nonnegative frequencies.
 ///
 /// ## Domain
 ///
@@ -196,7 +198,7 @@ pub fn correlation_lags(n: usize, m: usize, mode: Mode) -> Result<Vec<isize>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::convolution::*;
 /// let _result = fftconvolve(&[1.,2.], &[1.,-1.], Mode::Full)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -211,11 +213,9 @@ pub fn fftconvolve(x: &[f64], h: &[f64], mode: Mode) -> Result<Vec<f64>> {
     let n = full.next_power_of_two();
     size(n)?;
     let padded = |values: &[f64]| {
-        let mut buffer = vec![Complex::default(); n];
-        for (v, &re) in buffer.iter_mut().zip(values) {
-            v.re = re;
-        }
-        super::fft(&buffer)
+        let mut buffer = vec![0.; n];
+        buffer[..values.len()].copy_from_slice(values);
+        super::rfft(&buffer)
     };
     let a = padded(x);
     let b = padded(h);
@@ -224,9 +224,9 @@ pub fn fftconvolve(x: &[f64], h: &[f64], mode: Mode) -> Result<Vec<f64>> {
         .zip(b)
         .map(|(a, b)| owned(native(a) * native(b)))
         .collect();
-    let output = super::ifft(&product);
+    let output = sci_fft::real::irfft(&product, Some(n))?;
     let (start, len) = range(x.len(), h.len(), mode);
-    checked(output[start..start + len].iter().map(|v| v.re).collect())
+    checked(output[start..start + len].to_vec())
 }
 
 /// Divides coefficient polynomials so that `x = convolve(h, quotient) + remainder`.
@@ -256,7 +256,7 @@ pub fn fftconvolve(x: &[f64], h: &[f64], mode: Mode) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::convolution::*;
 /// let _result = deconvolve(&[1.,3.,2.], &[1.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -310,12 +310,13 @@ pub fn deconvolve(x: &[f64], h: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses f64 arithmetic. Cancellation and poorly conditioned filters or polynomial fits can reduce accuracy; no uniform relative-error guarantee is made. FFT routines use RustFFT, polynomial fits and DPSS use bounded private nalgebra solvers.
+/// Accumulates filter contributions in increasing input and tap order.
+/// Nonfinite intermediate sums remain errors.
 ///
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::convolution::*;
 /// let _result = upfirdn(&[1.,1.], &[1.,2.], 2,1)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -382,7 +383,7 @@ pub fn upfirdn(h: &[f64], x: &[f64], up: usize, down: usize) -> Result<Vec<f64>>
 /// # Examples
 ///
 /// ```
-/// let x=sci_signal::resample_poly(&[1.,2.,3.],2,1,None)?;
+/// let x=sci_signal::convolution::resample_poly(&[1.,2.,3.],2,1,None)?;
 /// assert_eq!(x.len(),6);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -487,7 +488,7 @@ pub fn resample_poly(
 /// # Examples
 ///
 /// ```
-/// let x=sci_signal::decimate(&[1.,2.,3.,4.],2,8,true)?;
+/// let x=sci_signal::convolution::decimate(&[1.,2.,3.,4.],2,8,true)?;
 /// assert_eq!(x.len(),2);
 /// # Ok::<(),sci_core::Error>(())
 /// ```

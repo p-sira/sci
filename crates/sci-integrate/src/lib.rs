@@ -2,6 +2,9 @@
 //!
 //! One-dimensional integration of samples and fixed-order Gaussian quadrature.
 //!
+//! Sampled integration and fixed quadrature use `T: sci_core::Float`; arithmetic
+//! and callbacks retain the selected precision. Newton–Cotes weights use `f64`.
+//!
 //! Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 //!
 //! Functions accept slices or scalar callbacks; sampled inputs have at most
@@ -13,16 +16,22 @@
 //! Gaussian rules use the documented fixed order and map the reference
 //! interval `[-1, 1]` to the integration interval.
 //!
-//! ## Acknowledgments
-//!
-//! We thank `nalgebra` for its numerical linear algebra.
-
 #![forbid(unsafe_code)]
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]
 
 use sci_core as error;
 pub use sci_core::{Error, Result};
-use sci_special as special;
 #[path = "mod.rs"]
 mod implementation;
-pub use implementation::*;
+mod solver;
+/// Integration of sampled values by composite rules.
+pub mod sampled {
+    pub use crate::implementation::{
+        cumulative_simpson, cumulative_trapezoid, romb, simpson, trapezoid,
+    };
+}
+
+/// Fixed Gaussian quadrature and Newton–Cotes weights.
+pub mod quadrature {
+    pub use crate::implementation::{fixed_quad, newton_cotes};
+}

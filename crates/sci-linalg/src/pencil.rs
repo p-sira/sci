@@ -73,7 +73,7 @@ fn factor(s: Mat<C>, t: Mat<C>, q: Mat<C>, z: Mat<C>, selected: usize) -> Result
 /// # Examples
 ///
 /// ```
-/// let f = sci_linalg::qz(&[vec![2.]], &[vec![1.]])?;
+/// let f = sci_linalg::eigen::qz(&[vec![2.]], &[vec![1.]])?;
 /// assert_eq!(f.alpha.len(),1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -85,10 +85,6 @@ pub fn qz(
     a: &(impl super::MatrixInput + ?Sized),
     b: &(impl super::MatrixInput + ?Sized),
 ) -> Result<QzResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let b_input = super::input::matrix_rows(b)?;
-    let b = b_input.as_ref();
     let a = square(a)?;
     let b = square(b)?;
     if a.shape() != b.shape() {
@@ -276,7 +272,7 @@ fn swap_pair(
 /// # Examples
 ///
 /// ```
-/// let f = sci_linalg::ordqz(&[vec![-2.,0.],vec![0.,3.]],
+/// let f = sci_linalg::eigen::ordqz(&[vec![-2.,0.],vec![0.,3.]],
 ///     &[vec![1.,0.],vec![0.,1.]], |a,b| (a.re*b.re+a.im*b.im)<0.)?;
 /// assert_eq!(f.selected,1);
 /// # Ok::<(), sci_core::Error>(())
@@ -290,10 +286,6 @@ pub fn ordqz<F: FnMut(Complex, Complex) -> bool>(
     b: &(impl super::MatrixInput + ?Sized),
     mut select: F,
 ) -> Result<QzResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let b_input = super::input::matrix_rows(b)?;
-    let b = b_input.as_ref();
     let f = qz(a, b)?;
     let n = f.alpha.len();
     let mut flags: Vec<_> = f

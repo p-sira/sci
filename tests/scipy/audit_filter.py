@@ -5,15 +5,15 @@ inventory covers sample processing, already implemented by sci-signal; compatibi
 namespaces repeat those APIs. Bayesian estimation is an independent extension.
 Run with Python 3.11+; no SciPy installation is required for the audit.
 """
-import json
 import re
 from pathlib import Path
+from case_catalog import read_cases
 
 ROOT = Path(__file__).resolve().parents[2]
 exports = set()
 for path in (ROOT/"crates/sci-filter/src").glob("*.rs"):
     exports.update(re.findall(r"pub fn (\w+)(?:<[^\n]*>)?\s*\(", path.read_text()))
-cases = json.loads((ROOT/"tests/scipy/filter_cases.json").read_text())
+cases = read_cases(ROOT/"tests/scipy/filter_cases.jsonl")
 tested = {case["function"] for case in cases}
 if exports != tested:
     raise RuntimeError(f"Untested exports: {exports-tested}; unknown cases: {tested-exports}")

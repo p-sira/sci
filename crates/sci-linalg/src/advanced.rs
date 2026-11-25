@@ -55,7 +55,7 @@ pub struct LdlResult {
 /// # Examples
 ///
 /// ```
-/// let e = sci_linalg::eig(&[vec![0., -1.], vec![1., 0.]])?;
+/// let e = sci_linalg::eigen::eig(&[vec![0., -1.], vec![1., 0.]])?;
 /// assert_eq!(e.eigenvalues.len(), 2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -64,8 +64,6 @@ pub struct LdlResult {
 ///
 /// [SciPy `eig`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.eig.html).
 pub fn eig(a: &(impl super::MatrixInput + ?Sized)) -> Result<GeneralEigenResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let (a, scale) = scaled(square(a)?);
     let n = a.nrows();
     let f = faer::Mat::from_fn(n, n, |i, j| a[(i, j)])
@@ -121,7 +119,7 @@ pub fn eig(a: &(impl super::MatrixInput + ?Sized)) -> Result<GeneralEigenResult>
 /// # Examples
 ///
 /// ```
-/// let f = sci_linalg::ldl(&[vec![0., 1.], vec![1., 0.]], true)?;
+/// let f = sci_linalg::decompositions::ldl(&[vec![0., 1.], vec![1., 0.]], true)?;
 /// assert_eq!(f.d.len(), 2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -130,8 +128,6 @@ pub fn eig(a: &(impl super::MatrixInput + ?Sized)) -> Result<GeneralEigenResult>
 ///
 /// [SciPy `ldl`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.ldl.html).
 pub fn ldl(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<LdlResult> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let mut a = symmetric(a, lower)?;
     let n = a.nrows();
     // Reversing both axes turns an upper factor into a lower one.
@@ -201,7 +197,7 @@ pub fn ldl(a: &(impl super::MatrixInput + ?Sized), lower: bool) -> Result<LdlRes
 ///
 /// ```
 /// use sci_complex::Complex;
-/// let (d,v) = sci_linalg::cdf2rdf(&[Complex {re:2.,im:0.}],
+/// let (d,v) = sci_linalg::eigen::cdf2rdf(&[Complex {re:2.,im:0.}],
 ///     &[vec![Complex {re:1.,im:0.}]])?;
 /// assert_eq!(d,vec![vec![2.]]);
 /// assert_eq!(v,vec![vec![1.]]);
@@ -296,7 +292,7 @@ pub fn cdf2rdf(w: &[Complex], v: &[Vec<Complex>]) -> Result<(Matrix, Matrix)> {
 /// # Examples
 ///
 /// ```
-/// let y = sci_linalg::clarkson_woodruff_transform(
+/// let y = sci_linalg::subspaces::clarkson_woodruff_transform(
 ///     &[vec![1.,2.],vec![3.,4.]],1,&[0,0],&[1.,-1.])?;
 /// assert_eq!(y,vec![vec![-2.,-2.]]);
 /// # Ok::<(), sci_core::Error>(())
@@ -311,8 +307,6 @@ pub fn clarkson_woodruff_transform(
     buckets: &[usize],
     signs: &(impl super::VectorInput + ?Sized),
 ) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let signs_input = super::input::vector_slice(signs)?;
     let signs = signs_input.as_ref();
     let a = dense(a)?;
@@ -362,7 +356,7 @@ pub fn clarkson_woodruff_transform(
 /// # Examples
 ///
 /// ```
-/// let (b,t) = sci_linalg::matrix_balance(&[vec![1.,100.],vec![0.01,2.]],false,true)?;
+/// let (b,t) = sci_linalg::decompositions::matrix_balance(&[vec![1.,100.],vec![0.01,2.]],false,true)?;
 /// assert_eq!(b.len(),t.len());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -375,8 +369,6 @@ pub fn matrix_balance(
     permute: bool,
     scale: bool,
 ) -> Result<(Matrix, Matrix)> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let mut a = square(a)?;
     let n = a.nrows();
     let mut t = Mat::identity(n, n);
@@ -437,8 +429,8 @@ pub fn matrix_balance(
                     }
                     t[(j, i)] *= factor;
                 }
-                rows(&a)?;
-                rows(&t)?;
+                finite_output(a.as_ref())?;
+                finite_output(t.as_ref())?;
                 if t.col(i).norm_max() == 0. {
                     return Err(Error::NumericalFailure(
                         "balancing transformation underflowed",

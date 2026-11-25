@@ -154,10 +154,6 @@ swapaxes_0,shape,1,2,3.0;2.0
 swapaxes_0,data,1,6,1.0;0.0;0.0;3.0;2.0;0.0
 swapaxes_1,shape,1,2,1.0;1.0
 swapaxes_1,data,1,1,0.0
-issparse_0,value,1,1,1.0
-issparse_1,value,1,1,0.0
-get_index_dtype_0,value,1,1,32.0
-get_index_dtype_1,value,1,1,64.0
 safely_cast_index_arrays_0,indices,1,3,0.0;1.0;1.0
 safely_cast_index_arrays_0,indptr,1,3,0.0;2.0;3.0
 safely_cast_index_arrays_1,indices,1,3,0.0;1.0;1.0

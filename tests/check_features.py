@@ -1,55 +1,121 @@
-"""Check the facade with no modules and with each module enabled separately.
+"""Check that Sci's optional modules compile without unrelated dependencies.
 
-Run with Python 3.11 or newer from any directory. Numerical reference tests
-remain in the Rust suite; this checks Cargo feature wiring and documentation.
-Optional arguments select features to check; use `core` for the core-only facade.
+Run with Python 3.11+ from anywhere. With no arguments, check the default
+configuration, core-only facade, every module and adapter, and the isolated
+``sci-sparse`` configurations. Pass names (e.g. ``core io-wav``) to select a
+subset. General documentation and numerical tests run in separate CI jobs.
 """
 
-import os
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
-import tomllib
-
 ROOT = Path(__file__).resolve().parents[1]
-manifest = tomllib.loads((ROOT / "Cargo.toml").read_text())
-features = manifest["features"]
-modules = sorted(
-    name for name, values in features.items() if values == [f"dep:sci-{name}"]
-)
-adapters = sorted(set(features) - {"default", *modules})
-assert sorted(features["default"]) == sorted([*modules, *adapters])
-assert set(manifest["dependencies"]) == {"sci-core", *(f"sci-{m}" for m in modules)}
-for module in modules:
-    dependency = f"sci-{module}"
-    assert features[module] == [f"dep:{dependency}"]
-    assert manifest["dependencies"][dependency]["optional"]
 
-for adapter in adapters:
-    module, name = adapter.split("-", 1)
-    assert module in modules
-    assert features[adapter] == [module, f"sci-{module}/{name}"]
-    domain = tomllib.loads((ROOT / f"crates/sci-{module}/Cargo.toml").read_text())
-    assert name in domain["features"]
 
-selected = sys.argv[1:] or ["core", *modules, *adapters]
-unknown = set(selected) - {"core", *modules, *adapters}
-if unknown:
-    raise SystemExit(f"Unknown features: {', '.join(sorted(unknown))}")
+def manifest(path):
+    return tomllib.loads((ROOT / path).read_text())
 
-for feature in selected:
-    module = None if feature == "core" else feature
-    args = ["-p", "sci", "--no-default-features", "--locked"]
-    if module:
-        args += ["--features", module]
-    print(f"Checking {module or 'core only'}", flush=True)
-    subprocess.run(["cargo", "check", "--lib", *args], cwd=ROOT, check=True)
-    subprocess.run(
-        ["cargo", "doc", "--no-deps", *args],
-        cwd=ROOT,
-        env={**os.environ, "RUSTDOCFLAGS": "-D warnings"},
-        check=True,
+
+def validate_features():
+    """Validate the public feature mapping without freezing implementation deps."""
+    root = manifest("Cargo.toml")
+    features = root["features"]
+    modules = sorted(
+        name.removeprefix("sci-")
+        for name in root["dependencies"]
+        if name.startswith("sci-") and name != "sci-core"
     )
+    adapters = sorted(set(features) - {"default", *modules})
 
-print(f"All {len(selected)} selected feature checks passed.")
+    for module in modules:
+        dep = f"sci-{module}"
+        assert root["dependencies"][dep]["optional"], dep
+        assert f"dep:{dep}" in features[module], module
+
+    for adapter in adapters:
+        module, _, name = adapter.partition("-")
+        assert module in modules and name, adapter
+        assert module in features[adapter], adapter
+        assert f"sci-{module}/{name}" in features[adapter], adapter
+        assert name in manifest(f"crates/sci-{module}/Cargo.toml")["features"], adapter
+
+    # The project's full default is a policy choice, not an isolation rule.
+    # Ensure only that every default name exists; do not hard-code its contents.
+    assert set(features["default"]) <= set(features), "unknown default feature"
+    return modules, adapters
+
+
+def packages(args):
+    """Resolved normal/build packages, including transitive dependencies."""
+    output = subprocess.check_output(
+        ["cargo", "tree", "--locked", "-e", "normal,build", "--prefix", "none", "--format", "{p}", *args],
+        cwd=ROOT,
+        text=True,
+    )
+    return {line.split()[0] for line in output.splitlines() if line.strip()}
+
+
+def check_isolation(label, args, excluded):
+    found = packages(args) & excluded
+    assert not found, f"{label} unexpectedly brings in: {', '.join(sorted(found))}"
+
+
+def main(selected):
+    modules, adapters = validate_features()
+    sparse_features = {"core": None, "solver": "solver", "random": "random", "npz": "npz"}
+    sparse_labels = {f"crate-sparse-{feature}" for feature in sparse_features}
+    available = {"default", "core", *modules, *adapters, *sparse_labels}
+    unknown = set(selected) - available
+    if unknown:
+        raise SystemExit(f"Unknown features: {', '.join(sorted(unknown))}")
+    if not selected:
+        selected = ["default", "core", *modules, *adapters, *sorted(sparse_labels)]
+
+    # Only protect meaningful isolation boundaries. Exact backend/package
+    # inventories and positive implementation dependencies are not contracts.
+    domains = {f"sci-{module}" for module in modules}
+    excluded = {
+        "core": domains,
+        "cluster": domains - {"sci-cluster"},
+        "io": domains - {"sci-io"} | {"hound", "flate2", "zip"},
+        "io-matrix-market": domains - {"sci-io"} | {"hound", "flate2", "zip"},
+        "io-wav": domains - {"sci-io"} | {"flate2", "zip"},
+        "io-matlab": domains - {"sci-io"} | {"hound", "zip"},
+        "fft": {"sci-special"},
+        "fft-hankel": {"sci-special"},
+        "sparse": {"zip", "flate2", "sci-graph", "petgraph", "lapjv"},
+        "graph": {"sci-sparse", "faer", "zip", "flate2"},
+    }
+    # Enforce graph isolation from every sparse configuration; keep optional
+    # solver, random and archive backends independently selectable.
+    sparse_excluded = {
+        "core": {"faer", "sci-graph", "petgraph", "rand", "zip"},
+        "solver": {"sci-graph", "petgraph", "rand", "zip"},
+        "random": {"faer", "sci-graph", "petgraph", "zip"},
+        "npz": {"faer", "sci-graph", "petgraph", "rand"},
+    }
+
+    for label in selected:
+        if label in sparse_labels:
+            feature = label.removeprefix("crate-sparse-")
+            args = ["-p", "sci-sparse", "--no-default-features"]
+            if sparse_features[feature]:
+                args += ["--features", sparse_features[feature]]
+            check_isolation(label, args, sparse_excluded[feature])
+        else:
+            args = ["-p", "sci", "--no-default-features"]
+            if label != "core":
+                args += ["--features", label]
+            if label in excluded:
+                check_isolation(label, args, excluded[label])
+
+        print(f"Checking {label}", flush=True)
+        subprocess.run(["cargo", "check", "--lib", *args, "--locked"], cwd=ROOT, check=True)
+
+    print(f"All {len(selected)} selected feature configurations passed.")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

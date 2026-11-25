@@ -40,15 +40,14 @@ pub enum KendallVariant {
 ///
 /// ## Numerical behavior
 ///
-/// Native direct pair counting uses O(n²) work and O(n) memory, capped at
-/// 8,386,560 pairs. Counts are exact within that limit. Statrs supplies normal
-/// tails. This is slower than SciPy's Fenwick-tree implementation; small
-/// samples or extensive ties can weaken asymptotic calibration.
+/// Native O(n log n) rank counting and O(n) memory, capped at 4096
+/// observations. Pair counts are exact within that limit. Statrs supplies
+/// normal tails; small samples or extensive ties can weaken calibration.
 ///
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{kendalltau, KendallVariant, Alternative};
+/// use sci_stats::{association::kendalltau, association::KendallVariant, inference::Alternative};
 /// let r = kendalltau(&[1.,2.,3.], &[3.,2.,1.], KendallVariant::B, Alternative::TwoSided)?;
 /// assert_eq!(r.statistic, -1.);
 /// # Ok::<(), sci_core::Error>(())
@@ -83,20 +82,8 @@ pub fn kendalltau(
             pvalue: f64::NAN,
         });
     }
-    let mut difference = 0_i64;
-    for i in 0..x.len() {
-        for j in i + 1..x.len() {
-            if x[i] == x[j] || y[i] == y[j] {
-                continue;
-            }
-            difference += if (x[i] < x[j]) == (y[i] < y[j]) {
-                1
-            } else {
-                -1
-            };
-        }
-    }
-    let difference = difference as f64;
+    let (scores, _) = super::association::concordance_scores(x, y);
+    let difference = (scores.iter().sum::<i64>() / 2) as f64;
     let statistic = match variant {
         KendallVariant::B => difference / (total - tx.pairs).sqrt() / (total - ty.pairs).sqrt(),
         KendallVariant::C => {
@@ -165,7 +152,7 @@ pub enum WilcoxonZero {
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{wilcoxon, WilcoxonZero, Alternative};
+/// use sci_stats::{inference::wilcoxon, inference::WilcoxonZero, inference::Alternative};
 /// assert_eq!(wilcoxon(&[1.,2.,3.], WilcoxonZero::Wilcox, Alternative::TwoSided, false)?.statistic, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -275,7 +262,7 @@ pub fn wilcoxon(
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{ansari, Alternative};
+/// use sci_stats::{inference::ansari, inference::Alternative};
 /// assert!(ansari(&[-1.,0.,1.], &[-8.,0.,8.], Alternative::TwoSided)?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -371,7 +358,7 @@ pub struct QuantileTestResult {
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{quantile_test, Alternative, QuantileCount};
+/// use sci_stats::{inference::quantile_test, inference::Alternative, inference::QuantileCount};
 /// let r = quantile_test(&[1.,2.,3.], 2., 0.5, Alternative::Greater)?;
 /// assert_eq!((r.statistic,r.count),(2,QuantileCount::AtOrBelow));
 /// # Ok::<(), sci_core::Error>(())
@@ -454,7 +441,7 @@ pub fn quantile_test(
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::page_trend_test(&[&[1.,2.,3.], &[2.,3.,4.]], &[1,2,3])?;
+/// let r = sci_stats::inference::page_trend_test(&[&[1.,2.,3.], &[2.,3.,4.]], &[1,2,3])?;
 /// assert!(r.pvalue < 0.1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -535,7 +522,7 @@ pub fn page_trend_test(rows: &[&[f64]], predicted_ranks: &[usize]) -> Result<Tes
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{mood, Alternative};
+/// use sci_stats::{inference::mood, inference::Alternative};
 /// assert!(mood(&[-1.,0.,1.], &[-8.,0.,8.], Alternative::Less)?.statistic < 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -623,7 +610,7 @@ pub fn mood(x: &[f64], y: &[f64], alternative: Alternative) -> Result<TestResult
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{mannwhitneyu, Alternative};
+/// use sci_stats::{inference::mannwhitneyu, inference::Alternative};
 /// assert_eq!(mannwhitneyu(&[1.,2.,3.], &[4.,5.,6.], Alternative::Less, true)?.statistic, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -730,7 +717,7 @@ pub struct MedianTestResult {
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{brunnermunzel, Alternative, BrunnerDistribution};
+/// use sci_stats::{inference::brunnermunzel, inference::Alternative, inference::BrunnerDistribution};
 /// let r = brunnermunzel(&[1.,2.,3.,4.], &[2.,3.,4.,5.], Alternative::TwoSided, BrunnerDistribution::StudentT)?;
 /// assert!(r.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
@@ -808,7 +795,7 @@ pub fn brunnermunzel(
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{median_test, MedianTies};
+/// use sci_stats::{inference::median_test, inference::MedianTies};
 /// let r = median_test(&[&[1.,2.,3.], &[4.,5.,6.]], MedianTies::Below, false)?;
 /// assert_eq!(r.table, vec![vec![0.,3.], vec![3.,0.]]);
 /// # Ok::<(), sci_core::Error>(())
@@ -880,7 +867,7 @@ pub fn median_test(
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{fligner, Center};
+/// use sci_stats::{inference::fligner, inference::Center};
 /// assert!(fligner(&[&[1.,2.,3.], &[1.,3.,8.]], Center::Median)?.statistic >= 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -897,7 +884,10 @@ pub fn fligner(groups: &[&[f64]], center: Center) -> Result<TestResult> {
             Center::Median => median(g)?,
         };
         for x in *g {
-            deviations.push(finite((x - c).abs())?);
+            deviations.push(match (x - c).abs() {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?);
         }
     }
     let ranks = rankdata(&deviations, RankMethod::Average)?;
@@ -921,4 +911,91 @@ pub fn fligner(groups: &[&[f64]], center: Center) -> Result<TestResult> {
         offset += g.len();
     }
     inference::chi_result(numerator / spread, (groups.len() - 1) as f64)
+}
+
+#[cfg(test)]
+mod kendall_sweep_tests {
+    use super::*;
+
+    fn pairwise_tau(
+        x: &[f64],
+        y: &[f64],
+        variant: KendallVariant,
+        alternative: Alternative,
+    ) -> Result<TestResult> {
+        let tx = ranking::tie_counts(x);
+        let ty = ranking::tie_counts(y);
+        let n = x.len() as f64;
+        let total = n * (n - 1.) / 2.;
+        if tx.pairs == total || ty.pairs == total {
+            return Ok(TestResult {
+                statistic: f64::NAN,
+                pvalue: f64::NAN,
+            });
+        }
+        let mut difference = 0_i64;
+        for i in 0..x.len() {
+            for j in i + 1..x.len() {
+                if x[i] != x[j] && y[i] != y[j] {
+                    difference += if (x[i] < x[j]) == (y[i] < y[j]) {
+                        1
+                    } else {
+                        -1
+                    };
+                }
+            }
+        }
+        let difference = difference as f64;
+        let statistic = match variant {
+            KendallVariant::B => difference / (total - tx.pairs).sqrt() / (total - ty.pairs).sqrt(),
+            KendallVariant::C => {
+                let c = tx.unique.min(ty.unique) as f64;
+                2. * difference / (n * n * (c - 1.) / c)
+            }
+        }
+        .clamp(-1., 1.);
+        let m = n * (n - 1.);
+        let variance = (m * (2. * n + 5.) - tx.variance_term - ty.variance_term) / 18.
+            + 2. * tx.pairs * ty.pairs / m
+            + tx.triples * ty.triples / (9. * m * (n - 2.));
+        Ok(TestResult {
+            statistic,
+            pvalue: normality::normal_result(difference / variance.sqrt(), alternative)?.pvalue,
+        })
+    }
+
+    #[test]
+    fn kendall_fenwick_matches_exact_pair_counts_with_ties() -> Result<()> {
+        let cases: Vec<(Vec<f64>, Vec<f64>)> = vec![
+            (vec![0., -0., 1., 1., 2.], vec![2., 1., -0., 0., 2.]),
+            (vec![2., 1., 4., 3., 5.], vec![1., 4., 3., 5., 2.]),
+            (
+                (0..64).map(|i| (i * 31 % 13) as f64).collect(),
+                (0..64).map(|i| (i * 17 % 9) as f64).collect(),
+            ),
+            (
+                (0..257).map(|i| (i * 37 % 257) as f64).collect(),
+                (0..257).map(|i| (i * 41 % 257) as f64).collect(),
+            ),
+            (
+                (0..300).map(|i| (i * 37 % 5) as f64).collect(),
+                (0..300).map(|i| (i * 19 % 7) as f64).collect(),
+            ),
+        ];
+        for (x, y) in cases {
+            for variant in [KendallVariant::B, KendallVariant::C] {
+                for alternative in [
+                    Alternative::TwoSided,
+                    Alternative::Less,
+                    Alternative::Greater,
+                ] {
+                    let actual = kendalltau(&x, &y, variant, alternative)?;
+                    let expected = pairwise_tau(&x, &y, variant, alternative)?;
+                    assert_eq!(actual.statistic.to_bits(), expected.statistic.to_bits());
+                    assert_eq!(actual.pvalue.to_bits(), expected.pvalue.to_bits());
+                }
+            }
+        }
+        Ok(())
+    }
 }

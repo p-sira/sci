@@ -47,7 +47,10 @@ Tangent uses a scaled sum of squares near poles, avoiding cancellation in the
 double-angle denominator, and retains the leading exponential coefficient at
 the subnormal transition. Real powers scale overflowing magnitudes, reuse
 square roots for half powers, and use a near-positive-axis limit to retain tiny
-imaginary components. Complex powers with real exponents reuse this path.
+imaginary components. Integer powers of real-axis bases return an exactly zero
+imaginary component, with the sign determined by the one-sided derivative;
+near-negative-axis integer powers retain tiny nonzero imaginary components.
+Complex powers with real exponents reuse this path.
 Multiplication and squared magnitude combine binary-scaled products using
 fused multiply-add residuals before restoring the exponent. This avoids
 spurious NaN from overflowing products and premature underflow of a

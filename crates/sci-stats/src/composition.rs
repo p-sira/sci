@@ -190,7 +190,10 @@ fn order_evaluate(d: OrderStatisticDistribution, x: f64, op: Operation) -> Resul
             let probability = ppf(Distribution::Beta { a, b }, x)?;
             let value = ppf(d.base, probability)?;
             if x > 0. && x < 1. {
-                finite(value)
+                match value {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }
             } else {
                 Ok(value)
             }
@@ -235,7 +238,7 @@ fn order_evaluate(d: OrderStatisticDistribution, x: f64, op: Operation) -> Resul
                     })
                     .sum()
             } else {
-                -crate::special::betaln(a, b)
+                -crate::special::beta::betaln(a, b)
             };
             density_result(
                 log_density + log_f + log_s + constant,
@@ -296,8 +299,8 @@ pub(super) fn evaluate(distribution: DistributionSpec, x: f64, op: Operation) ->
 /// ## Examples
 ///
 /// ```
-/// let d = sci_stats::truncate(sci_stats::Distribution::Normal { mean:0.,std_dev:1. },-1.,1.)?;
-/// assert!((sci_stats::cdf(d,0.)?-0.5).abs() < 1e-14);
+/// let d = sci_stats::distributions::truncate(sci_stats::distributions::Distribution::Normal { mean:0.,std_dev:1. },-1.,1.)?;
+/// assert!((sci_stats::distributions::cdf(d,0.)?-0.5).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -306,8 +309,12 @@ pub(super) fn evaluate(distribution: DistributionSpec, x: f64, op: Operation) ->
 /// [SciPy truncate](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.truncate.html).
 pub fn truncate(distribution: Distribution, lower: f64, upper: f64) -> Result<DistributionSpec> {
     continuous_null(distribution)?;
-    finite(lower)?;
-    finite(upper)?;
+    if !lower.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
+    if !upper.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     if lower >= upper {
         return Err(Error::InvalidInput("truncation bounds must increase"));
     }
@@ -369,8 +376,8 @@ pub fn truncate(distribution: Distribution, lower: f64, upper: f64) -> Result<Di
 /// ## Examples
 ///
 /// ```
-/// let d = sci_stats::order_statistic(sci_stats::Distribution::Uniform { low:0.,high:1. },2,3)?;
-/// assert!((sci_stats::cdf(d,0.5)?-0.5).abs() < 1e-14);
+/// let d = sci_stats::distributions::order_statistic(sci_stats::distributions::Distribution::Uniform { low:0.,high:1. },2,3)?;
+/// assert!((sci_stats::distributions::cdf(d,0.5)?-0.5).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -439,9 +446,9 @@ pub fn order_statistic(
 /// ## Examples
 ///
 /// ```
-/// let d = sci_stats::make_distribution(0.,1.,|x| Ok(2.*x),|x| Ok(x*x),
+/// let d = sci_stats::distributions::make_distribution(0.,1.,|x| Ok(2.*x),|x| Ok(x*x),
 ///     |x| Ok(1.-x*x),|p| Ok(p.sqrt()))?;
-/// assert_eq!(sci_stats::cdf(d,0.5)?,0.25);
+/// assert_eq!(sci_stats::distributions::cdf(d,0.5)?,0.25);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///

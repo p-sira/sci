@@ -5,15 +5,15 @@
 """Generate checked-in signal fixtures independently using SciPy.
 
 Run: uv run tests/scipy/generate_signal.py (or the pinned project .venv).
-Inputs live in signal_cases.json; expected values are never computed by Rust.
+Inputs live in signal_cases.jsonl; expected values are never computed by Rust.
 CSV input arrays use semicolons and matrix rows use colons. Output rows use
 slashes; complex vectors are interleaved real/imaginary components. Every
 output row's length is checked by the Rust fixture test, including empty rows.
 """
 
 import csv
-import json
 from pathlib import Path
+from case_catalog import read_cases
 import warnings
 
 import numpy as np
@@ -432,7 +432,7 @@ def reference(name, a):
     return getattr(signal, name)(*a)
 
 
-cases = json.loads((ROOT / "scipy/signal_cases.json").read_text())
+cases = read_cases(ROOT / "scipy/signal_cases.jsonl")
 (ROOT / "fixtures").mkdir(exist_ok=True)
 with (
     (ROOT / "fixtures/signal_inputs.csv").open("w", newline="") as inputs,

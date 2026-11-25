@@ -5,14 +5,10 @@ pub(super) fn normal_result(statistic: f64, alternative: Alternative) -> Result<
         f64::NAN
     } else {
         match alternative {
+            // Evaluate the complete probability before rounding. Doubling a
+            // rounded one-sided tail loses odd subnormal values.
             Alternative::TwoSided => {
-                2. * sf(
-                    Distribution::Normal {
-                        mean: 0.,
-                        std_dev: 1.,
-                    },
-                    statistic.abs(),
-                )?
+                crate::special::elementary::erfc(statistic.abs() * std::f64::consts::FRAC_1_SQRT_2)
             }
             Alternative::Less => cdf(
                 Distribution::Normal {
@@ -96,7 +92,7 @@ fn kurtosis_statistic(values: &[f64]) -> Result<f64> {
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{skewtest, Alternative};
+/// use sci_stats::{normality::skewtest, inference::Alternative};
 /// assert!(skewtest(&[1.,2.,3.,4.,5.,6.,7.,8000.], Alternative::Greater)?.pvalue < 0.001);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -142,7 +138,7 @@ pub fn skewtest(values: &[f64], alternative: Alternative) -> Result<TestResult> 
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{kurtosistest, Alternative};
+/// use sci_stats::{normality::kurtosistest, inference::Alternative};
 /// let values: Vec<_> = (0..30).map(|i| i as f64).collect();
 /// assert!(kurtosistest(&values, Alternative::TwoSided)?.pvalue < 0.1);
 /// # Ok::<(), sci_core::Error>(())
@@ -185,7 +181,7 @@ pub fn kurtosistest(values: &[f64], alternative: Alternative) -> Result<TestResu
 ///
 /// ```
 /// let values: Vec<_> = (0..30).map(|i| i as f64).collect();
-/// assert!(sci_stats::normaltest(&values)?.statistic >= 0.);
+/// assert!(sci_stats::normality::normaltest(&values)?.statistic >= 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -236,8 +232,8 @@ pub fn normaltest(values: &[f64]) -> Result<TestResult> {
 /// ## Examples
 ///
 /// ```
-/// let transformed = sci_stats::obrientransform(&[&[1.,2.,3.]])?;
-/// assert!((sci_stats::mean(&transformed[0])? - 1.).abs() < 1e-14);
+/// let transformed = sci_stats::normality::obrientransform(&[&[1.,2.,3.]])?;
+/// assert!((sci_stats::descriptive::mean(&transformed[0])? - 1.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -261,7 +257,10 @@ pub fn obrientransform(groups: &[&[f64]]) -> Result<Vec<Vec<f64>>> {
                 .iter()
                 .map(|v| {
                     let r = ((n - 1.5) * n * v * v - 0.5 * ss) / ((n - 1.) * (n - 2.));
-                    finite((r * scale) * scale)
+                    match (r * scale) * scale {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(crate::Error::NonFiniteEvaluation),
+                    }
                 })
                 .collect()
         })
@@ -305,7 +304,7 @@ pub fn obrientransform(groups: &[&[f64]]) -> Result<Vec<Vec<f64>>> {
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::alexandergovern(&[&[1.,2.,3.], &[3.,5.,8.]])?;
+/// let r = sci_stats::normality::alexandergovern(&[&[1.,2.,3.], &[3.,5.,8.]])?;
 /// assert!(r.statistic >= 0. && (0. ..=1.).contains(&r.pvalue));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -402,7 +401,7 @@ pub fn alexandergovern(groups: &[&[f64]]) -> Result<TestResult> {
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::shapiro(&[-1.,0.,1.])?;
+/// let r = sci_stats::normality::shapiro(&[-1.,0.,1.])?;
 /// assert!((r.statistic-1.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -423,12 +422,47 @@ pub fn shapiro(values: &[f64]) -> Result<TestResult> {
         });
     }
     let r = shapiro_backend::evaluate(&normalized)?;
-    let statistic = finite(r.statistic)?;
-    let pvalue = finite(r.pvalue)?;
+    let statistic = match r.statistic {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
+    let pvalue = match r.pvalue {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     if !(0. ..=1.).contains(&statistic) || !(0. ..=1.).contains(&pvalue) {
         return Err(Error::NumericalFailure(
             "Shapiro-Wilk backend returned invalid result",
         ));
     }
     Ok(TestResult { statistic, pvalue })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn two_sided_normal_probability_rounds_subnormal_tail_once() -> Result<()> {
+        // In units of 2^-1074, erfc(|z|/sqrt(2)) is approximately
+        // 1.23154 at 38.48, 0.83791 at 38.49, and 0.38776 at 38.51.
+        // Both of the first two round to one unit; the last rounds to zero.
+        for (z, bits) in [(38.48, 1), (38.49, 1), (38.51, 0)] {
+            for statistic in [z, -z] {
+                let result = normal_result(statistic, Alternative::TwoSided)?;
+                assert_eq!(result.statistic, statistic);
+                assert_eq!(result.pvalue.to_bits(), bits);
+            }
+        }
+        assert_eq!(normal_result(0., Alternative::TwoSided)?.pvalue, 1.);
+        for z in [f64::NEG_INFINITY, f64::INFINITY] {
+            assert_eq!(normal_result(z, Alternative::TwoSided)?.pvalue, 0.);
+        }
+        assert!(
+            normal_result(f64::NAN, Alternative::TwoSided)?
+                .pvalue
+                .is_nan()
+        );
+        Ok(())
+    }
 }

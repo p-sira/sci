@@ -1,6 +1,6 @@
 [package]
 name = "sci-stats"
-version = "0.2.0"
+version = "0.3.0"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -12,14 +12,15 @@ repository = "https://github.com/p-sira/sci"
 categories = ["algorithms", "mathematics", "science"]
 keywords = ["statistics", "probability", "distributions", "numerics", "data-analysis"]
 readme = false
-include = ["/src/**", "/LICENSE", "/SCIPY_LICENSE.txt"]
+include = ["/src/**", "/LICENSE", "/SCIPY_LICENSE.txt", "/JOE_KUO_LICENSE.txt"]
 
 [dependencies]
+numeric_literals.workspace = true
+rand.workspace = true
 sci-core.workspace = true
 sci-special.workspace = true
 nalgebra.workspace = true
 statrs.workspace = true
-basin.workspace = true
 lapjv.workspace = true
 ndarray.workspace = true
 

@@ -1,4 +1,7 @@
-use sci::{Error, Matrix, filter::*};
+use sci::{
+    Error, Matrix,
+    filter::{Gaussian, SigmaPoints, Update, kalman::*, particle::*},
+};
 mod common;
 use common::finite_close;
 
@@ -571,4 +574,47 @@ fn particle_identities_and_resampling_boundaries() {
         particle_estimate(&moved).unwrap().covariance,
         particle_estimate(&p).unwrap().covariance
     );
+}
+
+#[test]
+fn particle_callback_failure_stops_later_evaluations() {
+    let prior = cloud();
+    let failure = Error::NumericalFailure("second particle failed");
+    for invalid_output in [false, true] {
+        let mut calls = 0;
+        let result = particle_predict(&prior, |x| {
+            calls += 1;
+            if calls == 2 {
+                if invalid_output {
+                    return Ok(vec![f64::NAN]);
+                }
+                return Err(failure.clone());
+            }
+            Ok(x.iter().map(|v| v + 1.).collect())
+        });
+        assert_eq!(
+            result,
+            Err(if invalid_output {
+                Error::NonFiniteEvaluation
+            } else {
+                failure.clone()
+            })
+        );
+        assert_eq!(calls, 2);
+        assert_eq!(prior, cloud());
+    }
+    let mut calls = 0;
+    assert_eq!(
+        particle_update(&prior, |_| {
+            calls += 1;
+            if calls == 2 {
+                Err(failure.clone())
+            } else {
+                Ok(0.)
+            }
+        }),
+        Err(failure)
+    );
+    assert_eq!(calls, 2);
+    assert_eq!(prior, cloud());
 }

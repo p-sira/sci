@@ -86,7 +86,7 @@ fn limited(
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::tmean(&[1., 2., 100.], Some((0., 3.)), (true,true))?.is_finite());
+/// assert!(sci_stats::descriptive::tmean(&[1., 2., 100.], Some((0., 3.)), (true,true))?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -94,6 +94,10 @@ fn limited(
 ///
 /// [SciPy `tmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.tmean.html).
 pub fn tmean(values: &[f64], limits: Option<(f64, f64)>, inclusive: (bool, bool)) -> Result<f64> {
+    if limits.is_none() {
+        sample(values, 1)?;
+        return mean(values);
+    }
     let x = limited(values, limits, inclusive)?;
     mean(&x)
 }
@@ -126,7 +130,7 @@ pub fn tmean(values: &[f64], limits: Option<(f64, f64)>, inclusive: (bool, bool)
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::tvar(&[1., 2., 100.], Some((0., 3.)), (true,true), 1)?.is_finite());
+/// assert!(sci_stats::descriptive::tvar(&[1., 2., 100.], Some((0., 3.)), (true,true), 1)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -139,6 +143,10 @@ pub fn tvar(
     inclusive: (bool, bool),
     ddof: usize,
 ) -> Result<f64> {
+    if limits.is_none() {
+        sample(values, 1)?;
+        return variance(values, ddof);
+    }
     let x = limited(values, limits, inclusive)?;
     variance(&x, ddof)
 }
@@ -171,7 +179,7 @@ pub fn tvar(
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::tstd(&[1., 2., 100.], Some((0., 3.)), (true,true), 1)?.is_finite());
+/// assert!(sci_stats::descriptive::tstd(&[1., 2., 100.], Some((0., 3.)), (true,true), 1)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -184,6 +192,10 @@ pub fn tstd(
     inclusive: (bool, bool),
     ddof: usize,
 ) -> Result<f64> {
+    if limits.is_none() {
+        sample(values, 1)?;
+        return std(values, ddof);
+    }
     let x = limited(values, limits, inclusive)?;
     std(&x, ddof)
 }
@@ -216,7 +228,7 @@ pub fn tstd(
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::tsem(&[1., 2., 100.], Some((0., 3.)), (true,true), 1)?.is_finite());
+/// assert!(sci_stats::descriptive::tsem(&[1., 2., 100.], Some((0., 3.)), (true,true), 1)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -229,6 +241,10 @@ pub fn tsem(
     inclusive: (bool, bool),
     ddof: usize,
 ) -> Result<f64> {
+    if limits.is_none() {
+        sample(values, 1)?;
+        return sem(values, ddof);
+    }
     let x = limited(values, limits, inclusive)?;
     sem(&x, ddof)
 }
@@ -260,7 +276,7 @@ pub fn tsem(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::tmin(&[1., 2., 3.], Some(2.), true)?, 2.);
+/// assert_eq!(sci_stats::descriptive::tmin(&[1., 2., 3.], Some(2.), true)?, 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -300,7 +316,7 @@ pub fn tmin(values: &[f64], limit: Option<f64>, inclusive: bool) -> Result<f64> 
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::tmax(&[1., 2., 3.], Some(2.), true)?, 2.);
+/// assert_eq!(sci_stats::descriptive::tmax(&[1., 2., 3.], Some(2.), true)?, 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -340,7 +356,7 @@ pub fn tmax(values: &[f64], limit: Option<f64>, inclusive: bool) -> Result<f64> 
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{trim1, Tail};
+/// use sci_stats::{descriptive::trim1, descriptive::Tail};
 /// assert_eq!(trim1(&[1., 2., 3., 4.], 0.25, Tail::Upper)?, vec![1., 2., 3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -356,10 +372,13 @@ pub fn trim1(values: &[f64], proportion: f64, tail: Tail) -> Result<Vec<f64>> {
     let mut x = values.to_vec();
     x.sort_by(f64::total_cmp);
     let k = (x.len() as f64 * proportion).floor() as usize;
-    Ok(match tail {
-        Tail::Lower => x[k..].to_vec(),
-        Tail::Upper => x[..x.len() - k].to_vec(),
-    })
+    match tail {
+        Tail::Lower => {
+            x.drain(..k);
+        }
+        Tail::Upper => x.truncate(x.len() - k),
+    }
+    Ok(x)
 }
 /// Unbiased cumulant estimates k₁ through k₄.
 ///
@@ -390,7 +409,7 @@ pub fn trim1(values: &[f64], proportion: f64, tail: Tail) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::kstat(&[1., 2., 3.], 2)?, 1.);
+/// assert_eq!(sci_stats::descriptive::kstat(&[1., 2., 3.], 2)?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -403,7 +422,7 @@ pub fn kstat(values: &[f64], order: usize) -> Result<f64> {
     }
     sample(values, order)?;
     let n = values.len() as f64;
-    finite(match order {
+    match match order {
         1 => mean(values)?,
         2 => variance(values, 1)?,
         3 => n * n * moment(values, 3)? / ((n - 1.) * (n - 2.)),
@@ -411,7 +430,10 @@ pub fn kstat(values: &[f64], order: usize) -> Result<f64> {
             n * n * ((n + 1.) * moment(values, 4)? - 3. * (n - 1.) * moment(values, 2)?.powi(2))
                 / ((n - 1.) * (n - 2.) * (n - 3.))
         }
-    })
+    } {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Unbiased estimated variance of k₁ or k₂.
 ///
@@ -441,7 +463,7 @@ pub fn kstat(values: &[f64], order: usize) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::kstatvar(&[1., 2., 3., 5.], 2)?.is_finite());
+/// assert!(sci_stats::descriptive::kstatvar(&[1., 2., 3., 5.], 2)?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -451,7 +473,7 @@ pub fn kstat(values: &[f64], order: usize) -> Result<f64> {
 pub fn kstatvar(values: &[f64], order: usize) -> Result<f64> {
     let n = values.len() as f64;
     let k2 = kstat(values, 2)?;
-    finite(match order {
+    match match order {
         1 => k2 / n,
         2 => (2. * n * k2 * k2 + (n - 1.) * kstat(values, 4)?) / (n * (n + 1.)),
         _ => {
@@ -459,7 +481,10 @@ pub fn kstatvar(values: &[f64], order: usize) -> Result<f64> {
                 "k-statistic variance order must be one or two",
             ));
         }
-    })
+    } {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Combined significance test for independent uniformly distributed null p-values.
 ///
@@ -492,7 +517,7 @@ pub fn kstatvar(values: &[f64], order: usize) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{combine_pvalues, CombineMethod};
+/// use sci_stats::{inference::combine_pvalues, inference::CombineMethod};
 /// assert!(combine_pvalues(&[0.1, 0.02], CombineMethod::Fisher, None)?.pvalue < 0.05);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -607,7 +632,7 @@ pub fn combine_pvalues(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::sigmaclip(&[1., 1., 1.], 3., 3.)?.values, vec![1.;3]);
+/// assert_eq!(sci_stats::descriptive::sigmaclip(&[1., 1., 1.], 3., 3.)?.values, vec![1.;3]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -622,8 +647,14 @@ pub fn sigmaclip(values: &[f64], low: f64, high: f64) -> Result<SigmaClip> {
     for _ in 0..128 {
         let m = mean(&current)?;
         let s = std(&current, 0)?;
-        let lower = finite(m - low * s)?;
-        let upper = finite(m + high * s)?;
+        let lower = match m - low * s {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
+        let upper = match m + high * s {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
         let next = current
             .iter()
             .copied()
@@ -642,4 +673,57 @@ pub fn sigmaclip(values: &[f64], low: f64, high: f64) -> Result<SigmaClip> {
     Err(Error::NumericalFailure(
         "sigma clipping exceeded 128 passes",
     ))
+}
+
+#[cfg(test)]
+mod unbounded_trim_tests {
+    use super::*;
+
+    fn assert_same(actual: Result<f64>, expected: Result<f64>) {
+        match (actual, expected) {
+            (Ok(actual), Ok(expected)) => assert_eq!(actual.to_bits(), expected.to_bits()),
+            (Err(_), Err(_)) => {}
+            (actual, expected) => panic!("mismatched results: {actual:?} vs {expected:?}"),
+        }
+    }
+
+    #[test]
+    fn unbounded_trim_avoids_copy_without_changing_statistics() {
+        for values in [
+            vec![],
+            vec![1.0],
+            vec![-0.0, 0.0, -0.0, 0.0],
+            vec![1.0, 1.0, 1.0],
+            vec![-10.0, -4.0, 1.0, 5.0, 11.0],
+            vec![-1e100, -1e80, 1e80, 1e100],
+        ] {
+            for inclusive in [(true, true), (false, true), (true, false), (false, false)] {
+                assert_same(tmean(&values, None, inclusive), mean(&values));
+                for ddof in [0, 1, 2, 8] {
+                    assert_same(
+                        tvar(&values, None, inclusive, ddof),
+                        variance(&values, ddof),
+                    );
+                    assert_same(tstd(&values, None, inclusive, ddof), std(&values, ddof));
+                    assert_same(tsem(&values, None, inclusive, ddof), sem(&values, ddof));
+                }
+            }
+        }
+
+        // Explicit limits retain their original inclusive and exclusive
+        // filtering behavior, including validation after an empty selection.
+        let values = [1.0, 2.0, 3.0, 100.0];
+        assert_eq!(
+            tmean(&values, Some((1.0, 3.0)), (false, false))
+                .unwrap()
+                .to_bits(),
+            mean(&[2.0_f64]).unwrap().to_bits()
+        );
+        assert_same(
+            tvar(&values, Some((1.0, 3.0)), (true, true), 1),
+            variance(&[1.0, 2.0, 3.0], 1),
+        );
+        assert!(tmean(&values, Some((4.0, 5.0)), (true, true)).is_err());
+        assert!(tmean(&values, Some((f64::NAN, 5.0)), (true, true)).is_err());
+    }
 }

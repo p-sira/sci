@@ -115,13 +115,13 @@ pub enum Distribution {
     /// and survival are zero, log density is −∞, and CDF is one. Quantile
     /// endpoints are μ and +∞. NaN arguments and invalid parameters are errors.
     /// Interior quantiles outside the finite range return an evaluation error.
-    /// Evaluation uses statrs 0.19's closed-form Lévy distribution privately;
-    /// its error-function approximations limit ordinary absolute accuracy to about
-    /// 1e-10, and underflow/rounding near the support boundary can lose accuracy.
+    /// Density and quantiles use statrs privately; probability tails use
+    /// Sci's shared error functions. Underflow/rounding near the support
+    /// boundary can lose accuracy.
     ///
     /// ```
-    /// let d = sci_stats::Distribution::Levy { location: 0., scale: 1. };
-    /// assert!((sci_stats::cdf(d, sci_stats::ppf(d, 0.5)?)? - 0.5).abs() < 2e-10);
+    /// let d = sci_stats::distributions::Distribution::Levy { location: 0., scale: 1. };
+    /// assert!((sci_stats::distributions::cdf(d, sci_stats::distributions::ppf(d, 0.5)?)? - 0.5).abs() < 2e-10);
     /// # Ok::<(), sci_core::Error>(())
     /// ```
     ///
@@ -224,7 +224,10 @@ fn shape(x: f64) -> Result<f64> {
 }
 fn reciprocal(x: f64) -> Result<f64> {
     positive(x)?;
-    finite(1. / x)
+    match 1. / x {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 fn count(x: f64) -> Result<u64> {
     if x.is_finite() && (0. ..=MAX_SAMPLES as f64).contains(&x) && x.fract() == 0. {
@@ -240,12 +243,15 @@ fn normal_value(mean: f64, std_dev: f64, x: f64, op: Operation) -> Result<f64> {
     normal(mean, std_dev)?;
     let standard = Normal::standard();
     if matches!(op, Operation::Ppf) {
-        let z = crate::special::ndtri(x);
+        let z = crate::special::probability::ndtri(x);
         let value = std_dev.mul_add(z, mean);
         return if x == 0. || x == 1. {
             Ok(value)
         } else {
-            finite(value)
+            match value {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }
         };
     }
     let delta = x - mean;
@@ -257,19 +263,28 @@ fn normal_value(mean: f64, std_dev: f64, x: f64, op: Operation) -> Result<f64> {
         x / std_dev - mean / std_dev
     };
     match op {
-        Operation::Cdf => finite(crate::special::ndtr(z)),
-        Operation::Sf => finite(crate::special::ndtr(-z)),
+        Operation::Cdf => match crate::special::probability::ndtr(z) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        },
+        Operation::Sf => match crate::special::probability::ndtr(-z) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        },
         Operation::LogDensity => Ok(standard.ln_pdf(z) - std_dev.ln()),
         Operation::Density => {
             let density = standard.pdf(z) / std_dev;
             // A standardized tail can underflow before division by a tiny
             // scale restores a representable density. Log space also confirms
             // whether an overflowing quotient is a true density overflow.
-            finite(if density == 0. || density.is_infinite() {
+            match if density == 0. || density.is_infinite() {
                 (standard.ln_pdf(z) - std_dev.ln()).exp()
             } else {
                 density
-            })
+            } {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }
         }
         Operation::Ppf => unreachable!(),
     }
@@ -284,7 +299,9 @@ fn levy_value(location: f64, scale: f64, x: f64, op: Operation) -> Result<f64> {
         LogDensity,
         Density,
     }
-    finite(location)?;
+    if !location.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     positive(scale)?;
     let standard = make(Levy::new(0., 1.))?;
     let observation = match op {
@@ -295,7 +312,10 @@ fn levy_value(location: f64, scale: f64, x: f64, op: Operation) -> Result<f64> {
             if x == 1. {
                 return Ok(f64::INFINITY);
             }
-            return finite(scale.mul_add(standard.inverse_cdf(x), location));
+            return match scale.mul_add(standard.inverse_cdf(x), location) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            };
         }
         Operation::Cdf => Observation::Cdf,
         Operation::Sf => Observation::Sf,
@@ -321,17 +341,31 @@ fn levy_value(location: f64, scale: f64, x: f64, op: Operation) -> Result<f64> {
         let log_density =
             -0.5 * (2. * std::f64::consts::PI).ln() - 1.5 * log_delta + 0.5 * scale.ln();
         return match observation {
-            Observation::Cdf => Ok(statrs::function::erf::erfc(root)),
-            Observation::Sf => Ok(statrs::function::erf::erf(root)),
+            Observation::Cdf => Ok(crate::special::elementary::erfc(root)),
+            Observation::Sf => Ok(crate::special::elementary::erf(root)),
             Observation::LogDensity => Ok(log_density),
-            Observation::Density => finite(log_density.exp()),
+            Observation::Density => match log_density.exp() {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            },
         };
     }
     match observation {
-        Observation::Cdf => Ok(standard.cdf(z)),
-        Observation::Sf => Ok(standard.sf(z)),
+        Observation::Cdf => Ok(if z <= 0. {
+            0.
+        } else {
+            crate::special::elementary::erfc(std::f64::consts::FRAC_1_SQRT_2 / z.sqrt())
+        }),
+        Observation::Sf => Ok(if z <= 0. {
+            1.
+        } else {
+            crate::special::elementary::erf(std::f64::consts::FRAC_1_SQRT_2 / z.sqrt())
+        }),
         Observation::LogDensity => Ok(standard.ln_pdf(z) - scale.ln()),
-        Observation::Density => finite((standard.ln_pdf(z) - scale.ln()).exp()),
+        Observation::Density => match (standard.ln_pdf(z) - scale.ln()).exp() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        },
     }
 }
 
@@ -398,13 +432,13 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
             match op {
                 // Reuse the central beta branches in the shared module.
                 Operation::Cdf if df == 1. || df == 2. || x.abs() <= df.sqrt() => {
-                    sci_special::stdtr(df, x)
+                    sci_special::probability::stdtr(df, x)
                 }
                 Operation::Sf if df == 1. || df == 2. || x.abs() <= df.sqrt() => {
-                    sci_special::stdtr(df, -x)
+                    sci_special::probability::stdtr(df, -x)
                 }
                 Operation::Ppf if df == 1. || df == 2. || (x > 0.25 && x < 0.75) => {
-                    sci_special::stdtrit(df, x)
+                    sci_special::probability::stdtrit(df, x)
                 }
                 _ => continuous(&d, x, op)?,
             }
@@ -421,11 +455,32 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
             op,
         )?,
         Distribution::Exponential { scale } => {
-            continuous(&make(Exp::new(reciprocal(scale)?))?, x, op)?
+            let d = make(Exp::new(reciprocal(scale)?))?;
+            if matches!(op, Operation::Ppf) {
+                // statrs provides the analytic inverse using ln_1p, avoiding
+                // dozens of CDF evaluations and preserving small probabilities.
+                // Retain the existing support endpoints and finite-interior rule.
+                if x == 0. {
+                    0.
+                } else if x == 1. {
+                    f64::INFINITY
+                } else {
+                    match d.inverse_cdf(x) {
+                        value if value.is_finite() => value,
+                        _ => {
+                            return Err(Error::NumericalFailure("quantile outside finite range"));
+                        }
+                    }
+                }
+            } else {
+                continuous(&d, x, op)?
+            }
         }
         Distribution::Cauchy { location, scale } => continuous(
             &{
-                finite(location)?;
+                if !location.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
                 positive(scale)?;
                 make(Cauchy::new(location, scale))?
             },
@@ -434,7 +489,9 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
         )?,
         Distribution::Laplace { location, scale } => continuous(
             &{
-                finite(location)?;
+                if !location.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
                 positive(scale)?;
                 make(Laplace::new(location, scale))?
             },
@@ -443,7 +500,9 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
         )?,
         Distribution::LogNormal { log_mean, log_std } => continuous(
             &{
-                finite(log_mean)?;
+                if !log_mean.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
                 positive(log_std)?;
                 make(LogNormal::new(log_mean, log_std))?
             },
@@ -452,8 +511,12 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
         )?,
         Distribution::Uniform { low, high } => continuous(
             &{
-                finite(low)?;
-                finite(high)?;
+                if !low.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
+                if !high.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
                 positive(high - low)?;
                 make(Uniform::new(low, high))?
             },
@@ -490,7 +553,9 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
         Distribution::Levy { location, scale } => levy_value(location, scale, x, op)?,
         Distribution::Gumbel { location, scale } => continuous(
             &{
-                finite(location)?;
+                if !location.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
                 positive(scale)?;
                 make(Gumbel::new(location, scale))?
             },
@@ -499,9 +564,15 @@ pub(super) fn evaluate(distribution: Distribution, x: f64, op: Operation) -> Res
         )?,
         Distribution::Triangular { low, high, mode } => continuous(
             &{
-                finite(low)?;
-                finite(high)?;
-                finite(mode)?;
+                if !low.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
+                if !high.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
+                if !mode.is_finite() {
+                    return Err(crate::Error::NonFiniteEvaluation);
+                }
                 positive(high - low)?;
                 make(Triangular::new(low, high, mode))?
             },
@@ -867,8 +938,8 @@ fn discrete<D: Discrete<u64, f64> + DiscreteCDF<u64, f64>>(
 /// # Examples
 ///
 /// ```
-/// let d = sci_stats::Distribution::Normal { mean: 0., std_dev: 1. };
-/// assert!(sci_stats::pdf(d, 0.)? > 0.);
+/// let d = sci_stats::distributions::Distribution::Normal { mean: 0., std_dev: 1. };
+/// assert!(sci_stats::distributions::pdf(d, 0.)? > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -910,8 +981,8 @@ pub fn pdf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let d = sci_stats::Distribution::Normal { mean: 0., std_dev: 1. };
-/// assert!(sci_stats::logpdf(d, 0.)? < 0.);
+/// let d = sci_stats::distributions::Distribution::Normal { mean: 0., std_dev: 1. };
+/// assert!(sci_stats::distributions::logpdf(d, 0.)? < 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -947,7 +1018,7 @@ pub fn logpdf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> 
 /// ## Numerical behavior
 ///
 /// Uses statrs privately. Central Student-t probabilities and quantiles reuse
-/// [`sci_special::stdtr`] and [`sci_special::stdtrit`] to preserve small deviations
+/// [`sci_special::probability::stdtr`] and [`sci_special::probability::stdtrit`] to preserve small deviations
 /// from the median. The df=1 and df=2 cases also reuse stable elementary tails;
 /// other degrees retain the statrs tail formulas.
 /// Other quantiles use bounded bracketing and bisection
@@ -957,8 +1028,8 @@ pub fn logpdf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> 
 /// # Examples
 ///
 /// ```
-/// let d = sci_stats::Distribution::Normal { mean: 0., std_dev: 1. };
-/// assert_eq!(sci_stats::cdf(d, 0.)?, 0.5);
+/// let d = sci_stats::distributions::Distribution::Normal { mean: 0., std_dev: 1. };
+/// assert_eq!(sci_stats::distributions::cdf(d, 0.)?, 0.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -994,7 +1065,7 @@ pub fn cdf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 /// ## Numerical behavior
 ///
 /// Uses statrs privately. Central Student-t probabilities and quantiles reuse
-/// [`sci_special::stdtr`] and [`sci_special::stdtrit`] to preserve small deviations
+/// [`sci_special::probability::stdtr`] and [`sci_special::probability::stdtrit`] to preserve small deviations
 /// from the median. The df=1 and df=2 cases also reuse stable elementary tails;
 /// other degrees retain the statrs tail formulas.
 /// Other quantiles use bounded bracketing and bisection
@@ -1004,8 +1075,8 @@ pub fn cdf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let d = sci_stats::Distribution::Normal { mean: 0., std_dev: 1. };
-/// assert_eq!(sci_stats::sf(d, 0.)?, 0.5);
+/// let d = sci_stats::distributions::Distribution::Normal { mean: 0., std_dev: 1. };
+/// assert_eq!(sci_stats::distributions::sf(d, 0.)?, 0.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -1042,7 +1113,7 @@ pub fn sf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 /// ## Numerical behavior
 ///
 /// Uses statrs privately. Central Student-t probabilities and quantiles reuse
-/// [`sci_special::stdtr`] and [`sci_special::stdtrit`] to preserve small deviations
+/// [`sci_special::probability::stdtr`] and [`sci_special::probability::stdtrit`] to preserve small deviations
 /// from the median. The df=1 and df=2 cases also reuse stable elementary tails;
 /// other degrees retain the statrs tail formulas.
 /// Other quantiles use bounded bracketing and bisection
@@ -1056,8 +1127,8 @@ pub fn sf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// let d = sci_stats::Distribution::Normal { mean: 0., std_dev: 1. };
-/// assert!(sci_stats::ppf(d, 0.5)?.abs() < 1e-12);
+/// let d = sci_stats::distributions::Distribution::Normal { mean: 0., std_dev: 1. };
+/// assert!(sci_stats::distributions::ppf(d, 0.5)?.abs() < 1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -1066,4 +1137,27 @@ pub fn sf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
 /// [SciPy distributions](https://docs.scipy.org/doc/scipy/reference/stats.html).
 pub fn ppf(distribution: impl Into<DistributionSpec>, x: f64) -> Result<f64> {
     composition::evaluate(distribution.into(), x, Operation::Ppf)
+}
+
+#[cfg(test)]
+mod exponential_quantile_tests {
+    use super::*;
+
+    #[test]
+    fn analytic_exponential_quantiles_preserve_tails_and_endpoints() {
+        for scale in [1e-200, 1.0, 1e200] {
+            let distribution = Distribution::Exponential { scale };
+            assert_eq!(ppf(distribution, 0.0).unwrap(), 0.0);
+            assert_eq!(ppf(distribution, 1.0).unwrap(), f64::INFINITY);
+            let tiny = ppf(distribution, 1e-20).unwrap();
+            assert!((tiny / scale / 1e-20 - 1.0).abs() < 1e-13);
+            for probability in [0.01, 0.25, 0.5, 0.9, 1.0 - 1e-12] {
+                let x = ppf(distribution, probability).unwrap();
+                assert!(x.is_finite());
+                assert!((cdf(distribution, x).unwrap() - probability).abs() < 1e-14);
+            }
+        }
+        assert!(ppf(Distribution::Exponential { scale: 1e308 }, 0.99).is_err());
+        assert!(ppf(Distribution::Exponential { scale: 0.0 }, 0.5).is_err());
+    }
 }

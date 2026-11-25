@@ -58,7 +58,7 @@ fn coefficients(b: &[f64], a: &[f64]) -> Result<(Vec<f64>, Vec<f64>)> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = lfilter(&[0.5,0.5],&[1.],&[1.,2.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -98,7 +98,7 @@ pub fn lfilter(b: &[f64], a: &[f64], x: &[f64]) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = lfilter_with_state(&[0.5,0.5],&[1.],&[1.,2.],&[0.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -161,7 +161,7 @@ fn filter_state(b: &[f64], a: &[f64], x: &[f64], initial: &[f64]) -> Result<(Vec
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = lfilter_zi(&[0.5,0.5],&[1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -171,11 +171,21 @@ fn filter_state(b: &[f64], a: &[f64], x: &[f64], initial: &[f64]) -> Result<(Vec
 /// [SciPy lfilter_zi definition](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.lfilter_zi.html).
 pub fn lfilter_zi(b: &[f64], a: &[f64]) -> Result<Vec<f64>> {
     let (b, a) = coefficients(b, a)?;
-    let denominator = crate::error::finite(a.iter().sum::<f64>())?;
+    let denominator = match a.iter().sum::<f64>() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     if denominator == 0. {
         return Err(Error::NumericalFailure("filter has a pole at DC"));
     }
-    let gain = crate::error::finite(crate::error::finite(b.iter().sum::<f64>())? / denominator)?;
+    let gain = match match b.iter().sum::<f64>() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }? / denominator
+    {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     let mut state = vec![0.; b.len() - 1];
     let mut tail = 0.;
     for j in (1..b.len()).rev() {
@@ -212,7 +222,7 @@ pub fn lfilter_zi(b: &[f64], a: &[f64]) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = lfiltic(&[0.5,0.5],&[1.],&[1.],&[2.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -262,7 +272,7 @@ pub fn lfiltic(b: &[f64], a: &[f64], past_y: &[f64], past_x: &[f64]) -> Result<V
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = filtfilt(&[0.5,0.5],&[1.],&[1.,2.,3.,4.],1)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -335,12 +345,13 @@ fn validate_sos(sos: &[[f64; 6]]) -> Result<()> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses f64 arithmetic. Cancellation and poorly conditioned filters or polynomial fits can reduce accuracy; no uniform relative-error guarantee is made. FFT routines use RustFFT, polynomial fits and DPSS use bounded private nalgebra solvers.
+/// Each section uses two transposed direct-form II states and updates one
+/// output buffer in place. Rounding and nonfinite checks remain per section.
 ///
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = sosfilt(&[[1.,0.,0.,1.,0.,0.]],&[1.,2.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -352,8 +363,22 @@ pub fn sosfilt(sos: &[[f64; 6]], x: &[f64]) -> Result<Vec<f64>> {
     validate_sos(sos)?;
     samples(x)?;
     work(sos.len(), x.len())?;
-    sos.iter()
-        .try_fold(x.to_vec(), |x, row| lfilter(&row[..3], &row[3..], &x))
+    let mut output = x.to_vec();
+    for &[b0, b1, b2, _, a1, a2] in sos {
+        let (mut state0, mut state1) = (0., 0.);
+        for sample in &mut output {
+            let input = *sample;
+            let y = b0 * input + state0;
+            state0 = state1 + b1 * input - a1 * y;
+            state1 = b2 * input - a2 * y;
+            *sample = y;
+        }
+        super::check_real(&output)?;
+        if !state0.is_finite() || !state1.is_finite() {
+            return Err(Error::NonFiniteEvaluation);
+        }
+    }
+    Ok(output)
 }
 /// Constructs each section unit-step state, scaled by all preceding sections DC gains.
 ///
@@ -382,7 +407,7 @@ pub fn sosfilt(sos: &[[f64; 6]], x: &[f64]) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = sosfilt_zi(&[[1.,0.,0.,1.,0.,0.]])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -432,7 +457,7 @@ pub fn sosfilt_zi(sos: &[[f64; 6]]) -> Result<Vec<[f64; 2]>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = sosfiltfilt(&[[1.,0.,0.,1.,0.,0.]],&[1.,2.,3.],1)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -505,7 +530,7 @@ pub fn sosfiltfilt(sos: &[[f64; 6]], x: &[f64], padlen: usize) -> Result<Vec<f64
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = sos2tf(&[[1.,0.,0.,1.,0.,0.]])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -581,7 +606,7 @@ fn response(b: &[f64], a: &[f64], frequencies: &[f64], digital: bool) -> Result<
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = freqz(&[1.],&[1.],&[0.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -619,7 +644,7 @@ pub fn freqz(b: &[f64], a: &[f64], frequencies: &[f64]) -> Result<Vec<Complex>> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = freqs(&[1.],&[1.,1.],&[0.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -636,7 +661,7 @@ pub fn freqs(b: &[f64], a: &[f64], frequencies: &[f64]) -> Result<Vec<Complex>> 
 ///
 /// `pub fn freqz_sos(sos:&[[f64;6]],frequencies:&[f64])->Result<Vec<Complex>>`
 ///
-/// Rows are `[b0,b1,b2,1,a1,a2]`; frequencies are radians/sample. Returns complex responses in input frequency order. sosfreqz is an alias.
+/// Rows are `[b0,b1,b2,1,a1,a2]`; frequencies are radians/sample. Returns complex responses in input frequency order.
 ///
 /// ## Domain
 ///
@@ -657,7 +682,7 @@ pub fn freqs(b: &[f64], a: &[f64], frequencies: &[f64]) -> Result<Vec<Complex>> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = freqz_sos(&[[1.,0.,0.,1.,0.,0.]],&[0.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -680,8 +705,6 @@ pub fn freqz_sos(sos: &[[f64; 6]], frequencies: &[f64]) -> Result<Vec<Complex>> 
     }
     super::complex_checked(output.into_iter().map(owned).collect())
 }
-/// Legacy alias for [`freqz_sos`], with identical parameters and errors.
-pub use freqz_sos as sosfreqz;
 
 /// Computes `-d arg H(ω)/dω = Re(B1/B - A1/A)`, where `C1=sum_j j c[j] exp(-iωj)`.
 ///
@@ -710,7 +733,7 @@ pub use freqz_sos as sosfreqz;
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = group_delay(&[1.],&[1.],&[0.,1.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -797,7 +820,7 @@ fn notch_peak(frequency: f64, q: f64, fs: f64, peak: bool) -> Result<TransferFun
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = iirnotch(10.,30.,100.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -835,7 +858,7 @@ pub fn iirnotch(frequency: f64, q: f64, fs: f64) -> Result<TransferFunction> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = iirpeak(10.,30.,100.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -870,7 +893,7 @@ pub fn iirpeak(frequency: f64, q: f64, fs: f64) -> Result<TransferFunction> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = kaiser_beta(60.);
 /// ```
 ///
@@ -914,7 +937,7 @@ pub fn kaiser_beta(attenuation: f64) -> f64 {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = kaiser_atten(31,0.1)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -927,7 +950,10 @@ pub fn kaiser_atten(numtaps: usize, width: f64) -> Result<f64> {
         return Err(Error::InvalidInput("numtaps must be positive"));
     }
     positive(width)?;
-    crate::error::finite(2.285 * (numtaps - 1) as f64 * PI * width + 7.95)
+    match 2.285 * (numtaps - 1) as f64 * PI * width + 7.95 {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 /// Estimates `numtaps=ceil((|ripple|-7.95)/(2.285 π width)+1)` and Kaiser beta.
 ///
@@ -956,7 +982,7 @@ pub fn kaiser_atten(numtaps: usize, width: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = kaiserord(60.,0.1)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1005,7 +1031,8 @@ pub fn kaiserord(ripple: f64, width: f64) -> Result<(usize, f64)> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
+/// use sci_signal::windows;
 /// let _result = firwin(5,&[0.2],true,&windows::Window::Hamming,true,2.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1056,8 +1083,8 @@ pub fn firwin(
                 .0
                 .iter()
                 .map(|band| {
-                    band[1] * crate::special::sinc(band[1] * t)
-                        - band[0] * crate::special::sinc(band[0] * t)
+                    band[1] * crate::special::elementary::sinc(band[1] * t)
+                        - band[0] * crate::special::elementary::sinc(band[0] * t)
                 })
                 .sum::<f64>()
                 * taper[i]
@@ -1111,7 +1138,7 @@ pub fn firwin(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = medfilt(&[1.,4.,2.],3)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1149,7 +1176,7 @@ pub fn medfilt(x: &[f64], kernel: usize) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = order_filter(&[1.,4.,2.],3,1)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1210,7 +1237,7 @@ pub fn order_filter(x: &[f64], kernel: usize, rank: usize) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = wiener(&[1.,4.,2.],3,None)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1240,15 +1267,17 @@ pub fn wiener(x: &[f64], kernel: usize, noise: Option<f64>) -> Result<Vec<f64>> 
             })
             .collect();
         let mean = local.iter().sum::<f64>() / kernel as f64;
-        let var = crate::error::finite(
-            local.iter().map(|v| v * v).sum::<f64>() / kernel as f64 - mean * mean,
-        )?;
+        let var = match local.iter().map(|v| v * v).sum::<f64>() / kernel as f64 - mean * mean {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         means.push(mean);
         variances.push(var.max(0.));
     }
-    let noise = crate::error::finite(
-        noise.unwrap_or_else(|| variances.iter().sum::<f64>() / x.len() as f64),
-    )?;
+    let noise = match noise.unwrap_or_else(|| variances.iter().sum::<f64>() / x.len() as f64) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     checked(
         x.iter()
             .zip(means)
@@ -1291,7 +1320,7 @@ pub fn wiener(x: &[f64], kernel: usize, noise: Option<f64>) -> Result<Vec<f64>> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = savgol_coeffs(5,2,0,1.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -1398,7 +1427,7 @@ fn polynomial_edge(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::filtering::*;
 /// let _result = savgol_filter(&[1.,2.,3.,4.,5.],3,1,0,1.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

@@ -28,8 +28,8 @@ fn quadratic_gradient(x: &[f64]) -> Vec<f64> {
 }
 
 /// Capped iteration budget keeping each minimization short.
-fn options(max_iterations: u64, learning_rate: f64) -> optimize::Options {
-    optimize::Options {
+fn options(max_iterations: u64, learning_rate: f64) -> optimize::minimize::Options {
+    optimize::minimize::Options {
         max_iterations,
         tolerance: 1e-8,
         learning_rate,
@@ -43,8 +43,8 @@ mod minimize_benches {
     fn minimize(bencher: Bencher) {
         let start = [-1.2, 1.0];
         bencher.bench(|| {
-            optimize::minimize(
-                |x| optimize::rosen(x).unwrap(),
+            optimize::minimize::minimize(
+                |x| optimize::derivatives::rosen(x).unwrap(),
                 black_box(&start),
                 options(200, 0.1),
             )
@@ -56,8 +56,12 @@ mod minimize_benches {
     fn try_minimize(bencher: Bencher) {
         let start = [0.0, 0.0, 0.0, 0.0];
         bencher.bench(|| {
-            optimize::try_minimize(|x| Ok(quadratic(x)), black_box(&start), options(200, 0.1))
-                .unwrap()
+            optimize::minimize::try_minimize(
+                |x| Ok(quadratic(x)),
+                black_box(&start),
+                options(200, 0.1),
+            )
+            .unwrap()
         });
     }
 
@@ -65,7 +69,7 @@ mod minimize_benches {
     fn minimize_with_gradient(bencher: Bencher) {
         let start = [0.0, 0.0, 0.0, 0.0];
         bencher.bench(|| {
-            optimize::minimize_with_gradient(
+            optimize::minimize::minimize_with_gradient(
                 quadratic,
                 quadratic_gradient,
                 black_box(&start),
@@ -79,9 +83,9 @@ mod minimize_benches {
     fn try_minimize_with_gradient(bencher: Bencher) {
         let start = [-1.2, 1.0];
         bencher.bench(|| {
-            optimize::try_minimize_with_gradient(
-                optimize::rosen,
-                optimize::rosen_der,
+            optimize::minimize::try_minimize_with_gradient(
+                optimize::derivatives::rosen,
+                optimize::derivatives::rosen_der,
                 black_box(&start),
                 options(200, 1e-3),
             )
@@ -96,26 +100,37 @@ mod derivative_benches {
     #[divan::bench]
     fn rosen(bencher: Bencher) {
         let x = values(1000, 1);
-        bencher.bench(|| optimize::rosen(black_box(&x)).unwrap());
+        bencher.bench(|| optimize::derivatives::rosen(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn rosen_der(bencher: Bencher) {
         let x = values(1000, 1);
-        bencher.bench(|| optimize::rosen_der(black_box(&x)).unwrap());
+        bencher.bench(|| optimize::derivatives::rosen_der(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn rosen_hess(bencher: Bencher) {
         let x = values(100, 1);
-        bencher.bench(|| optimize::rosen_hess(black_box(&x)).unwrap());
+        bencher.bench(|| optimize::derivatives::rosen_hess(black_box(&x)).unwrap());
     }
 
     #[divan::bench]
     fn rosen_hess_prod(bencher: Bencher) {
         let x = values(1000, 1);
         let p = values(1000, 2);
-        bencher.bench(|| optimize::rosen_hess_prod(black_box(&x), black_box(&p)).unwrap());
+        bencher.bench(|| {
+            optimize::derivatives::rosen_hess_prod(black_box(&x), black_box(&p)).unwrap()
+        });
+    }
+
+    #[divan::bench]
+    fn rosen_hess_prod_large(bencher: Bencher) {
+        let x = values(65_536, 1);
+        let p = values(65_536, 2);
+        bencher.bench(|| {
+            optimize::derivatives::rosen_hess_prod(black_box(&x), black_box(&p)).unwrap()
+        });
     }
 
     #[divan::bench]
@@ -123,8 +138,8 @@ mod derivative_benches {
         let x = values(32, 1);
         let epsilon = [1e-7];
         bencher.bench(|| {
-            optimize::approx_fprime(
-                |x| optimize::rosen_der(x).unwrap(),
+            optimize::derivatives::approx_fprime(
+                |x| optimize::derivatives::rosen_der(x).unwrap(),
                 black_box(&x),
                 black_box(&epsilon),
             )
@@ -137,13 +152,113 @@ mod derivative_benches {
         let x = values(64, 1);
         let epsilon = [1e-7];
         bencher.bench(|| {
-            optimize::check_grad(
-                |x| optimize::rosen(x).unwrap(),
-                |x| optimize::rosen_der(x).unwrap(),
+            optimize::derivatives::check_grad(
+                |x| optimize::derivatives::rosen(x).unwrap(),
+                |x| optimize::derivatives::rosen_der(x).unwrap(),
                 black_box(&x),
                 black_box(&epsilon),
             )
             .unwrap()
         });
+    }
+}
+
+mod dogbox_benches {
+    use super::*;
+    use optimize::least_squares::{DogboxOptions, dogbox_with_jacobian};
+
+    // Replicated independent residuals keep callback work small relative to the
+    // dense SVD. The logarithm forces a nonfinite trial before recovery.
+    fn solve(n: usize, copies: usize, logarithmic: bool, rank_deficient: bool) {
+        let start = vec![1.0; n];
+        let lower = vec![0.0; n];
+        let upper = vec![10.0; n];
+        let result = dogbox_with_jacobian(
+            |x| {
+                (0..n * copies)
+                    .map(|i| {
+                        let j = if rank_deficient { i % (n / 2) } else { i % n };
+                        if logarithmic {
+                            x[j].ln() + 2.0
+                        } else {
+                            x[j] - 3.0
+                        }
+                    })
+                    .collect()
+            },
+            |x| {
+                (0..n * copies)
+                    .map(|i| {
+                        let j = if rank_deficient { i % (n / 2) } else { i % n };
+                        let mut row = vec![0.0; n];
+                        row[j] = if logarithmic { x[j].recip() } else { 1.0 };
+                        row
+                    })
+                    .collect()
+            },
+            &start,
+            &lower,
+            &upper,
+            DogboxOptions::default(),
+        )
+        .unwrap();
+        black_box(result);
+    }
+
+    /// Typical bounded curve fit: `y = a·exp(-b·t) + c·exp(-d·t)` on 64 noisy
+    /// samples, starting away from the optimum with well-conditioned columns.
+    #[divan::bench]
+    fn normal(bencher: Bencher) {
+        let t: Vec<f64> = (0..64).map(|i| i as f64 * 0.125).collect();
+        let y: Vec<f64> = t
+            .iter()
+            .enumerate()
+            .map(|(i, &t)| {
+                3.0 * (-1.5 * t).exp() + 1.0 * (-0.2 * t).exp() + 1e-3 * (i as f64).sin()
+            })
+            .collect();
+        let start = [1.0, 1.0, 2.0, 0.5];
+        let lower = [0.0; 4];
+        let upper = [10.0; 4];
+        bencher.bench(|| {
+            let result = dogbox_with_jacobian(
+                |p| {
+                    t.iter()
+                        .zip(&y)
+                        .map(|(&t, &y)| p[0] * (-p[1] * t).exp() + p[2] * (-p[3] * t).exp() - y)
+                        .collect()
+                },
+                |p| {
+                    t.iter()
+                        .map(|&t| {
+                            let e1 = (-p[1] * t).exp();
+                            let e2 = (-p[3] * t).exp();
+                            vec![e1, -p[0] * t * e1, e2, -p[2] * t * e2]
+                        })
+                        .collect()
+                },
+                black_box(&start),
+                &lower,
+                &upper,
+                DogboxOptions::default(),
+            )
+            .unwrap();
+            black_box(result)
+        });
+    }
+
+    #[divan::bench]
+    fn rejected_trials(bencher: Bencher) {
+        bencher.bench(|| solve(16, 4, true, false));
+    }
+
+    #[divan::bench]
+    fn tall(bencher: Bencher) {
+        bencher.bench(|| solve(16, 32, false, false));
+    }
+
+    #[divan::bench]
+    fn rank_deficient(bencher: Bencher) {
+        bencher.bench(|| solve(16, 4, false, true));
     }
 }

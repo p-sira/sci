@@ -1,6 +1,6 @@
 [package]
 name = "sci-signal"
-version = "0.2.0"
+version = "0.3.0"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -12,15 +12,17 @@ repository = "https://github.com/p-sira/sci"
 categories = ["algorithms", "mathematics", "science"]
 keywords = ["signal-processing", "filtering", "spectral-analysis", "numerics", "fourier-transform"]
 readme = false
-include = ["/src/**", "/LICENSE"]
+include = ["/src/**", "/LICENSE", "/LICENSES/**"]
 
 [dependencies]
 sci-core.workspace = true
 sci-complex.workspace = true
 sci-special.workspace = true
 sci-fft.workspace = true
+faer.workspace = true
+dyn-stack.workspace = true
 nalgebra.workspace = true
 num-complex.workspace = true
 pm-remez.workspace = true
-xsf.workspace = true
+complex-bessel.workspace = true
 rustfft.workspace = true

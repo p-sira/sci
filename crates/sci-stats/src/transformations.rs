@@ -3,13 +3,20 @@ use std::f64::consts::TAU;
 
 fn circular(values: &[f64], low: f64, high: f64) -> Result<(f64, f64)> {
     sample(values, 1)?;
-    finite(low)?;
-    finite(high)?;
+    if !low.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
+    if !high.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     positive(high - low)?;
     let (mut c, mut s) = (0., 0.);
     let n = values.len() as f64;
     for &x in values {
-        let phase = finite(((x - low) / (high - low)) * TAU)?;
+        let phase = match ((x - low) / (high - low)) * TAU {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
         c += phase.cos() / n;
         s += phase.sin() / n;
     }
@@ -51,7 +58,7 @@ fn transform(values: &[f64], f: impl Fn(f64) -> f64) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::circmean(&[0., 0.], 0., std::f64::consts::TAU)?.abs() < 1e-14);
+/// assert!(sci_stats::descriptive::circmean(&[0., 0.], 0., std::f64::consts::TAU)?.abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -60,7 +67,10 @@ fn transform(values: &[f64], f: impl Fn(f64) -> f64) -> Result<Vec<f64>> {
 /// [SciPy `circmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.circmean.html).
 pub fn circmean(values: &[f64], low: f64, high: f64) -> Result<f64> {
     let (c, s) = circular(values, low, high)?;
-    finite(low + (high - low) * (s.atan2(c).rem_euclid(TAU) / TAU))
+    match low + (high - low) * (s.atan2(c).rem_euclid(TAU) / TAU) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Circular variance `1−|mean(exp(i*θ))|`.
 ///
@@ -90,7 +100,7 @@ pub fn circmean(values: &[f64], low: f64, high: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::circvar(&[1., 1.], 0., std::f64::consts::TAU)?, 0.);
+/// assert_eq!(sci_stats::descriptive::circvar(&[1., 1.], 0., std::f64::consts::TAU)?, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -129,7 +139,7 @@ pub fn circvar(values: &[f64], low: f64, high: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::circstd(&[0., 0.], 0., std::f64::consts::TAU, false)?, 0.);
+/// assert_eq!(sci_stats::descriptive::circstd(&[0., 0.], 0., std::f64::consts::TAU, false)?, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -173,7 +183,7 @@ pub fn circstd(values: &[f64], low: f64, high: f64, normalize: bool) -> Result<f
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::entropy(&[1., 1.], None, Some(2.))?, 1.);
+/// assert_eq!(sci_stats::descriptive::entropy(&[1., 1.], None, Some(2.))?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -254,7 +264,7 @@ pub(super) fn probabilities(values: &[f64]) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::boxcox(&[1., 2.], 1.)?, vec![0., 1.]);
+/// assert_eq!(sci_stats::transformations::boxcox(&[1., 2.], 1.)?, vec![0., 1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -263,13 +273,15 @@ pub(super) fn probabilities(values: &[f64]) -> Result<Vec<f64>> {
 /// [SciPy `boxcox`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.boxcox.html).
 pub fn boxcox(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
     sample(values, 0)?;
-    finite(lambda)?;
+    if !lambda.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     if values.iter().any(|&x| x <= 0.) {
         return Err(Error::InvalidInput(
             "Box-Cox requires positive observations",
         ));
     }
-    transform(values, |x| sci_special::boxcox(x, lambda))
+    transform(values, |x| sci_special::probability::boxcox(x, lambda))
 }
 /// Yeo–Johnson transform: Box–Cox of x+1 for x≥0; minus Box–Cox of 1−x with exponent 2−λ for x<0.
 ///
@@ -302,7 +314,7 @@ pub fn boxcox(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::yeojohnson(&[-1., 0., 1.], 1.)?, vec![-1., 0., 1.]);
+/// assert_eq!(sci_stats::transformations::yeojohnson(&[-1., 0., 1.], 1.)?, vec![-1., 0., 1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -311,12 +323,28 @@ pub fn boxcox(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
 /// [SciPy `yeojohnson`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.yeojohnson.html).
 pub fn yeojohnson(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
     sample(values, 0)?;
-    finite(lambda)?;
+    if !lambda.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
+    if lambda == 0.5 {
+        // For this common half-power, eliminate log1p/expm1 per observation.
+        // Rationalize the differences of square roots (and of the 3/2 power)
+        // so both branches still preserve tiny values near zero.
+        return transform(values, |x| {
+            if x >= 0.0 {
+                2.0 * (x / ((1.0 + x).sqrt() + 1.0))
+            } else {
+                let u = -x;
+                let root = (1.0 + u).sqrt();
+                (2.0 / 3.0) * x * ((u + root + 2.0) / (root + 1.0))
+            }
+        });
+    }
     transform(values, |x| {
         if x >= 0. {
-            sci_special::boxcox1p(x, lambda)
+            sci_special::probability::boxcox1p(x, lambda)
         } else {
-            -sci_special::boxcox1p(-x, 2. - lambda)
+            -sci_special::probability::boxcox1p(-x, 2. - lambda)
         }
     })
 }
@@ -348,7 +376,7 @@ pub fn yeojohnson(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::boxcox_llf(0., &[1., 2., 3.])?.is_finite());
+/// assert!(sci_stats::transformations::boxcox_llf(0., &[1., 2., 3.])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -357,8 +385,13 @@ pub fn yeojohnson(values: &[f64], lambda: f64) -> Result<Vec<f64>> {
 /// [SciPy `boxcox_llf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.boxcox_llf.html).
 pub fn boxcox_llf(lambda: f64, values: &[f64]) -> Result<f64> {
     sample(values, 1)?;
-    let y = boxcox(values, lambda)?;
     let logsum = values.iter().map(|x| x.ln()).sum::<f64>();
+    boxcox_llf_with_logsum(lambda, values, logsum)
+}
+
+/// Reuse the sample-only log sum across likelihood evaluations in a parameter search.
+pub(super) fn boxcox_llf_with_logsum(lambda: f64, values: &[f64], logsum: f64) -> Result<f64> {
+    let y = boxcox(values, lambda)?;
     let v = variance(&y, 0)?;
     let result = (lambda - 1.) * logsum - values.len() as f64 / 2. * v.ln();
     if result.is_nan() {
@@ -395,7 +428,7 @@ pub fn boxcox_llf(lambda: f64, values: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::yeojohnson_llf(1., &[-1., 0., 1.])?.is_finite());
+/// assert!(sci_stats::transformations::yeojohnson_llf(1., &[-1., 0., 1.])?.is_finite());
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -404,11 +437,20 @@ pub fn boxcox_llf(lambda: f64, values: &[f64]) -> Result<f64> {
 /// [SciPy `yeojohnson_llf`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.yeojohnson_llf.html).
 pub fn yeojohnson_llf(lambda: f64, values: &[f64]) -> Result<f64> {
     sample(values, 1)?;
-    let y = yeojohnson(values, lambda)?;
     let jacobian = values
         .iter()
         .map(|x| x.signum() * x.abs().ln_1p())
         .sum::<f64>();
+    yeojohnson_llf_with_jacobian(lambda, values, jacobian)
+}
+
+/// Reuse the sample-only Jacobian across likelihood evaluations in a parameter search.
+pub(super) fn yeojohnson_llf_with_jacobian(
+    lambda: f64,
+    values: &[f64],
+    jacobian: f64,
+) -> Result<f64> {
+    let y = yeojohnson(values, lambda)?;
     let result = -(values.len() as f64) / 2. * variance(&y, 0)?.ln() + (lambda - 1.) * jacobian;
     if result.is_nan() {
         Err(Error::NonFiniteEvaluation)
@@ -449,7 +491,7 @@ pub fn yeojohnson_llf(lambda: f64, values: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_stats::pmean(&[1., 3.], 1.)? - 2.).abs() < 1e-14);
+/// assert!((sci_stats::descriptive::pmean(&[1., 3.], 1.)? - 2.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -458,7 +500,9 @@ pub fn yeojohnson_llf(lambda: f64, values: &[f64]) -> Result<f64> {
 /// [SciPy `pmean`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.pmean.html).
 pub fn pmean(values: &[f64], power: f64) -> Result<f64> {
     sample(values, 1)?;
-    finite(power)?;
+    if !power.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     if power.abs() > 64. || values.iter().any(|&x| x <= 0.) {
         return Err(Error::InvalidInput(
             "power mean needs positive values and |power|<=64",
@@ -477,21 +521,30 @@ pub fn pmean(values: &[f64], power: f64) -> Result<f64> {
         // correction to the geometric mean is far below one output ulp, and
         // forming power * log(x) can underflow.
         if power.abs() < 1e-150 {
-            return finite(center.exp());
+            return match center.exp() {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            };
         }
         // Centering keeps the exponent below 0.15 in magnitude. expm1/log1p
         // retain the small correction that exp/log would round away near p=0.
         for log in &mut logs {
             *log = (power * (*log - center)).exp_m1();
         }
-        return finite((center + mean(&logs)?.ln_1p() / power).exp());
+        return match (center + mean(&logs)?.ln_1p() / power).exp() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        };
     }
     let mut logs: Vec<_> = values.iter().map(|x| power * x.ln()).collect();
     let m = logs.iter().copied().fold(f64::NEG_INFINITY, f64::max);
     for log in &mut logs {
         *log = (*log - m).exp();
     }
-    finite(((m + mean(&logs)?.ln()) / power).exp())
+    match ((m + mean(&logs)?.ln()) / power).exp() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Expectile minimizes `Σ |alpha−I(x_i≤t)|*(x_i−t)²`.
 ///
@@ -525,7 +578,7 @@ pub fn pmean(values: &[f64], power: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_stats::expectile(&[1., 2., 6.], 0.5)? - 3.).abs() < 1e-14);
+/// assert!((sci_stats::descriptive::expectile(&[1., 2., 6.], 0.5)? - 3.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -596,7 +649,7 @@ pub fn expectile(values: &[f64], alpha: f64) -> Result<f64> {
     let total = wl + wr;
     let fraction = small / total;
     let delta = other - base;
-    finite(if !fraction.is_normal() {
+    match if !fraction.is_normal() {
         // Apply tiny masses before dividing by the group count; the fraction
         // itself may underflow while the physical displacement is representable.
         base + if delta.is_finite() {
@@ -608,7 +661,10 @@ pub fn expectile(values: &[f64], alpha: f64) -> Result<f64> {
         delta.mul_add(fraction, base)
     } else {
         (1. - fraction) * base + fraction * other
-    })
+    } {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// One-dimensional Wasserstein-1 distance `∫|F_u(t)−F_v(t)|dt`.
 ///
@@ -632,13 +688,13 @@ pub fn expectile(values: &[f64], alpha: f64) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Sorts and merges CDF breakpoints in O((n+m) log(n+m)) work; no quadratic pairwise distances.
+/// Sorts each sample, then merges CDF breakpoints in linear time without a third sort.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::wasserstein_distance(&[0., 1.], &[1., 2.])?, 1.);
+/// assert_eq!(sci_stats::distances::wasserstein_distance(&[0., 1.], &[1., 2.])?, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -670,13 +726,13 @@ pub fn wasserstein_distance(first: &[f64], second: &[f64]) -> Result<f64> {
 ///
 /// ## Numerical behavior
 ///
-/// Sorts CDF breakpoints; computes the integral before taking its square root.
+/// Sorts each sample and merges CDF breakpoints without allocating a union.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::energy_distance(&[0.], &[2.])?, 2.);
+/// assert_eq!(sci_stats::distances::energy_distance(&[0.], &[2.])?, 2.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -695,24 +751,70 @@ fn empirical_distance(first: &[f64], second: &[f64], energy: bool) -> Result<f64
     }
     let a = sorted(first)?;
     let b = sorted(second)?;
-    let mut knots = a.iter().chain(&b).copied().collect::<Vec<_>>();
-    knots.sort_by(f64::total_cmp);
-    knots.dedup();
     let (mut i, mut j) = (0, 0);
     let mut integral = 0.;
-    for window in knots.windows(2) {
-        while i < a.len() && a[i] <= window[0] {
+    let mut previous = if a[0].total_cmp(&b[0]).is_le() {
+        a[0]
+    } else {
+        b[0]
+    };
+    loop {
+        // Counts at the left endpoint determine the CDF difference throughout
+        // the next interval. This also collapses ties and signed-zero knots.
+        while i < a.len() && a[i] <= previous {
             i += 1;
         }
-        while j < b.len() && b[j] <= window[0] {
+        while j < b.len() && b[j] <= previous {
             j += 1;
         }
+        let next = match (a.get(i), b.get(j)) {
+            (Some(&left), Some(&right)) => {
+                if left.total_cmp(&right).is_le() {
+                    left
+                } else {
+                    right
+                }
+            }
+            (Some(&left), None) => left,
+            (None, Some(&right)) => right,
+            (None, None) => break,
+        };
         let d = (i as f64 / a.len() as f64 - j as f64 / b.len() as f64).abs();
-        integral += finite(window[1] - window[0])? * if energy { d * d } else { d };
+        integral += match next - previous {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }? * if energy { d * d } else { d };
+        previous = next;
     }
-    finite(if energy {
+    match if energy {
         (2. * integral).sqrt()
     } else {
         integral
-    })
+    } {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
+}
+
+#[cfg(test)]
+mod distance_merge_tests {
+    use super::*;
+
+    #[test]
+    fn unequal_samples_with_ties_have_exact_cdf_integrals() {
+        // CDF differences on [0,1), [1,2), [2,3) are 2/3, 1/6, 1/2.
+        let a = [-0.0, 0.0, 2.0];
+        let b = [3.0, 1.0];
+        let w = wasserstein_distance(&a, &b).unwrap();
+        let e = energy_distance(&a, &b).unwrap();
+        assert!((w - 4.0 / 3.0).abs() < 1e-14);
+        assert!((e - 13.0_f64.sqrt() / 3.0).abs() < 1e-14);
+        assert!((wasserstein_distance(&b, &a).unwrap() - w).abs() < 1e-14);
+        assert!((energy_distance(&b, &a).unwrap() - e).abs() < 1e-14);
+
+        // Positive and negative zero are the same CDF breakpoint.
+        assert_eq!(wasserstein_distance(&[-0.0, 0.0], &[0.0]).unwrap(), 0.0);
+        assert_eq!(energy_distance(&[-0.0, 0.0], &[0.0]).unwrap(), 0.0);
+        assert!(wasserstein_distance(&[-1e308], &[1e308]).is_err());
+    }
 }

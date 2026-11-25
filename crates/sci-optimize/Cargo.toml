@@ -1,6 +1,6 @@
 [package]
 name = "sci-optimize"
-version = "0.2.0"
+version = "0.3.0"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -17,6 +17,7 @@ include = ["/src/**", "/LICENSE"]
 [dependencies]
 sci-core.workspace = true
 basin.workspace = true
+nalgebra.workspace = true
 
 [dev-dependencies]
 sci-differentiate = { path = "../sci-differentiate" }

@@ -1,6 +1,6 @@
 [package]
 name = "sci-core"
-version = "0.2.0"
+version = "0.3.0"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -13,3 +13,6 @@ categories = ["mathematics", "science"]
 keywords = ["numerics", "scientific-computing", "mathematics", "data-types", "errors"]
 readme = false
 include = ["/src/**", "/LICENSE"]
+
+[dependencies]
+num-traits.workspace = true

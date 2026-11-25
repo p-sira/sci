@@ -1,5 +1,23 @@
-//! Uniformity measures and scaling for supplied quasi-Monte Carlo samples.
+//! Sobol sequence generation, uniformity measures, and quasi-Monte Carlo scaling.
 use super::*;
+
+mod engine;
+pub use engine::QmcEngine;
+
+mod halton;
+pub use halton::Halton;
+
+mod latin_hypercube;
+pub use latin_hypercube::LatinHypercube;
+
+mod poisson_disk;
+pub use poisson_disk::{PoissonDisk, PoissonDiskHypersphere};
+
+mod sobol;
+pub use sobol::Sobol;
+
+mod transforms;
+pub use transforms::{MultinomialQMC, MultivariateNormalQMC};
 
 /// Quadrature discrepancy convention.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -142,7 +160,10 @@ pub fn discrepancy(points: &[Vec<f64>], method: Discrepancy, iterative: bool) ->
             .max(0.)
             .sqrt(),
     };
-    finite(result)
+    match result {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Updated centered discrepancy `D_new=D_initial−2*A(x_new)/(n+1)+(2ΣB(x_new,x_i)+B(x_new,x_new))/(n+1)²`.
 ///
@@ -191,17 +212,21 @@ pub fn update_discrepancy(new_point: &[f64], points: &[Vec<f64>], initial: f64) 
     for &x in new_point {
         probability_check(x)?;
     }
-    finite(initial)?;
+    if !initial.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     let n = (points.len() + 1) as f64;
     let method = Discrepancy::Centered;
     let sum = points
         .iter()
         .map(|x| pair(new_point, x, method))
         .sum::<f64>();
-    finite(
-        initial - 2. * single(new_point, method) / n
-            + (2. * sum + pair(new_point, new_point, method)) / (n * n),
-    )
+    match initial - 2. * single(new_point, method) / n
+        + (2. * sum + pair(new_point, new_point, method)) / (n * n)
+    {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 /// Affine sample scaling `y_j=lower_j+(upper_j−lower_j)x_j`, or its inverse.
 ///
@@ -262,10 +287,16 @@ pub fn scale(
                 if x < lower[j] || x > upper[j] {
                     return Err(Error::InvalidInput("point outside scaling bounds"));
                 }
-                scaled.push(finite((x - lower[j]) / (upper[j] - lower[j]))?);
+                scaled.push(match (x - lower[j]) / (upper[j] - lower[j]) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?);
             } else {
                 probability_check(x)?;
-                scaled.push(finite((1. - x) * lower[j] + x * upper[j])?);
+                scaled.push(match (1. - x) * lower[j] + x * upper[j] {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(crate::Error::NonFiniteEvaluation),
+                }?);
             }
         }
         out.push(scaled);
@@ -312,22 +343,24 @@ pub fn geometric_discrepancy(points: &[Vec<f64>], method: GeometricDiscrepancy) 
     let d = unit(points, 2)?;
     let n = points.len();
     quadratic_work(n, d)?;
-    let distance = |i: usize, j: usize| {
+    let distance_squared = |i: usize, j: usize| {
         points[i]
             .iter()
             .zip(&points[j])
-            .map(|(a, b)| (a - b).powi(2))
+            .map(|(a, b)| {
+                let delta = a - b;
+                delta * delta
+            })
             .sum::<f64>()
-            .sqrt()
     };
     if matches!(method, GeometricDiscrepancy::MinimumDistance) {
         let mut min = f64::INFINITY;
         for i in 0..n {
             for j in 0..i {
-                min = min.min(distance(i, j));
+                min = min.min(distance_squared(i, j));
             }
         }
-        return Ok(min);
+        return Ok(min.sqrt());
     }
     let mut used = vec![false; n];
     let mut best = vec![f64::INFINITY; n];
@@ -339,10 +372,10 @@ pub fn geometric_discrepancy(points: &[Vec<f64>], method: GeometricDiscrepancy) 
             .min_by(|&i, &j| best[i].total_cmp(&best[j]))
             .unwrap();
         used[i] = true;
-        total += best[i];
+        total += best[i].sqrt();
         for j in 0..n {
             if !used[j] {
-                let length = distance(i, j);
+                let length = distance_squared(i, j);
                 if length == 0. {
                     return Err(Error::InvalidInput("MST sample points must be distinct"));
                 }
@@ -353,5 +386,8 @@ pub fn geometric_discrepancy(points: &[Vec<f64>], method: GeometricDiscrepancy) 
             break;
         }
     }
-    finite(total / (n - 1) as f64)
+    match total / (n - 1) as f64 {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }

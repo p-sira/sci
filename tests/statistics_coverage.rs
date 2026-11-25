@@ -4,8 +4,8 @@ use common::vector as numbers;
 
 use sci::{Error, stats as s};
 
-fn distribution(name: &str, p: &[f64]) -> s::Distribution {
-    use s::Distribution::*;
+fn distribution(name: &str, p: &[f64]) -> s::distributions::Distribution {
+    use s::distributions::Distribution::*;
     match name {
         "Poisson" => Poisson { rate: p[0] },
         "NegativeBinomial" => NegativeBinomial {
@@ -49,9 +49,11 @@ fn support_endpoints_degenerate_distributions_and_posteriors_match_scipy() {
         assert_eq!(fields[0], reference[0]);
         let p = numbers(fields[3]);
         let got = match fields[1] {
-            "mvsdist" => s::mvsdist(&numbers(fields[4]), p[0]).unwrap().to_vec(),
+            "mvsdist" => s::estimation::mvsdist(&numbers(fields[4]), p[0])
+                .unwrap()
+                .to_vec(),
             "bayes_mvs" => {
-                let r = s::bayes_mvs(&numbers(fields[4]), p[0]).unwrap();
+                let r = s::estimation::bayes_mvs(&numbers(fields[4]), p[0]).unwrap();
                 [r.mean, r.variance, r.std_dev]
                     .into_iter()
                     .flat_map(|v| [v.statistic, v.lower, v.upper])
@@ -61,11 +63,11 @@ fn support_endpoints_degenerate_distributions_and_posteriors_match_scipy() {
                 let d = distribution(fields[2], &p);
                 let x = fields[4].parse().unwrap();
                 let result = match api {
-                    "pdf" => s::pdf(d, x),
-                    "logpdf" => s::logpdf(d, x),
-                    "cdf" => s::cdf(d, x),
-                    "sf" => s::sf(d, x),
-                    "ppf" => s::ppf(d, x),
+                    "pdf" => s::distributions::pdf(d, x),
+                    "logpdf" => s::distributions::logpdf(d, x),
+                    "cdf" => s::distributions::cdf(d, x),
+                    "sf" => s::distributions::sf(d, x),
+                    "ppf" => s::distributions::ppf(d, x),
                     _ => panic!("unknown API {api}"),
                 };
                 vec![result.unwrap_or_else(|e| panic!("{input}: {e}"))]
@@ -81,7 +83,7 @@ fn support_endpoints_degenerate_distributions_and_posteriors_match_scipy() {
 
 #[test]
 fn distribution_validation_checks_every_parameter_before_endpoint_shortcuts() {
-    use s::Distribution::*;
+    use s::distributions::Distribution::*;
     for bad in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
         let invalid = [
             Normal {
@@ -149,11 +151,11 @@ fn distribution_validation_checks_every_parameter_before_endpoint_shortcuts() {
             },
         ];
         for d in invalid {
-            assert!(s::pdf(d, 0.0).is_err(), "{d:?}");
-            assert!(s::logpdf(d, f64::INFINITY).is_err(), "{d:?}");
-            assert!(s::cdf(d, f64::INFINITY).is_err(), "{d:?}");
-            assert!(s::sf(d, f64::NEG_INFINITY).is_err(), "{d:?}");
-            assert!(s::ppf(d, 0.0).is_err(), "{d:?}");
+            assert!(s::distributions::pdf(d, 0.0).is_err(), "{d:?}");
+            assert!(s::distributions::logpdf(d, f64::INFINITY).is_err(), "{d:?}");
+            assert!(s::distributions::cdf(d, f64::INFINITY).is_err(), "{d:?}");
+            assert!(s::distributions::sf(d, f64::NEG_INFINITY).is_err(), "{d:?}");
+            assert!(s::distributions::ppf(d, 0.0).is_err(), "{d:?}");
         }
     }
     for d in [
@@ -182,14 +184,18 @@ fn distribution_validation_checks_every_parameter_before_endpoint_shortcuts() {
             high: f64::MAX,
         },
     ] {
-        assert!(s::cdf(d, f64::INFINITY).is_err(), "{d:?}");
+        assert!(s::distributions::cdf(d, f64::INFINITY).is_err(), "{d:?}");
     }
     let d = Poisson { rate: 1.0 };
     for x in [-0.1, 1.1, f64::NAN, f64::INFINITY] {
-        assert!(s::ppf(d, x).is_err());
+        assert!(s::distributions::ppf(d, x).is_err());
     }
-    let operations: [fn(s::Distribution, f64) -> sci::Result<f64>; 4] =
-        [s::pdf, s::logpdf, s::cdf, s::sf];
+    let operations: [fn(s::distributions::Distribution, f64) -> sci::Result<f64>; 4] = [
+        s::distributions::pdf,
+        s::distributions::logpdf,
+        s::distributions::cdf,
+        s::distributions::sf,
+    ];
     for f in operations {
         assert!(f(d, 9_007_199_254_740_992.0).is_err());
     }
@@ -200,7 +206,7 @@ fn resampling_preserves_late_callback_errors_and_validates_all_draws_first() {
     use std::cell::Cell;
     let error = Error::NumericalFailure("statistic rejected draw");
     let calls = Cell::new(0);
-    let result = s::permutation_test(
+    let result = s::resampling::permutation_test(
         &[1.0, 2.0],
         &[3.0, 4.0],
         |_, _| {
@@ -211,23 +217,36 @@ fn resampling_preserves_late_callback_errors_and_validates_all_draws_first() {
                 Ok(0.0)
             }
         },
-        s::Alternative::TwoSided,
+        s::inference::Alternative::TwoSided,
     );
     assert_eq!(result, Err(error));
     assert_eq!(calls.get(), 3);
     let never = |_: &[f64]| -> sci::Result<f64> { panic!("invalid draw reached callback") };
     let draws: &[&[f64]] = &[&[0.0, 1.0], &[f64::NAN, 1.0]];
-    assert!(s::monte_carlo_test(&[0.0, 1.0], draws, never, s::Alternative::Greater).is_err());
-    assert!(s::power(draws, never, 0.05).is_err());
-    assert_eq!(s::power(&[&[0.0]], |_| Ok(0.05), 0.05).unwrap().power, 0.0);
+    assert!(
+        s::resampling::monte_carlo_test(
+            &[0.0, 1.0],
+            draws,
+            never,
+            s::inference::Alternative::Greater
+        )
+        .is_err()
+    );
+    assert!(s::inference::power(draws, never, 0.05).is_err());
+    assert_eq!(
+        s::inference::power(&[&[0.0]], |_| Ok(0.05), 0.05)
+            .unwrap()
+            .power,
+        0.0
+    );
     for p in [-0.1, 1.1, f64::NAN, f64::INFINITY] {
-        assert!(s::power(&[&[0.0]], |_| Ok(p), 0.05).is_err());
+        assert!(s::inference::power(&[&[0.0]], |_| Ok(p), 0.05).is_err());
     }
 }
 
 #[test]
 fn custom_distribution_callbacks_enforce_density_probability_and_support_contracts() {
-    let bad_density = s::make_distribution(
+    let bad_density = s::distributions::make_distribution(
         0.0,
         1.0,
         |x| if x == 0.25 { Ok(-1.0) } else { Ok(1.0) },
@@ -236,10 +255,13 @@ fn custom_distribution_callbacks_enforce_density_probability_and_support_contrac
         Ok,
     )
     .unwrap();
-    assert!(s::pdf(bad_density, 0.25).is_err());
-    assert!(s::logpdf(bad_density, 0.25).is_err());
-    assert_eq!(s::pdf(bad_density, -1.0), Ok(0.0));
-    assert_eq!(s::logpdf(bad_density, 2.0), Ok(f64::NEG_INFINITY));
+    assert!(s::distributions::pdf(bad_density, 0.25).is_err());
+    assert!(s::distributions::logpdf(bad_density, 0.25).is_err());
+    assert_eq!(s::distributions::pdf(bad_density, -1.0), Ok(0.0));
+    assert_eq!(
+        s::distributions::logpdf(bad_density, 2.0),
+        Ok(f64::NEG_INFINITY)
+    );
     let invalid_callbacks: [fn(f64) -> sci::Result<f64>; 4] = [
         |_| Ok(-0.1),
         |_| Ok(1.1),
@@ -248,11 +270,21 @@ fn custom_distribution_callbacks_enforce_density_probability_and_support_contrac
     ];
     for callback in invalid_callbacks {
         assert!(
-            s::make_distribution(0.0, 1.0, |_| Ok(1.0), callback, |x| Ok(1.0 - x), Ok).is_err()
+            s::distributions::make_distribution(
+                0.0,
+                1.0,
+                |_| Ok(1.0),
+                callback,
+                |x| Ok(1.0 - x),
+                Ok
+            )
+            .is_err()
         );
-        assert!(s::make_distribution(0.0, 1.0, |_| Ok(1.0), Ok, callback, Ok).is_err());
+        assert!(
+            s::distributions::make_distribution(0.0, 1.0, |_| Ok(1.0), Ok, callback, Ok).is_err()
+        );
     }
-    let d = s::make_distribution(
+    let d = s::distributions::make_distribution(
         0.0,
         1.0,
         |_| Ok(1.0),
@@ -261,11 +293,11 @@ fn custom_distribution_callbacks_enforce_density_probability_and_support_contrac
         |p| if p == 0.25 { Ok(2.0) } else { Ok(p) },
     )
     .unwrap();
-    assert!(s::cdf(d, 0.25).is_err());
-    assert!(s::sf(d, 0.25).is_err());
-    assert!(s::ppf(d, 0.25).is_err());
+    assert!(s::distributions::cdf(d, 0.25).is_err());
+    assert!(s::distributions::sf(d, 0.25).is_err());
+    assert!(s::distributions::ppf(d, 0.25).is_err());
     let error = Error::NumericalFailure("custom probability failed");
-    let d = s::make_distribution(
+    let d = s::distributions::make_distribution(
         0.0,
         1.0,
         |_| Ok(1.0),
@@ -280,12 +312,12 @@ fn custom_distribution_callbacks_enforce_density_probability_and_support_contrac
         Ok,
     )
     .unwrap();
-    assert_eq!(s::cdf(d, 0.25), Err(error));
+    assert_eq!(s::distributions::cdf(d, 0.25), Err(error));
 }
 
 #[test]
 fn discrete_quantiles_are_left_continuous_inverse_cdfs() {
-    use s::Distribution::*;
+    use s::distributions::Distribution::*;
     for d in [
         Binomial {
             trials: 20.0,
@@ -305,12 +337,12 @@ fn discrete_quantiles_are_left_continuous_inverse_cdfs() {
     ] {
         let mut previous = f64::NEG_INFINITY;
         for p in [0.01, 0.1, 0.5, 0.9, 0.99] {
-            let q = s::ppf(d, p).unwrap();
+            let q = s::distributions::ppf(d, p).unwrap();
             assert!(q >= previous && q.fract() == 0.0);
-            assert!(s::cdf(d, q).unwrap() >= p - 2e-14);
-            assert!(s::cdf(d, q - 1.0).unwrap() < p + 2e-14);
+            assert!(s::distributions::cdf(d, q).unwrap() >= p - 2e-14);
+            assert!(s::distributions::cdf(d, q - 1.0).unwrap() < p + 2e-14);
             assert_close(
-                s::cdf(d, q).unwrap() + s::sf(d, q).unwrap(),
+                s::distributions::cdf(d, q).unwrap() + s::distributions::sf(d, q).unwrap(),
                 1.0,
                 2e-10,
                 2e-10,

@@ -1,6 +1,6 @@
 [package]
 name = "sci-fft"
-version = "0.2.0"
+version = "0.3.0"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -12,13 +12,19 @@ repository = "https://github.com/p-sira/sci"
 categories = ["algorithms", "mathematics", "science"]
 keywords = ["fft", "fourier-transform", "signal-processing", "numerics", "dct"]
 readme = false
-include = ["/src/**", "/LICENSE"]
+include = ["/src/**", "/LICENSE", "/LICENSES/**"]
+
+[features]
+default = ["hankel"]
+hankel = ["dep:special"]
 
 [dependencies]
+num-traits.workspace = true
+numeric_literals.workspace = true
 sci-core.workspace = true
 sci-complex.workspace = true
 num-complex.workspace = true
 rustfft.workspace = true
 realfft.workspace = true
 rustdct.workspace = true
-xsf.workspace = true
+special = { workspace = true, optional = true }

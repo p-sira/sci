@@ -53,7 +53,7 @@ fn binomial(n: usize, k: usize) -> f64 {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::toeplitz(&[1.,2.], Some(&[9.,3.]))?, vec![vec![1.,3.],vec![2.,1.]]);
+/// assert_eq!(sci_linalg::structured::toeplitz(&[1.,2.], Some(&[9.,3.]))?, vec![vec![1.,3.],vec![2.,1.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -68,8 +68,8 @@ pub fn toeplitz(
     let c = c_input.as_ref();
     let r = r.unwrap_or(c);
     size(c.len(), r.len())?;
-    crate::error::finite_slice(c)?;
-    crate::error::finite_slice(r)?;
+    crate::error::is_finite_slice(c)?;
+    crate::error::is_finite_slice(r)?;
     Ok((0..c.len())
         .map(|i| {
             (0..r.len())
@@ -103,7 +103,7 @@ pub fn toeplitz(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::hankel(&[1.,2.],None)?,vec![vec![1.,2.],vec![2.,0.]]);
+/// assert_eq!(sci_linalg::structured::hankel(&[1.,2.],None)?,vec![vec![1.,2.],vec![2.,0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -115,9 +115,9 @@ pub fn hankel(c: &(impl super::VectorInput + ?Sized), r: Option<&[f64]>) -> Resu
     let c = c_input.as_ref();
     let n = r.map_or(c.len(), <[f64]>::len);
     size(c.len(), n)?;
-    crate::error::finite_slice(c)?;
+    crate::error::is_finite_slice(c)?;
     if let Some(r) = r {
-        crate::error::finite_slice(r)?;
+        crate::error::is_finite_slice(r)?;
     }
     Ok((0..c.len())
         .map(|i| {
@@ -158,7 +158,7 @@ pub fn hankel(c: &(impl super::VectorInput + ?Sized), r: Option<&[f64]>) -> Resu
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::circulant(&[1.,2.])?,vec![vec![1.,2.],vec![2.,1.]]);
+/// assert_eq!(sci_linalg::structured::circulant(&[1.,2.])?,vec![vec![1.,2.],vec![2.,1.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -170,9 +170,13 @@ pub fn circulant(c: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>
     let c = c_input.as_ref();
     let n = c.len();
     size(n, n)?;
-    crate::error::finite_slice(c)?;
+    crate::error::is_finite_slice(c)?;
     Ok((0..n)
-        .map(|i| (0..n).map(|j| c[(i + n - j) % n]).collect())
+        .map(|i| {
+            (0..n)
+                .map(|j| c[if i >= j { i - j } else { n + i - j }])
+                .collect()
+        })
         .collect())
 }
 /// Constructs the Hilbert matrix `H[i,j]=1/(i+j+1)`, using zero-based indices.
@@ -200,7 +204,7 @@ pub fn circulant(c: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::hilbert(1)?,vec![vec![1.]]);
+/// assert_eq!(sci_linalg::structured::hilbert(1)?,vec![vec![1.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -238,7 +242,7 @@ pub fn hilbert(n: usize) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::invhilbert(2)?,vec![vec![4.,-6.],vec![-6.,12.]]);
+/// assert_eq!(sci_linalg::structured::invhilbert(2)?,vec![vec![4.,-6.],vec![-6.,12.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -290,7 +294,7 @@ pub fn invhilbert(n: usize) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::pascal(2,sci_linalg::PascalKind::Lower)?,vec![vec![1.,0.],vec![1.,1.]]);
+/// assert_eq!(sci_linalg::structured::pascal(2,sci_linalg::structured::PascalKind::Lower)?,vec![vec![1.,0.],vec![1.,1.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -352,7 +356,7 @@ pub fn pascal(n: usize, kind: PascalKind) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::invpascal(2,sci_linalg::PascalKind::Symmetric)?,vec![vec![2.,-1.],vec![-1.,1.]]);
+/// assert_eq!(sci_linalg::structured::invpascal(2,sci_linalg::structured::PascalKind::Symmetric)?,vec![vec![2.,-1.],vec![-1.,1.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -413,7 +417,7 @@ pub fn invpascal(n: usize, kind: PascalKind) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::hadamard(2)?,vec![vec![1.,1.],vec![1.,-1.]]);
+/// assert_eq!(sci_linalg::structured::hadamard(2)?,vec![vec![1.,1.],vec![1.,-1.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -466,7 +470,7 @@ pub fn hadamard(n: usize) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::helmert(1,true)?,vec![vec![1.]]);
+/// assert_eq!(sci_linalg::structured::helmert(1,true)?,vec![vec![1.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -524,7 +528,7 @@ pub fn helmert(n: usize, full: bool) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::fiedler(&[2.,5.])?,vec![vec![0.,3.],vec![3.,0.]]);
+/// assert_eq!(sci_linalg::structured::fiedler(&[2.,5.])?,vec![vec![0.,3.],vec![3.,0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -535,7 +539,7 @@ pub fn fiedler(a: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>> 
     let a_input = super::input::vector_slice(a)?;
     let a = a_input.as_ref();
     size(a.len(), a.len())?;
-    crate::error::finite_slice(a)?;
+    crate::error::is_finite_slice(a)?;
     output(
         a.iter()
             .map(|x| a.iter().map(|y| (x - y).abs()).collect())
@@ -567,7 +571,7 @@ pub fn fiedler(a: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>> 
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::companion(&[1.,-3.,2.])?,vec![vec![3.,-2.],vec![1.,0.]]);
+/// assert_eq!(sci_linalg::structured::companion(&[1.,-3.,2.])?,vec![vec![3.,-2.],vec![1.,0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -584,7 +588,7 @@ pub fn companion(a: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>
     }
     let n = a.len() - 1;
     size(n, n)?;
-    crate::error::finite_slice(a)?;
+    crate::error::is_finite_slice(a)?;
     let mut c = vec![vec![0.0; n]; n];
     for j in 0..n {
         c[0][j] = -a[j + 1] / a[0];
@@ -619,7 +623,7 @@ pub fn companion(a: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::fiedler_companion(&[1.,-3.,2.])?,vec![vec![3.,-2.],vec![1.,0.]]);
+/// assert_eq!(sci_linalg::structured::fiedler_companion(&[1.,-3.,2.])?,vec![vec![3.,-2.],vec![1.,0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -629,7 +633,7 @@ pub fn companion(a: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>
 pub fn fiedler_companion(a: &(impl super::VectorInput + ?Sized)) -> Result<Vec<Vec<f64>>> {
     let a_input = super::input::vector_slice(a)?;
     let a = a_input.as_ref();
-    crate::error::finite_slice(a)?;
+    crate::error::is_finite_slice(a)?;
     if a.is_empty() {
         return Ok(vec![]);
     }
@@ -686,7 +690,7 @@ pub fn fiedler_companion(a: &(impl super::VectorInput + ?Sized)) -> Result<Vec<V
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::leslie(&[2.,3.],&[0.5])?,vec![vec![2.,3.],vec![0.5,0.]]);
+/// assert_eq!(sci_linalg::structured::leslie(&[2.,3.],&[0.5])?,vec![vec![2.,3.],vec![0.5,0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -706,10 +710,10 @@ pub fn leslie(
         return Err(Error::DimensionMismatch);
     }
     size(n, n)?;
-    crate::error::finite_slice(f)?;
-    crate::error::finite_slice(s)?;
+    crate::error::is_finite_slice(f)?;
+    crate::error::is_finite_slice(s)?;
     let mut a = vec![vec![0.0; n]; n];
-    a[0] = f.to_vec();
+    a[0].copy_from_slice(f);
     for (i, &v) in s.iter().enumerate() {
         a[i + 1][i] = v;
     }
@@ -743,7 +747,7 @@ pub fn leslie(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::block_diag(&[vec![vec![2.]],vec![vec![3.]]])?,vec![vec![2.,0.],vec![0.,3.]]);
+/// assert_eq!(sci_linalg::structured::block_diag(&[vec![vec![2.]],vec![vec![3.]]])?,vec![vec![2.,0.],vec![0.,3.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -760,7 +764,10 @@ pub fn block_diag(blocks: &[impl super::MatrixInput]) -> Result<Vec<Vec<f64>>> {
         let (r, c) = super::input::checked_shape(block)?;
         for i in 0..r {
             for j in 0..c {
-                crate::error::finite(block.matrix_entry(i, j))?;
+                match block.matrix_entry(i, j) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
             }
         }
         m = m
@@ -810,7 +817,7 @@ pub fn block_diag(blocks: &[impl super::MatrixInput]) -> Result<Vec<Vec<f64>>> {
 /// # Examples
 ///
 /// ```
-/// let c=sci_linalg::convolution_matrix(&[1.,2.],2,sci_signal::Mode::Full)?;
+/// let c=sci_linalg::structured::convolution_matrix(&[1.,2.],2,sci_signal::Mode::Full)?;
 /// assert_eq!(c,vec![vec![1.,0.],vec![2.,1.],vec![0.,2.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -828,7 +835,7 @@ pub fn convolution_matrix(
     if a.is_empty() || n == 0 {
         return Err(Error::InvalidInput("convolution lengths must be positive"));
     }
-    crate::error::finite_slice(a)?;
+    crate::error::is_finite_slice(a)?;
     let total = a
         .len()
         .checked_add(n - 1)
@@ -877,7 +884,7 @@ pub fn convolution_matrix(
 /// # Examples
 ///
 /// ```
-/// let f=sci_linalg::dft(2,sci_linalg::DftScale::None)?;
+/// let f=sci_linalg::structured::dft(2,sci_linalg::structured::DftScale::None)?;
 /// assert!((f[1][1].re+1.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -934,7 +941,7 @@ pub fn dft(n: usize, scale: DftScale) -> Result<Vec<Vec<Complex>>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::diagsvd(&[2.,1.],2,3)?,vec![vec![2.,0.,0.],vec![0.,1.,0.]]);
+/// assert_eq!(sci_linalg::structured::diagsvd(&[2.,1.],2,3)?,vec![vec![2.,0.,0.],vec![0.,1.,0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -952,7 +959,7 @@ pub fn diagsvd(
     if s.len() != m.min(n) {
         return Err(Error::DimensionMismatch);
     }
-    crate::error::finite_slice(s)?;
+    crate::error::is_finite_slice(s)?;
     let mut a = vec![vec![0.0; n]; m];
     for (i, &v) in s.iter().enumerate() {
         a[i][i] = v;

@@ -1,5 +1,6 @@
 use crate::{Error, Matrix, Result, SparseMatrix, VALUES, bounded_read};
-use std::io::{Read, Write};
+use sci_core::csr;
+use std::io::{BufWriter, Read, Write};
 
 /// A real Matrix Market matrix, with explicit dense shape or shared CSR storage.
 #[derive(Clone, Debug, PartialEq)]
@@ -146,7 +147,7 @@ fn value(s: &str, field: &str) -> Result<f64> {
 /// axes or stored entries above 1,000,000. Payload contents are not validated.
 /// # Examples
 /// ```
-/// let h = sci_io::mminfo(&b"%%MatrixMarket matrix array real general\n1 1\n2\n"[..])?;
+/// let h = sci_io::matrix_market::mminfo(&b"%%MatrixMarket matrix array real general\n1 1\n2\n"[..])?;
 /// assert_eq!((h.rows, h.cols, h.entries), (1, 1, 1));
 /// # Ok::<(), sci_io::Error>(())
 /// ```
@@ -170,18 +171,18 @@ pub fn mminfo(reader: impl Read) -> Result<MatrixMarketInfo> {
 /// Symmetric coordinates must lie in the lower triangle; skew diagonals are zero.
 /// # Returns
 /// [`MarketMatrix`]; off-diagonal triangular entries are reflected, negated for
-/// skew symmetry. Duplicate coordinates are summed in input order by Sci sparse.
+/// skew symmetry. Duplicate coordinates are summed in input order by shared CSR.
 /// # Errors
 /// Invalid/truncated/excess data, unsupported complex or large integer fields,
 /// invalid indices/symmetry, I/O failure, >64 MiB bytes, or more than 1,000,000
 /// dense cells, coordinate records, or expanded sparse entries.
 /// # Numerical behavior
 /// Real text is rounded to nearest f64; dense reordering is exact. Sparse duplicate
-/// addition follows [`sci_sparse::from_coo`]. Comments and blank lines are skipped.
+/// addition follows [`sci_core::csr::from_coo`]. Comments and blank lines are skipped.
 /// # Examples
 /// ```
-/// let a = sci_io::mmread(&b"%%MatrixMarket matrix coordinate real general\n1 1 1\n1 1 3\n"[..])?;
-/// assert!(matches!(a, sci_io::MarketMatrix::Sparse(_)));
+/// let a = sci_io::matrix_market::mmread(&b"%%MatrixMarket matrix coordinate real general\n1 1 1\n1 1 3\n"[..])?;
+/// assert!(matches!(a, sci_io::matrix_market::MarketMatrix::Sparse(_)));
 /// # Ok::<(), sci_io::Error>(())
 /// ```
 /// # References
@@ -237,7 +238,7 @@ pub fn mmread(reader: impl Read) -> Result<MarketMatrix> {
         if records.next().is_some() {
             return Err(invalid());
         }
-        return Ok(MarketMatrix::Sparse(sci_sparse::from_coo(
+        return Ok(MarketMatrix::Sparse(csr::from_coo(
             h.rows,
             h.cols,
             &coordinates,
@@ -291,15 +292,18 @@ pub fn mmread(reader: impl Read) -> Result<MarketMatrix> {
 /// Shortest round-trip exponential f64 formatting; no arithmetic or densification.
 /// # Examples
 /// ```
-/// let a = sci_io::MarketMatrix::Dense { rows:1, cols:1, data:vec![2.0] };
+/// let a = sci_io::matrix_market::MarketMatrix::Dense { rows:1, cols:1, data:vec![2.0] };
 /// let mut bytes = Vec::new();
-/// sci_io::mmwrite(&mut bytes, &a)?;
-/// assert_eq!(sci_io::mmread(bytes.as_slice())?, a);
+/// sci_io::matrix_market::mmwrite(&mut bytes, &a)?;
+/// assert_eq!(sci_io::matrix_market::mmread(bytes.as_slice())?, a);
 /// # Ok::<(), sci_io::Error>(())
 /// ```
 /// # References
 /// [NIST Matrix Market](https://math.nist.gov/MatrixMarket/formats.html).
-pub fn mmwrite(mut writer: impl Write, a: &MarketMatrix) -> Result<()> {
+pub fn mmwrite(writer: impl Write, a: &MarketMatrix) -> Result<()> {
+    // Matrix Market is line-oriented; writing each scalar to an unbuffered file
+    // would otherwise issue one small write per value.
+    let mut writer = BufWriter::new(writer);
     match a {
         MarketMatrix::Dense { rows, cols, data } => {
             if *rows > VALUES
@@ -320,7 +324,7 @@ pub fn mmwrite(mut writer: impl Write, a: &MarketMatrix) -> Result<()> {
             }
         }
         MarketMatrix::Sparse(a) => {
-            sci_sparse::validate(a)?;
+            csr::validate(a)?;
             writeln!(
                 writer,
                 "%%MatrixMarket matrix coordinate real general\n{} {} {}",
@@ -335,6 +339,8 @@ pub fn mmwrite(mut writer: impl Write, a: &MarketMatrix) -> Result<()> {
             }
         }
     }
+    // Drain our buffer but leave flushing the caller's destination to them.
+    writer.into_inner().map_err(|e| Error::Io(e.into_error()))?;
     Ok(())
 }
 
@@ -346,7 +352,7 @@ impl MarketMatrix {
     /// `n > 0`, which shared row storage cannot represent. Sparse input must be finite.
     /// # Examples
     /// ```
-    /// let a = sci_io::MarketMatrix::Dense {rows:1, cols:2, data:vec![1.0,2.0]};
+    /// let a = sci_io::matrix_market::MarketMatrix::Dense {rows:1, cols:2, data:vec![1.0,2.0]};
     /// assert_eq!(a.to_matrix()?, vec![vec![1.0,2.0]]);
     /// # Ok::<(), sci_io::Error>(())
     /// ```
@@ -358,7 +364,7 @@ impl MarketMatrix {
                         "shared rows cannot represent shape (0,n)",
                     ));
                 }
-                Ok(sci_sparse::to_dense(a)?)
+                Ok(csr::to_dense(a)?)
             }
             Self::Dense { rows, cols, data } => {
                 if *rows > VALUES

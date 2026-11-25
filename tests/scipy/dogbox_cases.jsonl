@@ -1,0 +1,16 @@
+{"id": "linear_square", "model": "linear", "x0": [-3.0, 4.0], "lower": ["-inf", "-inf"], "upper": ["inf", "inf"], "a": [[2.0, -1.0], [1.0, 3.0]], "b": [1.0, 7.0]}
+{"id": "linear_overdetermined", "model": "linear", "x0": [-1.0, 1.0], "lower": [-2.0, -2.0], "upper": [2.0, 2.0], "a": [[1.0, 2.0], [2.0, -1.0], [1.0, -1.0]], "b": [1.0, 0.0, 0.5]}
+{"id": "linear_both_bounds", "model": "linear", "x0": [0.2, -0.1], "lower": [-1.0, -2.0], "upper": [1.0, 1.0], "a": [[1.0, 0.0], [0.0, 1.0]], "b": [3.0, -4.0]}
+{"id": "linear_one_bound", "model": "linear", "x0": [0.0, 0.0], "lower": [-2.0, -2.0], "upper": [1.0, 2.0], "a": [[1.0, 0.0], [0.0, 2.0], [1.0, 1.0]], "b": [2.0, -3.0, 0.0]}
+{"id": "rosenbrock_unbounded", "model": "rosenbrock", "x0": [-1.2, 1.0], "lower": ["-inf", "-inf"], "upper": ["inf", "inf"]}
+{"id": "rosenbrock_bounded", "model": "rosenbrock", "x0": [0.0, 0.0], "lower": [-1.0, -1.0], "upper": [0.8, 2.0]}
+{"id": "exponential_noisy", "model": "exponential", "x0": [0.9, -1.2], "lower": [0.0, -3.0], "upper": [5.0, 0.0], "a": [0.0, 0.5, 1.0, 1.5, 2.0, 2.5], "b": [2.03, 1.37, 1.02, 0.68, 0.49, 0.34]}
+{"id": "linear_rank_deficient", "model": "linear", "x0": [0.4, 0.3], "lower": ["-inf", "-inf"], "upper": ["inf", "inf"], "a": [[1.0, 1.0], [2.0, 2.0], [3.0, 3.0]], "b": [3.0, 6.0, 9.0]}
+{"id": "linear_ill_conditioned", "model": "linear", "x0": [-1.0, 0.0], "lower": ["-inf", "-inf"], "upper": ["inf", "inf"], "a": [[1.0, 1.0], [1.0, 1.0001], [1.0, 0.9999]], "b": [2.0, 2.0002, 1.9998]}
+{"id": "linear_underdetermined", "model": "linear", "x0": [0.0, 0.0, 0.0], "lower": ["-inf", "-inf", "-inf"], "upper": ["inf", "inf", "inf"], "a": [[1.0, 1.0, 0.0], [0.0, 1.0, 1.0]], "b": [3.0, 2.0]}
+{"id": "linear_underdetermined_bounded", "model": "linear", "x0": [0.2, 0.3, 0.4], "lower": [0.0, 0.0, 0.0], "upper": [1.0, 3.0, 3.0], "a": [[1.0, 1.0, 0.0], [0.0, 1.0, 1.0]], "b": [3.0, 2.0]}
+{"id": "nonlinear_underdetermined", "model": "curved", "x0": [0.1, 0.1], "lower": [-2.0, -2.0], "upper": [2.0, 2.0], "b": [1.5]}
+{"id": "linear_rounded_upper", "model": "linear", "x0": [-0.3776114357451714], "lower": ["-inf"], "upper": [0.11452229818357945], "a": [[1.0]], "b": [1.1145222981835794]}
+{"id": "linear_rounded_lower", "model": "linear", "x0": [0.3776114357451714], "lower": [-0.11452229818357945], "upper": ["inf"], "a": [[1.0]], "b": [-1.1145222981835794]}
+{"id": "square_negative_start", "model": "square", "x0": [-7.450580596923828e-09], "lower": ["-inf"], "upper": ["inf"], "a": [1.0], "b": [1.0]}
+{"id": "square_scaled_negative_start", "model": "square", "x0": [-7.450580596923828e-09], "lower": ["-inf"], "upper": ["inf"], "a": [100000000.0], "b": [1.0]}

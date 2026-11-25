@@ -3,7 +3,7 @@ mod spatial;
 pub use distance::*;
 pub use spatial::*;
 
-use crate::{Error, Result, error::finite_slice};
+use crate::{Error, Result, error::is_finite_slice};
 
 const MAX_ENTRIES: usize = 1_000_000;
 const MAX_WORK: usize = 10_000_000;
@@ -23,7 +23,7 @@ fn points(x: &[Vec<f64>]) -> Result<usize> {
         if row.len() != d {
             return Err(Error::DimensionMismatch);
         }
-        finite_slice(row)?;
+        is_finite_slice(row)?;
     }
     Ok(d)
 }
@@ -33,8 +33,8 @@ fn pair(u: &[f64], v: &[f64]) -> Result<()> {
         return Err(Error::DimensionMismatch);
     }
     bound(Some(u.len()), MAX_ENTRIES)?;
-    finite_slice(u)?;
-    finite_slice(v)
+    is_finite_slice(u)?;
+    is_finite_slice(v)
 }
 
 fn evaluated(value: f64) -> Result<f64> {

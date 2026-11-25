@@ -23,28 +23,50 @@
 
 **Sci** is a family of scientific computing crates with a unified Rust interface. The philosophy of Sci is to build on Rust's scientific ecosystem maintained by domain experts, while Sci supplies a consistent interface, input validation, and interoperability. Shared types let results flow between modules, from differentiation into optimization or Fourier analysis into statistics.
 
+See [the migration guide](MIGRATING.md) for the breaking API changes in Sci 0.3.
+Generic numerical APIs follow ellip's `T: Float` convention and support native
+`f32`/`f64` arithmetic. Shared containers default to `f64`; see
+[precision coverage](function_coverages/GENERIC_FLOAT_COVERAGE.md) for supported
+functions and remaining binary64 APIs.
+
 ## Installation
 
 ```shell
 cargo add sci
 ```
 
-All 16 modules are enabled by default. Select only the modules you need with:
+All 17 modules are enabled by default. Select only the modules you need with:
 
 ```shell
 cargo add sci --no-default-features --features fft,complex
 ```
 
-Rust 1.89 or later is required. Builds enabling `fft`, `special`, `cluster`,
-`integrate`, `io`, `linalg`, `signal`, `sparse`, or `stats` require a C++17 compiler and libclang
-for the private `xsf` backend, including through transitive dependencies.
+The default feature set includes Hankel transforms, all I/O formats, and sparse
+NPZ interchange. With `default-features = false`, select these separately:
+
+| Feature | Additional capability |
+| --- | --- |
+| `fft-hankel` | `fft::{fht, ifht, fhtoffset}` using FFTLog |
+| `io-matrix-market` | Matrix Market files |
+| `io-wav` | WAV audio |
+| `io-matlab` | Dense numeric MATLAB Level-5 files |
+| `sparse-npz` | Sparse NPZ reading and writing |
+
+Each feature enables its parent module. All FFT transforms avoid XSF; `io` provides
+shared I/O types without codecs; `sparse` avoids ZIP and compression. Domain
+crates retain their full default APIs; use their `hankel`, `matrix-market`,
+`wav`, `matlab`, and `npz` features for the same selection. Cargo combines
+features requested by all dependencies in a build.
+
+Rust 1.89 or later is required. Special-function kernels are implemented in pure Rust; no C++ compiler or
+libclang is needed.
 
 ## Modules
 
 | Area | Modules and Cargo features |
 | --- | --- |
 | Numerical methods | [`differentiate`](https://docs.rs/sci-differentiate), [`integrate`](https://docs.rs/sci-integrate), [`interpolate`](https://docs.rs/sci-interpolate), [`optimize`](https://docs.rs/sci-optimize) |
-| Data analysis | [`filter`](https://docs.rs/sci-filter), [`cluster`](https://docs.rs/sci-cluster), [`linalg`](https://docs.rs/sci-linalg), [`sparse`](https://docs.rs/sci-sparse), [`spatial`](https://docs.rs/sci-spatial), [`stats`](https://docs.rs/sci-stats) |
+| Data analysis | [`filter`](https://docs.rs/sci-filter), [`cluster`](https://docs.rs/sci-cluster), [`graph`](https://docs.rs/sci-graph), [`linalg`](https://docs.rs/sci-linalg), [`sparse`](https://docs.rs/sci-sparse), [`spatial`](https://docs.rs/sci-spatial), [`stats`](https://docs.rs/sci-stats) |
 | Transforms and signals | [`fft`](https://docs.rs/sci-fft), [`signal`](https://docs.rs/sci-signal) |
 | Scientific file formats | [`io`](https://docs.rs/sci-io) |
 | Mathematical functions | [`complex`](https://docs.rs/sci-complex), [`constants`](https://docs.rs/sci-constants), [`special`](https://docs.rs/sci-special) |
@@ -52,10 +74,14 @@ for the private `xsf` backend, including through transitive dependencies.
 Scientific I/O supports Matrix Market, WAV and a documented dense numeric MATLAB subset.
 
 Linear algebra accepts shared rows and faer, ndarray, or nalgebra storage.
-Sparse operations use shared CSR/COO storage, with graph algorithms, direct and iterative solves, spectral routines, and NPZ interchange.
+Sparse operations use shared CSR/COO storage, with direct and iterative solves, spectral routines, and NPZ interchange. Graph algorithms live in `sci-graph` and accept shared CSR adjacency matrices, without requiring `sci-sparse`.
 
 ## Documentation
 
 - For individual module documentations, please follow the link in [Modules](#modules).
 - [Data types and numerical conventions](docs/conventions.md).
 - [Development, reference fixtures, and validation](docs/development.md).
+- [Design principles and crate boundaries](docs/design-principles.md).
+- [Numerical quality standard (proposed)](docs/numerical-quality-standard.md).
+- [Independent Sci 0.3 numerical accuracy comparisons](https://github.com/p-sira/sci-testing/tree/6f20104f14f44ac6a88a59378a4ee0455cf8eb7e/docs/accuracy).
+- [Roadmap for updating `sci-testing` to Sci 0.3](docs/sci-testing-roadmap.md).

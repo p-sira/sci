@@ -11,8 +11,8 @@ observation sigma points, unlike the cached-point FilterPy default.
 Run: uv run tests/scipy/generate_filter.py.
 """
 import csv
-import json
 from pathlib import Path
+from case_catalog import read_cases
 
 import numpy as np
 import scipy
@@ -134,7 +134,7 @@ def reference(name, args):
 
 
 def main():
-    cases = json.loads((ROOT/"scipy/filter_cases.json").read_text())
+    cases = read_cases(ROOT/"scipy/filter_cases.jsonl")
     with (ROOT/"fixtures/filter_inputs.csv").open("w", newline="") as i, (ROOT/"fixtures/filter_expected.csv").open("w", newline="") as e:
         wi,we = csv.writer(i, lineterminator="\n"),csv.writer(e, lineterminator="\n")
         wi.writerow(["id","function","arguments"])

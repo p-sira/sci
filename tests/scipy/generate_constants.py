@@ -5,12 +5,13 @@
 """Snapshot SciPy's CODATA 2022 values, SI units, uncertainties, and aliases.
 
 Run with the pinned .venv or uv run. This copies factual data, not SciPy code.
-Reference cases live separately in constants_cases.json.
+Reference cases live separately in constants_cases.jsonl.
 """
 import csv
 import json
 import subprocess
 from pathlib import Path
+from case_catalog import read_cases
 import numpy as np
 import scipy
 from scipy import constants as c
@@ -37,7 +38,7 @@ with (root / "src/constants/data.rs").open("w") as f:
             f.write(f'/// SciPy `{name}` constant or conversion factor; SI conventions in the [SciPy constants reference](https://docs.scipy.org/doc/scipy/reference/constants.html).\n')
             literal = "std::f64::consts::PI" if name == "pi" else repr(float(value))
             f.write(f'pub const {"r#dyn" if name == "dyn" else name}: f64 = {literal};\n')
-cases = json.loads((root / "tests/scipy/constants_cases.json").read_text())
+cases = read_cases(root / "tests/scipy/constants_cases.jsonl")
 with (root / "tests/fixtures/constants_expected.csv").open("w", newline="") as f:
     writer = csv.writer(f, lineterminator="\n")
     writer.writerow(["api", "result"])

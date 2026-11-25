@@ -2,7 +2,35 @@ mod common;
 use common::concat_pair;
 use common::vector as numbers;
 
-use sci::{Error, Result, stats::*};
+use sci::stats::{
+    association::*, binning::*, contingency, contingency::*, descriptive::*, diagnostics::*,
+    distances::*, distributions::*, estimation::*, goodness::*, inference::*, multivariate::*,
+    normality::*, qmc, ranking::*, regression::*, resampling::*, sensitivity::*, survival::*,
+    transformations::*,
+};
+use sci::{Error, Result};
+
+#[test]
+fn trimming_preserves_signed_zero_and_empty_samples() {
+    let input = [1., 0., -1., -0.];
+    let bits = |x: Vec<f64>| x.into_iter().map(f64::to_bits).collect::<Vec<_>>();
+    assert_eq!(
+        bits(trimboth(&input, 0.25).unwrap()),
+        vec![(-0.0_f64).to_bits(), 0.0_f64.to_bits()]
+    );
+    assert_eq!(
+        bits(trim1(&input, 0.5, Tail::Lower).unwrap()),
+        vec![0.0_f64.to_bits(), 1.0_f64.to_bits()]
+    );
+    assert_eq!(
+        bits(trim1(&input, 0.5, Tail::Upper).unwrap()),
+        vec![(-1.0_f64).to_bits(), (-0.0_f64).to_bits()]
+    );
+    assert!(trimboth::<f64>(&[], 0.25).unwrap().is_empty());
+    for tail in [Tail::Lower, Tail::Upper] {
+        assert!(trim1(&[], 0.5, tail).unwrap().is_empty());
+    }
+}
 
 fn alternative(p: f64) -> Alternative {
     match p as usize {
@@ -606,11 +634,7 @@ fn evaluate(fields: &[&str]) -> Result<Vec<f64>> {
             vec![r.statistic, r.pvalue, r.location, r.sign as f64]
         }
         "ks_2samp" | "kstest" => {
-            let r = if api == "kstest" {
-                kstest(&x, &y, alternative(p[0]))?
-            } else {
-                ks_2samp(&x, &y, alternative(p[0]))?
-            };
+            let r = ks_2samp(&x, &y, alternative(p[0]))?;
             vec![r.statistic, r.pvalue, r.location, r.sign as f64]
         }
         "probplot" => {
@@ -623,9 +647,6 @@ fn evaluate(fields: &[&str]) -> Result<Vec<f64>> {
             )?;
             [r.theoretical, r.ordered].concat()
         }
-        "abs" => vec![abs(x[0])],
-        "exp" => vec![exp(x[0])],
-        "log" => vec![log(x[0])],
         "tmean" => vec![tmean(&x, Some((p[0], p[1])), (p[2] != 0., p[3] != 0.))?],
         "tvar" => vec![tvar(
             &x,
@@ -930,6 +951,10 @@ fn scipy_references() {
                 // Parameter searches have flat objectives: binary64 objective
                 // noise limits position agreement even with tight stopping bounds.
                 let tolerance = match fields[1] {
+                    // Shared error functions eliminate the previous statrs
+                    // approximation error for these normal and Lévy tails.
+                    "ranksums" => 2e-14,
+                    "cdf" | "sf" if fields[6] == "Levy" => 2e-14,
                     "boxcox_normmax" | "yeojohnson_normmax" => 2e-6,
                     "ppcc_max" => 2e-5,
                     // Three-frequency covariance here has condition number
@@ -997,7 +1022,7 @@ fn studentized_range_scipy_references() -> Result<()> {
 #[test]
 fn invalid_domains_and_shapes() {
     let bad = [f64::NAN];
-    assert!(mean(&[]).is_err());
+    assert!(mean::<f64>(&[]).is_err());
     assert!(mean(&bad).is_err());
     assert!(variance(&[1.], 1).is_err());
     assert!(sem(&[1.], 0).is_err());
@@ -1066,7 +1091,7 @@ fn remaining_domains_and_work_limits() {
     let x = [1., 2., 3., 4.];
     let nan = [f64::NAN];
     assert!(std(&nan, 0).is_err());
-    assert!(median(&[]).is_err());
+    assert!(median::<f64>(&[]).is_err());
     assert!(iqr(&nan).is_err());
     assert!(mode(&nan).is_err());
     assert!(describe(&x, 4, true).is_err());
@@ -1103,7 +1128,7 @@ fn remaining_domains_and_work_limits() {
         .is_err()
     );
     assert!(ks_2samp(&[], &x, Alternative::TwoSided).is_err());
-    assert!(kstest(&nan, &x, Alternative::TwoSided).is_err());
+    assert!(ks_2samp(&nan, &x, Alternative::TwoSided).is_err());
     assert!(
         probplot(
             &[],
@@ -1291,8 +1316,7 @@ fn levy_identities_and_distribution_interoperability() -> Result<()> {
         let a = sf(levy, x)?;
         let b = sf(inverse_gamma, x)?;
         assert!(
-            // statrs erf and incomplete-gamma use different approximations;
-            // their ~5e-11 discrepancy is within the ordinary fixture tolerance.
+            // The error-function and incomplete-gamma kernels are independent.
             a > 0. && (a - b).abs() <= 2e-10 * b,
             "scale={scale:e}, sf={a:e}, inverse_gamma_sf={b:e}"
         );
@@ -1333,6 +1357,25 @@ fn levy_identities_and_distribution_interoperability() -> Result<()> {
     );
     assert!(pdf(levy, f64::NAN).is_err());
     assert!(ppf(levy, 1.1).is_err());
+    Ok(())
+}
+
+#[test]
+fn shared_normal_and_levy_tails_match_independent_references() -> Result<()> {
+    // Exact inputs from the refreshed SciPy comparison sweep.
+    let d = Distribution::Levy {
+        location: 10.,
+        scale: 0.01,
+    };
+    let x = 10.01483966966967;
+    // Independently evaluated using Python's math.erfc and math.erf.
+    assert!((cdf(d, x)? - 0.4117057856654586).abs() < 2e-15);
+    assert!((sf(d, x)? - 0.5882942143345413).abs() < 2e-15);
+    let first = [0.999, 1.998, 2.997, 3.996];
+    let second = [2., 1., 5., 6.];
+    let r = ranksums(&first, &second, Alternative::TwoSided)?;
+    assert!((r.statistic + 0.8660254037844387).abs() < 2e-15);
+    assert!((r.pvalue - 0.3864762307712327).abs() < 2e-15);
     Ok(())
 }
 
@@ -1719,11 +1762,11 @@ fn native_gap_groups_validate_domains_and_preserve_identities() -> Result<()> {
 
 #[test]
 fn standardized_scores_preserve_scale_and_special_values() -> Result<()> {
-    let base = [0., 1., 4.];
+    let base = [0.0_f64, 1., 4.];
     for ddof in [0, 1, 2] {
         let expected = zscore(&base, ddof)?;
         for transformed in [
-            [1e16, 1e16 + 2., 1e16 + 8.],
+            [1e16_f64, 1e16 + 2., 1e16 + 8.],
             [0., 1e-308, 4e-308],
             [0., -1e307, -4e307],
         ] {
@@ -1745,16 +1788,16 @@ fn standardized_scores_preserve_scale_and_special_values() -> Result<()> {
             assert!(gzscore(&[constant; 3], 0).is_err());
         }
     }
-    assert!(gzscore(&[2.; 3], 0)?.iter().all(|x| x.is_nan()));
+    assert!(gzscore(&[2.0_f64; 3], 0)?.iter().all(|x| x.is_nan()));
     let special = zmap(&[1., 2., 3.], &[2., 2.], 0)?;
     assert_eq!(special[0], f64::NEG_INFINITY);
     assert!(special[1].is_nan());
     assert_eq!(special[2], f64::INFINITY);
     assert!(zmap(&[1.], &[0., 1e-308], 0).is_err());
-    assert!(zmap(&[], &[1., 2.], 2).is_err());
-    assert!(zmap(&[], &[f64::INFINITY], 0).is_err());
-    assert!(zmap(&[], &[], 0).is_err());
-    assert_eq!(zmap(&[], &[1., 2.], 0)?, Vec::<f64>::new());
+    assert!(zmap::<f64>(&[], &[1., 2.], 2).is_err());
+    assert!(zmap::<f64>(&[], &[f64::INFINITY], 0).is_err());
+    assert!(zmap::<f64>(&[], &[], 0).is_err());
+    assert_eq!(zmap::<f64>(&[], &[1., 2.], 0)?, Vec::<f64>::new());
     Ok(())
 }
 
@@ -1764,7 +1807,7 @@ fn scaling_and_independent_properties() -> Result<()> {
     assert_eq!(mean(&[-f64::MAX, f64::MAX])?, 0.);
     assert_eq!(variance(&[f64::MAX, f64::MAX], 0)?, 0.);
     assert_eq!(std(&[-f64::MAX, f64::MAX], 0)?, f64::MAX);
-    assert!((mean(&[1e16, 1., -1e16])? - 1. / 3.).abs() < 1e-15);
+    assert!((mean(&[1e16_f64, 1., -1e16])? - 1. / 3.).abs() < 1e-15);
     assert_eq!(
         hmean(&[f64::MIN_POSITIVE / 16.; 2])?,
         f64::MIN_POSITIVE / 16.
@@ -1812,7 +1855,7 @@ fn scaling_and_independent_properties() -> Result<()> {
     );
     let q = multivariate_normal_pdf(&[1., 2.], &[0., 0.], &[vec![1., 0.], vec![0., 1.]])?;
     assert!((q - normal_pdf(1., 0., 1.)? * normal_pdf(2., 0., 1.)?).abs() < 1e-14);
-    let z = zscore(&[2., 3., 7., 11.], 0)?;
+    let z = zscore(&[2.0_f64, 3., 7., 11.], 0)?;
     assert!(mean(&z)?.abs() < 1e-14);
     assert!((variance(&z, 0)? - 1.).abs() < 1e-14);
     let d = Distribution::Normal {
@@ -1822,7 +1865,7 @@ fn scaling_and_independent_properties() -> Result<()> {
     for p in [0.001, 0.1, 0.5, 0.9, 0.999] {
         assert!((cdf(d, ppf(d, p)?)? - p).abs() < 1e-12);
     }
-    let f = sci::fft::rfft(&[1., 2., 3., 4.]);
+    let f = sci::fft::real::rfft(&[1., 2., 3., 4.]);
     let amplitudes = f.into_iter().map(sci::complex::abs).collect::<Vec<_>>();
     assert_eq!(describe(&amplitudes, 1, true)?.count, amplitudes.len());
     Ok(())

@@ -4,7 +4,7 @@
 
 mod common;
 
-use common::points;
+use common::{points, repeated};
 use divan::{Bencher, black_box};
 use sci::cluster::{hierarchy, vq};
 use sci::spatial;
@@ -31,7 +31,7 @@ fn blobs(n: usize) -> Vec<Vec<f64>> {
 
 /// Condensed Euclidean distances between the observations.
 fn condensed() -> Vec<f64> {
-    spatial::pdist(&blobs(LEAVES), spatial::Metric::Euclidean).unwrap()
+    spatial::distance::pdist(&blobs(LEAVES), spatial::distance::Metric::Euclidean).unwrap()
 }
 
 /// Average-linkage tree of the observations.
@@ -51,7 +51,6 @@ mod vq_benches {
         ]
     }
 
-    /// Also covers the `py_vq` alias.
     #[divan::bench]
     fn vq(bencher: Bencher) {
         let obs = blobs(300);
@@ -196,10 +195,9 @@ mod inconsistency_benches {
     #[divan::bench]
     fn is_valid_im(bencher: Bencher) {
         let r = hierarchy::inconsistent(&tree(), 2).unwrap();
-        bencher.bench(|| hierarchy::is_valid_im(black_box(&r)));
+        repeated(bencher, || hierarchy::is_valid_im(black_box(&r)));
     }
 
-    /// Also covers the `maxRstat` alias.
     #[divan::bench]
     fn max_rstat(bencher: Bencher) {
         let z = tree();
@@ -262,6 +260,55 @@ mod flat_benches {
         let counts = [2, 5, 10, 20];
         bencher.bench(|| {
             hierarchy::cut_tree(black_box(&z), hierarchy::Cut::Counts(black_box(&counts))).unwrap()
+        });
+    }
+}
+
+mod large_tree_benches {
+    use super::*;
+
+    // A highly unbalanced valid linkage exposes repeated subtree traversals.
+    fn chain(n: usize) -> Vec<Vec<f64>> {
+        (0..n - 1)
+            .map(|i| {
+                vec![
+                    if i == 0 { 0.0 } else { (n + i - 1) as f64 },
+                    (i + 1) as f64,
+                    (i + 1) as f64,
+                    (i + 2) as f64,
+                ]
+            })
+            .collect()
+    }
+
+    #[divan::bench]
+    fn cut_tree_one_count(bencher: Bencher) {
+        let z = chain(512);
+        let counts = [32];
+        bencher
+            .bench(|| hierarchy::cut_tree(black_box(&z), hierarchy::Cut::Counts(&counts)).unwrap());
+    }
+
+    #[divan::bench]
+    fn cut_tree_all(bencher: Bencher) {
+        let z = chain(512);
+        bencher.bench(|| hierarchy::cut_tree(black_box(&z), hierarchy::Cut::All).unwrap());
+    }
+
+    #[divan::bench]
+    fn leaders(bencher: Bencher) {
+        let z = chain(512);
+        let labels: Vec<usize> = (0..512)
+            .map(|i| if i < 256 { 0 } else { i - 255 })
+            .collect();
+        bencher.bench(|| hierarchy::leaders(black_box(&z), black_box(&labels)).unwrap());
+    }
+
+    #[divan::bench]
+    fn fcluster_maxclust(bencher: Bencher) {
+        let z = chain(512);
+        bencher.bench(|| {
+            hierarchy::fcluster(black_box(&z), 32.0, hierarchy::Criterion::MaxClust).unwrap()
         });
     }
 }

@@ -1,5 +1,5 @@
 use sci::{
-    filter::{Gaussian, ParticleSet, kalman_update, particle_estimate},
+    filter::{Gaussian, ParticleSet, kalman::kalman_update, particle::particle_estimate},
     linalg, stats,
 };
 
@@ -10,9 +10,12 @@ fn estimates_share_matrix_conventions_with_linear_algebra_and_statistics() {
         weights: vec![1.; 3],
     };
     let summary = particle_estimate(&particles).unwrap();
-    assert!((summary.mean[0] - stats::mean(&[-1., 1., 3.]).unwrap()).abs() < 1e-14);
-    assert!((summary.covariance[0][0] - stats::variance(&[-1., 1., 3.], 0).unwrap()).abs() < 1e-14);
-    let predicted = linalg::matvec(&summary.covariance, &[1., 0.]).unwrap();
+    assert!((summary.mean[0] - stats::descriptive::mean(&[-1., 1., 3.]).unwrap()).abs() < 1e-14);
+    assert!(
+        (summary.covariance[0][0] - stats::descriptive::variance(&[-1., 1., 3.], 0).unwrap()).abs()
+            < 1e-14
+    );
+    let predicted = linalg::basic::matvec(&summary.covariance, &[1., 0.]).unwrap();
     assert_eq!(
         predicted,
         vec![summary.covariance[0][0], summary.covariance[1][0]]

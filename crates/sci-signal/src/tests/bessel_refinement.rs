@@ -2,7 +2,13 @@ use super::*;
 
 #[test]
 fn nonfinite_pole_steps_are_errors() {
-    for z in [Complex64::new(f64::NAN, 1.), Complex64::new(0., 0.)] {
+    for z in [
+        Complex64::new(f64::NAN, 1.),
+        Complex64::new(1., f64::NAN),
+        Complex64::new(f64::INFINITY, 1.),
+        Complex64::new(1., f64::NEG_INFINITY),
+        Complex64::new(0., 0.),
+    ] {
         assert!(matches!(
             refine_bessel_pole(12, z),
             Err(Error::NonFiniteEvaluation)

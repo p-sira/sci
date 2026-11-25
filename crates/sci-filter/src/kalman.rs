@@ -27,7 +27,7 @@ use std::cell::RefCell;
 ///
 /// # Examples
 /// ```
-/// use sci_filter::{Gaussian, kalman_predict};
+/// use sci_filter::{Gaussian, kalman::kalman_predict};
 /// let x = Gaussian { mean: vec![2.], covariance: vec![vec![1.]] };
 /// assert_eq!(kalman_predict(&x, &[vec![1.]], &[vec![0.]])?, x);
 /// # Ok::<(), sci_filter::Error>(())
@@ -81,7 +81,7 @@ pub fn kalman_predict(
 ///
 /// # Examples
 /// ```
-/// use sci_filter::{Gaussian, kalman_update};
+/// use sci_filter::{Gaussian, kalman::kalman_update};
 /// let x = Gaussian { mean: vec![0.], covariance: vec![vec![1.]] };
 /// let u = kalman_update(&x, &[2.], &[vec![1.]], &[vec![1.]])?;
 /// assert_eq!(u.estimate.mean, vec![1.]);
@@ -152,7 +152,7 @@ fn update_output(x: &DVector<f64>, p: &DMatrix<f64>, innovation: DVector<f64>) -
 ///
 /// # Examples
 /// ```
-/// use sci_filter::{Gaussian, extended_kalman_predict};
+/// use sci_filter::{Gaussian, kalman::extended_kalman_predict};
 /// let x = Gaussian { mean: vec![2.], covariance: vec![vec![1.]] };
 /// let p = extended_kalman_predict(&x, &[vec![0.]],
 ///     |x| Ok(vec![x[0]*x[0]]), |x| Ok(vec![vec![2.*x[0]]]))?;
@@ -216,7 +216,7 @@ where
 ///
 /// # Examples
 /// ```
-/// use sci_filter::{Gaussian, extended_kalman_update};
+/// use sci_filter::{Gaussian, kalman::extended_kalman_update};
 /// let x = Gaussian { mean: vec![2.], covariance: vec![vec![1.]] };
 /// let u = extended_kalman_update(&x, &[5.], &[vec![1.]],
 ///     |x| Ok(vec![x[0]*x[0]]), |x| Ok(vec![vec![2.*x[0]]]))?;
@@ -312,7 +312,7 @@ fn callback_matrix(x: &[Vec<f64>], m: usize, n: usize) -> Result<DMatrix<f64>> {
 ///
 /// # Examples
 /// ```
-/// use sci_filter::{Gaussian, SigmaPoints, unscented_kalman_step};
+/// use sci_filter::{Gaussian, SigmaPoints, kalman::unscented_kalman_step};
 /// let x = Gaussian { mean: vec![0.], covariance: vec![vec![1.]] };
 /// let u = unscented_kalman_step(&x, &[vec![0.1]], &[2.], &[vec![0.5]],
 ///     SigmaPoints::default(), |x| Ok(x.to_vec()), |x| Ok(x.to_vec()))?;
@@ -322,7 +322,7 @@ fn callback_matrix(x: &[Vec<f64>], m: usize, n: usize) -> Result<DMatrix<f64>> {
 ///
 /// # References
 /// [Särkkä and Svensson, ch. 8](https://users.aalto.fi/~ssarkka/pub/bfs_book_2023_online.pdf);
-/// [Smelly's UKF conventions](https://docs.rs/smelly/0.1.0/smelly/struct.UnscentedKalmanFilter.html).
+/// [Smelly's UKF conventions](https://docs.rs/smelly/0.2.0/smelly/struct.UnscentedKalmanFilter.html).
 pub fn unscented_kalman_step<F, H>(
     prior: &Gaussian,
     process_noise: &[Vec<f64>],

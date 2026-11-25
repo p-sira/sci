@@ -30,7 +30,7 @@ use super::*;
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::spearmanrho(&[1.,2.,3.], &[3.,2.,1.], sci_stats::Alternative::TwoSided)?;
+/// let r = sci_stats::association::spearmanrho(&[1.,2.,3.], &[3.,2.,1.], sci_stats::inference::Alternative::TwoSided)?;
 /// assert!((r.statistic+1.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -145,7 +145,7 @@ fn weighted_correlation(x: &[f64], y: &[f64], ranks: &[usize], additive: bool) -
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{weightedtau, WeightedRank};
+/// use sci_stats::{association::weightedtau, association::WeightedRank};
 /// assert_eq!(weightedtau(&[1.,2.,3.], &[3.,2.,1.], WeightedRank::Symmetric, true)?.statistic, -1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -195,6 +195,89 @@ pub fn weightedtau(
     })
 }
 
+// Cumulative counts of dense y ranks. Updates and prefixes are O(log n).
+// The caller inserts all observations in an x-tie block only after querying
+// that block, so equal x values never contribute to concordance scores.
+fn rank_prefix(tree: &[i64], mut end: usize) -> i64 {
+    let mut count = 0;
+    while end > 0 {
+        count += tree[end];
+        end &= end - 1;
+    }
+    count
+}
+
+fn rank_insert(tree: &mut [i64], mut index: usize) {
+    while index < tree.len() {
+        tree[index] += 1;
+        index += index & index.wrapping_neg();
+    }
+}
+
+/// Exact per-observation concordance scores, shared by Kendall's tau and
+/// Somers' D. Both inputs have already passed finite paired-sample validation.
+/// Sorting treats signed zeros as ties; all pair counts remain integers.
+pub(super) fn concordance_scores(x: &[f64], y: &[f64]) -> (Vec<i64>, usize) {
+    let n = x.len();
+    let mut by_y = (0..n).collect::<Vec<_>>();
+    by_y.sort_unstable_by(|&i, &j| y[i].partial_cmp(&y[j]).unwrap());
+    let mut ranks = vec![0_usize; n];
+    let mut unique = 0;
+    for (position, &index) in by_y.iter().enumerate() {
+        if position > 0 && y[index] != y[by_y[position - 1]] {
+            unique += 1;
+        }
+        ranks[index] = unique;
+    }
+
+    let mut by_x = (0..n).collect::<Vec<_>>();
+    by_x.sort_unstable_by(|&i, &j| x[i].partial_cmp(&x[j]).unwrap());
+    let mut tree = vec![0_i64; unique + 2];
+    let mut scores = vec![0_i64; n];
+    let mut processed = 0_i64;
+    let mut untied_x = 0;
+    let mut start = 0;
+    while start < n {
+        let mut end = start + 1;
+        while end < n && x[by_x[end]] == x[by_x[start]] {
+            end += 1;
+        }
+        untied_x += processed as usize * (end - start);
+        for &index in &by_x[start..end] {
+            let less = rank_prefix(&tree, ranks[index]);
+            let less_or_equal = rank_prefix(&tree, ranks[index] + 1);
+            scores[index] += less - (processed - less_or_equal);
+        }
+        for &index in &by_x[start..end] {
+            rank_insert(&mut tree, ranks[index] + 1);
+        }
+        processed += (end - start) as i64;
+        start = end;
+    }
+
+    // For each point, include contributions from greater x values as well.
+    tree.fill(0);
+    processed = 0;
+    let mut end = n;
+    while end > 0 {
+        let mut start = end - 1;
+        while start > 0 && x[by_x[start - 1]] == x[by_x[end - 1]] {
+            start -= 1;
+        }
+        for &index in &by_x[start..end] {
+            let less = rank_prefix(&tree, ranks[index]);
+            let less_or_equal = rank_prefix(&tree, ranks[index] + 1);
+            scores[index] += (processed - less_or_equal) - less;
+        }
+        for &index in &by_x[start..end] {
+            rank_insert(&mut tree, ranks[index] + 1);
+        }
+        processed += (end - start) as i64;
+        end = start;
+    }
+    (scores, untied_x)
+}
+
 /// Somers' directional association `D(Y|X)=(concordant−discordant)/(pairs untied in X)`.
 ///
 /// ## Parameters and conventions
@@ -221,14 +304,14 @@ pub fn weightedtau(
 ///
 /// ## Numerical behavior
 ///
-/// O(n²) integer pair counting and O(n) memory. Variance is computed as the
+/// O(n log n) integer rank counting and O(n) memory. Variance is computed as the
 /// sum of centered squared q_i, avoiding cancellation; private statrs tails.
 /// Asymptotic probabilities can be unreliable for small or sparse samples.
 ///
 /// ## Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::somersd(&[1.,2.,3.], &[1.,2.,3.], sci_stats::Alternative::TwoSided)?.statistic, 1.);
+/// assert_eq!(sci_stats::association::somersd(&[1.,2.,3.], &[1.,2.,3.], sci_stats::inference::Alternative::TwoSided)?.statistic, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -252,25 +335,7 @@ pub fn somersd(x: &[f64], y: &[f64], alternative: Alternative) -> Result<TestRes
             pvalue: f64::NAN,
         });
     }
-    let mut scores = vec![0_i64; x.len()];
-    let mut untied = 0;
-    for i in 0..x.len() {
-        for j in i + 1..x.len() {
-            if x[i] == x[j] {
-                continue;
-            }
-            untied += 1;
-            if y[i] != y[j] {
-                let s = if (x[i] < x[j]) == (y[i] < y[j]) {
-                    1
-                } else {
-                    -1
-                };
-                scores[i] += s;
-                scores[j] += s;
-            }
-        }
-    }
+    let (scores, untied) = concordance_scores(x, y);
     let scores = scores.into_iter().map(|v| v as f64).collect::<Vec<_>>();
     let center = mean(&scores)?;
     let sum = scores.iter().sum::<f64>();
@@ -316,7 +381,7 @@ pub fn somersd(x: &[f64], y: &[f64], alternative: Alternative) -> Result<TestRes
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::chatterjeexi(&[1.,2.,3.,4.], &[1.,2.,3.,4.], true)?;
+/// let r = sci_stats::association::chatterjeexi(&[1.,2.,3.,4.], &[1.,2.,3.,4.], true)?;
 /// assert!((r.statistic - 0.4).abs() < 1e-15);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -376,4 +441,82 @@ pub fn chatterjeexi(x: &[f64], y: &[f64], y_continuous: bool) -> Result<TestResu
         statistic,
         pvalue: normality::normal_result(statistic / standard_error, Alternative::Greater)?.pvalue,
     })
+}
+
+#[cfg(test)]
+mod concordance_tests {
+    use super::*;
+
+    fn pairwise_scores(x: &[f64], y: &[f64]) -> (Vec<i64>, usize) {
+        let mut scores = vec![0_i64; x.len()];
+        let mut untied = 0;
+        for i in 0..x.len() {
+            for j in i + 1..x.len() {
+                if x[i] == x[j] {
+                    continue;
+                }
+                untied += 1;
+                if y[i] != y[j] {
+                    let sign = if (x[i] < x[j]) == (y[i] < y[j]) {
+                        1
+                    } else {
+                        -1
+                    };
+                    scores[i] += sign;
+                    scores[j] += sign;
+                }
+            }
+        }
+        (scores, untied)
+    }
+
+    #[test]
+    fn concordance_sweep_matches_pairwise_counts_and_somers_pvalues() -> Result<()> {
+        let cases: Vec<(Vec<f64>, Vec<f64>)> = vec![
+            (vec![1., 1.], vec![2., 2.]),
+            (vec![0., -0., 1., 1., 2.], vec![0., 1., -0., 2., 2.]),
+            (vec![1., 2., 3., 4., 5.], vec![5., 3., 4., 2., 1.]),
+            (vec![1.; 30], (0..30).map(|i| i as f64).collect()),
+            (
+                (0..70).map(|i| (i % 7) as f64).collect(),
+                (0..70).map(|i| (i * 11 % 9) as f64).collect(),
+            ),
+            (
+                (0..127).map(|i| (i * 31 % 127) as f64).collect(),
+                (0..127).map(|i| (i * 29 % 127) as f64).collect(),
+            ),
+            (
+                (0..257).map(|i| (i * 37 % 17) as f64).collect(),
+                (0..257).map(|i| (i * 13 % 29) as f64).collect(),
+            ),
+        ];
+        for (x, y) in cases {
+            let (expected, untied) = pairwise_scores(&x, &y);
+            let (scores, got_untied) = concordance_scores(&x, &y);
+            assert_eq!(scores, expected);
+            assert_eq!(got_untied, untied);
+            if x.iter().all(|v| *v == x[0]) || y.iter().all(|v| *v == y[0]) {
+                continue;
+            }
+            let scores = expected.into_iter().map(|s| s as f64).collect::<Vec<_>>();
+            let center = mean(&scores)?;
+            let sum = scores.iter().sum::<f64>();
+            let variance = scores.iter().map(|v| (v - center).powi(2)).sum::<f64>();
+            for alternative in [
+                Alternative::TwoSided,
+                Alternative::Less,
+                Alternative::Greater,
+            ] {
+                let actual = somersd(&x, &y, alternative)?;
+                let expected_p =
+                    normality::normal_result(sum / (2. * variance.sqrt()), alternative)?.pvalue;
+                assert_eq!(
+                    actual.statistic.to_bits(),
+                    (sum / (2. * untied as f64)).to_bits()
+                );
+                assert_eq!(actual.pvalue.to_bits(), expected_p.to_bits());
+            }
+        }
+        Ok(())
+    }
 }

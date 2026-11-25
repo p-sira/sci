@@ -1,0 +1,48 @@
+{"id": "rosen_0", "api": "rosen", "x": [1, 1], "p": [0.5, -1.0]}
+{"id": "rosen_1", "api": "rosen", "x": [-1.2, 1], "p": [0.5, -1.0]}
+{"id": "rosen_2", "api": "rosen", "x": [0, 0], "p": [0.5, -1.0]}
+{"id": "rosen_3", "api": "rosen", "x": [0.1, 0.2, 0.3, 0.4], "p": [0.5, -1.0, 1.5, -2.0]}
+{"id": "rosen_4", "api": "rosen", "x": [2, -3, 4, -1], "p": [0.5, -1.0, 1.5, -2.0]}
+{"id": "rosen_5", "api": "rosen", "x": [1, 1, 1, 1], "p": [0.5, -1.0, 1.5, -2.0]}
+{"id": "rosen_der_0", "api": "rosen_der", "x": [1, 1], "p": [0.5, -1.0]}
+{"id": "rosen_der_1", "api": "rosen_der", "x": [-1.2, 1], "p": [0.5, -1.0]}
+{"id": "rosen_der_2", "api": "rosen_der", "x": [0, 0], "p": [0.5, -1.0]}
+{"id": "rosen_der_3", "api": "rosen_der", "x": [0.1, 0.2, 0.3, 0.4], "p": [0.5, -1.0, 1.5, -2.0]}
+{"id": "rosen_der_4", "api": "rosen_der", "x": [2, -3, 4, -1], "p": [0.5, -1.0, 1.5, -2.0]}
+{"id": "rosen_der_5", "api": "rosen_der", "x": [1, 1, 1, 1], "p": [0.5, -1.0, 1.5, -2.0]}
+{"id": "rosen_hess_0", "api": "rosen_hess", "x": [1, 1], "p": [0.5, -1.0]}
+{"id": "rosen_hess_1", "api": "rosen_hess", "x": [-1.2, 1], "p": [0.5, -1.0]}
+{"id": "rosen_hess_2", "api": "rosen_hess", "x": [0, 0], "p": [0.5, -1.0]}
+{"id": "rosen_hess_3", "api": "rosen_hess", "x": [0.1, 0.2, 0.3, 0.4], "p": [0.5, -1.0, 1.5, -2.0]}
+{"id": "rosen_hess_4", "api": "rosen_hess", "x": [2, -3, 4, -1], "p": [0.5, -1.0, 1.5, -2.0]}
+{"id": "rosen_hess_5", "api": "rosen_hess", "x": [1, 1, 1, 1], "p": [0.5, -1.0, 1.5, -2.0]}
+{"id": "rosen_hess_prod_0", "api": "rosen_hess_prod", "x": [1, 1], "p": [0.5, -1.0]}
+{"id": "rosen_hess_prod_1", "api": "rosen_hess_prod", "x": [-1.2, 1], "p": [0.5, -1.0]}
+{"id": "rosen_hess_prod_2", "api": "rosen_hess_prod", "x": [0, 0], "p": [0.5, -1.0]}
+{"id": "rosen_hess_prod_3", "api": "rosen_hess_prod", "x": [0.1, 0.2, 0.3, 0.4], "p": [0.5, -1.0, 1.5, -2.0]}
+{"id": "rosen_hess_prod_4", "api": "rosen_hess_prod", "x": [2, -3, 4, -1], "p": [0.5, -1.0, 1.5, -2.0]}
+{"id": "rosen_hess_prod_5", "api": "rosen_hess_prod", "x": [1, 1, 1, 1], "p": [0.5, -1.0, 1.5, -2.0]}
+{"id": "rosen_empty_0", "api": "rosen", "x": []}
+{"id": "rosen_empty_1", "api": "rosen", "x": [0]}
+{"id": "rosen_empty_2", "api": "rosen", "x": [1]}
+{"id": "rosen_empty_3", "api": "rosen", "x": [-3]}
+{"id": "approx_fprime_quadratic_0", "api": "approx_fprime", "x": [0, 0], "epsilon": [0.125], "function": "quadratic"}
+{"id": "approx_fprime_quadratic_1", "api": "approx_fprime", "x": [2, -3], "epsilon": [0.001, 0.002], "function": "quadratic"}
+{"id": "approx_fprime_quadratic_2", "api": "approx_fprime", "x": [-1.2, 1], "epsilon": [-0.0001], "function": "quadratic"}
+{"id": "approx_fprime_quadratic_3", "api": "approx_fprime", "x": [1, 1], "epsilon": [9.5367431640625e-07, 1.9073486328125e-06], "function": "quadratic"}
+{"id": "approx_fprime_vector_0", "api": "approx_fprime", "x": [0, 0], "epsilon": [0.125], "function": "vector"}
+{"id": "approx_fprime_vector_1", "api": "approx_fprime", "x": [2, -3], "epsilon": [0.001, 0.002], "function": "vector"}
+{"id": "approx_fprime_vector_2", "api": "approx_fprime", "x": [-1.2, 1], "epsilon": [-0.0001], "function": "vector"}
+{"id": "approx_fprime_vector_3", "api": "approx_fprime", "x": [1, 1], "epsilon": [9.5367431640625e-07, 1.9073486328125e-06], "function": "vector"}
+{"id": "approx_fprime_rosen_0", "api": "approx_fprime", "x": [0, 0], "epsilon": [0.125], "function": "rosen"}
+{"id": "approx_fprime_rosen_1", "api": "approx_fprime", "x": [2, -3], "epsilon": [0.001, 0.002], "function": "rosen"}
+{"id": "approx_fprime_rosen_2", "api": "approx_fprime", "x": [-1.2, 1], "epsilon": [-0.0001], "function": "rosen"}
+{"id": "approx_fprime_rosen_3", "api": "approx_fprime", "x": [1, 1], "epsilon": [9.5367431640625e-07, 1.9073486328125e-06], "function": "rosen"}
+{"id": "check_grad_quadratic_0", "api": "check_grad", "x": [0, 0], "epsilon": [0.125], "function": "quadratic", "bias": 0}
+{"id": "check_grad_quadratic_1", "api": "check_grad", "x": [2, -3], "epsilon": [0.001, 0.002], "function": "quadratic", "bias": 0}
+{"id": "check_grad_quadratic_2", "api": "check_grad", "x": [-1.2, 1], "epsilon": [-0.0001], "function": "quadratic", "bias": 0.5}
+{"id": "check_grad_quadratic_3", "api": "check_grad", "x": [1, 1], "epsilon": [9.5367431640625e-07], "function": "quadratic", "bias": 1}
+{"id": "check_grad_rosen_0", "api": "check_grad", "x": [0, 0], "epsilon": [0.125], "function": "rosen", "bias": 0}
+{"id": "check_grad_rosen_1", "api": "check_grad", "x": [2, -3], "epsilon": [0.001, 0.002], "function": "rosen", "bias": 0}
+{"id": "check_grad_rosen_2", "api": "check_grad", "x": [-1.2, 1], "epsilon": [-0.0001], "function": "rosen", "bias": 0.5}
+{"id": "check_grad_rosen_3", "api": "check_grad", "x": [1, 1], "epsilon": [9.5367431640625e-07], "function": "rosen", "bias": 1}

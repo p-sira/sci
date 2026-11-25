@@ -4,6 +4,10 @@ Signal processing on one-dimensional real samples and shared complex values.
 
 Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 
+Public functions are grouped into modules such as `convolution`, `filtering`,
+`design`, `spectral`, `windows`, `waveforms`, and `systems`. Shared `Error`,
+`Result`, and convolution `Mode` types are available at the crate root.
+
 Functions use explicit parameters. Digital angular frequencies use
 radians/sample unless a sample rate is supplied; analog frequencies use
 radians/time.
@@ -21,8 +25,8 @@ the ordering required by the corresponding filtering function.
 
 ```rust
 fn main() -> Result<(), sci_core::Error> {
-    use sci_signal::{convolve, Mode};
-    assert_eq!(convolve(&[1., 2.], &[1., -1.], Mode::Full)?, vec![1., 1., -2.]);
+    use sci_signal::{convolution, Mode};
+    assert_eq!(convolution::convolve(&[1., 2.], &[1., -1.], Mode::Full)?, vec![1., 1., -2.]);
     Ok(())
 }
 ```

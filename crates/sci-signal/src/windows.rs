@@ -45,7 +45,7 @@ simple_window!(cosine, "w[i] = sin(pi (i+1/2)/n)", |i, n| (PI * (i + 0.5)
     / n)
     .sin());
 simple_window!(lanczos, "w[i] = sinc(2i/(n-1)-1)", |i, n| {
-    crate::special::sinc(2. * i / (n - 1.) - 1.)
+    crate::special::elementary::sinc(2. * i / (n - 1.) - 1.)
 });
 simple_window!(
     barthann,
@@ -102,12 +102,13 @@ simple_window!(
 ///
 /// ## Numerical behavior
 ///
-/// Uses f64 arithmetic. Cancellation and poorly conditioned filters or polynomial fits can reduce accuracy; no uniform relative-error guarantee is made. FFT routines use RustFFT, polynomial fits and DPSS use bounded private nalgebra solvers.
+/// Uses a short cosine recurrence for up to eight harmonics, requiring one
+/// transcendental cosine per sample. Longer series use direct evaluation to
+/// avoid accumulation of recurrence roundoff.
 ///
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = general_cosine(5,&[0.5,0.5],true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -119,6 +120,19 @@ simple_window!(
 pub fn general_cosine(m: usize, coefficients: &[f64], symmetric: bool) -> Result<Vec<f64>> {
     super::nonempty(coefficients)?;
     work(m, coefficients.len())?;
+    if coefficients.len() <= 8 {
+        return evaluate(m, symmetric, |i, n| {
+            let cosine = (-PI + TAU * i / (n - 1.)).cos();
+            let mut previous = 1.;
+            let mut current = cosine;
+            let mut sum = coefficients[0];
+            for &a in &coefficients[1..] {
+                sum += a * current;
+                (previous, current) = (current, 2. * cosine * current - previous);
+            }
+            sum
+        });
+    }
     evaluate(m, symmetric, |i, n| {
         let angle = -PI + TAU * i / (n - 1.);
         coefficients
@@ -184,7 +198,6 @@ cosine_window!(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = general_hamming(5,0.54,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -226,7 +239,6 @@ pub fn general_hamming(m: usize, alpha: f64, symmetric: bool) -> Result<Vec<f64>
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = gaussian(5,1.,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -268,7 +280,6 @@ pub fn gaussian(m: usize, std: f64, symmetric: bool) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = general_gaussian(5,1.5,2.,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -311,7 +322,6 @@ pub fn general_gaussian(m: usize, p: f64, sigma: f64, symmetric: bool) -> Result
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = exponential(5,None,1.,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -358,7 +368,6 @@ pub fn exponential(m: usize, center: Option<f64>, tau: f64, symmetric: bool) -> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = tukey(5,0.5,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -415,7 +424,6 @@ pub fn tukey(m: usize, alpha: f64, symmetric: bool) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = kaiser(5,4.,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -432,7 +440,7 @@ pub fn kaiser(m: usize, beta: f64, symmetric: bool) -> Result<Vec<f64>> {
     evaluate(m, symmetric, |i, n| {
         let x = 2. * i / (n - 1.) - 1.;
         let a = b * (1. - x * x).max(0.).sqrt();
-        crate::special::i0e(a) / crate::special::i0e(b) * (a - b).exp()
+        crate::special::bessel::i0e(a) / crate::special::bessel::i0e(b) * (a - b).exp()
     })
 }
 /// Evaluates KBD weights `sqrt(cumsum(kaiser(M/2+1))/sum(kaiser(M/2+1)))` mirrored about the midpoint.
@@ -462,7 +470,6 @@ pub fn kaiser(m: usize, beta: f64, symmetric: bool) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = kaiser_bessel_derived(4,4.,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -487,7 +494,9 @@ pub fn kaiser_bessel_derived(m: usize, beta: f64, symmetric: bool) -> Result<Vec
         cumulative += v;
         result.push((cumulative / sum).sqrt());
     }
-    result.extend(result.clone().into_iter().rev());
+    for i in (0..result.len()).rev() {
+        result.push(result[i]);
+    }
     checked(result)
 }
 /// Constructs the Dolph-Chebyshev window from `T_(n-1)(beta cos(π k/n))`, `beta=cosh(acosh(10^(|attenuation|/20))/(n-1))`.
@@ -517,7 +526,6 @@ pub fn kaiser_bessel_derived(m: usize, beta: f64, symmetric: bool) -> Result<Vec
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = chebwin(5,60.,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -603,7 +611,6 @@ pub fn chebwin(m: usize, attenuation: f64, symmetric: bool) -> Result<Vec<f64>> 
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = taylor(5,4,30.,true,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -658,6 +665,61 @@ pub fn taylor(
     })
 }
 
+fn dpss_orient(mut v: Vec<f64>, order: usize, m: usize) -> Result<Vec<f64>> {
+    // Apply SciPy's parity-dependent sign convention before truncating a
+    // periodic (m+1)-sample taper to m samples.
+    let sign = if order.is_multiple_of(2) {
+        v.iter().sum::<f64>()
+    } else {
+        v.iter().copied().find(|v| v.abs() > 1e-7).unwrap_or(1.)
+    };
+    if sign < 0. {
+        v.iter_mut().for_each(|x| *x = -*x);
+    }
+    v.truncate(m);
+    checked(v)
+}
+
+// For n < faer's default divide-and-conquer threshold (128), U=Some uses the
+// direct tridiagonal QR eigensolver with two n-by-1 scratch arrays. Preserve the
+// original dense nalgebra path for larger sizes and as a numerical fallback.
+fn dpss_tridiagonal_qr(d: &[f64], e: &[f64], k: usize, m: usize) -> Option<Vec<Vec<f64>>> {
+    let n = d.len();
+    let mut eigenvalues = vec![0.0; n];
+    let mut eigenvectors = faer::Mat::<f64>::zeros(n, n);
+    let scratch = dyn_stack::StackReq::all_of(&[
+        faer::linalg::temp_mat_scratch::<f64>(n, 1),
+        faer::linalg::temp_mat_scratch::<f64>(n, 1),
+    ]);
+    let mut buffer = dyn_stack::MemBuffer::new(scratch);
+    faer::linalg::evd::tridiagonal_self_adjoint_evd(
+        faer::diag::DiagRef::from_slice(d),
+        faer::diag::DiagRef::from_slice(e),
+        faer::diag::DiagMut::from_slice_mut(&mut eigenvalues),
+        Some(eigenvectors.as_mut()),
+        faer::Par::Seq,
+        dyn_stack::MemStack::new(&mut buffer),
+        faer::Spec::default(),
+    )
+    .ok()?;
+    if !eigenvalues.iter().all(|x| x.is_finite()) {
+        return None;
+    }
+
+    let mut tapers = Vec::with_capacity(k);
+    for order in 0..k {
+        // faer sorts ascending; DPSS returns the largest eigenvalues first.
+        let col = n - 1 - order;
+        let v: Vec<_> = (0..n).map(|i| eigenvectors[(i, col)]).collect();
+        let norm2 = v.iter().map(|x| x * x).sum::<f64>();
+        if !norm2.is_finite() || (norm2 - 1.0).abs() > 5e-11 {
+            return None;
+        }
+        tapers.push(dpss_orient(v, order, m).ok()?);
+    }
+    Some(tapers)
+}
+
 /// Computes the highest eigenvectors of the Slepian tridiagonal matrix with diagonal `((n-1-2i)/2)² cos(2π NW/n)` and off-diagonal `i(n-i)/2`.
 ///
 /// ## Parameters
@@ -680,12 +742,13 @@ pub fn taylor(
 ///
 /// ## Numerical behavior
 ///
-/// Uses f64 arithmetic. Cancellation and poorly conditioned filters or polynomial fits can reduce accuracy; no uniform relative-error guarantee is made. FFT routines use RustFFT, polynomial fits and DPSS use bounded private nalgebra solvers.
+/// Uses f64 arithmetic and bounded symmetric tridiagonal QR for orders below
+/// 128, retaining the original dense solver as a fallback and for larger orders.
+/// Eigenvectors in nearly repeated eigenspaces can differ by roundoff.
 ///
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = dpss(5,1.,2,true)?;
 /// # Ok::<(),sci_core::Error>(())
@@ -708,11 +771,24 @@ pub fn dpss(m: usize, nw: f64, k: usize, symmetric: bool) -> Result<Vec<Vec<f64>
     }
     let n = length(m, symmetric)?;
     let w = nw / n as f64;
+    let c = (TAU * w).cos();
+    let diagonal: Vec<_> = (0..n)
+        .map(|i| ((n as f64 - 1. - 2. * i as f64) / 2.).powi(2) * c)
+        .collect();
+    let off_diagonal: Vec<_> = (1..n).map(|i| (i * (n - i)) as f64 / 2.).collect();
+    if n < 128
+        && let Some(tapers) = dpss_tridiagonal_qr(&diagonal, &off_diagonal, k, m)
+    {
+        return Ok(tapers);
+    }
+
+    // Preserve the original numerical backend when faer's QR fails, or when
+    // the order reaches the divide-and-conquer branch requiring more scratch.
     let mut matrix = nalgebra::DMatrix::zeros(n, n);
     for i in 0..n {
-        matrix[(i, i)] = ((n as f64 - 1. - 2. * i as f64) / 2.).powi(2) * (TAU * w).cos();
+        matrix[(i, i)] = diagonal[i];
         if i > 0 {
-            let v = (i * (n - i)) as f64 / 2.;
+            let v = off_diagonal[i - 1];
             matrix[(i, i - 1)] = v;
             matrix[(i - 1, i)] = v;
         }
@@ -726,17 +802,11 @@ pub fn dpss(m: usize, nw: f64, k: usize, symmetric: bool) -> Result<Vec<Vec<f64>
         .take(k)
         .enumerate()
         .map(|(order, j)| {
-            let mut v: Vec<_> = eig.eigenvectors.column(j).iter().copied().collect();
-            let sign = if order.is_multiple_of(2) {
-                v.iter().sum::<f64>()
-            } else {
-                v.iter().copied().find(|v| v.abs() > 1e-7).unwrap_or(1.)
-            };
-            if sign < 0. {
-                v.iter_mut().for_each(|x| *x = -*x);
-            }
-            v.truncate(m);
-            checked(v)
+            dpss_orient(
+                eig.eigenvectors.column(j).iter().copied().collect(),
+                order,
+                m,
+            )
         })
         .collect()
 }
@@ -818,7 +888,6 @@ pub enum Window {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
 /// use sci_signal::windows::*;
 /// let _result = get_window(&Window::Hann,5,true)?;
 /// # Ok::<(),sci_core::Error>(())

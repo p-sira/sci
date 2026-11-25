@@ -28,7 +28,7 @@ pub trait LinearMap {
     /// # Examples
     /// ```
     /// use sci_sparse::linalg::LinearMap;
-    /// assert_eq!(sci_sparse::identity(1)?.apply(&[2.])?,[2.]);
+    /// assert_eq!(sci_sparse::construct::identity(1)?.apply(&[2.])?,[2.]);
     /// # Ok::<(), sci_core::Error>(())
     /// ```
     /// # References
@@ -50,7 +50,7 @@ pub trait LinearMap {
     /// # Examples
     /// ```
     /// use sci_sparse::linalg::LinearMap;
-    /// assert_eq!(sci_sparse::identity(1)?.transpose_apply(&[2.])?,[2.]);
+    /// assert_eq!(sci_sparse::construct::identity(1)?.transpose_apply(&[2.])?,[2.]);
     /// # Ok::<(), sci_core::Error>(())
     /// ```
     /// # References
@@ -72,10 +72,17 @@ impl LinearMap for SparseMatrix {
         if x.len() != self.rows {
             return Err(Error::DimensionMismatch);
         }
-        sci_core::finite_slice(x)?;
+        sci_core::is_finite_slice(x)?;
         let mut out = vec![0.; self.cols];
         for (r, c, v) in entries(self) {
-            out[c] = finite(out[c] + finite(v * x[r])?)?;
+            out[c] = match out[c]
+                + match v * x[r] {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }? {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
         }
         Ok(out)
     }
@@ -138,12 +145,12 @@ fn action(f: &Action, x: &[f64], input: usize, output: usize) -> Result<Vec<f64>
     if x.len() != input {
         return Err(Error::DimensionMismatch);
     }
-    sci_core::finite_slice(x)?;
+    sci_core::is_finite_slice(x)?;
     let y = f(x)?;
     if y.len() != output {
         return Err(Error::DimensionMismatch);
     }
-    sci_core::finite_slice(&y)?;
+    sci_core::is_finite_slice(&y)?;
     Ok(y)
 }
 impl LinearMap for LinearOperator {
@@ -161,37 +168,44 @@ impl LinearMap for LinearOperator {
     }
 }
 
-/// Borrow-independent operator adaptation, `op(x)=A x`, `opᵀ(x)=Aᵀ x`.
+/// Builds an owned operator with `op(x) = A x` and `opᵀ(x) = Aᵀ x`.
 ///
 /// # Parameters and conventions
-/// `a` is copied into private shared callback storage; caller mutation is isolated.
+/// The source is a shared CSR matrix. This conversion copies A and its transpose;
+/// later source mutation is isolated. Use a borrowed matrix directly with solvers
+/// through [`LinearMap`] when ownership is unnecessary.
 /// # Domain and special values
-/// Canonical finite CSR under the normal crate limits; empty axes are valid.
+/// Canonical finite CSR under the crate's storage limits; empty axes are valid.
 /// # Returns
-/// An owned [`LinearOperator`] usable by all iterative solvers.
+/// An owned [`LinearOperator`] with the source shape, usable by iterative solvers.
 /// # Errors
-/// Invalid CSR or storage limits.
+/// Invalid CSR, nonfinite values, or exceeded shape/storage limits.
 /// # Numerical behavior
-/// Copies A and its transpose once; each application performs a sparse product.
+/// O(rows + columns + stored entries) construction time and storage.
+/// Each later application performs a checked sparse matrix-vector product.
 /// # Examples
 /// ```
-/// use sci_sparse::linalg::LinearMap;
-/// let op=sci_sparse::linalg::aslinearoperator(&sci_sparse::identity(2)?)?;
-/// assert_eq!(op.apply(&[3.,4.])?, [3.,4.]);
+/// use sci_sparse::linalg::{LinearMap, LinearOperator};
+/// let op = LinearOperator::try_from(&sci_sparse::construct::identity(2)?)?;
+/// assert_eq!(op.apply(&[3., 4.])?, [3., 4.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
-/// [SciPy aslinearoperator](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.aslinearoperator.html).
-pub fn aslinearoperator(a: &SparseMatrix) -> Result<LinearOperator> {
-    validate(a)?;
-    let t = transpose(a)?;
-    let a = a.clone();
-    LinearOperator::new(
-        a.rows,
-        a.cols,
-        move |x| matvec(&a, x),
-        move |x| matvec(&t, x),
-    )
+/// [SciPy LinearOperator](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.LinearOperator.html).
+impl TryFrom<&SparseMatrix> for LinearOperator {
+    type Error = Error;
+
+    fn try_from(a: &SparseMatrix) -> Result<Self> {
+        validate(a)?;
+        let t = transpose(a)?;
+        let a = a.clone();
+        Self::new(
+            a.rows,
+            a.cols,
+            move |x| matvec(&a, x),
+            move |x| matvec(&t, x),
+        )
+    }
 }
 
 /// Common bounded iterative-solver controls.
@@ -241,25 +255,42 @@ pub struct IterativeResult {
     pub residual_norm: f64,
 }
 fn dot(x: &[f64], y: &[f64]) -> Result<f64> {
-    finite(x.iter().zip(y).map(|(a, b)| a * b).sum())
+    match x.iter().zip(y).map(|(a, b)| a * b).sum::<f64>() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 fn length(x: &[f64]) -> Result<f64> {
-    finite(x.iter().fold(0f64, |s, &v| s.hypot(v)))
+    match x.iter().fold(0f64, |s, &v| s.hypot(v)) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 fn axpy(y: &mut [f64], a: f64, x: &[f64]) -> Result<()> {
     for (y, &x) in y.iter_mut().zip(x) {
-        *y = finite(*y + a * x)?;
+        *y = match *y + a * x {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     Ok(())
 }
 fn times(x: &[f64], a: f64) -> Result<Vec<f64>> {
-    x.iter().map(|v| finite(v * a)).collect()
+    x.iter()
+        .map(|v| match v * a {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
+        .collect()
 }
 fn ratio(a: f64, b: f64) -> Result<f64> {
     if b == 0. {
         return Err(Error::NumericalFailure("iterative solver breakdown"));
     }
-    finite(a / b)
+    match a / b {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 fn mv(a: &dyn LinearMap, x: &[f64], trans: bool) -> Result<Vec<f64>> {
     let y = if trans {
@@ -270,7 +301,7 @@ fn mv(a: &dyn LinearMap, x: &[f64], trans: bool) -> Result<Vec<f64>> {
     if y.len() != if trans { a.cols() } else { a.rows() } {
         return Err(Error::DimensionMismatch);
     }
-    sci_core::finite_slice(&y)?;
+    sci_core::is_finite_slice(&y)?;
     Ok(y)
 }
 fn residual(a: &dyn LinearMap, b: &[f64], x: &[f64]) -> Result<Vec<f64>> {
@@ -294,7 +325,7 @@ fn setup(a: &dyn LinearMap, b: &[f64], o: &SolverOptions, square: bool) -> Resul
     {
         return Err(Error::DimensionMismatch);
     }
-    sci_core::finite_slice(b)?;
+    sci_core::is_finite_slice(b)?;
     if !o.rtol.is_finite()
         || !o.atol.is_finite()
         || !o.shift.is_finite()
@@ -316,8 +347,14 @@ fn setup(a: &dyn LinearMap, b: &[f64], o: &SolverOptions, square: bool) -> Resul
     if x.len() != a.cols() {
         return Err(Error::DimensionMismatch);
     }
-    sci_core::finite_slice(&x)?;
-    Ok((x, finite(o.atol.max(o.rtol * length(b)?))?))
+    sci_core::is_finite_slice(&x)?;
+    Ok((
+        x,
+        match o.atol.max(o.rtol * length(b)?) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?,
+    ))
 }
 fn finish(
     a: &dyn LinearMap,
@@ -336,10 +373,11 @@ fn finish(
 }
 fn operator_matrix(a: &dyn LinearMap) -> Result<faer::Mat<f64>> {
     let mut d = faer::Mat::<f64>::zeros(a.rows(), a.cols());
+    let mut e = vec![0.; a.cols()];
     for j in 0..a.cols() {
-        let mut e = vec![0.; a.cols()];
         e[j] = 1.;
         let c = mv(a, &e, false)?;
+        e[j] = 0.;
         for i in 0..a.rows() {
             d[(i, j)] = c[i];
         }
@@ -424,7 +462,12 @@ fn backend_short(
             dyn_stack::MemStack::new(&mut mem),
         );
     }
-    let x = (0..n).map(|i| finite(out[(i, 0)])).collect::<Result<_>>()?;
+    let x = (0..n)
+        .map(|i| match out[(i, 0)] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
+        .collect::<Result<_>>()?;
     finish(a, b, x, iterations, tol)
 }
 #[derive(Clone, Copy)]
@@ -473,12 +516,18 @@ fn short(
             Short::Bicg => {
                 let beta = if iter == 0 { 0. } else { ratio(rho, rho_prev)? };
                 for i in 0..n {
-                    p[i] = finite(z[i] + beta * p[i])?;
+                    p[i] = match z[i] + beta * p[i] {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }?;
                 }
                 let ap = mv(a, &p, false)?;
                 let zt = pre(o, &shadow, true)?;
                 for i in 0..n {
-                    pt[i] = finite(zt[i] + beta * pt[i])?;
+                    pt[i] = match zt[i] + beta * pt[i] {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }?;
                 }
                 let alpha = ratio(rho, dot(&pt, &ap)?)?;
                 axpy(&mut shadow, -alpha, &mv(a, &pt, true)?)?;
@@ -487,19 +536,28 @@ fn short(
             }
             Short::Cgs => {
                 if iter == 0 {
-                    u = r.clone();
-                    p = r.clone();
+                    u.copy_from_slice(&r);
+                    p.copy_from_slice(&r);
                 } else {
                     let beta = ratio(rho, rho_prev)?;
                     for i in 0..n {
-                        u[i] = finite(r[i] + beta * q[i])?;
-                        p[i] = finite(u[i] + beta * (q[i] + beta * p[i]))?;
+                        u[i] = match r[i] + beta * q[i] {
+                            value if value.is_finite() => Ok(value),
+                            _ => Err(Error::NonFiniteEvaluation),
+                        }?;
+                        p[i] = match u[i] + beta * (q[i] + beta * p[i]) {
+                            value if value.is_finite() => Ok(value),
+                            _ => Err(Error::NonFiniteEvaluation),
+                        }?;
                     }
                 }
                 v = mv(a, &pre(o, &p, false)?, false)?;
                 let alpha = ratio(rho, dot(&shadow, &v)?)?;
                 for i in 0..n {
-                    q[i] = finite(u[i] - alpha * v[i])?;
+                    q[i] = match u[i] - alpha * v[i] {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }?;
                 }
                 let mut uq = u.clone();
                 axpy(&mut uq, 1., &q)?;
@@ -548,20 +606,26 @@ fn qmr_inner(
         let w = times(&wt, ratio(1., xi)?)?;
         let delta = dot(&w, &v)?;
         if iter == 0 {
-            p = v.clone();
-            q = w.clone();
+            p.copy_from_slice(&v);
+            q.copy_from_slice(&w);
         } else {
             let cp = ratio(xi * delta, epsilon)?;
             let cq = ratio(rho * delta, epsilon)?;
             for i in 0..n {
-                p[i] = finite(v[i] - cp * p[i])?;
-                q[i] = finite(w[i] - cq * q[i])?;
+                p[i] = match v[i] - cp * p[i] {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
+                q[i] = match w[i] - cq * q[i] {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
             }
         }
         let ap = mv(a, &p, false)?;
         epsilon = dot(&q, &ap)?;
         let beta = ratio(epsilon, delta)?;
-        vt = ap.clone();
+        vt.copy_from_slice(&ap);
         axpy(&mut vt, -beta, &v)?;
         let rho_prev = rho;
         rho = length(&vt)?;
@@ -572,19 +636,28 @@ fn qmr_inner(
         let theta_prev = theta;
         theta = ratio(rho, gamma_prev * beta.abs())?;
         gamma = 1. / 1f64.hypot(theta);
-        eta = finite(-eta * ratio(rho_prev, beta)? * (gamma / gamma_prev).powi(2))?;
+        eta = match -eta * ratio(rho_prev, beta)? * (gamma / gamma_prev).powi(2) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         let c = (theta_prev * gamma).powi(2);
         for i in 0..n {
-            d[i] = finite(if iter == 0 {
+            d[i] = match if iter == 0 {
                 eta * p[i]
             } else {
                 c * d[i] + eta * p[i]
-            })?;
-            s[i] = finite(if iter == 0 {
+            } {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
+            s[i] = match if iter == 0 {
                 eta * ap[i]
             } else {
                 c * s[i] + eta * ap[i]
-            })?;
+            } {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
         }
         axpy(&mut x, 1., &d)?;
         axpy(&mut r, -1., &s)?;
@@ -622,18 +695,27 @@ fn tfqmr_inner(
         let even = iter % 2 == 0;
         if even {
             alpha = ratio(rho, dot(&shadow, &v)?)?;
-            next = u.clone();
+            next.copy_from_slice(&u);
             axpy(&mut next, -alpha, &v)?;
         }
         axpy(&mut w, -alpha, &uh)?;
         let c = ratio(theta * theta * eta, alpha)?;
         for i in 0..d.len() {
-            d[i] = finite(u[i] + c * d[i])?;
+            d[i] = match u[i] + c * d[i] {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
         }
         theta = ratio(length(&w)?, tau)?;
         let c = 1. / 1f64.hypot(theta);
-        tau = finite(tau * theta * c)?;
-        eta = finite(c * c * alpha)?;
+        tau = match tau * theta * c {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
+        eta = match c * c * alpha {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         axpy(&mut x, eta, &d)?;
         if length(&residual(a, b, &x)?)? <= tol {
             return finish(a, b, x, iter + 1, tol);
@@ -642,14 +724,20 @@ fn tfqmr_inner(
             rho = dot(&shadow, &w)?;
             let beta = ratio(rho, rho_last)?;
             for i in 0..u.len() {
-                u[i] = finite(w[i] + beta * u[i])?;
-                v[i] = finite(beta * uh[i] + beta * beta * v[i])?;
+                u[i] = match w[i] + beta * u[i] {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
+                v[i] = match beta * uh[i] + beta * beta * v[i] {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
             }
             uh = mv(a, &u, false)?;
             axpy(&mut v, 1., &uh)?;
         } else {
             uh = mv(a, &next, false)?;
-            u = next.clone();
+            std::mem::swap(&mut u, &mut next);
             rho_last = rho;
         }
     }
@@ -736,7 +824,10 @@ fn projected(
             for _ in 0..2 {
                 for (i, qi) in q.iter().enumerate() {
                     let t = dot(qi, &w)?;
-                    h[i][j] = finite(h[i][j] + t)?;
+                    h[i][j] = match h[i][j] + t {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }?;
                     axpy(&mut w, -t, qi)?;
                 }
             }
@@ -752,10 +843,19 @@ fn projected(
             for (i, &(c, s)) in rotations.iter().enumerate() {
                 let top = qr[i][j];
                 let bottom = qr[i + 1][j];
-                qr[i][j] = finite(c * top + s * bottom)?;
-                qr[i + 1][j] = finite(-s * top + c * bottom)?;
+                qr[i][j] = match c * top + s * bottom {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
+                qr[i + 1][j] = match -s * top + c * bottom {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
             }
-            let diagonal = finite(qr[j][j].hypot(qr[j + 1][j]))?;
+            let diagonal = match qr[j][j].hypot(qr[j + 1][j]) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             let (c, s) = if diagonal == 0. {
                 (1., 0.)
             } else {
@@ -764,8 +864,14 @@ fn projected(
             rotations.push((c, s));
             qr[j][j] = diagonal;
             qr[j + 1][j] = 0.;
-            rhs[j + 1] = finite(-s * rhs[j])?;
-            rhs[j] = finite(c * rhs[j])?;
+            rhs[j + 1] = match -s * rhs[j] {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
+            rhs[j] = match c * rhs[j] {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             deficient |= diagonal <= 64. * f64::EPSILON * image_norm;
             let breakdown = wn <= 64. * f64::EPSILON * image_norm;
             let end = breakdown || j + 1 == max;
@@ -776,18 +882,21 @@ fn projected(
                     let hj: Matrix = (0..j + 2).map(|i| h[i][..=j].to_vec()).collect();
                     let mut target = vec![0.; j + 2];
                     target[0] = beta;
-                    sci_linalg::lstsq(&hj, &target, None)?.solution
+                    sci_linalg::solvers::lstsq(&hj, &target, None)?.solution
                 } else {
                     let mut y = rhs[..=j].to_vec();
                     for i in (0..=j).rev() {
                         for k in i + 1..=j {
-                            y[i] = finite(y[i] - qr[i][k] * y[k])?;
+                            y[i] = match y[i] - qr[i][k] * y[k] {
+                                value if value.is_finite() => Ok(value),
+                                _ => Err(Error::NonFiniteEvaluation),
+                            }?;
                         }
                         y[i] = ratio(y[i], qr[i][i])?;
                     }
                     y
                 };
-                x = base.clone();
+                x.copy_from_slice(&base);
                 for (zi, &c) in z.iter().zip(&y) {
                     axpy(&mut x, c, zi)?;
                 }
@@ -856,7 +965,10 @@ fn min_res(a: &dyn LinearMap, b: &[f64], o: &SolverOptions) -> Result<IterativeR
         }
     }
     for (i, row) in dense.iter_mut().enumerate() {
-        row[i] = finite(row[i] - o.shift)?;
+        row[i] = match row[i] - o.shift {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     // Full reorthogonalization of symmetric Arnoldi is the Lanczos subspace
     // minimum-residual method; retaining H avoids unstable short recurrences.
@@ -933,7 +1045,10 @@ fn ls_setup(
     }
     let mut rhs = b.to_vec();
     rhs.resize(d.len(), 0.);
-    let tol = finite(o.atol.max(o.rtol * length(b)?))?;
+    let tol = match o.atol.max(o.rtol * length(b)?) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     Ok((d, rhs, tol))
 }
 fn ls_finish(
@@ -947,7 +1062,14 @@ fn ls_finish(
     let r = residual(a, b, &x)?;
     let residual_norm = length(&r)?;
     let mut normal = mv(a, &r, true)?;
-    axpy(&mut normal, -finite(o.damp * o.damp)?, &x)?;
+    axpy(
+        &mut normal,
+        -match o.damp * o.damp {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?,
+        &x,
+    )?;
     let normal_residual_norm = length(&normal)?;
     Ok(LeastSquaresResult {
         x,
@@ -965,7 +1087,10 @@ fn lsqr_inner(a: &dyn LinearMap, b: &[f64], o: &LeastSquaresOptions) -> Result<L
     let forward = |x: &[f64]| -> Result<Vec<f64>> { d.iter().map(|r| dot(r, x)).collect() };
     let backward = |x: &[f64]| -> Result<Vec<f64>> {
         (0..n)
-            .map(|j| finite((0..m).map(|i| d[i][j] * x[i]).sum()))
+            .map(|j| match (0..m).map(|i| d[i][j] * x[i]).sum::<f64>() {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            })
             .collect()
     };
     let mut beta = length(&rhs)?;
@@ -1008,7 +1133,10 @@ fn lsqr_inner(a: &dyn LinearMap, b: &[f64], o: &LeastSquaresOptions) -> Result<L
         phibar *= s;
         axpy(&mut x, ratio(phi, rho)?, &w)?;
         for i in 0..n {
-            w[i] = finite(v[i] - ratio(theta, rho)? * w[i])?;
+            w[i] = match v[i] - ratio(theta, rho)? * w[i] {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
         }
         let result = ls_finish(a, b, x.clone(), iter + 1, o, tol)?;
         if result.converged {
@@ -1052,7 +1180,12 @@ fn lsmr_inner(a: &dyn LinearMap, b: &[f64], o: &LeastSquaresOptions) -> Result<L
         faer::Par::Seq,
         dyn_stack::MemStack::new(&mut memory),
     );
-    let x = (0..n).map(|i| finite(out[(i, 0)])).collect::<Result<_>>()?;
+    let x = (0..n)
+        .map(|i| match out[(i, 0)] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
+        .collect::<Result<_>>()?;
     ls_finish(a, b, x, iterations, o, tol)
 }
 
@@ -1081,7 +1214,7 @@ fn lsmr_inner(a: &dyn LinearMap, b: &[f64], o: &LeastSquaresOptions) -> Result<L
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::cg(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1116,7 +1249,7 @@ pub fn cg(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<Iter
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::bicg(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1152,7 +1285,7 @@ pub fn bicg(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<It
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::bicgstab(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1187,7 +1320,7 @@ pub fn bicgstab(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Resul
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::cgs(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1222,7 +1355,7 @@ pub fn cgs(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<Ite
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::qmr(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1257,7 +1390,7 @@ pub fn qmr(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<Ite
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::tfqmr(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1294,7 +1427,7 @@ pub fn tfqmr(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<I
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::gmres(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1331,7 +1464,7 @@ pub fn gmres(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<I
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::lgmres(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1368,7 +1501,7 @@ pub fn lgmres(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::gcrotmk(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1405,7 +1538,7 @@ pub fn gcrotmk(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result
 /// For built-in CSR inputs, each product has at most 65,536 entries.
 /// # Examples
 /// ```
-/// let a=sci_sparse::identity(2)?;
+/// let a=sci_sparse::construct::identity(2)?;
 /// let result=sci_sparse::linalg::minres(&a,&[2.,3.],&Default::default())?;
 /// assert!(result.converged);
 /// # Ok::<(), sci_core::Error>(())
@@ -1436,7 +1569,7 @@ pub fn minres(a: &impl LinearMap, b: &[f64], options: &SolverOptions) -> Result<
 /// conditioning can reduce accuracy. No conlim, variance or logging options.
 /// # Examples
 /// ```
-/// let r=sci_sparse::linalg::lsqr(&sci_sparse::identity(2)?,&[2.,3.],&Default::default())?;
+/// let r=sci_sparse::linalg::lsqr(&sci_sparse::construct::identity(2)?,&[2.,3.],&Default::default())?;
 /// assert!(r.converged);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1470,7 +1603,7 @@ pub fn lsqr(
 /// conditioning can reduce accuracy. No conlim, variance or logging options.
 /// # Examples
 /// ```
-/// let r=sci_sparse::linalg::lsmr(&sci_sparse::identity(2)?,&[2.,3.],&Default::default())?;
+/// let r=sci_sparse::linalg::lsmr(&sci_sparse::construct::identity(2)?,&[2.,3.],&Default::default())?;
 /// assert!(r.converged);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

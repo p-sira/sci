@@ -3,7 +3,7 @@ use super::{
     BandType, IirFamily, TransferFunction, Zpk, buttord, cheb1ord, cheb2ord, checked, iirfilter,
     nonempty, positive, size,
 };
-use crate::special::{ellipj, ellipk, ellipkinc, ellipkm1};
+use crate::special::elliptic::{ellipj, ellipk, ellipkinc, ellipkm1};
 use crate::{
     Error, Result,
     complex::{Complex, native, owned},
@@ -28,10 +28,19 @@ fn fact(n: usize) -> f64 {
 // exp(z) K_(n+1/2)(z), whose zeros are those of theta_n(z), avoiding
 // cancellation in high-order polynomial evaluation (as in SciPy besselap).
 fn refine_bessel_pole(n: usize, mut z: Complex64) -> Result<Complex64> {
+    if !z.re.is_finite() || !z.im.is_finite() || z == Complex64::new(0., 0.) {
+        return Err(Error::NonFiniteEvaluation);
+    }
+    let scaled_k = |order, argument| {
+        complex_bessel::besselk_scaled(order, argument)
+            .map_err(|_| Error::NumericalFailure("scaled Bessel K evaluation failed"))
+    };
     for _ in 0..16 {
-        let value = xsf::bessel_ke(n as f64 + 0.5, z);
-        let derivative =
-            value - 0.5 * (xsf::bessel_ke(n as f64 - 0.5, z) + xsf::bessel_ke(n as f64 + 1.5, z));
+        let order = n as f64 + 0.5;
+        let value = scaled_k(order, z)?;
+        // K_(nu+1) = K_(nu-1) + 2*nu*K_nu/z. The same recurrence
+        // holds for exp(z)*K, saving one complex Bessel evaluation.
+        let derivative = value * (1. - order / z) - scaled_k(order - 1., z)?;
         let step = value / derivative;
         if !step.re.is_finite() || !step.im.is_finite() {
             return Err(Error::NonFiniteEvaluation);
@@ -100,7 +109,7 @@ fn specification(rp: f64, rs: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
 /// let _ = besselap(3,BesselNorm::Phase)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -216,7 +225,8 @@ pub fn besselap(n: usize, norm: BesselNorm) -> Result<Zpk> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
+/// use sci_signal::design::{BandType};
 /// let _ = bessel(3,&[0.2],BandType::Lowpass,Some(2.),BesselNorm::Phase)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -262,7 +272,7 @@ pub fn bessel(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
 /// let _ = ellipap(4,1.,40.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -314,20 +324,22 @@ pub fn ellipap(n: usize, rp: f64, rs: f64) -> Result<Zpk> {
             im: -s * dv / den,
         });
     }
-    zeros.extend(zeros.clone().into_iter().map(|z| Complex {
-        re: z.re,
-        im: -z.im,
-    }));
-    poles.extend(
-        poles
-            .clone()
-            .into_iter()
-            .filter(|p| p.im.abs() > 1e-15)
-            .map(|p| Complex {
+    for i in 0..zeros.len() {
+        let z = zeros[i];
+        zeros.push(Complex {
+            re: z.re,
+            im: -z.im,
+        });
+    }
+    for i in 0..poles.len() {
+        let p = poles[i];
+        if p.im.abs() > 1e-15 {
+            poles.push(Complex {
                 re: p.re,
                 im: -p.im,
-            }),
-    );
+            });
+        }
+    }
     let mut gain = dc_gain(&poles, &zeros);
     if n.is_multiple_of(2) {
         gain /= (1. + eps2).sqrt();
@@ -364,7 +376,8 @@ pub fn ellipap(n: usize, rp: f64, rs: f64) -> Result<Zpk> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
+/// use sci_signal::design::{BandType};
 /// let _ = ellip(3,1.,40.,&[0.2],BandType::Lowpass,Some(2.))?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -410,7 +423,7 @@ pub fn ellip(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
 /// let _ = ellipord(0.2,0.3,1.,40.,Some(2.))?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -467,7 +480,8 @@ pub fn ellipord(wp: f64, ws: f64, gpass: f64, gstop: f64, fs: Option<f64>) -> Re
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
+/// use sci_signal::design::{IirFamily};
 /// let _ = band_stop_obj(1.,0,[0.8,4.],[2.,3.],1.,40.,IirFamily::Butterworth)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -545,7 +559,8 @@ pub fn band_stop_obj(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
+/// use sci_signal::design::{IirFamily};
 /// let _ = iirdesign(0.2,0.3,1.,40.,Some(2.),IirFamily::Elliptic(1.,40.))?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -616,7 +631,7 @@ pub fn iirdesign(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
 /// let _ = iircomb(20.,30.,false,200.,false)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -680,7 +695,7 @@ pub fn iircomb(w0: f64, q: f64, peak: bool, fs: f64, pass_zero: bool) -> Result<
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
 /// let _ = findfreqs(&[1.,0.],&[1.,8.,25.],9)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -759,7 +774,7 @@ pub fn findfreqs(b: &[f64], a: &[f64], n: usize) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::advanced_design::*;
 /// let _ = gammatone(440.,true,4,16,16000.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

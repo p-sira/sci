@@ -4,6 +4,239 @@ mod common;
 use common::matrix_close;
 use sci::{Error, linalg as l};
 
+#[test]
+fn eigenvalues_only_paths_preserve_order_trace_and_validation() {
+    // The analytic spectrum of this tridiagonal Toeplitz matrix is
+    // 2 + 2 cos(k pi/(n+1)); exercise the inclusive dense order limit.
+    for n in [1, 16, 256] {
+        let d = vec![2.0; n];
+        let e = vec![1.0; n - 1];
+        let values = l::eigen::eigvalsh_tridiagonal(&d, &e).unwrap();
+        assert_eq!(values.len(), n);
+        assert!(values.windows(2).all(|w| w[0] <= w[1]));
+        for (i, &value) in values.iter().enumerate() {
+            let expected =
+                2.0 - 2.0 * (((i + 1) as f64 * std::f64::consts::PI) / (n + 1) as f64).cos();
+            // An absolute bound handles eigenvalues close to zero.
+            assert!((value - expected).abs() < 2e-13);
+        }
+        assert!((values.iter().sum::<f64>() - 2.0 * n as f64).abs() < 2e-11);
+    }
+    assert!(l::eigen::eigvalsh_tridiagonal(&[1.0, 2.0], &[]).is_err());
+    assert!(l::eigen::eigvalsh_tridiagonal(&vec![1.0; 257], &vec![0.0; 256]).is_err());
+    for nonfinite in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert!(l::eigen::eigvalsh_tridiagonal(&[nonfinite], &[]).is_err());
+        assert!(l::eigen::eigvalsh_tridiagonal(&[1.0, 2.0], &[nonfinite]).is_err());
+        for lower in [false, true] {
+            // Validate even the triangle not selected for computation.
+            assert!(l::eigen::eigvalsh(&[[1.0, nonfinite], [nonfinite, 2.0]], lower).is_err());
+            assert!(l::eigen::eigvals_banded(&[[nonfinite]], lower).is_err());
+        }
+    }
+}
+
+#[test]
+fn eigenvalues_only_paths_reject_unrepresentable_eigenvalues_and_bands() {
+    // Every entry is finite, but the 2x2 spectrum is {0, 2 * f64::MAX}.
+    // Computing on a scaled matrix must not silently return +infinity.
+    let huge = f64::MAX;
+    assert_eq!(
+        l::eigen::eigvalsh_tridiagonal(&[huge, huge], &[huge]),
+        Err(Error::NonFiniteEvaluation)
+    );
+    for lower in [false, true] {
+        let band = if lower {
+            [[huge, huge], [huge, 0.0]]
+        } else {
+            [[0.0, huge], [huge, huge]]
+        };
+        assert_eq!(
+            l::eigen::eigvals_banded(&band, lower),
+            Err(Error::NonFiniteEvaluation)
+        );
+
+        // A 2-column band cannot have half-bandwidth 2 or more.
+        assert_eq!(
+            l::eigen::eigvals_banded(&[[1., 2.], [0., 0.], [0., 0.]], lower),
+            Err(Error::DimensionMismatch)
+        );
+    }
+}
+
+#[test]
+fn eigenvalues_only_paths_scale_extreme_inputs_without_losing_relative_accuracy() {
+    // A symmetric 2x2 matrix with diagonal 2s and off-diagonal s has
+    // eigenvalues s and 3s. Normalize before comparing to test tiny scales.
+    for scale in [1e-320, 1e-200, 1.0, 1e200, 1e307] {
+        let a = [[2.0 * scale, scale], [scale, 2.0 * scale]];
+        for lower in [false, true] {
+            let ab = if lower {
+                [[2.0 * scale, 2.0 * scale], [scale, 0.0]]
+            } else {
+                [[0.0, scale], [2.0 * scale, 2.0 * scale]]
+            };
+            for values in [
+                l::eigen::eigvalsh(&a, lower).unwrap(),
+                l::eigen::eigvals_banded(&ab, lower).unwrap(),
+                l::eigen::eigvalsh_tridiagonal(&[2.0 * scale; 2], &[scale]).unwrap(),
+            ] {
+                for (value, expected) in values.into_iter().zip([1.0, 3.0]) {
+                    assert!((value / scale - expected).abs() < 2e-14);
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn banded_eigenvalues_fast_paths_preserve_order_and_storage_layout() {
+    let diagonal = [3.0, -1.0, 8.0, 2.0, 0.5];
+    let off_diagonal = [-0.25, 1.5, -0.75, 2.0];
+    let n = diagonal.len();
+    let dense: Vec<Vec<f64>> = (0..n)
+        .map(|i| {
+            (0..n)
+                .map(|j| {
+                    if i == j {
+                        diagonal[i]
+                    } else if i.abs_diff(j) == 1 {
+                        off_diagonal[i.min(j)]
+                    } else {
+                        0.0
+                    }
+                })
+                .collect()
+        })
+        .collect();
+    let expected = l::eigen::eigvalsh(&dense, true).unwrap();
+
+    for lower in [false, true] {
+        // The first upper-band entry and last lower-band entry are padding.
+        // Neither is part of the mathematical matrix or its eigenvalue scale.
+        let band = if lower {
+            vec![diagonal.to_vec(), vec![-0.25, 1.5, -0.75, 2.0, -1.0e290]]
+        } else {
+            vec![vec![1.0e290, -0.25, 1.5, -0.75, 2.0], diagonal.to_vec()]
+        };
+        let values = l::eigen::eigvals_banded(&band, lower).unwrap();
+        let tridiagonal = l::eigen::eigvalsh_tridiagonal(&diagonal, &off_diagonal).unwrap();
+        assert!(values.windows(2).all(|w| w[0] <= w[1]));
+        for ((value, expected), tridiagonal) in values.iter().zip(&expected).zip(&tridiagonal) {
+            assert!((value - expected).abs() < 2e-12, "lower={lower}");
+            assert!((value - tridiagonal).abs() < 2e-12, "lower={lower}");
+        }
+        let mut invalid_padding = band;
+        invalid_padding[if lower { 1 } else { 0 }][if lower { n - 1 } else { 0 }] = f64::NAN;
+        assert!(l::eigen::eigvals_banded(&invalid_padding, lower).is_err());
+    }
+
+    // Diagonal-only storage is the same for upper and lower layouts. Sorting
+    // requires no eigenvector construction or floating-point arithmetic.
+    let diagonal = [1.0e307, -7.0, 0.0, -0.0, 1.0e-320, -7.0];
+    let expected: [f64; 6] = [-7.0, -7.0, -0.0, 0.0, 1.0e-320, 1.0e307];
+    for lower in [false, true] {
+        let values = l::eigen::eigvals_banded(&[diagonal], lower).unwrap();
+        assert_eq!(values.len(), expected.len());
+        for (&value, &want) in values.iter().zip(&expected) {
+            assert_eq!(value.to_bits(), want.to_bits());
+        }
+    }
+}
+
+#[test]
+fn tridiagonal_banded_eigenvalues_scale_and_reach_order_limit() {
+    for scale in [1e-320, 1e-200, 1.0, 1e200, 1e307] {
+        let n = 4;
+        let diagonal = vec![2.0 * scale; n];
+        let off_diagonal = vec![scale; n - 1];
+        let tolerance = if scale < f64::MIN_POSITIVE {
+            3e-3
+        } else {
+            2e-12
+        };
+        for values in [
+            l::eigen::eigvalsh_tridiagonal(&diagonal, &off_diagonal).unwrap(),
+            l::eigen::eigvals_banded(&[diagonal.clone(), vec![scale, scale, scale, 0.0]], true)
+                .unwrap(),
+            l::eigen::eigvals_banded(&[vec![0.0, scale, scale, scale], diagonal.clone()], false)
+                .unwrap(),
+        ] {
+            for (i, value) in values.iter().enumerate() {
+                let expected =
+                    2.0 - 2.0 * (((i + 1) as f64 * std::f64::consts::PI) / (n + 1) as f64).cos();
+                assert!(((value / scale) - expected).abs() < tolerance);
+            }
+        }
+    }
+
+    let n = 256;
+    let diagonal = vec![2.0; n];
+    let off_diagonal = vec![-1.0; n - 1];
+    let upper = vec![
+        std::iter::once(0.0)
+            .chain(off_diagonal.iter().copied())
+            .collect::<Vec<_>>(),
+        diagonal.clone(),
+    ];
+    let lower = vec![
+        diagonal.clone(),
+        off_diagonal
+            .iter()
+            .copied()
+            .chain(std::iter::once(0.0))
+            .collect::<Vec<_>>(),
+    ];
+    for values in [
+        l::eigen::eigvalsh_tridiagonal(&diagonal, &off_diagonal).unwrap(),
+        l::eigen::eigvals_banded(&upper, false).unwrap(),
+        l::eigen::eigvals_banded(&lower, true).unwrap(),
+    ] {
+        assert_eq!(values.len(), n);
+        assert!(values.windows(2).all(|w| w[0] <= w[1]));
+        for (i, &value) in values.iter().enumerate() {
+            let angle = ((i + 1) as f64 * std::f64::consts::PI) / (n + 1) as f64;
+            assert!((value - (2.0 - 2.0 * angle.cos())).abs() < 2e-12);
+        }
+    }
+}
+
+#[test]
+fn eigvals_banded_wider_band_retains_dense_semantics() {
+    let diagonal = [4.0, 3.0, 2.0, 7.0, 6.0];
+    let first = [-1.0, 0.5, -0.25, 2.0];
+    let second = [0.75, -0.5, 1.25];
+    let n = diagonal.len();
+    let dense: Vec<Vec<f64>> = (0..n)
+        .map(|i| {
+            (0..n)
+                .map(|j| match i.abs_diff(j) {
+                    0 => diagonal[i],
+                    1 => first[i.min(j)],
+                    2 => second[i.min(j)],
+                    _ => 0.0,
+                })
+                .collect()
+        })
+        .collect();
+    let expected = l::eigen::eigvalsh(&dense, true).unwrap();
+    let lower = vec![
+        diagonal.to_vec(),
+        vec![-1.0, 0.5, -0.25, 2.0, 0.0],
+        vec![0.75, -0.5, 1.25, 0.0, 0.0],
+    ];
+    let upper = vec![
+        vec![0.0, 0.0, 0.75, -0.5, 1.25],
+        vec![0.0, -1.0, 0.5, -0.25, 2.0],
+        diagonal.to_vec(),
+    ];
+    for (band, lower) in [(&lower, true), (&upper, false)] {
+        let values = l::eigen::eigvals_banded(band, lower).unwrap();
+        for (&value, &want) in values.iter().zip(&expected) {
+            assert!((value - want).abs() < 2e-12);
+        }
+    }
+}
+
 fn identity(n: usize) -> l::Matrix {
     (0..n)
         .map(|i| (0..n).map(|j| f64::from(i == j)).collect())
@@ -15,7 +248,7 @@ fn projector(a: &l::Matrix) -> l::Matrix {
     if a[0].is_empty() {
         vec![vec![0.; a.len()]; a.len()]
     } else {
-        l::matmul(a, &l::transpose(a).unwrap()).unwrap()
+        l::basic::matmul(a, &l::basic::transpose(a).unwrap()).unwrap()
     }
 }
 
@@ -29,22 +262,22 @@ fn singular_lu_preserves_rectangular_reconstruction_and_rejects_solves() {
         vec![vec![0., 1.], vec![0., 3.], vec![0., 2.]],
         vec![vec![0., 2., 3.], vec![0., 1., 4.]],
     ] {
-        let f = l::lu(&a).unwrap();
+        let f = l::decompositions::lu(&a).unwrap();
         let k = a.len().min(a[0].len());
         assert_eq!((f.l.len(), f.l[0].len()), (a.len(), k));
         assert_eq!((f.u.len(), f.u[0].len()), (k, a[0].len()));
         matrix_close(
-            &l::matmul(&l::matmul(&f.p, &f.l).unwrap(), &f.u).unwrap(),
+            &l::basic::matmul(&l::basic::matmul(&f.p, &f.l).unwrap(), &f.u).unwrap(),
             &a,
             2e-12,
             2e-12,
         );
         if a.len() == a[0].len() {
-            let f = l::lu_factor(&a).unwrap();
+            let f = l::decompositions::lu_factor(&a).unwrap();
             assert!(f.packed.iter().flatten().all(|x| x.is_finite()));
             for transpose in [false, true] {
                 assert!(matches!(
-                    l::lu_solve(&f, &vec![1.; a.len()], transpose),
+                    l::solvers::lu_solve(&f, &vec![1.; a.len()], transpose),
                     Err(Error::NumericalFailure(_))
                 ));
             }
@@ -56,10 +289,10 @@ fn singular_lu_preserves_rectangular_reconstruction_and_rejects_solves() {
 fn rank_cutoff_is_strict_and_projectors_partition_the_space() {
     let a = [[4., 0.], [0., 1.]];
     for (cutoff, rank) in [(0.25 - f64::EPSILON, 2), (0.25, 1), (1., 0)] {
-        let (inverse, actual) = l::pinv(&a, 0., Some(cutoff)).unwrap();
+        let (inverse, actual) = l::basic::pinv(&a, 0., Some(cutoff)).unwrap();
         assert_eq!(actual, rank);
-        let range = l::orth(&a, Some(cutoff)).unwrap();
-        let null = l::null_space(&a, Some(cutoff)).unwrap();
+        let range = l::subspaces::orth(&a, Some(cutoff)).unwrap();
+        let null = l::subspaces::null_space(&a, Some(cutoff)).unwrap();
         assert_eq!(range[0].len(), rank);
         assert_eq!(null[0].len(), 2 - rank);
         let p = projector(&range);
@@ -70,8 +303,8 @@ fn rank_cutoff_is_strict_and_projectors_partition_the_space() {
             .map(|(p, q)| p.iter().zip(q).map(|(p, q)| p + q).collect())
             .collect();
         matrix_close(&sum, &identity(2), 2e-12, 2e-12);
-        matrix_close(&l::matmul(&a, &inverse).unwrap(), &p, 2e-12, 2e-12);
-        let fit = l::lstsq(&a, &[4., 1.], Some(cutoff)).unwrap();
+        matrix_close(&l::basic::matmul(&a, &inverse).unwrap(), &p, 2e-12, 2e-12);
+        let fit = l::solvers::lstsq(&a, &[4., 1.], Some(cutoff)).unwrap();
         assert_eq!(fit.rank, rank);
         assert!(fit.residuals.is_empty());
     }
@@ -82,15 +315,23 @@ fn dense_axis_limit_accepts_256_and_rejects_257() {
     // Exact identity references avoid storing a large redundant fixture.
     let a = identity(256);
     let b = vec![1.; 256];
-    assert_eq!(l::solve(&a, &b).unwrap(), b);
-    assert_eq!(l::det(&a).unwrap(), 1.);
-    matrix_close(&l::cholesky(&a, true).unwrap(), &a, 2e-12, 2e-12);
+    assert_eq!(l::solvers::solve(&a, &b).unwrap(), b);
+    assert_eq!(l::basic::det(&a).unwrap(), 1.);
+    matrix_close(
+        &l::decompositions::cholesky(&a, true).unwrap(),
+        &a,
+        2e-12,
+        2e-12,
+    );
     let too_large = identity(257);
-    for result in [l::inv(&too_large), l::cholesky(&too_large, true)] {
+    for result in [
+        l::basic::inv(&too_large),
+        l::decompositions::cholesky(&too_large, true),
+    ] {
         assert!(matches!(result, Err(Error::InvalidInput(_))));
     }
     assert!(matches!(
-        l::solve(&too_large, &vec![1.; 257]),
+        l::solvers::solve(&too_large, &vec![1.; 257]),
         Err(Error::InvalidInput(_))
     ));
 }
@@ -99,37 +340,40 @@ fn dense_axis_limit_accepts_256_and_rejects_257() {
 fn overflow_is_reported_in_rank_thresholds_and_factor_outputs() {
     let a = [[2., 0.], [0., 1.]];
     assert_eq!(
-        l::pinv(&a, f64::MAX, Some(f64::MAX)),
+        l::basic::pinv(&a, f64::MAX, Some(f64::MAX)),
         Err(Error::NonFiniteEvaluation)
     );
     assert_eq!(
-        l::pinvh(&a, f64::MAX, Some(f64::MAX), true),
+        l::basic::pinvh(&a, f64::MAX, Some(f64::MAX), true),
         Err(Error::NonFiniteEvaluation)
     );
-    assert_eq!(l::orth(&a, Some(f64::MAX)), Err(Error::NonFiniteEvaluation));
     assert_eq!(
-        l::null_space(&a, Some(f64::MAX)),
+        l::subspaces::orth(&a, Some(f64::MAX)),
+        Err(Error::NonFiniteEvaluation)
+    );
+    assert_eq!(
+        l::subspaces::null_space(&a, Some(f64::MAX)),
         Err(Error::NonFiniteEvaluation)
     );
     assert!(matches!(
-        l::lstsq(&a, &[1., 1.], Some(f64::MAX)),
+        l::solvers::lstsq(&a, &[1., 1.], Some(f64::MAX)),
         Err(Error::NonFiniteEvaluation)
     ));
     let overflowing = [[f64::MAX, f64::MAX], [f64::MAX, -f64::MAX]];
     assert!(matches!(
-        l::qr(&overflowing),
+        l::decompositions::qr(&overflowing),
         Err(Error::NonFiniteEvaluation)
     ));
     assert!(matches!(
-        l::svdvals(&overflowing),
+        l::decompositions::svdvals(&overflowing),
         Err(Error::NonFiniteEvaluation)
     ));
     assert!(matches!(
-        l::eigvalsh(&overflowing, true),
+        l::eigen::eigvalsh(&overflowing, true),
         Err(Error::NonFiniteEvaluation)
     ));
     assert!(matches!(
-        l::norm(&overflowing, l::MatrixNorm::Frobenius),
+        l::basic::norm(&overflowing, l::basic::MatrixNorm::Frobenius),
         Err(Error::NonFiniteEvaluation)
     ));
 }
@@ -138,18 +382,18 @@ fn overflow_is_reported_in_rank_thresholds_and_factor_outputs() {
 fn principal_functions_validate_callbacks_and_singular_branches() {
     let jordan = [[2., 1.], [0., 2.]];
     assert!(matches!(
-        l::funm(&jordan, |z| z),
+        l::matrix_functions::funm(&jordan, |z| z),
         Err(Error::NumericalFailure(_))
     ));
     assert_eq!(
-        l::funm(&[[1.]], |mut z| {
+        l::matrix_functions::funm(&[[1.]], |mut z| {
             z.re = f64::NAN;
             z
         }),
         Err(Error::NonFiniteEvaluation)
     );
     assert_eq!(
-        l::funm(&[[1.]], |mut z| {
+        l::matrix_functions::funm(&[[1.]], |mut z| {
             z.im = f64::INFINITY;
             z
         }),
@@ -157,14 +401,14 @@ fn principal_functions_validate_callbacks_and_singular_branches() {
     );
     let singular = [[0., 0.], [0., 1.]];
     assert!(matches!(
-        l::fractional_matrix_power(&singular, -1.),
+        l::matrix_functions::fractional_matrix_power(&singular, -1.),
         Err(Error::NumericalFailure(_))
     ));
     assert!(matches!(
-        l::fractional_matrix_power(&singular, 0.5),
+        l::matrix_functions::fractional_matrix_power(&singular, 0.5),
         Err(Error::InvalidInput(_))
     ));
-    let zero_power = l::fractional_matrix_power(&singular, 0.).unwrap();
+    let zero_power = l::matrix_functions::fractional_matrix_power(&singular, 0.).unwrap();
     for (i, row) in zero_power.iter().enumerate() {
         for (j, value) in row.iter().enumerate() {
             assert_eq!(value.re, f64::from(i == j));
@@ -173,43 +417,93 @@ fn principal_functions_validate_callbacks_and_singular_branches() {
     }
     for exponent in [f64::NAN, f64::INFINITY, 4_294_967_297.] {
         assert!(matches!(
-            l::fractional_matrix_power(&[[1.]], exponent),
+            l::matrix_functions::fractional_matrix_power(&[[1.]], exponent),
             Err(Error::InvalidInput(_))
         ));
     }
     let rotation = [[0., -1.], [1., 0.]];
-    assert!(matches!(l::signm(&rotation), Err(Error::InvalidInput(_))));
+    assert!(matches!(
+        l::matrix_functions::signm(&rotation),
+        Err(Error::InvalidInput(_))
+    ));
+}
+
+#[test]
+fn principal_logarithm_matches_analytic_triangular_identities() {
+    // The off-diagonal logarithm of [[a,b],[0,d]] is the first divided
+    // difference b * (ln(a)-ln(d))/(a-d). Test without and with inverse scaling.
+    for (a, b, d) in [(1.1_f64, 0.075, 1.25), (4., 1.5, 9.)] {
+        let log = l::matrix_functions::logm(&[[a, b], [0., d]]).unwrap();
+        let expected = [[a.ln(), b * (a.ln() - d.ln()) / (a - d)], [0., d.ln()]];
+        for i in 0..2 {
+            for j in 0..2 {
+                assert!(
+                    (log[i][j].re - expected[i][j]).abs() < 3e-11,
+                    "logm entry ({i}, {j}) for a={a}, d={d}: {:?}",
+                    log[i][j]
+                );
+                assert!(log[i][j].im.abs() < 3e-11);
+            }
+        }
+    }
+
+    // A = I + N with N^3 = 0: log(A) = N - N^2/2 and
+    // A^(1/2) = I + N/2 - N^2/8, independently of quadrature.
+    let jordan = [[1., 0.3, 0.], [0., 1., 0.2], [0., 0., 1.]];
+    let cases = [
+        (
+            l::matrix_functions::logm(&jordan).unwrap(),
+            [[0., 0.3, -0.03], [0., 0., 0.2], [0., 0., 0.]],
+        ),
+        (
+            l::matrix_functions::fractional_matrix_power(&jordan, 0.5).unwrap(),
+            [[1., 0.15, -0.0075], [0., 1., 0.1], [0., 0., 1.]],
+        ),
+    ];
+    for (actual, expected) in cases {
+        for i in 0..3 {
+            for j in 0..3 {
+                assert!(
+                    (actual[i][j].re - expected[i][j]).abs() < 3e-11,
+                    "entry ({i}, {j}): {:?} vs {}",
+                    actual[i][j],
+                    expected[i][j]
+                );
+                assert!(actual[i][j].im.abs() < 3e-11);
+            }
+        }
+    }
 }
 
 #[test]
 fn structured_work_limits_and_matrix_equation_overflow_are_explicit() {
     let long = vec![1.; 257];
     for result in [
-        l::solve_toeplitz(&long, None, &long),
-        l::solve_toeplitz(&[1.], Some(&long), &[1.]),
-        l::solve_circulant(&long, &long),
+        l::solvers::solve_toeplitz(&long, None, &long),
+        l::solvers::solve_toeplitz(&[1.], Some(&long), &[1.]),
+        l::solvers::solve_circulant(&long, &long),
     ] {
         assert!(matches!(result, Err(Error::InvalidInput(_))));
     }
     assert!(matches!(
-        l::matmul_toeplitz(&long, None, &[[1.]]),
+        l::structured::matmul_toeplitz(&long, None, &[[1.]]),
         Err(Error::InvalidInput(_))
     ));
     assert!(matches!(
-        l::matmul_toeplitz(&[1.], Some(&long), &[[1.]]),
+        l::structured::matmul_toeplitz(&[1.], Some(&long), &[[1.]]),
         Err(Error::InvalidInput(_))
     ));
     assert_eq!(
-        l::solve_discrete_lyapunov(&[[f64::MAX]], &[[1.]]),
+        l::solvers::solve_discrete_lyapunov(&[[f64::MAX]], &[[1.]]),
         Err(Error::NonFiniteEvaluation)
     );
     assert_eq!(
-        l::rsf2csf(&identity(2), &identity(3)),
+        l::decompositions::rsf2csf(&identity(2), &identity(3)),
         Err(Error::DimensionMismatch)
     );
     let nontriangular = [[1., 0., 0.], [0., 2., 0.], [1., 0., 3.]];
     assert!(matches!(
-        l::rsf2csf(&nontriangular, &identity(3)),
+        l::decompositions::rsf2csf(&nontriangular, &identity(3)),
         Err(Error::InvalidInput(_))
     ));
     use l::interpolative as ip;
@@ -225,9 +519,13 @@ fn balancing_isolated_columns_preserves_similarity_and_checks_overflow() {
     // irreducible block. This exercises the lower-end permutation path.
     let a = [[1., 0., 2.], [0., 3., 4.], [0., 5., 6.]];
     for scale in [false, true] {
-        let (balanced, t) = l::matrix_balance(&a, true, scale).unwrap();
+        let (balanced, t) = l::decompositions::matrix_balance(&a, true, scale).unwrap();
         matrix_close(
-            &l::matmul(&l::matmul(&t, &balanced).unwrap(), &l::inv(&t).unwrap()).unwrap(),
+            &l::basic::matmul(
+                &l::basic::matmul(&t, &balanced).unwrap(),
+                &l::basic::inv(&t).unwrap(),
+            )
+            .unwrap(),
             &a.map(Vec::from),
             2e-12,
             2e-12,
@@ -235,12 +533,12 @@ fn balancing_isolated_columns_preserves_similarity_and_checks_overflow() {
     }
     let huge = [[1., f64::MAX, f64::MAX], [1., 2., 1.], [1., 1., 3.]];
     assert_eq!(
-        l::matrix_balance(&huge, false, true),
+        l::decompositions::matrix_balance(&huge, false, true),
         Err(Error::NonFiniteEvaluation)
     );
     let overflowing = [[f64::MAX, f64::MAX], [f64::MAX, -f64::MAX]];
     assert!(matches!(
-        l::eig(&overflowing),
+        l::eigen::eig(&overflowing),
         Err(Error::NonFiniteEvaluation)
     ));
 }
@@ -248,7 +546,7 @@ fn balancing_isolated_columns_preserves_similarity_and_checks_overflow() {
 #[test]
 fn qz_selection_runs_once_per_eigenvalue_and_reports_inseparable_pairs() {
     let mut calls = 0;
-    let result = l::ordqz(&[[2., 0.], [0., -1.]], &identity(2), |alpha, beta| {
+    let result = l::eigen::ordqz(&[[2., 0.], [0., -1.]], &identity(2), |alpha, beta| {
         calls += 1;
         alpha.re * beta.re < 0.
     })
@@ -260,10 +558,50 @@ fn qz_selection_runs_once_per_eigenvalue_and_reports_inseparable_pairs() {
     // A stateful callback can select only one of two identical eigenvalues.
     // The documented reordering failure must remain a Result, without a panic.
     calls = 0;
-    let result = l::ordqz(&identity(2), &identity(2), |_, _| {
+    let result = l::eigen::ordqz(&identity(2), &identity(2), |_, _| {
         calls += 1;
         calls == 2
     });
     assert_eq!(calls, 2);
     assert!(matches!(result, Err(Error::NumericalFailure(_))));
+}
+
+#[test]
+fn triangular_and_reusable_lu_solves_reject_arithmetic_overflow() {
+    // Finite, nonsingular inputs can overflow during either substitution.
+    // The reciprocal of the smallest positive subnormal exceeds f64::MAX.
+    let tiny = f64::from_bits(1);
+    for transpose in [false, true] {
+        assert_eq!(
+            l::solvers::solve_triangular(&[[tiny]], &[1.], true, false, transpose),
+            Err(Error::NonFiniteEvaluation)
+        );
+        let factor = l::decompositions::LuFactor {
+            packed: vec![vec![tiny]],
+            row_permutation: vec![0],
+        };
+        assert_eq!(
+            l::solvers::lu_solve(&factor, &[1.], transpose),
+            Err(Error::NonFiniteEvaluation)
+        );
+        // A unit lower factor can overflow before the upper solve, too.
+        let factor = l::decompositions::LuFactor {
+            packed: vec![vec![1., f64::MAX], vec![f64::MAX, 1.]],
+            row_permutation: vec![0, 1],
+        };
+        assert_eq!(
+            l::solvers::lu_solve(&factor, &[2., 2.], transpose),
+            Err(Error::NonFiniteEvaluation)
+        );
+    }
+}
+
+#[test]
+fn interpolative_projection_rejects_nonfinite_coefficients() {
+    for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert_eq!(
+            l::interpolative::reconstruct_interp_matrix(&[1, 0], &[[value]]),
+            Err(Error::InvalidInput("coordinates must be finite"))
+        );
+    }
 }

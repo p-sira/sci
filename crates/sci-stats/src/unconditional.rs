@@ -144,7 +144,7 @@ fn barnard_statistic(x: usize, y: usize, n1: usize, n2: usize, pooled: bool) -> 
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::barnard_exact(&[7.,12.,8.,3.],sci_stats::Alternative::Less,true)?;
+/// let r = sci_stats::contingency::barnard_exact(&[7.,12.,8.,3.],sci_stats::inference::Alternative::Less,true)?;
 /// assert!(r.pvalue < 0.05);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -247,7 +247,7 @@ fn boschloo_one_sided(
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::boschloo_exact(&[7.,12.,8.,3.],sci_stats::Alternative::Less)?;
+/// let r = sci_stats::contingency::boschloo_exact(&[7.,12.,8.,3.],sci_stats::inference::Alternative::Less)?;
 /// assert!(r.pvalue < 0.05);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -317,7 +317,7 @@ pub fn boschloo_exact(table: &[f64; 4], alternative: Alternative) -> Result<Test
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::poisson_means_test(0.,100.,3.,100.,0.,sci_stats::Alternative::TwoSided)?;
+/// let r = sci_stats::inference::poisson_means_test(0.,100.,3.,100.,0.,sci_stats::inference::Alternative::TwoSided)?;
 /// assert!((r.pvalue-0.08837900945483518).abs() < 1e-10);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -352,8 +352,14 @@ pub fn poisson_means_test(
             "Poisson rate difference must be finite and nonnegative",
         ));
     }
-    let total = finite(n1 + n2)?;
-    let lambda2 = finite((k1 + k2) / total - diff * (n1 / total))?;
+    let total = match n1 + n2 {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
+    let lambda2 = match (k1 + k2) / total - diff * (n1 / total) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     if lambda2 <= 0. {
         return Ok(TestResult {
             statistic: 0.,
@@ -361,23 +367,44 @@ pub fn poisson_means_test(
         });
     }
     let pivot = |x: f64, y: f64| -> Result<f64> {
-        let rate1 = finite(x / n1)?;
-        let rate2 = finite(y / n2)?;
-        let variance = finite(rate1 / n1 + rate2 / n2)?;
-        let numerator = finite(rate1 - rate2 - diff)?;
+        let rate1 = match x / n1 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
+        let rate2 = match y / n2 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
+        let variance = match rate1 / n1 + rate2 / n2 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
+        let numerator = match rate1 - rate2 - diff {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?;
         let value = numerator / variance.sqrt();
         if variance == 0. {
             Ok(value)
         } else {
-            finite(value)
+            match value {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }
         }
     };
     let statistic = pivot(k1, k2)?;
     let d1 = Distribution::Poisson {
-        rate: finite(n1 * (lambda2 + diff))?,
+        rate: match n1 * (lambda2 + diff) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?,
     };
     let d2 = Distribution::Poisson {
-        rate: finite(n2 * lambda2)?,
+        rate: match n2 * lambda2 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?,
     };
     let lower1 = ppf(d1, 1e-10)? as usize;
     let lower2 = ppf(d2, 1e-10)? as usize;
@@ -397,11 +424,37 @@ pub fn poisson_means_test(
     let masses2 = (lower2..=upper2)
         .map(|y| pdf(d2, y as f64))
         .collect::<Result<Vec<_>>>()?;
+    // The joint tail needs every (x,y) pair, but each Poisson count's rate
+    // and variance contribution depends on only one coordinate. Hoist those
+    // divisions without changing the order of the per-pair arithmetic.
+    let rate_terms = |lower: usize, len: usize, exposure: f64| -> Result<Vec<(f64, f64)>> {
+        (0..len)
+            .map(|i| {
+                let rate = (lower + i) as f64 / exposure;
+                let variance = rate / exposure;
+                if rate.is_finite() && variance.is_finite() {
+                    Ok((rate, variance))
+                } else {
+                    Err(crate::Error::NonFiniteEvaluation)
+                }
+            })
+            .collect()
+    };
+    let rates1 = rate_terms(lower1, masses1.len(), n1)?;
+    let rates2 = rate_terms(lower2, masses2.len(), n2)?;
     let mut terms = Vec::with_capacity(masses2.len());
     for (j, &p2) in masses2.iter().enumerate() {
         let mut probability = 0.;
         for (i, &p1) in masses1.iter().enumerate() {
-            let value = pivot((lower1 + i) as f64, (lower2 + j) as f64)?;
+            let variance = rates1[i].1 + rates2[j].1;
+            let numerator = rates1[i].0 - rates2[j].0 - diff;
+            if !variance.is_finite() || !numerator.is_finite() {
+                return Err(crate::Error::NonFiniteEvaluation);
+            }
+            let value = numerator / variance.sqrt();
+            if variance != 0. && !value.is_finite() {
+                return Err(crate::Error::NonFiniteEvaluation);
+            }
             let extreme = match alternative {
                 Alternative::TwoSided => value.abs() >= statistic.abs(),
                 Alternative::Less => value <= statistic,
@@ -418,4 +471,34 @@ pub fn poisson_means_test(
         statistic,
         pvalue: probability,
     })
+}
+
+#[cfg(test)]
+mod poisson_rate_cache_tests {
+    #[test]
+    fn precomputed_joint_pivots_match_original_division_order_bitwise() {
+        for (n1, n2, diff) in [
+            (1., 1., 0.),
+            (100., 100., 0.),
+            (3.25, 97.5, 0.1),
+            (1e-3, 1e3, 0.01),
+        ] {
+            for x in 0..48 {
+                let rate1 = x as f64 / n1;
+                let var1 = rate1 / n1;
+                for y in 0..48 {
+                    let rate2 = y as f64 / n2;
+                    let var2 = rate2 / n2;
+                    let original = {
+                        let r1 = x as f64 / n1;
+                        let r2 = y as f64 / n2;
+                        let variance = r1 / n1 + r2 / n2;
+                        (r1 - r2 - diff) / variance.sqrt()
+                    };
+                    let cached = (rate1 - rate2 - diff) / (var1 + var2).sqrt();
+                    assert_eq!(original.to_bits(), cached.to_bits());
+                }
+            }
+        }
+    }
 }

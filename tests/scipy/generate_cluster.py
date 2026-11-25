@@ -10,8 +10,8 @@ recurrences and local moments. Tie trees are tested by independent properties;
 label partitions for maximum-count criteria permit arbitrary label bijections.
 """
 import csv
-import json
 from pathlib import Path
+from case_catalog import read_cases
 import warnings
 import numpy as np
 import scipy
@@ -23,7 +23,7 @@ def encode(x):
     a=np.asarray(x)
     if a.ndim==2:return ':'.join(';'.join(str(v) for v in row) for row in a)
     return ';'.join(str(v) for v in a.ravel())
-cases=json.loads(Path(__file__).with_name('cluster_cases.json').read_text())
+cases=read_cases(Path(__file__).with_name('cluster_cases.jsonl'))
 with (ROOT/'fixtures/cluster_inputs.csv').open('w',newline='') as fi,(ROOT/'fixtures/cluster_expected.csv').open('w',newline='') as fe:
     iw=csv.writer(fi,lineterminator='\n');ew=csv.writer(fe,lineterminator='\n')
     iw.writerow(['id','api','z','y','depth','column','threshold','criterion','a','b','counts','heights','x','method'])

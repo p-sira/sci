@@ -3,11 +3,77 @@
 //! Linkages use shared row matrices: row `i` is `[left, right, height, count]`,
 //! creates node `n+i`, and refers only to earlier nodes. Leaves are `0..n`.
 //! All functions reject nonfinite linkages and bound trees to 512 leaves.
-use crate::error::finite;
+use crate::error::is_finite_slice;
 use crate::{Error, Result, linalg::Matrix};
 use std::collections::HashMap;
 
 const MAX_LEAVES: usize = 512;
+
+// Recognize condensed upper-triangle lengths with exact integer arithmetic.
+// Keep the spatial distance API's validation and error precedence for callers
+// of `linkage` and `correspond`.
+fn num_obs_y(y: &[f64]) -> Result<usize> {
+    if y.is_empty() || y.len() > 1_000_000 {
+        return Err(Error::InvalidInput("invalid or ambiguous condensed length"));
+    }
+    let k = y.len();
+    let (mut lo, mut hi) = (1usize, k + 2);
+    while lo < hi {
+        let mid = lo + (hi - lo) / 2;
+        match mid.checked_mul(mid - 1).map(|x| x / 2) {
+            Some(t) if t < k => lo = mid + 1,
+            _ => hi = mid,
+        }
+    }
+    match lo.checked_mul(lo - 1).map(|x| x / 2) {
+        Some(t) if t == k => Ok(lo),
+        _ => Err(Error::InvalidInput("invalid or ambiguous condensed length")),
+    }
+}
+
+// The Euclidean-only pdist path used by fclusterdata. Preserve the spatial
+// API's rectangular/finite checks, condensed pair order, and work limits,
+// while skipping generic metric dispatch and per-pair allocations.
+fn euclidean_distances(x: &[Vec<f64>]) -> Result<Vec<f64>> {
+    let dimension = x.first().map_or(0, Vec::len);
+    let bound = |size: Option<usize>, limit: usize| {
+        if size.is_none_or(|n| n > limit) {
+            Err(Error::InvalidInput("geometry work limit exceeded"))
+        } else {
+            Ok(())
+        }
+    };
+    bound(x.len().checked_mul(dimension.max(1)), 1_000_000)?;
+    for row in x {
+        if row.len() != dimension {
+            return Err(Error::DimensionMismatch);
+        }
+        is_finite_slice(row)?;
+    }
+    let count = x
+        .len()
+        .checked_mul(x.len().saturating_sub(1))
+        .map(|n| n / 2);
+    bound(count, 1_000_000)?;
+    bound(
+        count.and_then(|n| n.checked_mul(dimension.max(1))),
+        10_000_000,
+    )?;
+    let mut distances = Vec::with_capacity(count.unwrap());
+    for (i, a) in x.iter().enumerate() {
+        for b in x.iter().skip(i + 1) {
+            let mut distance = 0.0_f64;
+            for (&u, &v) in a.iter().zip(b) {
+                distance = distance.hypot((u - v).abs());
+            }
+            if distance.is_infinite() {
+                return Err(Error::NonFiniteEvaluation);
+            }
+            distances.push(distance);
+        }
+    }
+    Ok(distances)
+}
 
 fn validate(z: &[Vec<f64>]) -> Result<usize> {
     let n = z.len() + 1;
@@ -94,7 +160,7 @@ pub enum Method {
 ///
 /// ## Parameters
 ///
-/// `y` is upper-triangle condensed distance order, matching `spatial::distance::pdist`. `method` selects the distance recurrence. Centroid, median, and Ward require Euclidean distances; this geometric condition is the caller’s responsibility. Observations and optimal ordering are adapted to separate calls.
+/// `y` is upper-triangle condensed distance order `(0,1), (0,2), …, (1,2), …`. `method` selects the distance recurrence. Centroid, median, and Ward require Euclidean distances; this geometric condition is the caller’s responsibility. Observations and optimal ordering are adapted to separate calls.
 /// ## Domain
 ///
 /// Finite, nonnegative distances for 2..=512 observations; condensed length must be n(n−1)/2.
@@ -118,7 +184,7 @@ pub enum Method {
 ///
 /// [SciPy linkage](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html).
 pub fn linkage(y: &[f64], method: Method) -> Result<Matrix> {
-    let n = crate::spatial::distance::num_obs_y(y)?;
+    let n = num_obs_y(y)?;
     if !(2..=MAX_LEAVES).contains(&n) || y.iter().any(|v| !v.is_finite() || *v < 0.0) {
         return Err(Error::InvalidInput(
             "invalid condensed clustering distances",
@@ -642,7 +708,7 @@ pub fn from_mlab_linkage(z: &[Vec<f64>]) -> Result<Matrix> {
 /// [SciPy correspond](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.correspond.html).
 pub fn correspond(z: &[Vec<f64>], y: &[f64]) -> Result<bool> {
     let n = validate(z)?;
-    let m = crate::spatial::distance::num_obs_y(y)?;
+    let m = num_obs_y(y)?;
     if y.iter().any(|v| !v.is_finite() || *v < 0.0) {
         return Err(Error::InvalidInput("invalid distances"));
     }
@@ -750,10 +816,19 @@ pub fn inconsistent(z: &[Vec<f64>], depth: usize) -> Result<Matrix> {
         };
         let coeff = if sd == 0.0 { 0.0 } else { (r[2] - mean) / sd };
         out.push(vec![
-            finite(mean)?,
-            finite(sd)?,
+            match mean {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?,
+            match sd {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?,
             count as f64,
-            finite(coeff)?,
+            match coeff {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?,
         ]);
     }
     Ok(out)
@@ -809,7 +884,7 @@ pub fn is_valid_im(r: &[Vec<f64>]) -> bool {
 /// Returns a shared error for invalid linkage structure, values, counts, dimensions, or work limits.
 /// ## Numerical behavior
 ///
-/// O(n) bottom-up recurrence. Rust exports idiomatic `max_rstat` with SciPy alias `maxRstat`.
+/// O(n) bottom-up recurrence. Rust exports the idiomatic `max_rstat` spelling.
 /// # Examples
 ///
 /// ```
@@ -836,8 +911,6 @@ pub fn max_rstat(z: &[Vec<f64>], r: &[Vec<f64>], column: usize) -> Result<Vec<f6
         &r.iter().map(|v| v[column]).collect::<Vec<_>>(),
     ))
 }
-/// SciPy spelling of [`max_rstat`], sharing its domain and conventions.
-pub use max_rstat as maxRstat;
 
 /// Computes the maximum inconsistency coefficient over each subtree.
 ///
@@ -1004,7 +1077,9 @@ fn flat(z: &[Vec<f64>], stats: &[f64], threshold: f64) -> Vec<usize> {
 /// Returns a shared error for invalid linkage structure, values, counts, dimensions, or work limits.
 /// ## Numerical behavior
 ///
-/// O(n²) bounded work for inconsistency or threshold search. Supplied statistics must be finite and monotone along the tree. Label numbers follow internal-child-first traversal.
+/// O(n²) bounded work for inconsistency; count cuts select the required order
+/// statistic in expected O(n) time. Supplied statistics must be finite and
+/// monotone along the tree. Label numbers follow internal-child-first traversal.
 /// # Examples
 ///
 /// ```
@@ -1048,13 +1123,14 @@ pub fn fcluster(z: &[Vec<f64>], threshold: f64, criterion: Criterion<'_>) -> Res
     if threshold >= (z.len() + 1) as f64 {
         return Ok((1..=z.len() + 1).collect());
     }
-    let mut levels = stats.clone();
-    levels.sort_by(f64::total_cmp);
-    levels.dedup();
     let target = threshold as usize;
-    let index =
-        levels.partition_point(|t| flat(z, &stats, *t).iter().copied().max().unwrap_or(0) > target);
-    Ok(flat(z, &stats, levels[index]))
+    // A monotone subtree statistic makes every merge at or below the cut
+    // coalesce exactly one pair of clusters. The (n-target)-th smallest merge
+    // value is therefore the earliest threshold yielding <= target clusters.
+    // Selecting this value avoids constructing a full labeling at every level.
+    let mut levels = stats.clone();
+    let (_, level, _) = levels.select_nth_unstable_by(z.len() - target, f64::total_cmp);
+    Ok(flat(z, &stats, *level))
 }
 
 /// Clusters Euclidean observations through `pdist`, linkage, and flat clustering.
@@ -1073,7 +1149,8 @@ pub fn fcluster(z: &[Vec<f64>], threshold: f64, criterion: Criterion<'_>) -> Res
 /// Returns a shared error for invalid linkage structure, values, counts, dimensions, or work limits.
 /// ## Numerical behavior
 ///
-/// Reuses shared spatial distances, the private linkage backend, and [`fcluster`]. Checks observation size before computing pairwise distances.
+/// Uses local Euclidean pair distances, the private linkage backend, and [`fcluster`].
+/// Checks observation size and pairwise work before computing distances.
 /// # Examples
 ///
 /// ```
@@ -1095,7 +1172,7 @@ pub fn fclusterdata(
     {
         return Err(Error::InvalidInput("observation work limit"));
     }
-    let y = crate::spatial::distance::pdist(x, crate::spatial::distance::Metric::Euclidean)?;
+    let y = euclidean_distances(x)?;
     fcluster(&linkage(&y, method)?, threshold, criterion)
 }
 
@@ -1115,7 +1192,8 @@ pub fn fclusterdata(
 /// Returns a shared error for invalid linkage structure, values, counts, dimensions, or work limits.
 /// ## Numerical behavior
 ///
-/// O(n²) bounded traversal. Detects partitions which split subtrees inconsistently.
+/// O(n) expected work using a bottom-up homogeneous-subtree pass and a label map.
+/// Detects partitions which split subtrees inconsistently.
 /// # Examples
 ///
 /// ```
@@ -1134,12 +1212,26 @@ pub fn leaders(z: &[Vec<f64>], labels: &[usize]) -> Result<(Vec<usize>, Vec<usiz
     for &v in labels {
         *counts.entry(v).or_insert(0) += 1;
     }
+    // A subtree is homogeneous precisely when its two children have the same
+    // homogeneous label. Build that fact once per node instead of enumerating
+    // each node's descendant leaves independently (quadratic on chain trees).
+    let mut uniform: Vec<Option<usize>> = labels.iter().copied().map(Some).collect();
     let mut nodes = Vec::new();
     let mut ids = Vec::new();
     for v in 0..2 * n - 1 {
-        let leaves = descendants(z, v);
-        let label = labels[leaves[0]];
-        if leaves.len() == counts[&label] && leaves.iter().all(|i| labels[*i] == label) {
+        let (label, size) = if v < n {
+            (uniform[v], 1)
+        } else {
+            let row = &z[v - n];
+            let a = uniform[row[0] as usize];
+            let b = uniform[row[1] as usize];
+            let label = if a == b { a } else { None };
+            uniform.push(label);
+            (label, row[3] as usize)
+        };
+        if let Some(label) = label
+            && size == counts[&label]
+        {
             nodes.push(v);
             ids.push(label);
         }
@@ -1177,7 +1269,9 @@ pub enum Cut<'a> {
 /// Returns a shared error for invalid linkage structure, values, counts, dimensions, or work limits.
 /// ## Numerical behavior
 ///
-/// O(n²) work and up to 1,000,000 output labels. Exact label operations with finite height comparisons.
+/// Expected O(n + n·requests) union-find work and up to 1,000,000 output
+/// labels. Only requested stages are materialized; labels retain ascending
+/// smallest-leaf order. Exact label operations with finite height comparisons.
 /// # Examples
 ///
 /// ```
@@ -1189,6 +1283,14 @@ pub enum Cut<'a> {
 ///
 /// [SciPy cut_tree](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.cut_tree.html).
 pub fn cut_tree(z: &[Vec<f64>], cut: Cut<'_>) -> Result<Vec<Vec<usize>>> {
+    fn root(parent: &mut [usize], mut node: usize) -> usize {
+        while parent[node] != node {
+            parent[node] = parent[parent[node]];
+            node = parent[node];
+        }
+        node
+    }
+
     let n = validate(z)?;
     if !is_monotonic(z)? {
         return Err(Error::InvalidInput("cuts require a monotone tree"));
@@ -1202,7 +1304,7 @@ pub fn cut_tree(z: &[Vec<f64>], cut: Cut<'_>) -> Result<Vec<Vec<usize>>> {
             v.iter().map(|k| n - k).collect()
         }
         Cut::Heights(v) => {
-            if v.len() > 1_000_000 / n || v.iter().any(|h| !h.is_finite()) || !is_monotonic(z)? {
+            if v.len() > 1_000_000 / n || v.iter().any(|h| !h.is_finite()) {
                 return Err(Error::InvalidInput(
                     "height cuts require finite heights and a monotone tree",
                 ));
@@ -1210,29 +1312,58 @@ pub fn cut_tree(z: &[Vec<f64>], cut: Cut<'_>) -> Result<Vec<Vec<usize>>> {
             v.iter().map(|h| z.partition_point(|r| r[2] < *h)).collect()
         }
     };
-    let mut states = Vec::with_capacity(n);
-    let mut labels: Vec<usize> = (0..n).collect();
-    states.push(labels.clone());
-    for r in z {
-        let leaves = descendants(z, r[0] as usize)
-            .into_iter()
-            .chain(descendants(z, r[1] as usize))
-            .collect::<Vec<_>>();
-        let label = leaves.iter().map(|i| labels[*i]).min().unwrap();
-        for i in leaves {
-            labels[i] = label;
+    let mut requests: Vec<(usize, usize)> = stages
+        .into_iter()
+        .enumerate()
+        .map(|(column, stage)| (stage, column))
+        .collect();
+    requests.sort_unstable();
+    let mut out = vec![vec![0; requests.len()]; n];
+    let mut parent: Vec<usize> = (0..n).collect();
+    let mut sizes = vec![1; n];
+    // Every linkage node keeps a representative original leaf. Representatives
+    // remain valid even when their union-find root later changes.
+    let mut representative: Vec<usize> = (0..n).collect();
+    let mut seen = vec![usize::MAX; n];
+    let mut labels = vec![0; n];
+    let mut request = 0;
+
+    for stage in 0..n {
+        if request < requests.len() && requests[request].0 == stage {
+            seen.fill(usize::MAX);
+            let mut next_label = 0;
+            for (leaf, label) in labels.iter_mut().enumerate() {
+                let component = root(&mut parent, leaf);
+                if seen[component] == usize::MAX {
+                    seen[component] = next_label;
+                    next_label += 1;
+                }
+                *label = seen[component];
+            }
+            while request < requests.len() && requests[request].0 == stage {
+                let column = requests[request].1;
+                for (row, &label) in out.iter_mut().zip(&labels) {
+                    row[column] = label;
+                }
+                request += 1;
+            }
         }
-        let mut unique = labels.clone();
-        unique.sort_unstable();
-        unique.dedup();
-        for label in &mut labels {
-            *label = unique.binary_search(label).unwrap();
+        if stage == z.len() {
+            break;
         }
-        states.push(labels.clone());
+        let row = &z[stage];
+        let a_leaf = representative[row[0] as usize];
+        let b_leaf = representative[row[1] as usize];
+        let mut a = root(&mut parent, a_leaf);
+        let mut b = root(&mut parent, b_leaf);
+        if sizes[a] < sizes[b] {
+            std::mem::swap(&mut a, &mut b);
+        }
+        parent[b] = a;
+        sizes[a] += sizes[b];
+        representative.push(a_leaf);
     }
-    Ok((0..n)
-        .map(|i| stages.iter().map(|s| states[*s][i]).collect())
-        .collect())
+    Ok(out)
 }
 
 /// A shared, nonrecursive tree node; child indices refer to the node vector.
@@ -1279,15 +1410,16 @@ pub struct ClusterNode {
 /// [SciPy to_tree](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.to_tree.html).
 pub fn to_tree(z: &[Vec<f64>]) -> Result<Vec<ClusterNode>> {
     let n = validate(z)?;
-    let mut nodes = (0..n)
-        .map(|id| ClusterNode {
-            id,
-            left: None,
-            right: None,
-            distance: 0.0,
-            count: 1,
-        })
-        .collect::<Vec<_>>();
+    // Allocate all leaves and merges at once; growing after the leaves
+    // otherwise reallocates and copies the whole leaf block.
+    let mut nodes = Vec::with_capacity(n + z.len());
+    nodes.extend((0..n).map(|id| ClusterNode {
+        id,
+        left: None,
+        right: None,
+        distance: 0.0,
+        count: 1,
+    }));
     nodes.extend(z.iter().enumerate().map(|(i, r)| ClusterNode {
         id: n + i,
         left: Some(r[0] as usize),

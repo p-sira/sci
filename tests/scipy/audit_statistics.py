@@ -5,11 +5,12 @@ or exported functions without reference fixtures fail the audit.
 Compatibility namespaces are checked as aliases, not independent algorithms.
 Masked-array-only behavior is not counted as implemented.
 """
+from api_disposition import ALIASES, EXCLUDED
 
 import csv
-import json
 import re
 from pathlib import Path
+from case_catalog import read_cases
 
 ROOT = Path(__file__).resolve().parents[2]
 NATIVE_DISTRIBUTIONS = {
@@ -49,7 +50,7 @@ def inventory():
     for line in (ROOT / "function_coverages/scipy_function_list/scipy.stats.md").read_text().splitlines():
         if line.startswith("### scipy.stats"):
             namespace = line[4:]
-            namespaces[namespace] = {"functions": set(), "objects": set()}
+            namespaces[namespace] = {"functions": set(), "objects": set(), "classes": set()}
         elif line.startswith("#### "):
             section = line[5:]
         elif namespace and line.startswith("- "):
@@ -58,6 +59,8 @@ def inventory():
                 namespaces[namespace]["functions"].add(name[1])
             if name and section == "Callable objects and distribution APIs":
                 namespaces[namespace]["objects"].add(name[1])
+            if name and section == "Classes and their public methods" and "." not in name[1]:
+                namespaces[namespace]["classes"].add(name[1])
     return namespaces
 
 
@@ -72,7 +75,7 @@ def audit():
         for name in re.findall(r"^pub fn (\w+)(?:<[^\n]*>)?\(", path.read_text(), re.MULTILINE):
             exported.setdefault(namespace, set()).add(name)
     exported["scipy.stats"].add("chi2_contingency")  # shared public alias
-    cases = json.loads((ROOT / "tests/scipy/statistics_cases.json").read_text())
+    cases = read_cases(ROOT / "tests/scipy/statistics_cases.jsonl")
     tested = {c["api"] for c in cases}
     with (ROOT / "tests/fixtures/statistics.csv").open() as f:
         tested.update(row["function"] for row in csv.DictReader(f))
@@ -119,14 +122,16 @@ def audit():
     report = (ROOT / "function_coverages/STATISTICS_COVERAGE.md").read_text()
     normalized_report = " ".join(report.split())
     main_count = len(namespaces["scipy.stats"]["functions"])
-    if f"{main_count} of {main_count} scipy.stats function names" not in normalized_report:
+    retained_count = main_count - len(EXCLUDED["stats"]) - len(ALIASES["stats"])
+    if f"{retained_count} of {main_count} scipy.stats function names" not in normalized_report:
         raise SystemExit("Coverage report has stale main-namespace counts")
     if f"{len(cases)} cases" not in normalized_report:
         raise SystemExit("Coverage report has a stale fixture count")
     for ns in ["scipy.stats", "scipy.stats.contingency", "scipy.stats.qmc"]:
         names = namespaces[ns]["functions"]
         covered = names & exported[ns]
-        gaps = names - covered
+        module = "stats" if ns == "scipy.stats" else ""
+        gaps = names - covered - set(ALIASES.get(module, {})) - EXCLUDED.get(module, set())
         print(
             f"{ns}: {len(covered)}/{len(names)} function names with supported native signatures"
         )
@@ -139,6 +144,37 @@ def audit():
     print(
         f"{len(NATIVE_DISTRIBUTIONS) + len(MULTIVARIATE)}/{len(names)} callable distribution families with tested evaluation APIs"
     )
+    engine_sources = {
+        "scipy.stats.qmc": {
+            "Halton": "qmc/halton.rs",
+            "LatinHypercube": "qmc/latin_hypercube.rs",
+            "MultinomialQMC": "qmc/transforms.rs",
+            "MultivariateNormalQMC": "qmc/transforms.rs",
+            "PoissonDisk": "qmc/poisson_disk.rs",
+            "QMCEngine": "qmc/engine.rs",
+            "Sobol": "qmc/sobol.rs",
+        },
+        "scipy.stats.sampling": {
+            "DiscreteAliasUrn": "sampling/discrete.rs",
+            "DiscreteGuideTable": "sampling/discrete.rs",
+            "FastGeneratorInversion": "sampling/inversion.rs",
+            "NumericalInverseHermite": "sampling/inversion.rs",
+            "NumericalInversePolynomial": "sampling/inversion.rs",
+            "RatioUniforms": "sampling/rejection.rs",
+            "SimpleRatioUniforms": "sampling/rejection.rs",
+            "TransformedDensityRejection": "sampling/rejection.rs",
+        },
+    }
+    for namespace, sources in engine_sources.items():
+        expected = set(sources) | ({"UNURANError"} if namespace.endswith(".sampling") else set())
+        if namespaces[namespace]["classes"] != expected:
+            raise SystemExit("Sampling engine inventory drift: " + namespace)
+        for engine, path in sources.items():
+            code = (ROOT / "crates/sci-stats/src" / path).read_text()
+            rust_engine = "QmcEngine" if engine == "QMCEngine" else engine
+            if not re.search(rf"pub (?:struct|trait) {rust_engine}\b", code):
+                raise SystemExit(f"Missing public sampling engine: {engine}")
+        print(f"{namespace}: {len(sources)} native engine types; SciPy signature adaptations documented")
     masked = namespaces["scipy.stats.mstats"]["functions"]
     print(
         f"mstats: {len(masked & exported['scipy.stats'])}/{len(masked)} names share unmasked algorithms; masking is unsupported"

@@ -2,7 +2,7 @@
 # requires-python = ">=3.13"
 # dependencies = ["numpy==2.5.4", "scipy==1.18.1"]
 # ///
-"""Generate independent SciPy references from statistics_cases.json.
+"""Generate independent SciPy references from statistics_cases.jsonl.
 
 Run with the pinned .venv or uv run. Inputs and expected outputs are separate.
 Tests use a combined 2e-10 absolute/relative tolerance for statrs approximations;
@@ -12,9 +12,9 @@ NaN and infinities are explicit. Rust tests require no Python runtime.
 
 import csv
 from fractions import Fraction
-import json
 import warnings
 from pathlib import Path
+from case_catalog import read_cases
 
 import numpy as np
 import scipy
@@ -669,7 +669,7 @@ def encode(values):
     return ";".join(str(float(v)) for v in values)
 
 
-cases = json.loads(Path(__file__).with_name("statistics_cases.json").read_text())
+cases = read_cases(Path(__file__).with_name("statistics_cases.jsonl"))
 # Validate all references before opening output files, preserving existing
 # fixtures if SciPy rejects an input or a reference adaptation fails.
 with warnings.catch_warnings():

@@ -99,7 +99,7 @@ fn transform_plot(
 /// ## Examples
 ///
 /// ```
-/// let plot = sci_stats::boxcox_normplot(&[1.,2.,4.,8.], -1., 1., 3)?;
+/// let plot = sci_stats::diagnostics::boxcox_normplot(&[1.,2.,4.,8.], -1., 1., 3)?;
 /// assert_eq!(plot.lambdas, vec![-1., 0., 1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -154,7 +154,7 @@ pub fn boxcox_normplot(
 /// ## Examples
 ///
 /// ```
-/// let plot = sci_stats::yeojohnson_normplot(&[-2.,0.,1.,4.], 0., 2., 3)?;
+/// let plot = sci_stats::diagnostics::yeojohnson_normplot(&[-2.,0.,1.,4.], 0., 2., 3)?;
 /// assert_eq!(plot.correlations.len(), 3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -180,27 +180,6 @@ pub enum BoxCoxMethod {
     MaximumLikelihood,
 }
 
-struct BoundedObjective<F> {
-    function: F,
-    lower: f64,
-    upper: f64,
-}
-impl<F: Fn(f64) -> Result<f64>> basin::CostFunction for BoundedObjective<F> {
-    type Param = f64;
-    type Output = f64;
-    type Error = Error;
-    fn cost(&self, x: &f64) -> Result<f64> {
-        finite((self.function)(*x)?)
-    }
-}
-impl<F: Fn(f64) -> Result<f64>> basin::BoxConstraints for BoundedObjective<F> {
-    fn lower(&self) -> &f64 {
-        &self.lower
-    }
-    fn upper(&self) -> &f64 {
-        &self.upper
-    }
-}
 fn search_bounds(lower: f64, upper: f64) -> Result<()> {
     if !lower.is_finite() || !upper.is_finite() || lower >= upper || lower < -64. || upper > 64. {
         return Err(Error::InvalidInput("search requires -64<=lower<upper<=64"));
@@ -218,37 +197,116 @@ fn search_sample(values: &[f64]) -> Result<()> {
 }
 fn bounded_minimum(lower: f64, upper: f64, function: impl Fn(f64) -> Result<f64>) -> Result<f64> {
     search_bounds(lower, upper)?;
-    // Evaluate endpoints explicitly; Brent generally returns an interior point.
-    let left = finite(function(lower)?)?;
-    let right = finite(function(upper)?)?;
-    let result = basin::Executor::new(
-        BoundedObjective {
-            function: &function,
-            lower,
-            upper,
-        },
-        basin::Brent::new()
-            .with_absolute_position_tolerance(1e-10)
-            .with_relative_position_tolerance(1e-10),
-        basin::ScalarState::new(lower / 2. + upper / 2.),
-    )
-    .max_iter(128)
-    .run()?;
-    if result.reason != basin::TerminationReason::SolverConverged {
-        return Err(Error::NumericalFailure(
-            "bounded parameter search did not converge",
-        ));
+    let eval_objective = |x| -> Result<f64> {
+        let value = function(x)?;
+        if value.is_finite() {
+            Ok(value)
+        } else {
+            Err(Error::NonFiniteEvaluation)
+        }
+    };
+    // The closed interval matters: the minimum may lie exactly at a bound.
+    let left_cost = eval_objective(lower)?;
+    let right_cost = eval_objective(upper)?;
+    let mut best = if left_cost <= right_cost {
+        (lower, left_cost)
+    } else {
+        (upper, right_cost)
+    };
+
+    // Bounded Brent: safeguarded inverse-parabolic interpolation, otherwise a
+    // golden-section step. Keep the three best interior abscissae (x, w, v).
+    const GOLDEN: f64 = 0.381_966_011_250_105_1;
+    const ABS_TOL: f64 = 1e-10;
+    const REL_TOL: f64 = 1e-10;
+    let (mut a, mut b) = (lower, upper);
+    let mut x = a + GOLDEN * (b - a);
+    let mut fx = eval_objective(x)?;
+    if fx < best.1 {
+        best = (x, fx);
     }
-    let mut parameter = *result.best_param();
-    let mut cost = result.best_cost();
-    if left < cost {
-        parameter = lower;
-        cost = left;
+    let (mut w, mut v) = (x, x);
+    let (mut fw, mut fv) = (fx, fx);
+    let (mut step, mut previous_step): (f64, f64) = (0., 0.);
+
+    for _ in 0..128 {
+        let midpoint = a / 2. + b / 2.;
+        let tol = ABS_TOL + REL_TOL * x.abs();
+        if (x - midpoint).abs() <= 2. * tol - (b - a) / 2. {
+            return Ok(best.0);
+        }
+
+        let old_step = step;
+        let mut parabolic = false;
+        if previous_step.abs() > tol {
+            let r = (x - w) * (fx - fv);
+            let q0 = (x - v) * (fx - fw);
+            let mut p = (x - v) * q0 - (x - w) * r;
+            let mut q = 2. * (q0 - r);
+            if q > 0. {
+                p = -p;
+            } else {
+                q = -q;
+            }
+            if q > 0.
+                && p.abs() < (0.5 * q * previous_step).abs()
+                && p > q * (a - x)
+                && p < q * (b - x)
+            {
+                step = p / q;
+                parabolic = true;
+            }
+        }
+        if !parabolic {
+            previous_step = if x < midpoint { b - x } else { a - x };
+            step = GOLDEN * previous_step;
+        } else {
+            previous_step = old_step;
+        }
+        let displacement = if step.abs() >= tol {
+            step
+        } else if step >= 0. {
+            tol
+        } else {
+            -tol
+        };
+        let u = x + displacement;
+        let fu = eval_objective(u)?;
+        if fu < best.1 {
+            best = (u, fu);
+        }
+        if fu <= fx {
+            if u < x {
+                b = x;
+            } else {
+                a = x;
+            }
+            v = w;
+            fv = fw;
+            w = x;
+            fw = fx;
+            x = u;
+            fx = fu;
+        } else {
+            if u < x {
+                a = u;
+            } else {
+                b = u;
+            }
+            if fu <= fw || w == x {
+                v = w;
+                fv = fw;
+                w = u;
+                fw = fu;
+            } else if fu <= fv || v == x || v == w {
+                v = u;
+                fv = fu;
+            }
+        }
     }
-    if right < cost {
-        parameter = upper;
-    }
-    Ok(parameter)
+    Err(Error::NumericalFailure(
+        "bounded parameter search did not converge",
+    ))
 }
 
 /// Box–Cox parameter `argmax_(λ∈[lower,upper]) L(λ)` or normal-quantile correlation.
@@ -277,15 +335,15 @@ fn bounded_minimum(lower: f64, upper: f64, function: impl Fn(f64) -> Result<f64>
 ///
 /// ## Numerical behavior
 ///
-/// Private Basin Brent search, with absolute and relative position tolerances
-/// 1e-10; at most 132 objective evaluations. Binary64 rounding and flat objectives
+/// Private bounded Brent search, with absolute and relative position tolerances
+/// 1e-10; at most 131 objective evaluations. Binary64 rounding and flat objectives
 /// commonly limit parameter accuracy to about 1e-6; global optimality is not
 /// guaranteed. Correlation sorts once; likelihood costs O(n) per evaluation.
 ///
 /// ## Examples
 ///
 /// ```
-/// let l = sci_stats::boxcox_normmax(&[1.,2.,4.,8.], -2., 2., sci_stats::BoxCoxMethod::MaximumLikelihood)?;
+/// let l = sci_stats::diagnostics::boxcox_normmax(&[1.,2.,4.,8.], -2., 2., sci_stats::diagnostics::BoxCoxMethod::MaximumLikelihood)?;
 /// assert!(l.abs() < 1e-5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -303,7 +361,10 @@ pub fn boxcox_normmax(values: &[f64], lower: f64, upper: f64, method: BoxCoxMeth
     }
     match method {
         BoxCoxMethod::MaximumLikelihood => {
-            bounded_minimum(lower, upper, |l| Ok(-boxcox_llf(l, values)?))
+            let logsum = values.iter().map(|x| x.ln()).sum::<f64>();
+            bounded_minimum(lower, upper, |l| {
+                Ok(-transformations::boxcox_llf_with_logsum(l, values, logsum)?)
+            })
         }
         BoxCoxMethod::Pearson => {
             let plot = probplot(
@@ -346,14 +407,14 @@ pub fn boxcox_normmax(values: &[f64], lower: f64, upper: f64, method: BoxCoxMeth
 ///
 /// ## Numerical behavior
 ///
-/// Uses the same private Basin Brent search and 132-evaluation limit as
+/// Uses the same private bounded Brent search and 131-evaluation limit as
 /// [`boxcox_normmax`], with O(n) work per objective evaluation. Flat objectives
 /// limit parameter accuracy to about 1e-6; no global optimum is guaranteed.
 ///
 /// ## Examples
 ///
 /// ```
-/// assert!((sci_stats::yeojohnson_normmax(&[-2.,-1.,0.,1.,2.], -1., 3.)? - 1.).abs() < 1e-5);
+/// assert!((sci_stats::diagnostics::yeojohnson_normmax(&[-2.,-1.,0.,1.,2.], -1., 3.)? - 1.).abs() < 1e-5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -363,7 +424,15 @@ pub fn boxcox_normmax(values: &[f64], lower: f64, upper: f64, method: BoxCoxMeth
 pub fn yeojohnson_normmax(values: &[f64], lower: f64, upper: f64) -> Result<f64> {
     search_bounds(lower, upper)?;
     search_sample(values)?;
-    bounded_minimum(lower, upper, |l| Ok(-yeojohnson_llf(l, values)?))
+    let jacobian = values
+        .iter()
+        .map(|x| x.signum() * x.abs().ln_1p())
+        .sum::<f64>();
+    bounded_minimum(lower, upper, |l| {
+        Ok(-transformations::yeojohnson_llf_with_jacobian(
+            l, values, jacobian,
+        )?)
+    })
 }
 
 /// One-shape distribution families supported by PPCC shape diagnostics.
@@ -448,7 +517,7 @@ fn ppcc_bounds(lower: f64, upper: f64) -> Result<()> {
 /// ## Examples
 ///
 /// ```
-/// let p = sci_stats::ppcc_plot(&[1.,2.,3.,5.], 1., 3., 3, sci_stats::PpccFamily::Gamma)?;
+/// let p = sci_stats::diagnostics::ppcc_plot(&[1.,2.,3.,5.], 1., 3., 3, sci_stats::diagnostics::PpccFamily::Gamma)?;
 /// assert_eq!(p.shapes, vec![1.,2.,3.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -508,7 +577,7 @@ pub fn ppcc_plot(
 ///
 /// ## Numerical behavior
 ///
-/// Private Basin Brent with at most 132 evaluations and position tolerances
+/// Private bounded Brent with at most 131 evaluations and position tolerances
 /// 1e-10; each evaluation uses bounded statrs-backed Sci quantile inversions.
 /// Flat correlations generally limit shape accuracy to about 1e-5. A global
 /// maximum is not guaranteed.
@@ -516,7 +585,7 @@ pub fn ppcc_plot(
 /// ## Examples
 ///
 /// ```
-/// let shape = sci_stats::ppcc_max(&[1.,2.,3.,5.], 0.5, 8., sci_stats::PpccFamily::Gamma)?;
+/// let shape = sci_stats::diagnostics::ppcc_max(&[1.,2.,3.,5.], 0.5, 8., sci_stats::diagnostics::PpccFamily::Gamma)?;
 /// assert!((0.5..=8.).contains(&shape));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -531,4 +600,35 @@ pub fn ppcc_max(values: &[f64], lower: f64, upper: f64, family: PpccFamily) -> R
         return Err(Error::InvalidInput("PPCC search sample limit is 256"));
     }
     bounded_minimum(lower, upper, |s| Ok(-ppcc_correlation(values, family, s)?))
+}
+
+#[cfg(test)]
+mod minimizer_tests {
+    use super::*;
+
+    #[test]
+    fn bounded_brent_interior_and_closed_endpoints() {
+        let interior = bounded_minimum(-2., 5., |x| Ok((x - 0.375).powi(2))).unwrap();
+        assert!((interior - 0.375).abs() < 1e-7);
+        assert_eq!(bounded_minimum(-2., 5., Ok).unwrap(), -2.);
+        assert_eq!(bounded_minimum(-2., 5., |x| Ok(-x)).unwrap(), 5.);
+        assert_eq!(bounded_minimum(0.2, 0.5, |_| Ok(1.)).unwrap(), 0.2);
+    }
+
+    #[test]
+    fn bounded_brent_checks_nonfinite_objectives() {
+        assert!(matches!(
+            bounded_minimum(-1., 1., |x| Ok(if x > -1. && x < 1. {
+                f64::NAN
+            } else {
+                x * x
+            })),
+            Err(Error::NonFiniteEvaluation)
+        ));
+        assert!(matches!(
+            bounded_minimum(-1., 1., |_| Ok(f64::INFINITY)),
+            Err(Error::NonFiniteEvaluation)
+        ));
+        assert!(bounded_minimum(1., 1., |_| Ok(0.)).is_err());
+    }
 }

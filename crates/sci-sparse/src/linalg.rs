@@ -6,7 +6,7 @@
 //! errors even when residuals are small. Singular factorizations and nonfinite
 //! outputs return errors. General sparse operations retain crate storage limits.
 
-use super::{Error, LIMIT, Result, SparseMatrix, entries, finite, identity, matmul, validate};
+use super::{Error, LIMIT, Result, SparseMatrix, entries, identity, matmul, validate};
 use faer::prelude::Solve;
 
 /// Reusable sparse LU factorization, with private backend storage.
@@ -32,7 +32,7 @@ impl SparseLu {
     /// ill-conditioning may amplify errors. See [`splu`] for work limits.
     /// # Examples
     /// ```
-    /// let lu = sci_sparse::linalg::splu(&sci_sparse::identity(2)?)?;
+    /// let lu = sci_sparse::linalg::splu(&sci_sparse::construct::identity(2)?)?;
     /// assert_eq!(lu.solve(&[2.0, 3.0])?, vec![2.0, 3.0]);
     /// # Ok::<(), sci_sparse::Error>(())
     /// ```
@@ -42,10 +42,15 @@ impl SparseLu {
         if b.len() != self.order {
             return Err(Error::DimensionMismatch);
         }
-        sci_core::finite_slice(b)?;
+        sci_core::is_finite_slice(b)?;
         let rhs = faer::Mat::from_fn(self.order, 1, |i, _| b[i]);
         let x = self.inner.solve(&rhs);
-        (0..self.order).map(|i| finite(x[(i, 0)])).collect()
+        (0..self.order)
+            .map(|i| match x[(i, 0)] {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            })
+            .collect()
     }
 }
 
@@ -66,7 +71,7 @@ impl SparseLu {
 /// singularity is not diagnosed by a condition estimate. No SuperLU options.
 /// # Examples
 /// ```
-/// let lu = sci_sparse::linalg::splu(&sci_sparse::identity(2)?)?;
+/// let lu = sci_sparse::linalg::splu(&sci_sparse::construct::identity(2)?)?;
 /// assert_eq!(lu.solve(&[1.0, 2.0])?, vec![1.0, 2.0]);
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
@@ -109,7 +114,7 @@ pub fn splu(a: &SparseMatrix) -> Result<SparseLu> {
 /// Uses [`splu`] and [`SparseLu::solve`], including their accuracy/work limits.
 /// # Examples
 /// ```
-/// assert_eq!(sci_sparse::linalg::spsolve(&sci_sparse::identity(2)?, &[3.0, 4.0])?, vec![3.0, 4.0]);
+/// assert_eq!(sci_sparse::linalg::spsolve(&sci_sparse::construct::identity(2)?, &[3.0, 4.0])?, vec![3.0, 4.0]);
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
 /// # References
@@ -119,15 +124,9 @@ pub fn spsolve(a: &SparseMatrix, b: &[f64]) -> Result<Vec<f64>> {
     if b.len() != a.rows {
         return Err(Error::DimensionMismatch);
     }
-    sci_core::finite_slice(b)?;
+    sci_core::is_finite_slice(b)?;
     splu(a)?.solve(b)
 }
-
-/// SciPy reusable-solve spelling of [`splu`].
-///
-/// Returns [`SparseLu`] rather than a Python callable; use its `solve` method.
-/// All domains, limits, and numerical behavior are those of [`splu`].
-pub use splu as factorized;
 
 /// Solve a triangular system `A x = b` by substitution.
 ///
@@ -147,7 +146,7 @@ pub use splu as factorized;
 /// Small pivots and cancellation can severely reduce accuracy.
 /// # Examples
 /// ```
-/// let a = sci_sparse::from_dense(&[vec![2.0, 0.0], vec![1.0, 3.0]])?;
+/// let a = sci_sparse::construct::from_dense(&[vec![2.0, 0.0], vec![1.0, 3.0]])?;
 /// assert_eq!(sci_sparse::linalg::spsolve_triangular(&a, &[2.0, 7.0], true, false)?, vec![1.0, 2.0]);
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
@@ -163,7 +162,7 @@ pub fn spsolve_triangular(
     if a.rows != a.cols || b.len() != a.rows {
         return Err(Error::DimensionMismatch);
     }
-    sci_core::finite_slice(b)?;
+    sci_core::is_finite_slice(b)?;
     let mut x = vec![0.0; a.cols];
     for step in 0..a.rows {
         let r = if lower { step } else { a.rows - 1 - step };
@@ -181,13 +180,23 @@ pub fn spsolve_triangular(
                     return Err(Error::InvalidInput("matrix is not triangular"));
                 }
             } else {
-                rhs = finite(rhs - finite(v * x[c])?)?;
+                rhs = match rhs
+                    - match v * x[c] {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }? {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
             }
         }
         if diagonal == 0.0 {
             return Err(Error::NumericalFailure("zero triangular pivot"));
         }
-        x[r] = finite(rhs / diagonal)?;
+        x[r] = match rhs / diagonal {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     Ok(x)
 }
@@ -228,7 +237,7 @@ pub enum MatrixNorm {
 /// # Examples
 /// ```
 /// use sci_sparse::linalg::{norm, MatrixNorm};
-/// assert_eq!(norm(&sci_sparse::identity(4)?, MatrixNorm::Frobenius)?, 2.0);
+/// assert_eq!(norm(&sci_sparse::construct::identity(4)?, MatrixNorm::Frobenius)?, 2.0);
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
 /// # References
@@ -236,7 +245,10 @@ pub enum MatrixNorm {
 pub fn norm(a: &SparseMatrix, order: MatrixNorm) -> Result<f64> {
     validate(a)?;
     if order == MatrixNorm::Frobenius {
-        return finite(a.data.iter().fold(0.0, |s, &v| s.hypot(v)));
+        return match a.data.iter().fold(0.0_f64, |s, &v| s.hypot(v)) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        };
     }
     if order == MatrixNorm::Spectral {
         return Ok(svds(a, 1, true)?.singular_values[0]);
@@ -249,7 +261,10 @@ pub fn norm(a: &SparseMatrix, order: MatrixNorm) -> Result<f64> {
     let mut sums = vec![0.0; if column { a.cols } else { a.rows }];
     for (r, c, v) in entries(a) {
         let i = if column { c } else { r };
-        sums[i] = finite(sums[i] + v.abs())?;
+        sums[i] = match sums[i] + v.abs() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     Ok(sums
         .into_iter()
@@ -274,7 +289,7 @@ pub fn norm(a: &SparseMatrix, order: MatrixNorm) -> Result<f64> {
 /// the crate's 20,000,000 scalar-product bound. Error can grow with power and conditioning.
 /// # Examples
 /// ```
-/// let a = sci_sparse::identity(3)?;
+/// let a = sci_sparse::construct::identity(3)?;
 /// assert_eq!(sci_sparse::linalg::matrix_power(&a, 7)?, a);
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
@@ -318,7 +333,7 @@ pub fn matrix_power(a: &SparseMatrix, mut power: u32) -> Result<SparseMatrix> {
 /// or iterative refinement; solving a system directly usually has lower cost.
 /// # Examples
 /// ```
-/// let a = sci_sparse::identity(2)?;
+/// let a = sci_sparse::construct::identity(2)?;
 /// assert_eq!(sci_sparse::linalg::inv(&a)?, a);
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
@@ -360,7 +375,7 @@ pub fn inv(a: &SparseMatrix) -> Result<SparseMatrix> {
 /// Exact index arithmetic in O(rows + stored entries) work.
 /// # Examples
 /// ```
-/// assert_eq!(sci_sparse::linalg::spbandwidth(&sci_sparse::eye(2, 3, 1)?)?, (0, 1));
+/// assert_eq!(sci_sparse::linalg::spbandwidth(&sci_sparse::construct::eye(2, 3, 1)?)?, (0, 1));
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
 /// # References
@@ -392,7 +407,7 @@ pub fn spbandwidth(a: &SparseMatrix) -> Result<(usize, usize)> {
 /// Exact nonzero-pattern checks using [`spbandwidth`].
 /// # Examples
 /// ```
-/// assert_eq!(sci_sparse::linalg::is_sptriangular(&sci_sparse::identity(2)?)?, (true, true));
+/// assert_eq!(sci_sparse::linalg::is_sptriangular(&sci_sparse::construct::identity(2)?)?, (true, true));
 /// # Ok::<(), sci_sparse::Error>(())
 /// ```
 /// # References

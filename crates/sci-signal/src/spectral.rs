@@ -4,6 +4,9 @@ use crate::{
     complex::{Complex, native, owned},
 };
 use num_complex::Complex64;
+/// Fundamental complex and real Fourier transforms.
+pub use sci_fft::fourier::{fft, ifft};
+pub use sci_fft::real::rfft;
 use std::f64::consts::TAU;
 
 /// Returns the analytic signal `x + i H(x)` by doubling positive DFT frequencies and removing negative frequencies.
@@ -33,7 +36,7 @@ use std::f64::consts::TAU;
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = hilbert(&[1.,2.,3.])?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -83,7 +86,7 @@ pub fn hilbert(x: &[f64]) -> Result<Vec<Complex>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = resample(&[1.,2.,3.],5)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -141,7 +144,7 @@ pub fn resample(x: &[f64], length: usize) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = czt_points(3,None,sci_complex::Complex{re:1.,im:0.})?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -192,7 +195,7 @@ pub fn czt_points(length: usize, w: Option<Complex>, a: Complex) -> Result<Vec<C
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = czt(&[sci_complex::Complex{re:1.,im:0.}],3,None,sci_complex::Complex{re:1.,im:0.})?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -251,7 +254,7 @@ pub fn czt(x: &[Complex], length: usize, w: Option<Complex>, a: Complex) -> Resu
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = zoom_fft(&[sci_complex::Complex{re:1.,im:0.}],0.,1.,3,2.,false)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -384,7 +387,7 @@ fn doubling(k: usize, nfft: usize) -> f64 {
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = periodogram(&[1.,2.,3.],&[1.;3],3,1.,true,Scaling::Density)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -439,7 +442,7 @@ pub fn periodogram(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = csd(&[1.,2.,3.],&[3.,2.,1.],&[1.;3],0,3,1.,true,Scaling::Density)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -506,7 +509,7 @@ pub fn csd(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = welch(&[1.,2.,3.,4.],&[1.;2],1,2,1.,true,Scaling::Density)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -523,8 +526,17 @@ pub fn welch(
     detrend: bool,
     scaling: Scaling,
 ) -> Result<PowerSpectrum> {
-    let (f, p) = csd(x, x, window, overlap, nfft, fs, detrend, scaling)?;
-    Ok((f, p.into_iter().map(|v| v.re).collect()))
+    let count = spectral_parameters(x, window, overlap, nfft, fs)?;
+    let scale = spectral_scale(window, fs, scaling)? / count as f64;
+    let mut power = vec![0.; nfft / 2 + 1];
+    for i in 0..count {
+        let start = i * (window.len() - overlap);
+        let spectrum = segment(&x[start..start + window.len()], window, nfft, detrend);
+        for (k, value) in power.iter_mut().enumerate() {
+            *value += native(spectrum[k]).norm_sqr() * scale * doubling(k, nfft);
+        }
+    }
+    Ok((bins(nfft, fs), checked(power)?))
 }
 /// Estimates magnitude-squared coherence `|Pxy|²/(Pxx Pyy)`.
 ///
@@ -556,7 +568,7 @@ pub fn welch(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = coherence(&[1.,2.,3.,4.],&[4.,3.,2.,1.],&[1.;2],1,2,1.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -572,12 +584,36 @@ pub fn coherence(
     nfft: usize,
     fs: f64,
 ) -> Result<PowerSpectrum> {
-    let (f, pxy) = csd(x, y, window, overlap, nfft, fs, true, Scaling::Density)?;
-    let (_, pxx) = welch(x, window, overlap, nfft, fs, true, Scaling::Density)?;
-    let (_, pyy) = welch(y, window, overlap, nfft, fs, true, Scaling::Density)?;
+    if x.len() != y.len() {
+        return Err(Error::DimensionMismatch);
+    }
+    samples(y)?;
+    let count = spectral_parameters(x, window, overlap, nfft, fs)?;
+    let scale = spectral_scale(window, fs, Scaling::Density)? / count as f64;
+    let bins_len = nfft / 2 + 1;
+    let mut pxy = vec![Complex64::new(0., 0.); bins_len];
+    let mut pxx = vec![0.; bins_len];
+    let mut pyy = vec![0.; bins_len];
+    for i in 0..count {
+        let start = i * (window.len() - overlap);
+        let a = segment(&x[start..start + window.len()], window, nfft, true);
+        let b = segment(&y[start..start + window.len()], window, nfft, true);
+        for k in 0..bins_len {
+            let a = native(a[k]);
+            let b = native(b[k]);
+            let factor = scale * doubling(k, nfft);
+            pxy[k] += a.conj() * b * factor;
+            pxx[k] += a.norm_sqr() * factor;
+            pyy[k] += b.norm_sqr() * factor;
+        }
+    }
+    // Validate every accumulated spectrum before computing the ratio.
+    let pxy = complex_checked(pxy.into_iter().map(owned).collect())?;
+    let pxx = checked(pxx)?;
+    let pyy = checked(pyy)?;
     // Zero-power bins have undefined coherence, matching SciPy's NaN.
     Ok((
-        f,
+        bins(nfft, fs),
         pxy.iter()
             .zip(pxx)
             .zip(pyy)
@@ -585,7 +621,10 @@ pub fn coherence(
                 if a == 0. || b == 0. {
                     Ok(f64::NAN)
                 } else {
-                    crate::error::finite((z.re.hypot(z.im) / a.sqrt() / b.sqrt()).powi(2))
+                    match (z.re.hypot(z.im) / a.sqrt() / b.sqrt()).powi(2) {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }
                 }
             })
             .collect::<Result<_>>()?,
@@ -624,7 +663,7 @@ pub type ShortTimeSpectrum = (Vec<f64>, Vec<f64>, Vec<Vec<Complex>>);
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = spectrogram(&[1.,2.,3.,4.],&[1.;2],1,2,1.,true,Scaling::Density)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -648,8 +687,10 @@ pub fn spectrogram(
         let start = i * (window.len() - overlap);
         let spectrum = segment(&x[start..start + window.len()], window, nfft, detrend);
         for (k, row) in power.iter_mut().enumerate() {
-            row[i] =
-                crate::error::finite(native(spectrum[k]).norm_sqr() * scale * doubling(k, nfft))?;
+            row[i] = match native(spectrum[k]).norm_sqr() * scale * doubling(k, nfft) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
         }
     }
     let times = (0..count)
@@ -684,7 +725,7 @@ pub fn spectrogram(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = stft(&[1.,2.,3.,4.],&[1.;2],1,2,1.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -736,7 +777,7 @@ pub fn stft(
         }
     }
     for row in &output {
-        complex_checked(row.clone())?;
+        super::check_complex(row)?;
     }
     Ok((
         bins(nfft, fs),
@@ -771,7 +812,7 @@ pub fn stft(
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = istft(&stft(&[1.,2.,3.,4.],&[1.;2],1,2,1.)?.2,&[1.;2],1,2,1.)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -862,7 +903,7 @@ fn overlap_bins(window: &[f64], overlap: usize, squared: bool) -> Result<Vec<f64
 ///
 /// `pub fn check_cola(window:&[f64],overlap:usize,tolerance:f64)->Result<bool>`
 ///
-/// overlap is sample count, tolerance is positive absolute tolerance. Returns a boolean; SciPy check_COLA spelling is also exported.
+/// overlap is sample count, tolerance is positive absolute tolerance. Returns a boolean.
 ///
 /// ## Domain
 ///
@@ -883,7 +924,7 @@ fn overlap_bins(window: &[f64], overlap: usize, squared: bool) -> Result<Vec<f64
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = check_cola(&[1.;4],2,1e-10)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -909,7 +950,7 @@ pub fn check_cola(window: &[f64], overlap: usize, tolerance: f64) -> Result<bool
 ///
 /// `pub fn check_nola(window:&[f64],overlap:usize,tolerance:f64)->Result<bool>`
 ///
-/// overlap is sample count, tolerance is positive absolute threshold. Returns a boolean; SciPy check_NOLA spelling is also exported.
+/// overlap is sample count, tolerance is positive absolute threshold. Returns a boolean.
 ///
 /// ## Domain
 ///
@@ -930,7 +971,7 @@ pub fn check_cola(window: &[f64], overlap: usize, tolerance: f64) -> Result<bool
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = check_nola(&[1.;4],2,1e-10)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
@@ -944,10 +985,6 @@ pub fn check_nola(window: &[f64], overlap: usize, tolerance: f64) -> Result<bool
         .iter()
         .all(|v| *v > tolerance))
 }
-/// SciPy spelling of [`check_cola`], with identical parameters and errors.
-pub use check_cola as check_COLA;
-/// SciPy spelling of [`check_nola`], with identical parameters and errors.
-pub use check_nola as check_NOLA;
 
 /// Evaluates classical Lomb-Scargle power `0.5 ((sum y cos)^2/sum cos² + (sum y sin)^2/sum sin²)` after phase rotation.
 ///
@@ -976,7 +1013,7 @@ pub use check_nola as check_NOLA;
 /// # Examples
 ///
 /// ```
-/// use sci_signal::*;
+/// use sci_signal::spectral::*;
 /// let _result = lombscargle(&[0.,1.,2.],&[1.,2.,1.],&[1.],false,false)?;
 /// # Ok::<(),sci_core::Error>(())
 /// ```

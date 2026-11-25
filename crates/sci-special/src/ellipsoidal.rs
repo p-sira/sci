@@ -159,14 +159,14 @@ impl Lame {
 /// Invalid arguments return [`Error::InvalidInput`]. Eigensolver failure returns
 /// [`Error::NumericalFailure`]; overflow returns [`Error::NonFiniteEvaluation`].
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// assert_eq!(sci_special::ellip_harm(0.5,1.5,0,1,2.0,1.0,1.0)?,1.0);
+/// assert_eq!(sci_special::wave::ellip_harm(0.5,1.5,0,1,2.0,1.0,1.0)?,1.0);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ellip_harm](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ellip_harm.html).
 pub fn ellip_harm(
@@ -183,7 +183,10 @@ pub fn ellip_harm(
             "coordinate must be finite and branch signs must be ±1",
         ));
     }
-    crate::error::finite(lame(h2, k2, n, p)?.value(s, signm, signn))
+    match lame(h2, k2, n, p)?.value(s, signm, signn) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Second-kind ellipsoidal harmonic F_n^p(s).
@@ -202,14 +205,14 @@ pub fn ellip_harm(
 /// Invalid parameters return [`Error::InvalidInput`]; eigensolver or quadrature
 /// failure and nonfinite evaluations use the shared errors.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// assert!(sci_special::ellip_harm_2(0.5,1.5,0,1,2.0)?.is_finite());
+/// assert!(sci_special::wave::ellip_harm_2(0.5,1.5,0,1,2.0)?.is_finite());
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ellip_harm_2](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ellip_harm_2.html).
 pub fn ellip_harm_2(h2: f64, k2: f64, n: usize, p: usize, s: f64) -> Result<f64> {
@@ -230,7 +233,10 @@ pub fn ellip_harm_2(h2: f64, k2: f64, n: usize, p: usize, s: f64) -> Result<f64>
         0.0,
         1.0 / s,
     );
-    crate::error::finite((2 * n + 1) as f64 * polynomial.value(s, 1.0, 1.0) * value)
+    match (2 * n + 1) as f64 * polynomial.value(s, 1.0, 1.0) * value {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 /// Ellipsoidal surface normalization constant γ_n^p.
@@ -247,14 +253,14 @@ pub fn ellip_harm_2(h2: f64, k2: f64, n: usize, p: usize, s: f64) -> Result<f64>
 /// Invalid parameters, eigensolver failure, and nonfinite quadrature results
 /// use the same errors as [`ellip_harm_2`]. Absolute quadrature tolerance is 2e-13.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// assert!(sci_special::ellip_normal(0.5,1.5,0,1)? > 0.0);
+/// assert!(sci_special::wave::ellip_normal(0.5,1.5,0,1)? > 0.0);
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ellip_normal](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ellip_normal.html).
 pub fn ellip_normal(h2: f64, k2: f64, n: usize, p: usize) -> Result<f64> {
@@ -279,7 +285,8 @@ pub fn ellip_normal(h2: f64, k2: f64, n: usize, p: usize) -> Result<f64> {
             std::f64::consts::FRAC_PI_2,
         )
     };
-    crate::error::finite(
-        8.0 * (integral(true, 2) * integral(false, 0) - integral(true, 0) * integral(false, 2)),
-    )
+    match 8.0 * (integral(true, 2) * integral(false, 0) - integral(true, 0) * integral(false, 2)) {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }

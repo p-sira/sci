@@ -1,5 +1,7 @@
 # `fft` coverage and SciPy adaptations
 
+All 35 numerical names remain available by default. With facade defaults disabled, `fft` omits the three FFTLog functions; enable `fft-hankel` for them. Direct `sci-fft` users select the default-enabled `hankel` feature. All FFT transforms compile without XSF. FFTLog gamma coefficients now use private Rust implementations validated with expanded SciPy fixtures.
+
 Inventory: SciPy 1.18.1, [scipy.fft](scipy_function_list/scipy.fft.md).
 All 35 numerical function names have tested native signatures. Ten distinct
 periodic operators from SciPy FFTPACK are also exported from `fft`. Six Python
@@ -68,10 +70,11 @@ or produce a checked overflow. Shift helpers accept finite one-dimensional
 shared complex vectors; empty inputs are unchanged. Real values may be carried
 with zero imaginary components. Multidimensional shifts are absent.
 
-Smooth-length helpers match SciPy 1.18.1 factor sets: {2,3,5} for real and
-{2,3,5,7,11} for complex. Targets are 0..=1,048,576; zero returns zero. Searches
-are bounded trial division. These sizes are version-specific SciPy-compatible
-recommendations, not guarantees of optimal RustFFT performance.
+Smooth-length helpers use factors {2,3,5,7,11}, following RustFFT guidance.
+The `real` selector is removed. Targets are 0..=1,048,576; zero returns zero.
+Searches use bounded trial division. These are heuristics, not guarantees of
+optimal CPU-specific performance. Independent reference fixtures enumerate
+smooth products rather than using SciPy's different real-transform heuristic.
 
 ## FFTLog
 
@@ -81,9 +84,12 @@ k[j]=exp(offset)/r[n−1−j]. `bias` is the power-law exponent. `ifht` reverses
 discrete transform, and `fhtoffset` finds a nearest low-ringing offset using
 ties-to-even rounding. Captured single-sequence slices replace SciPy batching.
 Real orders may be negative, and signed nonzero spacing permits descending
-grids. Numerical coefficients use private XSF complex log-gamma and rising
-factorial evaluations, with RustFFT for Fourier work. SciPy coefficient/grid
-adaptations retain their license in `LICENSES/scipy-fftlog.txt`.
+grids. Numerical coefficients use private Rust translations of SciPy/XSF's
+Hare complex log-gamma and Cephes rising-factorial algorithms, with the existing
+`special` crate for real log-gamma and RustFFT for Fourier work. Complex gamma
+uses fixed Taylor/Stirling expansions, at most eight recurrence steps, and one
+reflection. Real ratios take at most 64 recurrence steps before a log-gamma
+fallback. SciPy licenses are retained and packaged in `LICENSES/`.
 
 Singular DC gamma ratios, underflowed coefficients or bias scaling, nonfinite
 intermediates, and zero inverse Nyquist coefficients return shared errors.
@@ -92,6 +98,59 @@ Small coefficients, large bias factors, periodic endpoint mismatch, and floating
 point cancellation limit accuracy; no continuous-integral error estimate is
 provided. Low-ringing offsets improve Nyquist phase alignment but cannot ensure
 continuous-integral accuracy. Extreme offset phases can lose fractional bits.
+
+The ordinary fixture tolerance remains 3e-12 absolute plus relative. New cases
+at order 20,001 and a DC-only case at order 1,000,000 use 3e-10 for cancellation
+in nearby log-gamma values. The former discrepancy is also present in the old
+XSF backend (about 4e-11 in the first forward sample). No existing tolerance
+was relaxed. Additional fixtures cover Taylor centers, reflection, negative
+spacing, asymptotic regimes, near-pole phases, and ratios beyond 64 recurrence
+steps. Public DC identities and inverse round trips supplement SciPy references.
+
+Supplemental validation evaluated all 6,018 existing FFTLog cases from
+`sci-testing` commit `539d39538b2b91544776b0b48d0eb6ddca7743c7` through this
+branch's public Sci APIs (Rust 1.99.1, dev profile). References were the saved
+SciPy 1.18.1 binary64 values; the recorded XSF baseline used Sci commit
+`b52c598535920279dc0aadb14a9085b8545ba4c1`. No cases failed the ordinary
+3e-12 absolute-plus-relative comparison.
+
+| Function | Cases | Maximum absolute difference from reference | Maximum / mean difference in epsilon |
+| --- | ---: | ---: | ---: |
+| `fht` | 2,006 | 4.93e-14 | 659.60 / 0.53341 |
+| `ifht` | 2,006 | 4.00e-15 | 466.76 / 0.27887 |
+| `fhtoffset` | 2,006 | 0 | 0 / 0 |
+
+The epsilon metric divides by the smaller absolute value, with the harness's
+zero/subnormal convention; means include interleaved imaginary zeros. The
+recorded XSF maxima/means were 619.05/0.53128 and 612.77/0.27612 for forward
+and inverse transforms. Only three forward and three inverse cases changed,
+by at most 3.56e-15 in absolute value. These sweeps mostly vary input values
+over a few parameter profiles; the 64 added fixtures exercise more coefficient
+regimes. Neither suite establishes a whole-domain accuracy bound.
+
+The harness records Sci and SciPy for FFTLog. GSL's
+[discrete Hankel transform](https://www.gnu.org/software/gsl/doc/html/dht.html)
+uses Bessel-zero sampling on a finite interval and has no adapter in these
+measurements. Comparing it with logarithmic periodic FFTLog would require
+continuous test functions with matched integral conventions and separate grids.
+
+The problematic cases were also checked against an independent mpmath dense
+DFT evaluation of Hamilton's discrete multiplier, converged at 100 and 160
+decimal digits. Sixteen such references are committed in `fftlog_accuracy.csv`
+and regenerated by `generate_fftlog_accuracy.py` from `fft_cases.jsonl`.
+
+| Case | Rust maximum relative error | Recorded XSF maximum relative error | SciPy maximum relative error |
+| --- | ---: | ---: | ---: |
+| Worst extended forward case, order 2 | 2.41e-13 | 2.32e-13 | 1.66e-13 |
+| Worst extended inverse case, order 1.5 | 1.50e-14 | 1.74e-14 | 1.19e-13 |
+| New forward case, order 20,001 | 2.36e-11 | — | 1.97e-11 |
+| New DC-only case, order 1,000,000 | 1.02e-16 | — | 1.05e-11 |
+
+These independent references expose error in SciPy as well as Sci. The large
+positive-order DC case benefits from the real gamma-ratio asymptotic formula;
+the full transform still loses precision in nearby complex log-gamma values.
+The large-order high-precision comparisons allow 3e-12 absolute plus 3e-11
+relative error; the other cases retain 3e-12 absolute plus relative tolerance.
 
 ## Periodic operators
 
@@ -146,7 +205,7 @@ are no placeholder equivalents or exported backend types.
 ## Verification
 
 Pinned SciPy 1.18.1 / NumPy 2.5.4 generation reads input-only
-`tests/scipy/fft_cases.json` and writes separate checked-in input/expected CSVs.
+`tests/scipy/fft_cases.jsonl` and writes separate checked-in input/expected CSVs.
 Rust tests exercise every supported numerical name with multiple cases,
 including odd/even lengths, axis permutations/subsets, reduced axes, type I–IV
 normalization, negative spacing, gamma orders/biases, and shape/order checks.
@@ -156,7 +215,7 @@ endpoint projection, exact shift inversion, smooth-length bounds/idempotence,
 invalid values/shapes/axes, work bounds, overflow, and cross-module statistics.
 Original signal FFT and Fourier pipeline tests continue to pass.
 
-Periodic references read `tests/scipy/fft_periodic_cases.json` and write
+Periodic references read `tests/scipy/fft_periodic_cases.jsonl` and write
 `fft_periodic_inputs.csv` and `fft_periodic_expected.csv` using the same pinned
 versions and 3e-12 absolute plus relative tolerance. Every migrated operator
 has multiple public reference cases for ordering, odd/even Nyquist, and signed

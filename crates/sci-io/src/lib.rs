@@ -4,6 +4,10 @@
 //! selected independently. Readers accept Rust byte streams and writers accept
 //! byte destinations. Paths are opened by callers; extensions are never added.
 //! Backend types remain private. I/O errors retain their original source.
+//! Through the Sci facade, select `io-matrix-market`, `io-wav`, or `io-matlab`.
+//! With facade defaults disabled, `io` alone exposes shared I/O types without
+//! file codecs. Matrix Market uses shared `sci-core` CSR helpers without
+//! depending on `sci-sparse` or enabling sparse NPZ interchange.
 //!
 //! File data may contain NaN, infinities, and signed zeros. Conversion into a
 //! numerical Sci module remains subject to that module's domain validation.
@@ -147,10 +151,10 @@ numeric_data!(
     F64(f64)
 );
 
+/// Matrix Market interchange in coordinate and array storage formats.
 #[cfg(feature = "matrix-market")]
-mod market;
-#[cfg(feature = "matrix-market")]
-pub use market::{MarketMatrix, MatrixMarketInfo, mminfo, mmread, mmwrite};
+#[path = "market.rs"]
+pub mod matrix_market;
 
 /// Typed WAV audio and explicit conversion to signal samples.
 #[cfg(feature = "wav")]
@@ -159,5 +163,3 @@ pub mod wavfile;
 /// Dense numerical MATLAB Level-5 files, including bounded zlib compression.
 #[cfg(feature = "matlab")]
 pub mod matlab;
-#[cfg(feature = "matlab")]
-pub use matlab::{loadmat, savemat, whosmat};

@@ -1,0 +1,284 @@
+# Migrating to Sci 0.3 (unreleased)
+
+The upcoming 0.3.0 release is unreleased. Workspace packages advance one minor
+version: `0.2.x` becomes `0.3.0`,
+while `sci-io` and `sci-sparse` advance from `0.1.x` to `0.2.0`.
+Use matching workspace releases so shared error and numerical types agree.
+
+Sci uses SciPy for independent numerical references. Its public API follows
+Rust types and ownership; SciPy inventory names do not require extra exports.
+
+## Numerical-family modules throughout the workspace (breaking)
+
+Numerical functions in the `sci-stats`, `sci-signal`, `sci-linalg`, `sci-sparse`,
+`sci-filter`, `sci-fft`, `sci-interpolate`, `sci-integrate`, `sci-optimize`, and
+`sci-spatial` crates are now exported through public mathematical-family modules
+instead of their previous flat crate roots. `sci-io` also groups Matrix Market
+operations under `matrix_market` and MATLAB file operations under `matlab`.
+Shared errors, foundational data types, and explicitly documented common
+configuration types remain at the crate root. `sci-core` stays flat; cluster,
+complex, constants, and differentiation retain their existing public APIs.
+
+| Before | After |
+| --- | --- |
+| `sci::stats::mean(&xs)` | `sci::stats::descriptive::mean(&xs)` |
+| `sci::stats::normal_cdf(x, mu, sigma)` | `sci::stats::distributions::normal_cdf(x, mu, sigma)` |
+| `sci::signal::convolve(&x, &h, mode)` | `sci::signal::convolution::convolve(&x, &h, mode)` |
+| `sci::linalg::solve(&a, &b)` | `sci::linalg::solvers::solve(&a, &b)` |
+| `sci::linalg::svd(&a)` | `sci::linalg::decompositions::svd(&a)` |
+| `sci::linalg::issymmetric(&a, atol, rtol)` | `sci::linalg::basic::issymmetric(&a, atol, rtol)` |
+| `sci::linalg::ishermitian(&a, atol, rtol)` | `sci::linalg::basic::issymmetric(&a, atol, rtol)` |
+| `sci::sparse::identity(n)` | `sci::sparse::construct::identity(n)` |
+| `sci::sparse::matvec(&a, &x)` | `sci::sparse::operations::matvec(&a, &x)` |
+| `sci::filter::kalman_predict(&prior, &f, &q)` | `sci::filter::kalman::kalman_predict(&prior, &f, &q)` |
+| `sci::fft::rfft(&x)` | `sci::fft::real::rfft(&x)` |
+| `sci::integrate::simpson(&y, x, dx)` | `sci::integrate::sampled::simpson(&y, x, dx)` |
+| `sci::interpolate::lagrange(&x, &y)` | `sci::interpolate::polynomial::lagrange(&x, &y)` |
+| `sci::optimize::minimize(f, &x, options)` | `sci::optimize::minimize::minimize(f, &x, options)` |
+| `sci::spatial::pdist(&points, metric)` | `sci::spatial::distance::pdist(&points, metric)` |
+| `sci::io::mmread(bytes)` | `sci::io::matrix_market::mmread(bytes)` |
+| `sci::io::loadmat(bytes)` | `sci::io::matlab::loadmat(bytes)` |
+
+The same changes apply to direct `sci-*` crate imports. Existing numerical
+algorithms, domains, signatures, and result ordering are unchanged. No new
+Cargo feature selections are required by this namespace migration.
+
+## Special-function family modules (breaking)
+
+All 362 formerly root-exported numerical functions are assigned to public
+mathematical-family modules in 0.3.0: `gamma`, `beta`, `bessel`, `orthogonal`,
+`hypergeometric`, `wave`, `integrals`, `zeta`, `probability`, `elementary`,
+`combinatorics`, and `elliptic`. The existing `complex` module retains its
+qualified complex APIs. There are **no root-level numerical functions, aliases,
+or numerical function re-exports** in `sci::special` or `sci_special`.
+The shared `Error` and `Result` re-exports remain at the crate root.
+Import the relevant family module or use a fully qualified function path.
+
+| Before (0.2.x) | After (0.3.0) |
+| --- | --- |
+| `sci::special::gamma(x)` | `sci::special::gamma::gamma(x)` |
+| `sci::special::betainc(a, b, x)` | `sci::special::beta::betainc(a, b, x)` |
+| `sci::special::jv(v, x)` | `sci::special::bessel::jv(v, x)` |
+| `sci::special::eval_legendre(n, x)` | `sci::special::orthogonal::eval_legendre(n, x)` |
+| `sci::special::hyp1f1(a, b, x)` | `sci::special::hypergeometric::hyp1f1(a, b, x)` |
+| `sci::special::airy(x)` | `sci::special::wave::airy(x)` |
+| `sci::special::exp1(x)` | `sci::special::integrals::exp1(x)` |
+| `sci::special::zeta(x, q)` | `sci::special::zeta::zeta(x, q)` |
+| `sci::special::ndtr(x)` | `sci::special::probability::ndtr(x)` |
+| `sci::special::logsumexp(&values)` | `sci::special::elementary::logsumexp(&values)` |
+| `sci::special::comb(n, k)` | `sci::special::combinatorics::comb(n, k)` |
+| `sci::special::ellipf(phi, m)` | `sci::special::elliptic::ellipkinc(phi, m)` |
+| `sci::special::ellipkinc(phi, m)` | `sci::special::elliptic::ellipkinc(phi, m)` |
+| `sci::special::ellipj(u, m)` | `sci::special::elliptic::ellipj(u, m)` |
+
+For example, an existing `use sci::special::{gamma, jv};` import must be
+replaced with module-qualified calls:
+
+```rust
+use sci::special::{bessel, gamma};
+
+let g = gamma::gamma(5.0_f64);
+let j = bessel::jv(0.0_f64, 1.0);
+assert_eq!(g, 24.0);
+assert!(j.is_finite());
+```
+
+The existing `special::complex` and `special::elliptic` family paths remain
+available. `elliptic::ellipkinc(phi, m)` is now the sole public spelling for
+`F(phi, m)`; `ellipf` has been removed, including inside `elliptic`.
+Types and error handling use their documented module paths; the change does
+not alter numerical definitions, argument order, or domain.
+The same path migration applies when using the `sci-special` crate directly:
+replace `sci::special` above with `sci_special`.
+
+For complex arguments, use the newly expanded `special::complex` module. For
+example, `special::complex::lambertw(z, k)` chooses integer Lambert W branch
+`k`; `special::complex::exp1(z)` and `special::complex::expi(z)` use signed
+complex branch cuts. `special::complex::zeta(s)` is Riemann zeta, while
+`special::complex::hurwitz_zeta(s, q)` takes an additional complex shift.
+These fallible, generic complex APIs return `sci::Result`; their documented
+numerical domains are narrower than unrestricted complex analytic continuation.
+
+## Generic floating-point APIs
+
+Supported numerical functions now use `T: sci::Float` (the `num_traits::Float`
+bound used by ellip). `Matrix<T>`, `Complex<T>`, spline and sparse storage,
+and descriptive summaries default to `f64` when the type is named without an
+argument. Calls infer their precision from typed inputs; arithmetic and callbacks
+retain that precision. FFT kernels use the sealed `fft::FftFloat` bound, and
+`ellippiinc_bulirsch` uses `special::elliptic::BulirschFloat` to hide backend
+precision dispatch. Both support `f32` and `f64`.
+
+```rust
+let gradient = sci::differentiate::gradient(
+    |x| x[0] * x[0] + x[1] * x[1], &[1.0_f32, 2.0], 0.125,
+)?;
+let average: f32 = sci::stats::descriptive::mean(&gradient)?;
+let spectrum = sci::fft::real::rfft(&gradient);
+assert_eq!(average, 3.0);
+assert_eq!(sci::complex::real(spectrum[0]), 6.0_f32);
+# Ok::<(), sci::Error>(())
+```
+
+Empty slices and unconstrained float expressions may need `::<f64>`, a typed
+binding, or an `f64` suffix. For callbacks that invoke inherent float methods,
+annotate the argument, e.g. `|x: f32| x.sin()`. Differentiation functions now
+have scalar and callback type parameters; explicit callback turbofish arguments
+must also specify the scalar, e.g. `derivative::<f32, _>(...)`. Tolerances and
+finite-difference steps must suit the selected precision; use `f32::EPSILON`
+for binary32 calculations. Existing `f64` tolerances are usually too strict for
+`f32`. Mixed precisions require explicit caller conversions.
+
+The CODATA table and constants remain binary64. Gaussian quadrature nodes and
+weights are generated by the binary64 backend then rounded to `T`. Other APIs
+retain `f64` where their implementation still depends on binary64 algorithms
+or adapters; generic storage alone does not generalize those numerical APIs.
+See [the precision coverage audit](function_coverages/GENERIC_FLOAT_COVERAGE.md)
+for the implemented groups and remaining migration work.
+
+## Direct numerical calls
+
+`sci_core::finite(value)` is removed. Use `value.is_finite()` (from `Float`
+for generic scalars), returning `Error::NonFiniteEvaluation` when required.
+`finite_slice` is renamed to `is_finite_slice`; it still returns `Result<()>`.
+
+`linalg::find_best_blas_type`, `get_blas_funcs`, `get_lapack_funcs`, `BlasType`,
+`BlasFunction`, and `LapackFunction` are removed. Call `dot`, `matvec`, `matmul`,
+`solve`, `lu_factor`, `lu_solve`, `cholesky`, `cho_solve`, `eig`, `eigh`, `svd`,
+or `qz` directly. These linear-algebra entry points continue to use `f64`. Direct `dot`, `matvec`, and `matmul` retain
+their documented IEEE propagation; the removed dispatcher wrappers performed
+additional finite-value checks. Use `sci_core::is_finite_slice` and check results
+when that stricter behavior is required. For a vector Euclidean
+norm with overflow-resistant accumulation, use `x.iter().fold(0.0_f64,
+|norm, &value| norm.hypot(value))`; validate inputs when required.
+
+`stats::abs(x)`, `exp(x)`, and `log(x)` become `x.abs()`, `x.exp()`, and `x.ln()`.
+`special::cbrt`, `exp2`, `expm1`, `log1p`, and `round` become `f64::cbrt`,
+`exp2`, `exp_m1`, `ln_1p`, and **`round_ties_even`**, respectively.
+`special::exp10(x)` becomes `10.0_f64.powf(x)`.
+`special::geterr`, `seterr`, and `ErrorPolicy` are removed. Use
+`value.is_finite()` to detect NaN and infinity, or retain IEEE results.
+Stable special functions such as `exprel`, `xlogy`, and `log_expit` remain.
+
+## Sparse types and ownership
+
+Graph algorithms have moved from `sci-sparse` to the independent `sci-graph`
+crate. Use `sci::graph::dijkstra(&a, &options)` with the `graph` feature, or
+`sci_graph::dijkstra(&a, &options)` when depending on the crate directly.
+Both APIs accept the shared `sci_core::SparseMatrix` type. The old
+`sci::sparse::csgraph` and `sci_sparse::csgraph` paths have been **removed**;
+they are not compatibility aliases. Use the independent `graph` feature on
+`sci` or depend directly on `sci-graph` to migrate. Graph algorithms no longer
+come from `sci-sparse`, including its `full` and default features.
+
+Direct `sci-sparse` consumers selecting `default-features = false` now receive
+only canonical CSR/COO storage, construction, arithmetic and array operations.
+Add `features = ["solver"]` for `linalg`,
+`features = ["random"]` for `random` and `random_array`, or
+`features = ["npz"]` for `load_npz` and `save_npz`. Use `features = ["full"]`
+to restore sparse solvers and random sampling without NPZ. Normal `sci-sparse`
+defaults and the facade `sci::sparse` API preserve sparse capabilities;
+`sci`'s `sparse-npz` feature continues to enable NPZ support.
+
+`issparse` is removed; use concrete types or traits. `get_index_dtype`,
+`IndexDtype`, and `safely_cast_index_arrays` are replaced by concrete checked
+conversions:
+
+```rust
+let a = sci::sparse::construct::identity(2)?;
+let indices = sci::sparse::array::csr_indices_i32(&a)?;
+assert_eq!(indices.indptr, vec![0_i32, 1, 2]);
+assert_eq!(indices.indices, vec![0_i32, 1]);
+# Ok::<(), sci::Error>(())
+```
+
+Use `csr_indices_i64` for signed 64-bit storage. Both return named fields,
+validate CSR and dimensions, preserve ordering, and reject unrepresentable
+values. Matrix storage continues to use `usize` internally.
+
+`aslinearoperator(&a)` becomes `LinearOperator::try_from(&a)`. This owned
+conversion copies A and its transpose. Solvers already accept `&a` through
+`LinearMap`; pass it directly when an owned callback operator is unnecessary.
+
+## FFT lengths
+
+`next_fast_len(target, real)` and `prev_fast_len(target, real)` become
+`next_fast_len(target)` and `prev_fast_len(target)`. Both select lengths whose
+prime factors are at most 11, following RustFFT guidance. This is a heuristic,
+not CPU-specific performance tuning or exact SciPy real-transform parity.
+Zero remains zero and the search remains bounded at 1,048,576 samples.
+
+## Convolution algorithm selection
+
+`signal::choose_conv_method` and `ConvolutionMethod` are removed. Their timing
+constants were calibrated for SciPy and did not predict Sci's Rust backends.
+Call `convolve`, `fftconvolve`, or `oaconvolve` explicitly and benchmark the
+relevant input sizes when performance matters. These operations retain their
+existing output conventions and work limits.
+
+## Canonical names
+
+The following aliases are removed. Their numerical operations remain available
+under the canonical names. Existing independent SciPy fixture labels may retain
+the old spelling while Rust tests call the canonical API.
+
+| Removed name | Replacement |
+| --- | --- |
+| `stats::kstest(x, y, alternative)` | `stats::ks_2samp(x, y, alternative)`; use `ks_1samp` for a continuous null |
+| `special::psi(x)` | `special::gamma::digamma(x)` |
+| `special::assoc_laguerre(x, n, k)` | `special::orthogonal::eval_genlaguerre(n, k, x)` (arguments reordered) |
+| `special::ellipf(phi, m)` | `special::elliptic::ellipkinc(phi, m)` |
+| `linalg::ishermitian(&a, atol, rtol)` | `linalg::basic::issymmetric(&a, atol, rtol)` for real matrices |
+| `signal::closest_STFT_dual_window` | `signal::closest_stft_dual_window` |
+| `c_roots` | `roots_chebyc` |
+| `cg_roots` | `roots_gegenbauer` |
+| `h_roots` | `roots_hermite` |
+| `he_roots` | `roots_hermitenorm` |
+| `j_roots` | `roots_jacobi` |
+| `js_roots` | `roots_sh_jacobi` |
+| `l_roots` | `roots_laguerre` |
+| `la_roots` | `roots_genlaguerre` |
+| `p_roots` | `roots_legendre` |
+| `ps_roots` | `roots_sh_legendre` |
+| `s_roots` | `roots_chebys` |
+| `t_roots` | `roots_chebyt` |
+| `ts_roots` | `roots_sh_chebyt` |
+| `u_roots` | `roots_chebyu` |
+| `us_roots` | `roots_sh_chebyu` |
+| `solve_lyapunov` | `solve_continuous_lyapunov` |
+| `maxRstat` | `max_rstat` |
+| `py_vq` | `vq` |
+| `sosfreqz` | `freqz_sos` |
+| `check_COLA` | `check_cola` |
+| `check_NOLA` | `check_nola` |
+| `freqresp` | `freqs` |
+| `dfreqresp` | `freqz` |
+| `splrep` | `make_splrep` |
+| `splprep` | `make_splprep` |
+| `factorized` | `splu` |
+| `bmat` | `block_array` |
+| `diags_array` | `diags` |
+| `eye_array` | `eye` |
+| `matrix_transpose` | `transpose` |
+
+`issymmetric` tests real matrix symmetry (equivalent to Hermitian symmetry
+over real scalars). SciPy separately lists `ishermitian` in its inventory,
+but Sci 0.3.0 no longer exports that name. The similarly named `spl*`,
+`bispl*`, factorization, and transform functions that perform distinct
+mathematical operations remain available.
+
+## Special-function reference policy
+
+SciPy is an independent numerical reference, not a requirement for complete API,
+signature, domain, or special-value parity. Sci uses coherent Rust APIs and the
+supported mathematical domains of its selected algorithms. Inventory audits
+record dispositions; a matching name does not certify every overload or domain.
+
+Elliptic integrals use Ellip's amplitude and parameter conventions:
+`F(phi, m)` (`elliptic::ellipkinc`), `E(phi, m)`, and
+`Π(phi, n, m)`, with radians, parameter `m = k²`, and characteristic `n`.
+Carlson `R_C` with negative `y` and `R_J` with negative `p`, and supported
+Legendre/Bulirsch third-kind cases, return Cauchy principal values. Incomplete
+integrals admit Ellip's real `m >= 1` cases through backend validation. Sci still
+requires finite inputs and finite results; singular values and backend failures
+return shared errors. These restrictions are separate from Ellip's own domains.

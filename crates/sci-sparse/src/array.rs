@@ -1,6 +1,6 @@
 use super::*;
+#[cfg(feature = "random")]
 use rand::{Rng, SeedableRng};
-use std::any::Any;
 
 pub(crate) fn validate_array(a: &SparseArray) -> Result<()> {
     if a.shape.is_empty()
@@ -17,7 +17,7 @@ pub(crate) fn validate_array(a: &SparseArray) -> Result<()> {
             "invalid canonical sparse array or rank/storage limit",
         ));
     }
-    sci_core::finite_slice(&a.data)
+    sci_core::is_finite_slice(&a.data)
 }
 
 /// Convert a CSR matrix to a rank-two coordinate array, `B[i,j] = A[i,j]`.
@@ -34,7 +34,7 @@ pub(crate) fn validate_array(a: &SparseArray) -> Result<()> {
 /// Exact copying in O(rows + stored entries) work.
 /// # Examples
 /// ```
-/// let a = sci_sparse::as_array(&sci_sparse::identity(2)?)?;
+/// let a = sci_sparse::array::as_array(&sci_sparse::construct::identity(2)?)?;
 /// assert_eq!(a.shape, [2, 2]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -63,8 +63,8 @@ pub fn as_array(a: &SparseMatrix) -> Result<SparseArray> {
 /// Exact index manipulation; at most 32 million coordinate components.
 /// # Examples
 /// ```
-/// let a = sci_sparse::as_array(&sci_sparse::identity(2)?)?;
-/// assert_eq!(sci_sparse::expand_dims(&a, -1)?.shape, [2,2,1]);
+/// let a = sci_sparse::array::as_array(&sci_sparse::construct::identity(2)?)?;
+/// assert_eq!(sci_sparse::array::expand_dims(&a, -1)?.shape, [2,2,1]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -105,8 +105,8 @@ fn axis_index(axis: isize, n: usize) -> Result<usize> {
 /// Exact reindexing followed by O(nnz log nnz) stable sorting.
 /// # Examples
 /// ```
-/// let a = sci_sparse::as_array(&sci_sparse::identity(2)?)?;
-/// assert_eq!(sci_sparse::permute_dims(&a, &[1,0])?, a);
+/// let a = sci_sparse::array::as_array(&sci_sparse::construct::identity(2)?)?;
+/// assert_eq!(sci_sparse::array::permute_dims(&a, &[1,0])?, a);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -155,8 +155,8 @@ pub fn permute_dims(a: &SparseArray, axes: &[isize]) -> Result<SparseArray> {
 /// Uses [`permute_dims`] with its work and ordering conventions.
 /// # Examples
 /// ```
-/// let a = sci_sparse::as_array(&sci_sparse::identity(2)?)?;
-/// assert_eq!(sci_sparse::swapaxes(&a, 0, 1)?, a);
+/// let a = sci_sparse::array::as_array(&sci_sparse::construct::identity(2)?)?;
+/// assert_eq!(sci_sparse::array::swapaxes(&a, 0, 1)?, a);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -170,114 +170,89 @@ pub fn swapaxes(a: &SparseArray, axis1: isize, axis2: isize) -> Result<SparseArr
     permute_dims(a, &axes)
 }
 
-/// Test whether a Rust value has shared sparse array or CSR matrix storage.
+/// CSR row pointers and column indices in a concrete integer representation.
 ///
-/// This is a type predicate, independent of storage validity. Unlike Python,
-/// other Rust types cannot dynamically subclass these shared records.
-/// # Examples
-/// ```
-/// assert!(sci_sparse::issparse(&sci_sparse::identity(1)?));
-/// assert!(!sci_sparse::issparse(&vec![1.0]));
-/// # Ok::<(), sci_core::Error>(())
-/// ```
-/// # References
-/// [SciPy issparse](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.issparse.html).
-pub fn issparse(value: &dyn Any) -> bool {
-    value.is::<SparseMatrix>() || value.is::<SparseArray>()
+/// `indptr` has `rows + 1` elements; `indices` has one entry per stored value.
+/// Both retain the matrix's zero-based CSR ordering, including explicit zeros.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CsrIndices<T> {
+    /// Offsets into the column-index and value arrays for each row.
+    pub indptr: Vec<T>,
+    /// Zero-based column indices in CSR order.
+    pub indices: Vec<T>,
 }
 
-/// Supported signed storage widths for sparse indices.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum IndexDtype {
-    /// Signed 32-bit integers.
-    I32,
-    /// Signed 64-bit integers.
-    I64,
-}
-
-/// Choose the smallest signed index width containing all indices and `maxval`.
-///
-/// # Parameters and conventions
-/// `arrays` contains nonnegative integer indices; `maxval` is an optional bound.
-/// Rust inputs have concrete integer storage, so values are always inspected.
-/// # Domain and special values
-/// Values through `i64::MAX`; arrays total at most 1,000,000 entries.
-/// # Returns
-/// [`IndexDtype::I32`] if every value fits, otherwise [`IndexDtype::I64`].
-/// # Errors
-/// Values above the signed 64-bit maximum or excessive input storage.
-/// # Numerical behavior
-/// Exact integer comparisons in linear time.
-/// # Examples
-/// ```
-/// assert_eq!(sci_sparse::get_index_dtype(&[&[1,2]], None)?, sci_sparse::IndexDtype::I32);
-/// # Ok::<(), sci_core::Error>(())
-/// ```
-/// # References
-/// [SciPy get_index_dtype](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.get_index_dtype.html).
-pub fn get_index_dtype(arrays: &[&[u64]], maxval: Option<u64>) -> Result<IndexDtype> {
-    if arrays.len() > LIMIT {
-        return Err(Error::InvalidInput("too many index arrays"));
-    }
-    let mut count = 0usize;
-    let mut max = maxval.unwrap_or(0);
-    for a in arrays {
-        count = count
-            .checked_add(a.len())
-            .ok_or(Error::InvalidInput("index count overflow"))?;
-        if count > LIMIT {
-            return Err(Error::InvalidInput("too many indices"));
-        }
-        max = max.max(a.iter().copied().max().unwrap_or(0));
-    }
-    if max > i64::MAX as u64 {
-        return Err(Error::InvalidInput("indices exceed signed 64-bit range"));
-    }
-    Ok(if max <= i32::MAX as u64 {
-        IndexDtype::I32
-    } else {
-        IndexDtype::I64
+fn csr_indices<T: TryFrom<usize>>(a: &SparseMatrix) -> Result<CsrIndices<T>> {
+    validate(a)?;
+    let convert =
+        |i| T::try_from(i).map_err(|_| Error::InvalidInput("CSR indices exceed integer range"));
+    // Dimensions must also fit, even when the matrix has no stored entries.
+    convert(a.rows)?;
+    convert(a.cols)?;
+    Ok(CsrIndices {
+        indptr: a
+            .indptr
+            .iter()
+            .copied()
+            .map(convert)
+            .collect::<Result<_>>()?,
+        indices: a
+            .indices
+            .iter()
+            .copied()
+            .map(convert)
+            .collect::<Result<_>>()?,
     })
 }
 
-/// Validate and copy CSR index arrays into a requested signed storage width.
+/// Copies CSR row pointers and column indices as signed 32-bit integers.
 ///
 /// # Parameters and conventions
-/// `dtype` controls representability. Returned pointers and indices use `i64`;
-/// an I32 request additionally guarantees lossless narrowing by the caller.
+/// `a` is a shared CSR matrix. Indices are zero-based; no data values are copied.
 /// # Domain and special values
-/// Canonical finite CSR with normal crate storage/axis limits.
+/// Canonical finite CSR under the crate's storage limits, including empty shapes.
 /// # Returns
-/// `(indptr, indices)` in original CSR order, with no matrix mutation.
+/// [`CsrIndices<i32>`] with named `indptr` and `indices` fields in original order.
 /// # Errors
-/// Invalid CSR, or shape/pointer/index values too large for `dtype`.
+/// Invalid CSR or dimensions, pointers, or indices outside `0..=i32::MAX`.
 /// # Numerical behavior
-/// Exact integer conversion, O(rows + nnz) work.
+/// Exact checked integer conversion; O(rows + stored entries) time and storage.
 /// # Examples
 /// ```
-/// let (p,i) = sci_sparse::safely_cast_index_arrays(&sci_sparse::identity(1)?, sci_sparse::IndexDtype::I32)?;
-/// assert_eq!((p,i), (vec![0,1],vec![0]));
+/// let indices = sci_sparse::array::csr_indices_i32(&sci_sparse::construct::identity(2)?)?;
+/// assert_eq!(indices.indptr, vec![0_i32, 1, 2]);
+/// assert_eq!(indices.indices, vec![0_i32, 1]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
-/// [SciPy safely_cast_index_arrays](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.safely_cast_index_arrays.html).
-pub fn safely_cast_index_arrays(
-    a: &SparseMatrix,
-    dtype: IndexDtype,
-) -> Result<(Vec<i64>, Vec<i64>)> {
-    validate(a)?;
-    let max = if dtype == IndexDtype::I32 {
-        i32::MAX as usize
-    } else {
-        i64::MAX as usize
-    };
-    if a.rows > max || a.cols > max || a.data.len() > max {
-        return Err(Error::InvalidInput("indices do not fit dtype"));
-    }
-    Ok((
-        a.indptr.iter().map(|&i| i as i64).collect(),
-        a.indices.iter().map(|&i| i as i64).collect(),
-    ))
+/// [SciPy CSR storage](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_array.html).
+pub fn csr_indices_i32(a: &SparseMatrix) -> Result<CsrIndices<i32>> {
+    csr_indices(a)
+}
+
+/// Copies CSR row pointers and column indices as signed 64-bit integers.
+///
+/// # Parameters and conventions
+/// `a` is a shared CSR matrix. Indices are zero-based; no data values are copied.
+/// # Domain and special values
+/// Canonical finite CSR under the crate's storage limits, including empty shapes.
+/// # Returns
+/// [`CsrIndices<i64>`] with named `indptr` and `indices` fields in original order.
+/// # Errors
+/// Invalid CSR or dimensions, pointers, or indices outside `0..=i64::MAX`.
+/// # Numerical behavior
+/// Exact checked integer conversion; O(rows + stored entries) time and storage.
+/// # Examples
+/// ```
+/// let indices = sci_sparse::array::csr_indices_i64(&sci_sparse::construct::identity(1)?)?;
+/// assert_eq!(indices.indptr, vec![0_i64, 1]);
+/// assert_eq!(indices.indices, vec![0_i64]);
+/// # Ok::<(), sci_core::Error>(())
+/// ```
+/// # References
+/// [SciPy CSR storage](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csr_array.html).
+pub fn csr_indices_i64(a: &SparseMatrix) -> Result<CsrIndices<i64>> {
+    csr_indices(a)
 }
 
 /// Generate uniformly distributed sparse entries on distinct random coordinates.
@@ -298,11 +273,12 @@ pub fn safely_cast_index_arrays(
 /// NumPy; a fixed seed reproduces this implementation, not SciPy's samples.
 /// # Examples
 /// ```
-/// assert_eq!(sci_sparse::random_array(&[4,5], 0.5, 42)?.data.len(), 10);
+/// assert_eq!(sci_sparse::array::random_array(&[4,5], 0.5, 42)?.data.len(), 10);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
 /// [SciPy random_array](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.random_array.html).
+#[cfg(feature = "random")]
 pub fn random_array(shape: &[usize], density: f64, seed: u64) -> Result<SparseArray> {
     let mut a = SparseArray {
         shape: shape.to_vec(),
@@ -343,99 +319,4 @@ pub fn random_array(shape: &[usize], density: f64, seed: u64) -> Result<SparseAr
         a.data.push(rng.random());
     }
     Ok(a)
-}
-
-/// Generate a two-dimensional sparse sample with uniform `[0,1)` values.
-///
-/// # Parameters and conventions
-/// rows, cols set shape; density and seed follow [`random_array`]. The shared
-/// CSR type replaces SciPy's format/dtype options and legacy matrix record.
-/// # Domain and special values
-/// Finite density in `[0,1]`, crate axis/storage limits and volume <=20,000,000.
-/// # Returns
-/// Canonical CSR with ties-to-even rounded density×volume stored entries.
-/// # Errors
-/// Invalid density, shape/volume overflow, or sampling/storage limits.
-/// # Numerical behavior
-/// Uses [`random_array`]; streams differ from NumPy. No custom sampler argument;
-/// callers may replace sampled data with validated finite values explicitly.
-/// # Examples
-/// ```
-/// assert_eq!(sci_sparse::random(2,3,1.,42)?.data.len(),6);
-/// # Ok::<(), sci_core::Error>(())
-/// ```
-/// # References
-/// [SciPy random](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.random.html).
-pub fn random(rows: usize, cols: usize, density: f64, seed: u64) -> Result<SparseMatrix> {
-    let a = random_array(&[rows, cols], density, seed)?;
-    from_coo(
-        rows,
-        cols,
-        &a.coordinates
-            .iter()
-            .zip(&a.data)
-            .map(|(c, &v)| (c[0], c[1], v))
-            .collect::<Vec<_>>(),
-    )
-}
-
-/// Build a sparse matrix from padded diagonal rows, `A[j-k,j]=data[d][j]`.
-///
-/// # Parameters and conventions
-/// `offsets[d]` is the column-minus-row offset k. All data rows have equal width;
-/// unlike [`diags`], entries are aligned by output column, including padding.
-/// Out-of-bounds row/column positions are discarded; offsets must be unique.
-/// # Domain and special values
-/// Finite data, including explicit zeros; nonnegative dimensions under limits.
-/// Arbitrarily large offsets produce no entries without signed overflow.
-/// # Returns
-/// Canonical CSR of explicit shape rows×cols.
-/// # Errors
-/// Invalid lengths, repeated offsets, nonfinite data, or crate storage/work limits.
-/// # Numerical behavior
-/// Exact placement with O(input data size) work, capped at 1,000,000 input values.
-/// # Examples
-/// ```
-/// let a=sci_sparse::spdiags(&[vec![0.,2.,3.]],&[1],3,3)?;
-/// assert_eq!(sci_sparse::to_dense(&a)?[0][1],2.);
-/// # Ok::<(), sci_core::Error>(())
-/// ```
-/// # References
-/// [SciPy spdiags](https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.spdiags.html).
-pub fn spdiags(
-    data: &[Vec<f64>],
-    offsets: &[isize],
-    rows: usize,
-    cols: usize,
-) -> Result<SparseMatrix> {
-    shape(rows, cols)?;
-    if data.len() > LIMIT {
-        return Err(Error::InvalidInput("too many diagonal rows"));
-    }
-    if data.len() != offsets.len() {
-        return Err(Error::DimensionMismatch);
-    }
-    let width = data.first().map_or(0, Vec::len);
-    if data.len().checked_mul(width).is_none_or(|n| n > LIMIT) {
-        return Err(Error::InvalidInput("diagonal data exceeds storage limit"));
-    }
-    let mut seen = std::collections::BTreeSet::new();
-    let mut t = vec![];
-    for (row, &k) in data.iter().zip(offsets) {
-        if row.len() != width {
-            return Err(Error::DimensionMismatch);
-        }
-        sci_core::finite_slice(row)?;
-        if !seen.insert(k) {
-            return Err(Error::InvalidInput("repeated diagonal offset"));
-        }
-        for (c, &v) in row.iter().enumerate().take(cols) {
-            if let Some(r) = c.checked_add_signed(k.saturating_neg())
-                && r < rows
-            {
-                t.push((r, c, v));
-            }
-        }
-    }
-    from_coo(rows, cols, &t)
 }

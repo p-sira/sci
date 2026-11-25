@@ -1,5 +1,5 @@
 //! Euclidean vector quantization and bounded Lloyd k-means.
-use crate::error::{finite, finite_slice};
+use crate::error::is_finite_slice;
 use crate::{Error, Result};
 
 fn shape(data: &[Vec<f64>]) -> Result<usize> {
@@ -18,9 +18,69 @@ fn shape(data: &[Vec<f64>]) -> Result<usize> {
         if row.len() != columns {
             return Err(Error::DimensionMismatch);
         }
-        finite_slice(row)?;
+        is_finite_slice(row)?;
     }
     Ok(columns)
+}
+
+// Keep the sign-balanced compensated mean used by the shared statistics
+// implementation. Only normalized deviations with magnitude <= 1 reach this
+// helper, and there are at most 1,000,000 of them, so the partial sums cannot
+// overflow. Centering after scaling preserves differences at large offsets.
+fn centered_mean(values: &[f64]) -> f64 {
+    let mut positive = values.iter().copied().filter(|x| *x >= 0.0);
+    let mut negative = values.iter().copied().filter(|x| *x < 0.0);
+    let (mut sum, mut correction) = (0_f64, 0_f64);
+    loop {
+        let term = if sum >= 0.0 {
+            negative.next().or_else(|| positive.next())
+        } else {
+            positive.next().or_else(|| negative.next())
+        };
+        let Some(term) = term else {
+            return (sum + correction) / values.len() as f64;
+        };
+        let next = sum + term;
+        correction += if sum.abs() >= term.abs() {
+            (sum - next) + term
+        } else {
+            (term - next) + sum
+        };
+        sum = next;
+    }
+}
+
+// Population standard deviation of an already validated column. Reuse the
+// deviation buffer across columns to avoid repeated allocation in `whiten`.
+fn population_std(values: &[f64], deviations: &mut Vec<f64>) -> Result<f64> {
+    let origin = values[0];
+    deviations.clear();
+    deviations.extend(values.iter().map(|&x| x - origin));
+    let mut scale = deviations.iter().fold(0_f64, |s, x| s.max(x.abs()));
+    if !scale.is_finite() {
+        scale = values.iter().fold(0_f64, |s, x| s.max(x.abs()));
+        for (y, x) in deviations.iter_mut().zip(values) {
+            *y = *x / scale;
+        }
+    } else if scale == 0.0 {
+        return Ok(0.0);
+    } else {
+        for y in deviations.iter_mut() {
+            *y /= scale;
+        }
+    }
+    let center = centered_mean(deviations);
+    for y in deviations.iter_mut() {
+        *y -= center;
+    }
+    let normalized = deviations
+        .iter()
+        .map(|x| x.powi(2) / values.len() as f64)
+        .fold(0.0, |a, b| a + b);
+    match normalized.sqrt() * scale {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }
 
 fn validate(obs: &[Vec<f64>], codes: &[Vec<f64>], iterations: usize) -> Result<()> {
@@ -43,24 +103,88 @@ fn validate(obs: &[Vec<f64>], codes: &[Vec<f64>], iterations: usize) -> Result<(
     Ok(())
 }
 
+// Keep the original hypot accumulation for public vq/kmeans distances and for
+// ambiguous kmeans2 assignments. Strict comparison selects the first code on
+// ties, including when distinct distances round to the same f64 value.
+fn nearest_hypot(row: &[f64], codes: &[Vec<f64>]) -> Result<(usize, f64)> {
+    let mut best = (0, f64::INFINITY);
+    for (i, code) in codes.iter().enumerate() {
+        let mut distance = 0.0_f64;
+        for (a, b) in row.iter().zip(code) {
+            distance = distance.hypot(match a - b {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?);
+        }
+        if distance < best.1 {
+            best = (i, distance);
+        }
+    }
+    Ok((
+        best.0,
+        match best.1 {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?,
+    ))
+}
+
 fn assign(obs: &[Vec<f64>], codes: &[Vec<f64>]) -> Result<(Vec<usize>, Vec<f64>)> {
     let mut labels = Vec::with_capacity(obs.len());
     let mut distances = Vec::with_capacity(obs.len());
     for row in obs {
-        let mut best = (0, f64::INFINITY);
-        for (i, code) in codes.iter().enumerate() {
-            let mut distance = 0.0_f64;
-            for (a, b) in row.iter().zip(code) {
-                distance = distance.hypot(finite(a - b)?);
-            }
-            if distance < best.1 {
-                best = (i, distance);
-            }
-        }
-        labels.push(best.0);
-        distances.push(finite(best.1)?);
+        let (label, distance) = nearest_hypot(row, codes)?;
+        labels.push(label);
+        distances.push(distance);
     }
     Ok((labels, distances))
+}
+
+// Lloyd's kmeans2 only needs labels. Squared distances order codes without
+// square roots when differences and sums stay in the normal, finite range.
+// A relative margin proportional to the dimension covers rounding in both
+// squared accumulation and repeated hypot; close comparisons use the original
+// hypot selection to retain its exact floating-point tie convention.
+fn nearest_label(row: &[f64], codes: &[Vec<f64>]) -> Result<usize> {
+    const MIN_SAFE_DIFFERENCE: f64 = 1e-150;
+    const MAX_SAFE_DIFFERENCE: f64 = 1e150;
+    let tie_margin = 16.0 * f64::EPSILON * row.len() as f64;
+    let mut best = (0, 0.0_f64);
+    for (i, code) in codes.iter().enumerate() {
+        let mut squared = 0.0_f64;
+        for (a, b) in row.iter().zip(code) {
+            let difference = a - b;
+            if !difference.is_finite() {
+                return Err(Error::NonFiniteEvaluation);
+            }
+            let magnitude = difference.abs();
+            if magnitude > MAX_SAFE_DIFFERENCE
+                || (magnitude != 0.0 && magnitude < MIN_SAFE_DIFFERENCE)
+            {
+                return Ok(nearest_hypot(row, codes)?.0);
+            }
+            squared += difference * difference;
+        }
+        if i == 0 {
+            best = (i, squared);
+        } else {
+            if (squared - best.1).abs() <= tie_margin * squared.max(best.1) {
+                return Ok(nearest_hypot(row, codes)?.0);
+            }
+            if squared < best.1 {
+                best = (i, squared);
+            }
+        }
+    }
+    Ok(best.0)
+}
+
+fn assign_labels(obs: &[Vec<f64>], codes: &[Vec<f64>], labels: &mut Vec<usize>) -> Result<()> {
+    labels.clear();
+    for row in obs {
+        labels.push(nearest_label(row, codes)?);
+    }
+    Ok(())
 }
 
 fn update(
@@ -76,7 +200,10 @@ fn update(
     let mut sums = vec![vec![0.0; codes[0].len()]; codes.len()];
     for (row, label) in obs.iter().zip(labels) {
         for (sum, value) in sums[*label].iter_mut().zip(row) {
-            *sum = finite(*sum + value / counts[*label] as f64)?;
+            *sum = match *sum + value / counts[*label] as f64 {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
         }
     }
     let mut result = Vec::new();
@@ -125,9 +252,6 @@ pub fn vq(obs: &[Vec<f64>], code_book: &[Vec<f64>]) -> Result<(Vec<usize>, Vec<f
     assign(obs, code_book)
 }
 
-/// Compatibility alias of [`vq`], sharing its domains, conventions, and limits.
-pub use vq as py_vq;
-
 /// Scales each feature by its population standard deviation: `out[i,j]=obs[i,j]/σ[j]`.
 ///
 /// ## Parameters
@@ -146,7 +270,8 @@ pub use vq as py_vq;
 /// Invalid/nonfinite inputs, ragged rows, or nonfinite numerical results.
 /// ## Numerical behavior
 ///
-/// Uses shared [`sci_stats::std`]; two passes per column plus scaling.
+/// Uses a private, scaled population variance with a compensated mean; two
+/// passes per column plus scaling, with scratch buffers reused between columns.
 /// Extreme finite inputs can overflow the variance calculation and return errors.
 /// # Examples
 ///
@@ -159,10 +284,16 @@ pub use vq as py_vq;
 /// [SciPy whiten](https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.vq.whiten.html).
 pub fn whiten(obs: &[Vec<f64>]) -> Result<Vec<Vec<f64>>> {
     let columns = shape(obs)?;
+    let mut column = Vec::with_capacity(obs.len());
+    let mut deviations = Vec::with_capacity(obs.len());
     let scales: Vec<f64> = (0..columns)
         .map(|j| {
-            let column: Vec<f64> = obs.iter().map(|row| row[j]).collect();
-            let scale = finite(crate::stats::std(&column, 0)?)?;
+            column.clear();
+            column.extend(obs.iter().map(|row| row[j]));
+            let scale = match population_std(&column, &mut deviations)? {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?;
             Ok(if scale == 0.0 { 1.0 } else { scale })
         })
         .collect::<Result<_>>()?;
@@ -170,7 +301,10 @@ pub fn whiten(obs: &[Vec<f64>]) -> Result<Vec<Vec<f64>>> {
         .map(|row| {
             row.iter()
                 .zip(&scales)
-                .map(|(v, s)| finite(v / s))
+                .map(|(v, s)| match v / s {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                })
                 .collect()
         })
         .collect()
@@ -199,7 +333,9 @@ pub fn whiten(obs: &[Vec<f64>]) -> Result<Vec<Vec<f64>>> {
 /// ## Numerical behavior
 ///
 /// Deterministic Lloyd iteration converges only to a local optimum. Means sum
-/// pre-divided samples; floating-point tie/order effects can affect labels.
+/// pre-divided samples. Assignment compares bounded squared distances and
+/// falls back to Euclidean `hypot` for extreme or nearly equal distances,
+/// preserving the first-code tie convention of [`vq`].
 /// # Examples
 ///
 /// ```
@@ -217,9 +353,9 @@ pub fn kmeans2(
 ) -> Result<(Vec<Vec<f64>>, Vec<usize>)> {
     validate(obs, initial, iterations)?;
     let mut codes = initial.to_vec();
-    let mut labels = Vec::new();
+    let mut labels = Vec::with_capacity(obs.len());
     for _ in 0..iterations {
-        (labels, _) = assign(obs, &codes)?;
+        assign_labels(obs, &codes, &mut labels)?;
         codes = update(obs, &codes, &labels, false)?;
     }
     Ok((codes, labels))
@@ -279,7 +415,10 @@ pub fn kmeans(
     let mut previous = f64::INFINITY;
     for _ in 0..max_iterations {
         let (labels, distances) = assign(obs, &codes)?;
-        let distortion = finite(distances.iter().map(|v| v / obs.len() as f64).sum())?;
+        let distortion = match distances.iter().map(|v| v / obs.len() as f64).sum::<f64>() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         if (previous - distortion).abs() <= threshold {
             return Ok((codes, distortion));
         }
@@ -287,12 +426,98 @@ pub fn kmeans(
         previous = distortion;
     }
     let (_, distances) = assign(obs, &codes)?;
-    let distortion = finite(distances.iter().map(|v| v / obs.len() as f64).sum())?;
+    let distortion = match distances.iter().map(|v| v / obs.len() as f64).sum::<f64>() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }?;
     if (previous - distortion).abs() <= threshold {
         Ok((codes, distortion))
     } else {
         Err(Error::NumericalFailure(
             "k-means did not converge within iteration limit",
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{kmeans2, vq};
+
+    #[test]
+    fn kmeans2_updates_centroids_and_returns_pre_update_labels() {
+        let obs = vec![
+            vec![0.0, 0.0],
+            vec![2.0, 0.0],
+            vec![10.0, 1.0],
+            vec![12.0, 1.0],
+        ];
+        let initial = vec![vec![0.0, 0.0], vec![12.0, 1.0]];
+        let (centroids, labels) = kmeans2(&obs, &initial, 3).unwrap();
+        assert_eq!(labels, vec![0, 0, 1, 1]);
+        assert_eq!(centroids, vec![vec![1.0, 0.0], vec![11.0, 1.0]]);
+
+        let (one_step_codes, one_step_labels) = kmeans2(&obs, &initial, 1).unwrap();
+        assert_eq!(one_step_labels, labels);
+        assert_eq!(one_step_codes, centroids);
+    }
+
+    #[test]
+    fn kmeans2_first_code_wins_ties_and_empty_codes_are_retained() {
+        let obs = vec![vec![0.0, 0.0], vec![2.0, 0.0]];
+        let codes = vec![vec![-1.0, 0.0], vec![1.0, 0.0], vec![3.0, 0.0]];
+        let (centroids, labels) = kmeans2(&obs, &codes, 1).unwrap();
+        assert_eq!(labels, vec![0, 1]);
+        assert_eq!(
+            centroids,
+            vec![vec![0.0, 0.0], vec![2.0, 0.0], codes[2].clone()]
+        );
+
+        let duplicates = vec![vec![0.0, 0.0], vec![-0.0, 0.0]];
+        let (centroids, labels) = kmeans2(&[vec![0.0, 0.0]], &duplicates, 2).unwrap();
+        assert_eq!(labels, vec![0]);
+        assert_eq!(centroids, duplicates);
+    }
+
+    #[test]
+    fn kmeans2_near_ties_match_vq_hypot_ordering() {
+        let next = f64::from_bits(1.0_f64.to_bits() + 1);
+        let prior = f64::from_bits(1.0_f64.to_bits() - 1);
+        let obs = vec![vec![1.0, 1.0], vec![1.0, -1.0], vec![1.0, next]];
+        for codes in [
+            vec![vec![0.0, 0.0], vec![2.0, 2.0]],
+            vec![vec![0.0, 0.0], vec![2.0, 2.0 * next]],
+            vec![vec![0.0, 0.0], vec![2.0, 2.0 * prior]],
+        ] {
+            let expected = vq(&obs, &codes).unwrap().0;
+            assert_eq!(kmeans2(&obs, &codes, 1).unwrap().1, expected);
+        }
+    }
+
+    #[test]
+    fn kmeans2_extreme_finite_distances_match_vq() {
+        for scale in [1e-200, 1e200] {
+            let obs = vec![vec![4.0 * scale, 0.0], vec![-4.0 * scale, 0.0]];
+            let codes = vec![vec![3.0 * scale, 0.0], vec![-3.0 * scale, 0.0]];
+            let expected = vq(&obs, &codes).unwrap().0;
+            let (centroids, labels) = kmeans2(&obs, &codes, 1).unwrap();
+            assert_eq!(labels, expected);
+            assert_eq!(labels, vec![0, 1]);
+            assert_eq!(centroids, obs);
+        }
+    }
+
+    #[test]
+    fn kmeans2_rejects_nonfinite_subtractions_and_distances() {
+        let largest = f64::MAX;
+        assert!(kmeans2(&[vec![largest]], &[vec![-largest]], 1).is_err());
+        assert!(vq(&[vec![largest]], &[vec![-largest]]).is_err());
+
+        let obs = [vec![largest, largest]];
+        let codes = [vec![0.0, 0.0]];
+        assert!(kmeans2(&obs, &codes, 1).is_err());
+        assert!(vq(&obs, &codes).is_err());
+
+        assert!(kmeans2(&[vec![f64::NAN]], &[vec![0.0]], 1).is_err());
+        assert!(kmeans2(&[vec![0.0]], &[vec![f64::INFINITY]], 1).is_err());
     }
 }

@@ -27,16 +27,40 @@ and `linalg-ndarray`; its defaults enable all three.
 The original dot/product helpers propagate IEEE values; added numerical
 algorithms validate finite inputs and report shared errors.
 
+## API layout
+
+Shared `Matrix`, `MatrixInput`, `VectorInput`, `Error`, and `Result` types are
+available at the crate root. Numerical functions are organized by family:
+
+| Namespace | Contents |
+| --- | --- |
+| `basic` | Products, transpose, inverses, determinants, norms, matrix properties |
+| `decompositions` | Cholesky, LU, QR, SVD, Schur, and related factorizations |
+| `solvers` | Linear systems, least squares, Lyapunov, Sylvester, and Riccati equations |
+| `eigen` | Eigenvalues, eigenvectors, generalized eigenvalue problems |
+| `matrix_functions` | Matrix exponential, logarithm, roots, powers, and trigonometric functions |
+| `structured` | Toeplitz, Hankel, circulant, and other matrix constructors |
+| `subspaces` | Orthonormal bases, null spaces, Procrustes alignment, and sketching |
+| `interpolative` | Interpolative decomposition and rank estimation |
+
+For example, use `sci_linalg::decompositions::svd` for SVD and
+`sci_linalg::solvers::solve` for a linear system. Real matrix symmetry uses
+`sci_linalg::basic::issymmetric`; the older `ishermitian` spelling was removed
+in Sci 0.3. This organization replaces
+flat numerical function exports in Sci 0.3.
+
 ## Input conventions
 
-Shared rows are borrowed; library matrices are copied into shared rows once
-at the API boundary. Required real vector arguments also accept library
-vectors; optional vectors retain slice signatures. Typed BLAS/LAPACK function
-pointers retain shared slice/row signatures. Complex inputs to `cdf2rdf`
-retain shared complex vectors/rows. A `0 × n` input with `n > 0` is accepted
-by basic products, transpose, and matrix collections, but rejected by APIs
-that convert to shared rows, since those rows cannot retain its column count.
-Shared output rows have the same limitation. Library-to-library conversions
+Numerical calls adapt storage directly to faer without intermediate shared
+rows. Faer matrices/views, fixed arrays, and contiguous C/F-order ndarray
+storage can be borrowed; other layouts copy directly into backend storage.
+Scaling and destructive algorithms retain owned working copies. Required real
+vector arguments also accept library vectors; optional vectors retain slice
+signatures. Typed BLAS/LAPACK function pointers retain shared slice/row
+signatures. Complex inputs to `cdf2rdf` retain shared complex vectors/rows.
+Basic products, transpose, and matrix collections support empty axes; dense
+numerical algorithms require nonempty axes.
+Shared output rows cannot retain a column count for zero-row matrices. Other conversions
 preserve empty axes. Untyped empty matrix literals/collections may need a
 type annotation; generic function items used as pointers need a concrete
 signature. See `MatrixInput` and `VectorInput` for runnable examples.
@@ -60,8 +84,11 @@ fn main() -> Result<(), sci_core::Error> {
     let jacobian = sci_differentiate::jacobian(
         |x| vec![x[0] * x[1], x[0] + x[1]], &[2.0, 3.0], 1e-5,
     )?;
-    let direction = linalg::matvec(&jacobian, &[1.0, 0.0])?;
+    let direction = linalg::basic::matvec(&jacobian, &[1.0, 0.0])?;
     assert!((direction[0] - 3.0).abs() < 1e-8);
+    assert!(linalg::basic::issymmetric(
+        &[vec![1.0, 2.0], vec![2.0, 3.0]], None, None,
+    )?);
     Ok(())
 }
 ```

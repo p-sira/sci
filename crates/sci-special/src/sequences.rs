@@ -2,104 +2,140 @@
 
 use crate::{Error, Result, complex::Complex};
 
-/// First-kind Hankel function J_v(x) ± iY_v(x).
+/// First-kind Hankel function `H_v^(1)(x) = J_v(x) + i Y_v(x)`.
 ///
 /// ## Parameters and domain
 ///
-/// Real order v and real x. Returns Sci's f64 complex value.
+/// Finite real order `v` and real argument `x`, passed as `x + 0i`. Negative
+/// arguments use the principal complex branch on the upper side of the
+/// negative-real cut. This API does not accept a general complex argument.
 ///
 /// ## Returns
 ///
 /// Singularities, overflow, and invalid domains return IEEE infinities or NaNs.
 /// Returned values never contain backend-specific types.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Uses the binary64 AMOS complex Bessel backend. Backend domain, convergence,
+/// overflow, or precision-loss errors produce NaN components. Phase reduction
+/// limits large-argument accuracy; the scaled forms avoid the explicit Hankel
+/// exponential. No configurable tolerance or iteration control is exposed.
+///
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::hankel1(0.5,2.0);
+/// let value = sci_special::bessel::hankel1(0.5,2.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy hankel1](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hankel1.html).
 pub fn hankel1(v: f64, x: f64) -> Complex {
-    crate::complex::owned(xsf::hankel_1(v, x))
+    crate::complex::owned(::bessel::hankel1(v, x))
 }
 
-/// First-kind Hankel function scaled by exp(∓ix).
+/// Scaled first-kind Hankel function `exp(−i*x) H_v^(1)(x)`.
 ///
 /// ## Parameters and domain
 ///
-/// Real order v and real x. Returns Sci's f64 complex value.
+/// Finite real order `v` and real argument `x`, passed as `x + 0i`. Negative
+/// arguments use the principal complex branch on the upper side of the
+/// negative-real cut. This API does not accept a general complex argument.
 ///
 /// ## Returns
 ///
 /// Singularities, overflow, and invalid domains return IEEE infinities or NaNs.
 /// Returned values never contain backend-specific types.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Uses the binary64 AMOS complex Bessel backend. Backend domain, convergence,
+/// overflow, or precision-loss errors produce NaN components. Phase reduction
+/// limits large-argument accuracy; the scaled forms avoid the explicit Hankel
+/// exponential. No configurable tolerance or iteration control is exposed.
+///
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::hankel1e(0.5,2.0);
+/// let value = sci_special::bessel::hankel1e(0.5,2.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy hankel1e](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hankel1e.html).
 pub fn hankel1e(v: f64, x: f64) -> Complex {
-    crate::complex::owned(xsf::hankel_1e(v, x))
+    crate::complex::owned(::bessel::hankel1e(v, x))
 }
 
-/// Second-kind Hankel function J_v(x) ± iY_v(x).
+/// Second-kind Hankel function `H_v^(2)(x) = J_v(x) − i Y_v(x)`.
 ///
 /// ## Parameters and domain
 ///
-/// Real order v and real x. Returns Sci's f64 complex value.
+/// Finite real order `v` and real argument `x`, passed as `x + 0i`. Negative
+/// arguments use the principal complex branch on the upper side of the
+/// negative-real cut. This API does not accept a general complex argument.
 ///
 /// ## Returns
 ///
 /// Singularities, overflow, and invalid domains return IEEE infinities or NaNs.
 /// Returned values never contain backend-specific types.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Uses the binary64 AMOS complex Bessel backend. Backend domain, convergence,
+/// overflow, or precision-loss errors produce NaN components. Phase reduction
+/// limits large-argument accuracy; the scaled forms avoid the explicit Hankel
+/// exponential. No configurable tolerance or iteration control is exposed.
+///
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::hankel2(0.5,2.0);
+/// let value = sci_special::bessel::hankel2(0.5,2.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy hankel2](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hankel2.html).
 pub fn hankel2(v: f64, x: f64) -> Complex {
-    crate::complex::owned(xsf::hankel_2(v, x))
+    crate::complex::owned(::bessel::hankel2(v, x))
 }
 
-/// Second-kind Hankel function scaled by exp(∓ix).
+/// Scaled second-kind Hankel function `exp(i*x) H_v^(2)(x)`.
 ///
 /// ## Parameters and domain
 ///
-/// Real order v and real x. Returns Sci's f64 complex value.
+/// Finite real order `v` and real argument `x`, passed as `x + 0i`. Negative
+/// arguments use the principal complex branch on the upper side of the
+/// negative-real cut. This API does not accept a general complex argument.
 ///
 /// ## Returns
 ///
 /// Singularities, overflow, and invalid domains return IEEE infinities or NaNs.
 /// Returned values never contain backend-specific types.
 ///
-/// # Examples
+/// ## Numerical behavior
+///
+/// Uses the binary64 AMOS complex Bessel backend. Backend domain, convergence,
+/// overflow, or precision-loss errors produce NaN components. Phase reduction
+/// limits large-argument accuracy; the scaled forms avoid the explicit Hankel
+/// exponential. No configurable tolerance or iteration control is exposed.
+///
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::hankel2e(0.5,2.0);
+/// let value = sci_special::bessel::hankel2e(0.5,2.0);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy hankel2e](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.hankel2e.html).
 pub fn hankel2e(v: f64, x: f64) -> Complex {
-    crate::complex::owned(xsf::hankel_2e(v, x))
+    crate::complex::owned(::bessel::hankel2e(v, x))
 }
 
 /// Faddeeva function w(z)=exp(−z²) erfc(−iz).
@@ -113,18 +149,18 @@ pub fn hankel2e(v: f64, x: f64) -> Complex {
 /// Singularities, overflow, and invalid domains return IEEE infinities or NaNs.
 /// Returned values never contain backend-specific types.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::wofz(sci_complex::Complex { re: 0.5, im: 0.3 });
+/// let value = sci_special::elementary::wofz(sci_complex::Complex { re: 0.5, im: 0.3 });
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy wofz](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.wofz.html).
 pub fn wofz(z: Complex) -> Complex {
-    crate::complex::owned(xsf::wofz(crate::complex::native(z)))
+    crate::complex::owned(crate::backend::legacy::wofz(crate::complex::native(z)))
 }
 
 /// Kelvin values (ber+i bei, ker+i kei, berp+i beip, kerp+i keip).
@@ -138,18 +174,18 @@ pub fn wofz(z: Complex) -> Complex {
 /// Singularities, overflow, and invalid domains return IEEE infinities or NaNs.
 /// Returned values never contain backend-specific types.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::kelvin(0.5);
+/// let value = sci_special::bessel::kelvin(0.5);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy kelvin](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.kelvin.html).
 pub fn kelvin(x: f64) -> [Complex; 4] {
-    xsf::kelvin(x).map(crate::complex::owned)
+    ::bessel::kelvin(x).map(crate::complex::owned)
 }
 
 /// Modified Fresnel integrals (F,K), with the plus/minus phase convention of SciPy.
@@ -163,19 +199,19 @@ pub fn kelvin(x: f64) -> [Complex; 4] {
 /// Singularities, overflow, and invalid domains return IEEE infinities or NaNs.
 /// Returned values never contain backend-specific types.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::modfresnelp(0.5);
+/// let value = sci_special::integrals::modfresnelp(0.5);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy modfresnelp](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.modfresnelp.html).
 pub fn modfresnelp(x: f64) -> (Complex, Complex) {
     {
-        let (a, b) = xsf::modified_fresnel_plus(x);
+        let (a, b) = crate::backend::legacy::modified_fresnel_plus(x);
         (crate::complex::owned(a), crate::complex::owned(b))
     }
 }
@@ -191,19 +227,19 @@ pub fn modfresnelp(x: f64) -> (Complex, Complex) {
 /// Singularities, overflow, and invalid domains return IEEE infinities or NaNs.
 /// Returned values never contain backend-specific types.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::modfresnelm(0.5);
+/// let value = sci_special::integrals::modfresnelm(0.5);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy modfresnelm](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.modfresnelm.html).
 pub fn modfresnelm(x: f64) -> (Complex, Complex) {
     {
-        let (a, b) = xsf::modified_fresnel_minus(x);
+        let (a, b) = crate::backend::legacy::modified_fresnel_minus(x);
         (crate::complex::owned(a), crate::complex::owned(b))
     }
 }
@@ -222,15 +258,15 @@ pub fn modfresnelm(x: f64) -> (Complex, Complex) {
 ///
 /// Returns [`Error::InvalidInput`] for sizes or parameters outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::fresnel_zeros(3)?;
+/// let value = sci_special::integrals::fresnel_zeros(3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy fresnel_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.fresnel_zeros.html).
 pub fn fresnel_zeros(nt: usize) -> Result<(Vec<Complex>, Vec<Complex>)> {
@@ -240,7 +276,7 @@ pub fn fresnel_zeros(nt: usize) -> Result<(Vec<Complex>, Vec<Complex>)> {
         ));
     }
     {
-        let (a, b) = xsf::fresnel_zeros(nt);
+        let (a, b) = crate::backend::legacy::fresnel_zeros(nt).map_err(Error::NumericalFailure)?;
         Ok((
             a.into_iter().map(crate::complex::owned).collect(),
             b.into_iter().map(crate::complex::owned).collect(),
@@ -262,15 +298,15 @@ pub fn fresnel_zeros(nt: usize) -> Result<(Vec<Complex>, Vec<Complex>)> {
 ///
 /// Returns [`Error::InvalidInput`] for sizes or parameters outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::fresnels_zeros(3)?;
+/// let value = sci_special::integrals::fresnels_zeros(3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy fresnels_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.fresnels_zeros.html).
 pub fn fresnels_zeros(nt: usize) -> Result<Vec<Complex>> {
@@ -296,15 +332,15 @@ pub fn fresnels_zeros(nt: usize) -> Result<Vec<Complex>> {
 ///
 /// Returns [`Error::InvalidInput`] for sizes or parameters outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::fresnelc_zeros(3)?;
+/// let value = sci_special::integrals::fresnelc_zeros(3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy fresnelc_zeros](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.fresnelc_zeros.html).
 pub fn fresnelc_zeros(nt: usize) -> Result<Vec<Complex>> {
@@ -327,14 +363,14 @@ pub fn fresnelc_zeros(nt: usize) -> Result<Vec<Complex>> {
 /// Singularities, overflow, and invalid domains return IEEE infinities or NaNs.
 /// Returned values never contain backend-specific types.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::sph_harm_y(3,1,0.5,0.3);
+/// let value = sci_special::wave::sph_harm_y(3,1,0.5,0.3);
 /// let _ = value;
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy sph_harm_y](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sph_harm_y.html).
 pub fn sph_harm_y(n: usize, m: isize, theta: f64, phi: f64) -> Complex {
@@ -344,7 +380,10 @@ pub fn sph_harm_y(n: usize, m: isize, theta: f64, phi: f64) -> Complex {
             im: f64::NAN,
         }
     } else {
-        crate::complex::owned(xsf::sph_harm_y(n, m, theta, phi))
+        crate::complex::owned(
+            ::orthogonal::sph_harm_y(n as i32, m as i32, theta, phi)
+                .unwrap_or(num_complex::Complex64::new(f64::NAN, f64::NAN)),
+        )
     }
 }
 
@@ -362,15 +401,15 @@ pub fn sph_harm_y(n: usize, m: isize, theta: f64, phi: f64) -> Complex {
 ///
 /// Returns [`Error::InvalidInput`] for sizes or parameters outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::sph_harm_y_all(3,2,0.5,0.3)?;
+/// let value = sci_special::wave::sph_harm_y_all(3,2,0.5,0.3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy sph_harm_y_all](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sph_harm_y_all.html).
 pub fn sph_harm_y_all(n: usize, m: usize, theta: f64, phi: f64) -> Result<Vec<Vec<Complex>>> {
@@ -379,7 +418,20 @@ pub fn sph_harm_y_all(n: usize, m: usize, theta: f64, phi: f64) -> Result<Vec<Ve
             "sequence arguments exceed the supported domain",
         ));
     }
-    Ok(xsf::sph_harm_y_all(n, m, theta, phi)
+    if !(0.0..=std::f64::consts::PI).contains(&theta) || !phi.is_finite() {
+        return Ok(vec![
+            vec![
+                Complex {
+                    re: f64::NAN,
+                    im: f64::NAN
+                };
+                2 * m + 1
+            ];
+            n + 1
+        ]);
+    }
+    Ok(::orthogonal::sph_harm_y_all(n, m, theta, phi)
+        .map_err(super::polynomials::external_orthogonal_error)?
         .into_iter()
         .map(|row| row.into_iter().map(crate::complex::owned).collect())
         .collect())
@@ -399,24 +451,31 @@ pub fn sph_harm_y_all(n: usize, m: usize, theta: f64, phi: f64) -> Result<Vec<Ve
 ///
 /// Returns [`Error::InvalidInput`] for sizes or parameters outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::legendre_p_all(3,0.3)?;
+/// let value = sci_special::orthogonal::legendre_p_all(3,0.3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy legendre_p_all](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.legendre_p_all.html).
+#[inline]
 pub fn legendre_p_all(n: usize, x: f64) -> Result<Vec<f64>> {
-    if !(n <= 128) {
+    if n > 128 {
         return Err(Error::InvalidInput(
             "sequence arguments exceed the supported domain",
         ));
     }
-    Ok(xsf::legendre_p_all(n, x))
+    if !x.is_finite() {
+        // Keep Sci's per-degree IEEE behavior for NaN and infinities.
+        return Ok((0..=n)
+            .map(|degree| ::orthogonal::eval_legendre(degree as i32, x))
+            .collect());
+    }
+    ::orthogonal::legendre_p_all(n, x).map_err(super::polynomials::external_orthogonal_error)
 }
 
 /// All Legendre P values through degree n and order magnitude m.
@@ -433,15 +492,15 @@ pub fn legendre_p_all(n: usize, x: f64) -> Result<Vec<f64>> {
 ///
 /// Returns [`Error::InvalidInput`] for sizes or parameters outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::assoc_legendre_p_all(3,2,0.3)?;
+/// let value = sci_special::orthogonal::assoc_legendre_p_all(3,2,0.3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy assoc_legendre_p_all](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.assoc_legendre_p_all.html).
 pub fn assoc_legendre_p_all(n: usize, m: usize, x: f64) -> Result<Vec<Vec<f64>>> {
@@ -450,7 +509,11 @@ pub fn assoc_legendre_p_all(n: usize, m: usize, x: f64) -> Result<Vec<Vec<f64>>>
             "sequence arguments exceed the supported domain",
         ));
     }
-    Ok(xsf::assoc_legendre_p_all(n, m, x))
+    if !(-1.0..=1.0).contains(&x) {
+        return Ok(vec![vec![f64::NAN; 2 * m + 1]; n + 1]);
+    }
+    ::orthogonal::assoc_legendre_p_all(n, m, x)
+        .map_err(super::polynomials::external_orthogonal_error)
 }
 
 /// All spherical-normalized Legendre P values through degree n and order magnitude m.
@@ -467,15 +530,15 @@ pub fn assoc_legendre_p_all(n: usize, m: usize, x: f64) -> Result<Vec<Vec<f64>>>
 ///
 /// Returns [`Error::InvalidInput`] for sizes or parameters outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::sph_legendre_p_all(3,2,0.3)?;
+/// let value = sci_special::orthogonal::sph_legendre_p_all(3,2,0.3)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy sph_legendre_p_all](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.sph_legendre_p_all.html).
 pub fn sph_legendre_p_all(n: usize, m: usize, x: f64) -> Result<Vec<Vec<f64>>> {
@@ -484,7 +547,10 @@ pub fn sph_legendre_p_all(n: usize, m: usize, x: f64) -> Result<Vec<Vec<f64>>> {
             "sequence arguments exceed the supported domain",
         ));
     }
-    Ok(xsf::sph_legendre_p_all(n, m, x))
+    if !(0.0..=std::f64::consts::PI).contains(&x) {
+        return Ok(vec![vec![f64::NAN; 2 * m + 1]; n + 1]);
+    }
+    ::orthogonal::sph_legendre_p_all(n, m, x).map_err(super::polynomials::external_orthogonal_error)
 }
 
 /// Even Mathieu Fourier coefficients, in increasing harmonic order.
@@ -502,15 +568,15 @@ pub fn sph_legendre_p_all(n: usize, m: usize, x: f64) -> Result<Vec<Vec<f64>>> {
 /// Returns [`Error::InvalidInput`] for sizes or parameters outside the stated domain.
 /// Returns [`Error::NumericalFailure`] if coefficient evaluation fails.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::mathieu_even_coef(2,0.5)?;
+/// let value = sci_special::wave::mathieu_even_coef(2,0.5)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy mathieu_even_coef](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.mathieu_even_coef.html).
 pub fn mathieu_even_coef(m: u32, q: f64) -> Result<Vec<f64>> {
@@ -519,7 +585,7 @@ pub fn mathieu_even_coef(m: u32, q: f64) -> Result<Vec<f64>> {
             "sequence arguments exceed the supported domain",
         ));
     }
-    xsf::mathieu_even_coef(m, q).map_err(|_| {
+    crate::backend::legacy::mathieu_even_coef(m, q).map_err(|_| {
         crate::Error::NumericalFailure("Mathieu Fourier coefficient evaluation failed")
     })
 }
@@ -539,15 +605,15 @@ pub fn mathieu_even_coef(m: u32, q: f64) -> Result<Vec<f64>> {
 /// Returns [`Error::InvalidInput`] for sizes or parameters outside the stated domain.
 /// Returns [`Error::NumericalFailure`] if coefficient evaluation fails.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::mathieu_odd_coef(2,0.5)?;
+/// let value = sci_special::wave::mathieu_odd_coef(2,0.5)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy mathieu_odd_coef](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.mathieu_odd_coef.html).
 pub fn mathieu_odd_coef(m: u32, q: f64) -> Result<Vec<f64>> {
@@ -556,7 +622,7 @@ pub fn mathieu_odd_coef(m: u32, q: f64) -> Result<Vec<f64>> {
             "sequence arguments exceed the supported domain",
         ));
     }
-    xsf::mathieu_odd_coef(m, q).map_err(|_| {
+    crate::backend::legacy::mathieu_odd_coef(m, q).map_err(|_| {
         crate::Error::NumericalFailure("Mathieu Fourier coefficient evaluation failed")
     })
 }
@@ -575,15 +641,15 @@ pub fn mathieu_odd_coef(m: u32, q: f64) -> Result<Vec<f64>> {
 ///
 /// Returns [`Error::InvalidInput`] for sizes or parameters outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::pro_cv_seq(1,3,0.5)?;
+/// let value = sci_special::wave::pro_cv_seq(1,3,0.5)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy pro_cv_seq](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pro_cv_seq.html).
 pub fn pro_cv_seq(m: u64, n: u64, c: f64) -> Result<Vec<f64>> {
@@ -609,15 +675,15 @@ pub fn pro_cv_seq(m: u64, n: u64, c: f64) -> Result<Vec<f64>> {
 ///
 /// Returns [`Error::InvalidInput`] for sizes or parameters outside the stated domain.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::obl_cv_seq(1,3,0.5)?;
+/// let value = sci_special::wave::obl_cv_seq(1,3,0.5)?;
 /// let _ = value;
 /// # Ok::<(),sci_core::Error>(())
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy obl_cv_seq](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.obl_cv_seq.html).
 pub fn obl_cv_seq(m: u64, n: u64, c: f64) -> Result<Vec<f64>> {

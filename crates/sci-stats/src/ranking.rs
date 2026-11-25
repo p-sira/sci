@@ -94,7 +94,7 @@ pub enum FdrMethod {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{rankdata, RankMethod};
+/// use sci_stats::{ranking::rankdata, ranking::RankMethod};
 /// assert_eq!(rankdata(&[3., 1., 1.], RankMethod::Average)?, vec![3., 1.5, 1.5]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -156,7 +156,7 @@ pub fn rankdata(values: &[f64], method: RankMethod) -> Result<Vec<f64>> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::tiecorrect(&[1.5, 1.5])?, 0.);
+/// assert_eq!(sci_stats::ranking::tiecorrect(&[1.5, 1.5])?, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -212,7 +212,7 @@ pub fn tiecorrect(ranks: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{percentileofscore, PercentileKind};
+/// use sci_stats::{ranking::percentileofscore, ranking::PercentileKind};
 /// assert_eq!(percentileofscore(&[1., 2., 3.], 2., PercentileKind::Weak)?, 200./3.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -225,8 +225,16 @@ pub fn percentileofscore(values: &[f64], score: f64, kind: PercentileKind) -> Re
     if score.is_nan() {
         return Err(Error::InvalidInput("score must not be NaN"));
     }
-    let less = values.iter().filter(|&&x| x < score).count() as f64;
-    let equal = values.iter().filter(|&&x| x == score).count() as f64;
+    // Count both groups without data-dependent branches. Independent
+    // comparisons preserve IEEE equality for tied signed zeros and allow
+    // the loop to vectorize, unlike a conditional if/else-if chain.
+    let (mut less, mut equal) = (0_usize, 0_usize);
+    for &value in values {
+        less += usize::from(value < score);
+        equal += usize::from(value == score);
+    }
+    let less = less as f64;
+    let equal = equal as f64;
     let count = match kind {
         PercentileKind::Strict => less,
         PercentileKind::Weak => less + equal,
@@ -263,7 +271,7 @@ pub fn percentileofscore(values: &[f64], score: f64, kind: PercentileKind) -> Re
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{false_discovery_control, FdrMethod};
+/// use sci_stats::{inference::false_discovery_control, inference::FdrMethod};
 /// assert_eq!(false_discovery_control(&[0.01], FdrMethod::BenjaminiHochberg)?, vec![0.01]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -319,7 +327,7 @@ pub fn false_discovery_control(pvalues: &[f64], method: FdrMethod) -> Result<Vec
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::ecdf(&[2., 1., 2.])?.probabilities, vec![1./3., 1.]);
+/// assert_eq!(sci_stats::ranking::ecdf(&[2., 1., 2.])?.probabilities, vec![1./3., 1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -419,7 +427,7 @@ pub enum EstimatedCdfMethod {
 /// ## Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::estimated_cdf(&[0.,2.,4.],1.,sci_stats::EstimatedCdfMethod::Linear)?, 0.25);
+/// assert_eq!(sci_stats::ranking::estimated_cdf(&[0.,2.,4.],1.,sci_stats::ranking::EstimatedCdfMethod::Linear)?, 0.25);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -472,4 +480,65 @@ pub fn estimated_cdf(values: &[f64], y: f64, method: EstimatedCdfMethod) -> Resu
         }
     };
     Ok(probability.clamp(0., 1.))
+}
+
+#[cfg(test)]
+mod percentile_count_tests {
+    use super::*;
+
+    // The former implementation counted strict and equal observations in
+    // independent scans. Keep its exact arithmetic as the reference.
+    fn reference(values: &[f64], score: f64, kind: PercentileKind) -> f64 {
+        let less = values.iter().filter(|&&x| x < score).count() as f64;
+        let equal = values.iter().filter(|&&x| x == score).count() as f64;
+        let count = match kind {
+            PercentileKind::Strict => less,
+            PercentileKind::Weak => less + equal,
+            PercentileKind::Mean => less + equal / 2.,
+            PercentileKind::Rank => less + if equal > 0. { (equal + 1.) / 2. } else { 0. },
+        };
+        100. * count / values.len() as f64
+    }
+
+    #[test]
+    fn percentile_one_scan_preserves_ties_signed_zero_and_nonfinite_scores() {
+        for data in [
+            vec![0.0, -0.0, 0.0, -0.0],
+            vec![1.0],
+            vec![-7.0, 3.0, 3.0, 1.0, 3.0, -7.0, 0.0, -0.0],
+            (0..1024)
+                .map(|i| ((i * 37 + 19) % 17) as f64 - 8.0)
+                .collect(),
+        ] {
+            for score in [
+                f64::NEG_INFINITY,
+                -7.0,
+                -0.0,
+                0.0,
+                1.0,
+                3.0,
+                8.0,
+                f64::INFINITY,
+            ] {
+                for kind in [
+                    PercentileKind::Strict,
+                    PercentileKind::Weak,
+                    PercentileKind::Mean,
+                    PercentileKind::Rank,
+                ] {
+                    let actual = percentileofscore(&data, score, kind).unwrap();
+                    let expected = reference(&data, score, kind);
+                    assert_eq!(
+                        actual.to_bits(),
+                        expected.to_bits(),
+                        "data length={}, score={score}, kind={kind:?}",
+                        data.len()
+                    );
+                }
+            }
+        }
+        assert!(percentileofscore(&[], 0., PercentileKind::Rank).is_err());
+        assert!(percentileofscore(&[1.], f64::NAN, PercentileKind::Rank).is_err());
+        assert!(percentileofscore(&[f64::NAN], 0., PercentileKind::Weak).is_err());
+    }
 }

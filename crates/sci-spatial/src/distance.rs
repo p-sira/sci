@@ -5,8 +5,10 @@
 //! Jaccard, which converts every nonzero coordinate to true. This deliberately
 //! excludes SciPy's arithmetic extensions of boolean metrics to arbitrary reals.
 
+use std::borrow::Cow;
+
 use super::{MAX_ENTRIES, MAX_WORK, bound, evaluated, pair, points};
-use crate::{Error, Result, error::finite_slice};
+use crate::{Error, Result, error::is_finite_slice};
 
 /// A distance definition for [`pdist`] and [`cdist`].
 ///
@@ -54,14 +56,14 @@ pub enum Metric<'a> {
     JensenShannon(Option<f64>),
 }
 
-fn weights(w: Option<&[f64]>, n: usize) -> Result<Vec<f64>> {
+fn weights(w: Option<&[f64]>, n: usize) -> Result<Cow<'_, [f64]>> {
     let Some(w) = w else {
-        return Ok(vec![1.0; n]);
+        return Ok(Cow::Owned(vec![1.0; n]));
     };
     if w.len() != n {
         return Err(Error::DimensionMismatch);
     }
-    finite_slice(w)?;
+    is_finite_slice(w)?;
     if w.iter().any(|&x| x < 0.0) {
         return Err(Error::InvalidInput("weights must be nonnegative"));
     }
@@ -69,7 +71,7 @@ fn weights(w: Option<&[f64]>, n: usize) -> Result<Vec<f64>> {
     if scale == 0.0 {
         return Err(Error::InvalidInput("weights must have positive total"));
     }
-    Ok(w.to_vec())
+    Ok(Cow::Borrowed(w))
 }
 
 fn lp(u: &[f64], v: &[f64], p: f64, w: &[f64]) -> Result<f64> {
@@ -170,28 +172,35 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
     ) {
         let scale = w.iter().copied().fold(0.0, f64::max);
         if scale > 0.0 {
-            for weight in &mut w {
+            for weight in w.to_mut() {
                 *weight /= scale;
             }
         }
     }
+    calculate_validated(u, v, metric, &w)
+}
+
+// The caller has checked the coordinates and prepared any weight normalization.
+// Pairwise distances share their unit weights rather than allocating a vector
+// and rechecking already validated coordinates for every observation pair.
+fn calculate_validated(u: &[f64], v: &[f64], metric: Metric<'_>, w: &[f64]) -> Result<f64> {
     let sum = |f: &dyn Fn(f64, f64) -> f64| -> f64 {
         u.iter()
             .zip(v)
-            .zip(&w)
+            .zip(w.iter())
             .filter(|(_, w)| **w > 0.0)
             .map(|((&a, &b), &w)| w * f(a, b))
             .sum()
     };
     let value = match metric {
-        Metric::Euclidean => return lp(u, v, 2.0, &w),
-        Metric::Minkowski(p) => return lp(u, v, p, &w),
-        Metric::Chebyshev => return lp(u, v, f64::INFINITY, &w),
+        Metric::Euclidean => return lp(u, v, 2.0, w),
+        Metric::Minkowski(p) => return lp(u, v, p, w),
+        Metric::Chebyshev => return lp(u, v, f64::INFINITY, w),
         Metric::SqEuclidean => {
-            let d = lp(u, v, 2.0, &w)?;
+            let d = lp(u, v, 2.0, w)?;
             d * d
         }
-        Metric::Cityblock => return lp(u, v, 1.0, &w),
+        Metric::Cityblock => return lp(u, v, 1.0, w),
         Metric::Canberra => sum(&|a, b| {
             let den = a.abs() + b.abs();
             if den == 0.0 {
@@ -203,7 +212,7 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
             }
         }),
         Metric::Braycurtis => {
-            let scale = active_scale(u, &w).max(active_scale(v, &w));
+            let scale = active_scale(u, w).max(active_scale(v, w));
             if scale == 0.0 {
                 f64::NAN
             } else {
@@ -213,18 +222,24 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
         }
         Metric::Hamming => sum(&|a, b| f64::from(a != b)) / w.iter().sum::<f64>(),
         Metric::Cosine | Metric::Correlation => {
-            let su = active_scale(u, &w);
-            let sv = active_scale(v, &w);
+            let su = active_scale(u, w);
+            let sv = active_scale(v, w);
             if su == 0.0 || sv == 0.0 {
                 return Ok(f64::NAN);
             }
             let sw = w.iter().copied().fold(0.0, f64::max);
-            let wn: Vec<_> = w.iter().map(|x| x / sw).collect();
+            // Pairwise distances use unit weights. Borrow that slice rather
+            // than allocating normalized weights for every observation pair.
+            let wn: Cow<'_, [f64]> = if sw == 1.0 {
+                Cow::Borrowed(w)
+            } else {
+                Cow::Owned(w.iter().map(|x| x / sw).collect())
+            };
             let total = wn.iter().sum::<f64>();
             let center = matches!(metric, Metric::Correlation);
             let mu = if center {
                 u.iter()
-                    .zip(&wn)
+                    .zip(wn.iter())
                     .filter(|(_, w)| **w > 0.0)
                     .map(|(&a, &w)| a / su * w)
                     .sum::<f64>()
@@ -234,7 +249,7 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
             };
             let mv = if center {
                 v.iter()
-                    .zip(&wn)
+                    .zip(wn.iter())
                     .filter(|(_, w)| **w > 0.0)
                     .map(|(&a, &w)| a / sv * w)
                     .sum::<f64>()
@@ -243,7 +258,7 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
                 0.0
             };
             let (mut uv, mut uu, mut vv) = (0.0, 0.0, 0.0);
-            for ((&a, &b), &w) in u.iter().zip(v).zip(&wn) {
+            for ((&a, &b), &w) in u.iter().zip(v).zip(wn.iter()) {
                 if w == 0.0 {
                     continue;
                 }
@@ -252,7 +267,24 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
                 uu += w * a * a;
                 vv += w * b * b;
             }
-            (1.0 - uv / (uu.sqrt() * vv.sqrt())).clamp(0.0, 2.0)
+            let (nu, nv) = (uu.sqrt(), vv.sqrt());
+            let distance = 1.0 - uv / (nu * nv);
+            if distance < 0.125 {
+                // Near parallel vectors, subtracting the cosine from one
+                // loses the small distance. Half the squared distance between
+                // the weighted unit vectors is algebraically equivalent.
+                let mut squared = 0.0;
+                for ((&a, &b), &w) in u.iter().zip(v).zip(wn.iter()) {
+                    if w == 0.0 {
+                        continue;
+                    }
+                    let delta = (a / su - mu) / nu - (b / sv - mv) / nv;
+                    squared += w * delta * delta;
+                }
+                (0.5 * squared).clamp(0.0, 2.0)
+            } else {
+                distance.clamp(0.0, 2.0)
+            }
         }
         Metric::Jaccard
         | Metric::Dice
@@ -260,7 +292,7 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
         | Metric::Russellrao
         | Metric::Sokalsneath
         | Metric::Yule => {
-            let [ff, ft, tf, tt] = boolean_counts(u, v, &w, matches!(metric, Metric::Jaccard))?;
+            let [ff, ft, tf, tt] = boolean_counts(u, v, w, matches!(metric, Metric::Jaccard))?;
             let unequal = ft + tf;
             match metric {
                 Metric::Jaccard => {
@@ -296,7 +328,7 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
             if variance.len() != u.len() {
                 return Err(Error::DimensionMismatch);
             }
-            finite_slice(variance)?;
+            is_finite_slice(variance)?;
             if variance.iter().any(|&x| x <= 0.0) {
                 return Err(Error::InvalidInput("variances must be positive"));
             }
@@ -342,6 +374,53 @@ fn calculate(u: &[f64], v: &[f64], metric: Metric<'_>, w: Option<&[f64]>) -> Res
     evaluated(value)
 }
 
+// Validated input only: preserve the vector kernel's hypot sequence for
+// extreme values and long vectors, including nonfinite differences.
+fn euclidean_hypot_validated(u: &[f64], v: &[f64]) -> Result<f64> {
+    let mut norm = 0.0_f64;
+    for (&a, &b) in u.iter().zip(v) {
+        let term = (a - b).abs();
+        norm = if norm == 0.0 { term } else { norm.hypot(term) };
+    }
+    evaluated(norm)
+}
+
+// For short, moderately scaled vectors, one sqrt is substantially cheaper
+// than a hypot call per coordinate. The conservative component bounds ensure
+// all squares and their sum remain normal and finite for up to three terms.
+// Outside this range, or if subtraction overflows, retain the hypot kernel.
+// Both paths operate on the already-rounded difference a-b; large nearly
+// equal coordinates therefore need no special cancellation handling.
+fn euclidean_validated(u: &[f64], v: &[f64]) -> Result<f64> {
+    if u.len() > 3 {
+        return euclidean_hypot_validated(u, v);
+    }
+    let mut squared = 0.0_f64;
+    for (&a, &b) in u.iter().zip(v) {
+        let delta = a - b;
+        let absolute = delta.abs();
+        if !delta.is_finite() || absolute > 1e150 || (absolute != 0.0 && absolute < 1e-150) {
+            return euclidean_hypot_validated(u, v);
+        }
+        squared += delta * delta;
+    }
+    evaluated(squared.sqrt())
+}
+
+fn is_pairwise_euclidean(metric: Metric<'_>) -> bool {
+    matches!(metric, Metric::Euclidean) || matches!(metric, Metric::Minkowski(p) if p == 2.0)
+}
+
+fn calculate_pairwise(u: &[f64], v: &[f64], metric: Metric<'_>, ones: &[f64]) -> Result<f64> {
+    match metric {
+        Metric::SqEuclidean => {
+            let distance = euclidean_hypot_validated(u, v)?;
+            evaluated(distance * distance)
+        }
+        _ => calculate_validated(u, v, metric, ones),
+    }
+}
+
 macro_rules! vector_distance {
     ($name:ident, $metric:ident, $definition:literal, $domain:literal) => {
         #[doc = concat!("Computes ", $definition, ".\n\n",
@@ -355,7 +434,7 @@ macro_rules! vector_distance {
         "L2 uses weighted components and hypot; zero-weight coordinates are excluded\n",
         "from Lp arithmetic and ratio-metric normalization scales.\n",
         "Rounding affects near-zero distances; no uniform relative accuracy is promised.\n\n",
-        "# Examples\n```\nlet d = sci_spatial::", stringify!($name),
+        "# Examples\n```\nlet d = sci_spatial::distance::", stringify!($name),
         "(&[1.0, 0.0, 1.0], &[0.0, 1.0, 1.0], None)?;\nassert!(d >= 0.0);\n",
         "# Ok::<(), sci_core::Error>(())\n```\n\n# References\n",
         "[SciPy definition](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.",
@@ -482,7 +561,7 @@ vector_distance!(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::minkowski(&[0.0], &[2.0], 3.0, None)?, 2.0);
+/// assert_eq!(sci_spatial::distance::minkowski(&[0.0], &[2.0], 3.0, None)?, 2.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -520,7 +599,7 @@ pub fn minkowski(u: &[f64], v: &[f64], p: f64, w: Option<&[f64]>) -> Result<f64>
 /// # Examples
 ///
 /// ```
-/// assert!(sci_spatial::correlation(&[1.0,2.0], &[2.0,4.0], None, true)? < 1e-14);
+/// assert!(sci_spatial::distance::correlation(&[1.0,2.0], &[2.0,4.0], None, true)? < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -565,7 +644,7 @@ pub fn correlation(u: &[f64], v: &[f64], w: Option<&[f64]>, centered: bool) -> R
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::seuclidean(&[0.0], &[2.0], &[4.0])?, 1.0);
+/// assert_eq!(sci_spatial::distance::seuclidean(&[0.0], &[2.0], &[4.0])?, 1.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -603,7 +682,7 @@ pub fn seuclidean(u: &[f64], v: &[f64], variance: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::mahalanobis(&[0.0], &[2.0], &[vec![0.25]])?, 1.0);
+/// assert_eq!(sci_spatial::distance::mahalanobis(&[0.0], &[2.0], &[vec![0.25]])?, 1.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -642,7 +721,7 @@ pub fn mahalanobis(u: &[f64], v: &[f64], vi: &[Vec<f64>]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::jensenshannon(&[1.0,0.0], &[0.0,1.0], Some(2.0))?, 1.0);
+/// assert_eq!(sci_spatial::distance::jensenshannon(&[1.0,0.0], &[0.0,1.0], Some(2.0))?, 1.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -710,6 +789,24 @@ fn pairwise_bound(n: usize, m: usize, d: usize, metric: Metric<'_>) -> Result<()
     bound(work, MAX_WORK)
 }
 
+fn pairwise_unit_weights(metric: Metric<'_>, d: usize, has_pairs: bool) -> Vec<f64> {
+    if !has_pairs
+        || matches!(
+            metric,
+            Metric::Euclidean
+                | Metric::SqEuclidean
+                | Metric::Mahalanobis(_)
+                | Metric::Seuclidean(_)
+                | Metric::JensenShannon(_)
+        )
+        || is_pairwise_euclidean(metric)
+    {
+        Vec::new()
+    } else {
+        vec![1.0; d]
+    }
+}
+
 /// Computes cross distances `D[i][j] = metric(x[i], y[j])`.
 ///
 /// ## Parameters
@@ -736,14 +833,19 @@ fn pairwise_bound(n: usize, m: usize, d: usize, metric: Metric<'_>) -> Result<()
 ///
 /// ## Numerical behavior
 ///
-/// Evaluates the same kernels as the vector functions; no parallelism or approximation.
+/// Validates coordinates once and shares unit weights across pairs.
+/// Euclidean distances of up to three moderately scaled coordinates use a
+/// sum of squares and one sqrt, which can differ from sequential `hypot`
+/// by a few final rounding bits. Extreme or longer vectors use `hypot` to
+/// avoid overflow and underflow in squared differences.
+/// No parallelism or approximate neighbor search is used.
 /// Mahalanobis distances share one Cholesky factor per batch, using
 /// O(d³ + pairs*d²) work and O(d²) additional storage.
 ///
 /// # Examples
 ///
 /// ```
-/// use sci_spatial::{cdist, Metric};
+/// use sci_spatial::{distance::cdist, distance::Metric};
 /// assert_eq!(cdist(&[vec![0.0]], &[vec![2.0]], Metric::Euclidean)?, vec![vec![2.0]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -758,12 +860,19 @@ pub fn cdist(x: &[Vec<f64>], y: &[Vec<f64>], metric: Metric<'_>) -> Result<Vec<V
     let d = dx.max(dy);
     pairwise_bound(x.len(), y.len(), d, metric)?;
     let factor = prepare_metric(metric, d)?;
+    if is_pairwise_euclidean(metric) {
+        return x
+            .iter()
+            .map(|a| y.iter().map(|b| euclidean_validated(a, b)).collect())
+            .collect();
+    }
+    let ones = pairwise_unit_weights(metric, d, !x.is_empty() && !y.is_empty());
     x.iter()
         .map(|a| {
             y.iter()
                 .map(|b| match &factor {
                     Some(factor) => mahalanobis_distance(a, b, factor),
-                    None => calculate(a, b, metric, None),
+                    None => calculate_pairwise(a, b, metric, &ones),
                 })
                 .collect()
         })
@@ -808,14 +917,17 @@ fn validate_metric(metric: Metric<'_>, d: usize) -> Result<()> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses the public vector kernels without approximate neighbor searches.
+/// Validates coordinates once and reuses unit weights for every pair.
+/// Short, moderately scaled Euclidean vectors use one sqrt on a sum of
+/// squares (potentially differing by a few final rounding bits); extreme
+/// or longer vectors use the same `hypot` accumulation as scalar distances.
 /// Mahalanobis batches share one Cholesky factor and require O(d³ + pairs*d²)
 /// work, with O(d²) additional storage.
 ///
 /// # Examples
 ///
 /// ```
-/// use sci_spatial::{pdist, Metric};
+/// use sci_spatial::{distance::pdist, distance::Metric};
 /// assert_eq!(pdist(&[vec![0.0],vec![2.0],vec![5.0]],Metric::Euclidean)?,vec![2.0,5.0,3.0]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -831,12 +943,22 @@ pub fn pdist(x: &[Vec<f64>], metric: Metric<'_>) -> Result<Vec<f64>> {
     bound(count, MAX_ENTRIES)?;
     pairwise_bound(count.unwrap(), 1, d, metric)?;
     let factor = prepare_metric(metric, d)?;
+    if is_pairwise_euclidean(metric) {
+        let mut result = Vec::with_capacity(count.unwrap());
+        for i in 0..x.len() {
+            for j in i + 1..x.len() {
+                result.push(euclidean_validated(&x[i], &x[j])?);
+            }
+        }
+        return Ok(result);
+    }
+    let ones = pairwise_unit_weights(metric, d, count.unwrap() > 0);
     let mut result = Vec::with_capacity(count.unwrap());
     for i in 0..x.len() {
         for j in i + 1..x.len() {
             result.push(match &factor {
                 Some(factor) => mahalanobis_distance(&x[i], &x[j], factor)?,
-                None => calculate(&x[i], &x[j], metric, None)?,
+                None => calculate_pairwise(&x[i], &x[j], metric, &ones)?,
             });
         }
     }
@@ -879,7 +1001,7 @@ fn observation_count(k: usize) -> Option<usize> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_spatial::is_valid_dm(&[vec![0.0,2.0],vec![2.0,0.0]],0.0));
+/// assert!(sci_spatial::distance::is_valid_dm(&[vec![0.0,2.0],vec![2.0,0.0]],0.0));
 /// ```
 /// # References
 ///
@@ -923,7 +1045,7 @@ pub fn is_valid_dm(d: &[Vec<f64>], tol: f64) -> bool {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_spatial::is_valid_y(&[1.0,2.0,3.0]));
+/// assert!(sci_spatial::distance::is_valid_y(&[1.0,2.0,3.0]));
 /// ```
 /// # References
 ///
@@ -958,7 +1080,7 @@ pub fn is_valid_y(y: &[f64]) -> bool {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::num_obs_dm(&[vec![0.0]])?,1);
+/// assert_eq!(sci_spatial::distance::num_obs_dm(&[vec![0.0]])?,1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -996,7 +1118,7 @@ pub fn num_obs_dm(d: &[Vec<f64>]) -> Result<usize> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::num_obs_y(&[1.0,2.0,3.0])?,3);
+/// assert_eq!(sci_spatial::distance::num_obs_y(&[1.0,2.0,3.0])?,3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -1055,7 +1177,7 @@ pub enum DistanceOutput {
 /// # Examples
 ///
 /// ```
-/// use sci_spatial::{squareform, DistanceForm, DistanceOutput};
+/// use sci_spatial::{distance::squareform, distance::DistanceForm, distance::DistanceOutput};
 /// assert_eq!(squareform(DistanceForm::Condensed(&[2.0]))?,
 ///     DistanceOutput::Square(vec![vec![0.0,2.0],vec![2.0,0.0]]));
 /// # Ok::<(), sci_core::Error>(())
@@ -1067,7 +1189,7 @@ pub fn squareform(input: DistanceForm<'_>) -> Result<DistanceOutput> {
     match input {
         DistanceForm::Condensed(y) => {
             bound(Some(y.len()), MAX_ENTRIES)?;
-            finite_slice(y)?;
+            is_finite_slice(y)?;
             let n = observation_count(y.len())
                 .ok_or(Error::InvalidInput("condensed length must be triangular"))?;
             bound(n.checked_mul(n), MAX_ENTRIES)?;
@@ -1107,6 +1229,18 @@ pub struct HausdorffResult {
     pub index_v: usize,
 }
 
+// Hausdorff validates both point sets with points() before entering its pair
+// loop. For unit weights this is the same sequential hypot calculation as
+// lp(u, v, 2.0, &ones), without allocating weights or checking each pair again.
+// Do not skip the initial hypot(0, term): keep scalar Euclidean's exact rounding.
+fn hausdorff_euclidean_validated(u: &[f64], v: &[f64]) -> Result<f64> {
+    let mut norm = 0.0_f64;
+    for (&a, &b) in u.iter().zip(v) {
+        norm = norm.hypot((a - b).abs());
+    }
+    evaluated(norm)
+}
+
 /// Computes the directed Hausdorff distance `max_i min_j ||u[i]-v[j]||₂`.
 ///
 /// ## Parameters
@@ -1129,13 +1263,15 @@ pub struct HausdorffResult {
 ///
 /// ## Numerical behavior
 ///
-/// Exact exhaustive nearest-distance search with scaled L2 kernels; O(nmd) work.
+/// Exact exhaustive nearest-distance search with a prevalidated sequential
+/// `hypot` L2 kernel, avoiding per-pair allocations; O(nmd) work. Every pair
+/// is evaluated, including losing pairs that could overflow.
 /// Witness indices can differ from SciPy when the maximizing pair is tied.
 ///
 /// # Examples
 ///
 /// ```
-/// let r = sci_spatial::directed_hausdorff(&[vec![0.0],vec![3.0]], &[vec![1.0]])?;
+/// let r = sci_spatial::distance::directed_hausdorff(&[vec![0.0],vec![3.0]], &[vec![1.0]])?;
 /// assert_eq!((r.distance,r.index_u,r.index_v),(2.0,1,0));
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1162,7 +1298,7 @@ pub fn directed_hausdorff(u: &[Vec<f64>], v: &[Vec<f64>]) -> Result<HausdorffRes
     for (i, a) in u.iter().enumerate() {
         let (mut nearest, mut index) = (f64::INFINITY, 0);
         for (j, b) in v.iter().enumerate() {
-            let d = euclidean(a, b, None)?;
+            let d = hausdorff_euclidean_validated(a, b)?;
             if d < nearest {
                 nearest = d;
                 index = j;

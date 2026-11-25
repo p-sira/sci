@@ -1,5 +1,5 @@
 use super::{MAX_ENTRIES, MAX_WORK, bound, evaluated, pair, points};
-use crate::{Error, Result, error::finite_slice};
+use crate::{Error, Result, error::is_finite_slice};
 use nalgebra::{DMatrix, DVector};
 
 /// Computes the Lp distance `(Σ|xᵢ-yᵢ|ᵖ)^(1/p)`.
@@ -28,7 +28,7 @@ use nalgebra::{DMatrix, DVector};
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::minkowski_distance(&[0.0], &[2.0], 2.0)?, 2.0);
+/// assert_eq!(sci_spatial::distance::minkowski_distance(&[0.0], &[2.0], 2.0)?, 2.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -63,7 +63,7 @@ pub fn minkowski_distance(x: &[f64], y: &[f64], p: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::minkowski_distance_p(&[0.0], &[2.0], 2.0)?, 4.0);
+/// assert_eq!(sci_spatial::distance::minkowski_distance_p(&[0.0], &[2.0], 2.0)?, 4.0);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -115,7 +115,7 @@ pub fn minkowski_distance_p(x: &[f64], y: &[f64], p: f64) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_spatial::distance_matrix(&[vec![0.0]], &[vec![2.0]], 2.0)?, vec![vec![2.0]]);
+/// assert_eq!(sci_spatial::distance::distance_matrix(&[vec![0.0]], &[vec![2.0]], 2.0)?, vec![vec![2.0]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -158,7 +158,7 @@ pub fn distance_matrix(x: &[Vec<f64>], y: &[Vec<f64>], p: f64) -> Result<Vec<Vec
 /// # Examples
 ///
 /// ```
-/// let p = sci_spatial::geometric_slerp(&[1.0,0.0], &[0.0,1.0], &[0.5], 1e-7)?;
+/// let p = sci_spatial::transform::geometric_slerp(&[1.0,0.0], &[0.0,1.0], &[0.5], 1e-7)?;
 /// assert!((p[0][0]-0.5_f64.sqrt()).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -167,7 +167,7 @@ pub fn distance_matrix(x: &[Vec<f64>], y: &[Vec<f64>], p: f64) -> Result<Vec<Vec
 /// [SciPy](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.geometric_slerp.html).
 pub fn geometric_slerp(start: &[f64], end: &[f64], t: &[f64], tol: f64) -> Result<Vec<Vec<f64>>> {
     pair(start, end)?;
-    finite_slice(t)?;
+    is_finite_slice(t)?;
     bound(t.len().checked_mul(start.len()), MAX_ENTRIES)?;
     if start.len() < 2 || !tol.is_finite() || !(0.0..1.0).contains(&tol) {
         return Err(Error::InvalidInput(
@@ -272,7 +272,7 @@ pub struct ProcrustesResult {
 /// ```
 /// let a = vec![vec![0.0,0.0],vec![1.0,0.0],vec![0.0,1.0]];
 /// let b = vec![vec![2.0,3.0],vec![2.0,5.0],vec![4.0,3.0]];
-/// assert!(sci_spatial::procrustes(&a,&b)?.disparity < 1e-25);
+/// assert!(sci_spatial::transform::procrustes(&a,&b)?.disparity < 1e-25);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -372,15 +372,16 @@ pub fn procrustes(data1: &[Vec<f64>], data2: &[Vec<f64>]) -> Result<ProcrustesRe
 ///
 /// ## Numerical behavior
 ///
-/// Uses private nalgebra LU inverses and exhaustive barycentric tests. Nearly
-/// singular simplices and distant coordinates can lose accuracy. Supplied cells
-/// need not be Delaunay and are not checked for overlap or tessellation validity.
+/// Uses private nalgebra LU inverses and exhaustive barycentric tests, reusing
+/// two scratch vectors for every query and simplex. Nearly singular simplices
+/// and distant coordinates can lose accuracy. Supplied cells need not be
+/// Delaunay and are not checked for overlap or tessellation validity.
 ///
 /// # Examples
 ///
 /// ```
 /// let v = vec![vec![0.0,0.0],vec![1.0,0.0],vec![0.0,1.0]];
-/// assert_eq!(sci_spatial::tsearch(&v,&[vec![0,1,2]],&[vec![0.2,0.2]],1e-12)?,vec![Some(0)]);
+/// assert_eq!(sci_spatial::transform::tsearch(&v,&[vec![0,1,2]],&[vec![0.2,0.2]],1e-12)?,vec![Some(0)]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 /// # References
@@ -431,12 +432,19 @@ pub fn tsearch(
         }
         cells.push((origin, inverse));
     }
+    // The original query loop allocated two dynamic vectors for each simplex
+    // candidate. Reuse the scratch storage while keeping nalgebra's matrix-
+    // vector multiplication and barycentric accumulation unchanged.
+    let mut delta = DVector::zeros(d);
+    let mut bary = DVector::zeros(d);
     queries
         .iter()
         .map(|q| {
             for (i, (origin, inverse)) in cells.iter().enumerate() {
-                let delta = DVector::from_iterator(d, q.iter().zip(*origin).map(|(&x, &a)| x - a));
-                let bary = inverse * delta;
+                for (component, (&x, &a)) in delta.iter_mut().zip(q.iter().zip(*origin)) {
+                    *component = x - a;
+                }
+                inverse.mul_to(&delta, &mut bary);
                 if bary.iter().any(|x| !x.is_finite()) {
                     return Err(Error::NonFiniteEvaluation);
                 }

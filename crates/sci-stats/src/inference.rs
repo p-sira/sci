@@ -110,11 +110,14 @@ fn rescale_ratio(value: f64, numerator: f64, denominator: f64) -> Result<f64> {
         return Ok(0.0);
     }
     let ratio = numerator / denominator;
-    finite(if ratio.is_normal() {
+    match if ratio.is_normal() {
         value * ratio
     } else {
         (value * numerator) / denominator
-    })
+    } {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }
 }
 pub(super) fn correlation(x: &[f64], y: &[f64]) -> Result<f64> {
     let a = centered(x)?;
@@ -158,7 +161,7 @@ pub(super) fn correlation(x: &[f64], y: &[f64]) -> Result<f64> {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{ttest_1samp, Alternative};
+/// use sci_stats::{inference::ttest_1samp, inference::Alternative};
 /// assert_eq!(ttest_1samp(&[1., 2., 3.], 2., Alternative::TwoSided)?.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -168,7 +171,9 @@ pub(super) fn correlation(x: &[f64], y: &[f64]) -> Result<f64> {
 /// [SciPy `ttest_1samp`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_1samp.html).
 pub fn ttest_1samp(values: &[f64], popmean: f64, alternative: Alternative) -> Result<TTestResult> {
     sample(values, 2)?;
-    finite(popmean)?;
+    if !popmean.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     t_result(
         mean(values)? - popmean,
         sem(values, 1)?,
@@ -204,7 +209,7 @@ pub fn ttest_1samp(values: &[f64], popmean: f64, alternative: Alternative) -> Re
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{ttest_rel, Alternative};
+/// use sci_stats::{inference::ttest_rel, inference::Alternative};
 /// assert!(ttest_rel(&[1., 3., 5.], &[0., 1., 2.], Alternative::Greater)?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -254,7 +259,7 @@ pub fn ttest_rel(first: &[f64], second: &[f64], alternative: Alternative) -> Res
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{ttest_ind_from_stats, Alternative};
+/// use sci_stats::{inference::ttest_ind_from_stats, inference::Alternative};
 /// assert_eq!(ttest_ind_from_stats(1., 1., 5, 1., 2., 6, false, Alternative::TwoSided)?.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -282,7 +287,9 @@ pub fn ttest_ind_from_stats(
         }
     }
     for v in [mean1, mean2, std1, std2] {
-        finite(v)?;
+        if !v.is_finite() {
+            return Err(crate::Error::NonFiniteEvaluation);
+        }
     }
     if std1 < 0. || std2 < 0. {
         return Err(Error::InvalidInput(
@@ -356,7 +363,7 @@ pub fn ttest_ind_from_stats(
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{ttest_ind, Alternative};
+/// use sci_stats::{inference::ttest_ind, inference::Alternative};
 /// assert_eq!(ttest_ind(&[1., 2., 3.], &[1., 2., 3.], false, Alternative::TwoSided)?.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -411,7 +418,7 @@ pub fn ttest_ind(
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{pearsonr, Alternative};
+/// use sci_stats::{association::pearsonr, inference::Alternative};
 /// assert!((pearsonr(&[1., 2., 3.], &[2., 4., 6.], Alternative::TwoSided)?.statistic - 1.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -473,7 +480,7 @@ pub fn pearsonr(first: &[f64], second: &[f64], alternative: Alternative) -> Resu
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{spearmanr, Alternative};
+/// use sci_stats::{association::spearmanr, inference::Alternative};
 /// assert!(spearmanr(&[1., 3., 2.], &[4., 6., 5.], Alternative::TwoSided)?.statistic > 0.99);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -528,7 +535,7 @@ pub fn spearmanr(first: &[f64], second: &[f64], alternative: Alternative) -> Res
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::pointbiserialr(&[0., 0., 1., 1.], &[1., 2., 3., 4.])?.statistic > 0.);
+/// assert!(sci_stats::association::pointbiserialr(&[0., 0., 1., 1.], &[1., 2., 3., 4.])?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -574,7 +581,7 @@ pub fn pointbiserialr(binary: &[f64], values: &[f64]) -> Result<TestResult> {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{linregress, Alternative};
+/// use sci_stats::{regression::linregress, inference::Alternative};
 /// assert!((linregress(&[1., 2., 3.], &[3., 5., 7.], Alternative::TwoSided)?.slope - 2.).abs() < 1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -594,7 +601,10 @@ pub fn linregress(x: &[f64], y: &[f64], alternative: Alternative) -> Result<Regr
     let ab = a.iter().zip(b).map(|(u, v)| u * v).sum::<f64>();
     let slope = rescale_ratio(ab / aa, sy, sx)?;
     let mx = mean(x)?;
-    let intercept = finite(mean(y)? - slope * mx)?;
+    let intercept = match mean(y)? - slope * mx {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     let r = if bb == 0. {
         0.
     } else {
@@ -612,7 +622,10 @@ pub fn linregress(x: &[f64], y: &[f64], alternative: Alternative) -> Result<Regr
     let intercept_stderr = if x.len() == 2 {
         f64::NAN
     } else {
-        finite(stderr * mx.hypot(sx * (aa / x.len() as f64).sqrt()))?
+        match stderr * mx.hypot(sx * (aa / x.len() as f64).sqrt()) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?
     };
     Ok(Regression {
         slope,
@@ -651,7 +664,7 @@ pub fn linregress(x: &[f64], y: &[f64], alternative: Alternative) -> Result<Regr
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::jarque_bera(&[1., 2., 3., 4.])?.statistic >= 0.);
+/// assert!(sci_stats::normality::jarque_bera(&[1., 2., 3., 4.])?.statistic >= 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -692,7 +705,7 @@ pub fn jarque_bera(values: &[f64]) -> Result<TestResult> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::power_divergence(&[10., 20.], &[15., 15.], 0, 0.)?.statistic > 0.);
+/// assert!(sci_stats::goodness::power_divergence(&[10., 20.], &[15., 15.], 0, 0.)?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -711,14 +724,22 @@ pub fn power_divergence(
             "chi-square degrees of freedom must be positive",
         ));
     }
-    finite(lambda)?;
+    if !lambda.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     if observed.iter().any(|x| *x < 0.) || expected.iter().any(|x| *x <= 0.) {
         return Err(Error::InvalidInput(
             "frequencies must be nonnegative with positive expectations",
         ));
     }
-    let o = finite(observed.iter().sum())?;
-    let e = finite(expected.iter().sum())?;
+    let o = match observed.iter().sum::<f64>() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
+    let e = match expected.iter().sum::<f64>() {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     if (o - e).abs() > f64::EPSILON.sqrt() * o.min(e) {
         return Err(Error::InvalidInput("observed and expected totals differ"));
     }
@@ -769,7 +790,7 @@ pub fn power_divergence(
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::chisquare(&[5., 5.], &[5., 5.], 0)?.pvalue, 1.);
+/// assert_eq!(sci_stats::goodness::chisquare(&[5., 5.], &[5., 5.], 0)?.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -807,7 +828,7 @@ pub fn chisquare(observed: &[f64], expected: &[f64], ddof: usize) -> Result<Test
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{fisher_exact, Alternative};
+/// use sci_stats::{contingency::fisher_exact, inference::Alternative};
 /// assert!(fisher_exact(&[6., 2., 1., 4.], Alternative::TwoSided)?.pvalue < 0.2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -867,7 +888,7 @@ pub fn fisher_exact(table: &[f64; 4], alternative: Alternative) -> Result<TestRe
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::f_oneway(&[&[1., 2., 3.], &[4., 5., 6.]])?.statistic > 0.);
+/// assert!(sci_stats::inference::f_oneway(&[&[1., 2., 3.], &[4., 5., 6.]])?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -894,8 +915,12 @@ pub fn f_oneway(groups: &[&[f64]]) -> Result<TestResult> {
         between += x.len() as f64 * (m - center).powi(2);
         within += variance(x, 0)? * x.len() as f64;
     }
-    finite(between)?;
-    finite(within)?;
+    if !between.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
+    if !within.is_finite() {
+        return Err(crate::Error::NonFiniteEvaluation);
+    }
     let statistic = (between / (k - 1) as f64) / (within / (n - k) as f64);
     let pvalue = if statistic.is_nan() {
         f64::NAN
@@ -935,7 +960,7 @@ pub fn f_oneway(groups: &[&[f64]]) -> Result<TestResult> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_stats::bartlett(&[&[1., 2., 3.], &[4., 5., 6.]])?.pvalue, 1.);
+/// assert_eq!(sci_stats::inference::bartlett(&[&[1., 2., 3.], &[4., 5., 6.]])?.pvalue, 1.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -989,7 +1014,7 @@ pub fn bartlett(groups: &[&[f64]]) -> Result<TestResult> {
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{levene, Center};
+/// use sci_stats::{inference::levene, inference::Center};
 /// assert!(levene(&[&[1., 2., 4.], &[2., 3., 8.]], Center::Median)?.pvalue >= 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1049,7 +1074,7 @@ pub enum Center {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::kruskal(&[&[1., 2., 3.], &[4., 5., 6.]])?.statistic > 0.);
+/// assert!(sci_stats::inference::kruskal(&[&[1., 2., 3.], &[4., 5., 6.]])?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -1109,7 +1134,7 @@ pub fn kruskal(groups: &[&[f64]]) -> Result<TestResult> {
 /// # Examples
 ///
 /// ```
-/// assert!(sci_stats::friedmanchisquare(&[&[1., 2., 3.], &[2., 4., 5.], &[3., 5., 6.]])?.statistic > 0.);
+/// assert!(sci_stats::inference::friedmanchisquare(&[&[1., 2., 3.], &[2., 4., 5.], &[3., 5., 6.]])?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -1172,13 +1197,14 @@ pub fn friedmanchisquare(groups: &[&[f64]]) -> Result<TestResult> {
 ///
 /// ## Numerical behavior
 ///
-/// Uses binary64 formulas with statrs tail probabilities. Extreme or nearly constant data can lose accuracy.
+/// Uses binary64 formulas with Sci's shared standard-normal tail probabilities.
+/// Extreme or nearly constant data can lose accuracy.
 /// Inputs are limited to 1,048,576 observations. No Python runtime is used.
 ///
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{ranksums, Alternative};
+/// use sci_stats::{inference::ranksums, inference::Alternative};
 /// assert!(ranksums(&[1., 2.], &[3., 4.], Alternative::Less)?.pvalue < 0.1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -1198,11 +1224,5 @@ pub fn ranksums(first: &[f64], second: &[f64], alternative: Alternative) -> Resu
     let n2 = second.len() as f64;
     let statistic = (r[..first.len()].iter().sum::<f64>() - n1 * (n1 + n2 + 1.) / 2.)
         / (n1 * n2 * (n1 + n2 + 1.) / 12.).sqrt();
-    let d = normal(0., 1.)?;
-    let pvalue = match alternative {
-        Alternative::TwoSided => 2. * d.sf(statistic.abs()),
-        Alternative::Less => d.cdf(statistic),
-        Alternative::Greater => d.sf(statistic),
-    };
-    Ok(TestResult { statistic, pvalue })
+    normality::normal_result(statistic, alternative)
 }

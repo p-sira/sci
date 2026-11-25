@@ -6,10 +6,10 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 names=set(re.findall(r'^- \[`(\w+)`\]',(ROOT/'function_coverages/scipy_function_list/scipy.fft.md').read_text(),re.M))
 source='\n'.join(p.read_text() for p in (ROOT/'crates/sci-fft/src').glob('*.rs'))
-exported=set(re.findall(r'pub fn (\w+)\(',source))|{'fft','ifft','rfft'}
+exported=set(re.findall(r'pub fn (\w+)(?:<[^>]*>)?\(',source))|{'fft','ifft','rfft'}
 assert 'pub use fourier::{fft, ifft, rfft};' in source
 periodic_source=(ROOT/'crates/sci-fft/src/periodic.rs').read_text()
-periodic=set(re.findall(r'pub fn (\w+)\(',periodic_source))
+periodic=set(re.findall(r'pub fn (\w+)(?:<[^>]*>)?\(',periodic_source))
 assert periodic=={'diff','hilbert','ihilbert','tilbert','itilbert','shift','cc_diff','cs_diff','sc_diff','ss_diff'}
 assert periodic.isdisjoint(names)
 exported-=periodic

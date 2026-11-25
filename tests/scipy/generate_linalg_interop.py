@@ -4,12 +4,12 @@
 # ///
 """Generate basic interoperability references using SciPy's double-real BLAS.
 
-Inputs live in linalg_interop_cases.json; expected values come exclusively
+Inputs live in linalg_interop_cases.jsonl; expected values come exclusively
 from SciPy/NumPy, independently of Sci and its Rust backends.
 """
 import csv
-import json
 from pathlib import Path
+from case_catalog import read_cases
 
 import numpy as np
 import scipy
@@ -25,7 +25,7 @@ def encode(a):
     return ":".join(encode(row) for row in a)
 
 
-cases = json.loads((ROOT / "tests/scipy/linalg_interop_cases.json").read_text())
+cases = read_cases(ROOT / "tests/scipy/linalg_interop_cases.jsonl")
 with (ROOT / "tests/fixtures/linalg_interop_inputs.csv").open("w", newline="") as inputs, (
     ROOT / "tests/fixtures/linalg_interop_expected.csv"
 ).open("w", newline="") as expected:

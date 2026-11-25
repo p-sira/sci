@@ -1,5 +1,5 @@
 use crate::backend::{self, MAX_FIT};
-use crate::error::{finite, finite_slice};
+use crate::error::is_finite_slice;
 use crate::{Error, ParametricSpline, Result, Spline, SurfaceSpline};
 use nalgebra::{DMatrix, DVector};
 
@@ -23,12 +23,14 @@ use nalgebra::{DMatrix, DVector};
 ///
 /// ## Numerical behavior
 ///
-/// Bounded dense collocation delegates to private nalgebra SVD with a rank check. Ill-conditioned finite fits can lose accuracy; no condition estimate is exposed.
+/// Bounded square collocation uses pivoted LU when its pivots and interpolation
+/// residual are well behaved, and otherwise falls back to rank-checked SVD.
+/// Ill-conditioned finite fits can lose accuracy; no condition estimate is exposed.
 ///
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
+/// let s=sci_interpolate::fitting::make_interp_spline(&[0.,1.], &[0.,2.],1)?;
 /// assert_eq!(s.degree,1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -42,7 +44,17 @@ pub fn make_interp_spline(x: &[f64], y: &[f64], degree: usize) -> Result<Spline>
     if degree == 0 {
         return Err(Error::InvalidInput("interpolation degree must be in 1..=5"));
     }
-    make_lsq_spline(x, y, &backend::knots(x, degree), degree, None)
+    let knots = backend::knots(x, degree);
+    let mut spline = Spline {
+        coefficients: vec![0.0; knots.len() - degree - 1],
+        knots,
+        degree,
+    };
+    backend::validate(&spline)?;
+    let a = backend::design(x, &spline.knots, degree);
+    let b = DVector::from_column_slice(y);
+    spline.coefficients = backend::interpolate(a, b)?;
+    Ok(spline)
 }
 
 /// Minimizes `Σ_j (w[j](S(x[j])-y[j]))²` on a supplied B-spline knot vector.
@@ -70,7 +82,7 @@ pub fn make_interp_spline(x: &[f64], y: &[f64], degree: usize) -> Result<Spline>
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_lsq_spline(&[0.,1.,2.], &[0.,1.,2.], &[0.,0.,2.,2.],1,None)?;
+/// let s=sci_interpolate::fitting::make_lsq_spline(&[0.,1.,2.], &[0.,1.,2.], &[0.,0.,2.,2.],1,None)?;
 /// assert_eq!(s.coefficients.len(),2);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -134,7 +146,7 @@ pub fn make_lsq_spline(
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_splrep(&[0.,1.,2.,3.], &[0.,1.,4.,9.],3,0.,None)?;
+/// let s=sci_interpolate::fitting::make_splrep(&[0.,1.,2.,3.], &[0.,1.,4.,9.],3,0.,None)?;
 /// assert_eq!(s.degree,3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -171,11 +183,6 @@ pub fn make_splrep(
     }
 }
 
-/// Legacy name for [`make_splrep`], using the same explicit degree, smoothing
-/// target, weights and Sci-owned representation. No implicit weighted default,
-/// persistent FITPACK task cache, periodic fit, or diagnostic tuple is exposed.
-pub use make_splrep as splrep;
-
 /// Fits a parametric curve `g(u)=(S_0(u), ..., S_(d-1)(u))`, constraining `Σ_i w[i]² ||g(u[i])-points[i]||² <= smoothing`.
 ///
 /// ## Parameters and conventions
@@ -201,7 +208,7 @@ pub use make_splrep as splrep;
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_splprep(&[vec![0.,0.],vec![1.,2.]],None,1,0.,None)?;
+/// let s=sci_interpolate::fitting::make_splprep(&[vec![0.,0.],vec![1.,2.]],None,1,0.,None)?;
 /// assert_eq!(s.components.len(),2);
 /// assert_eq!(s.parameters,vec![0.,1.]);
 /// # Ok::<(), sci_core::Error>(())
@@ -235,7 +242,7 @@ pub fn make_splprep(
         return Err(Error::DimensionMismatch);
     }
     for p in points {
-        finite_slice(p)?;
+        is_finite_slice(p)?;
     }
     let u = if let Some(u) = parameters {
         if u.len() != points.len() {
@@ -245,11 +252,19 @@ pub fn make_splprep(
     } else {
         let mut u = vec![0.0];
         for p in points.windows(2) {
-            let distance = p[0]
-                .iter()
-                .zip(&p[1])
-                .try_fold(0.0_f64, |d, (a, b)| finite(d.hypot(finite(b - a)?)))?;
-            u.push(finite(u[u.len() - 1] + distance)?);
+            let distance = p[0].iter().zip(&p[1]).try_fold(0.0_f64, |d, (a, b)| {
+                match d.hypot(match b - a {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }
+            })?;
+            u.push(match u[u.len() - 1] + distance {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            }?);
         }
         let total = u[u.len() - 1];
         if total == 0.0 {
@@ -290,10 +305,6 @@ pub fn make_splprep(
     })
 }
 
-/// Legacy name for [`make_splprep`]. Points are sample-major, rather than
-/// SciPy's coordinate-major arrays; explicit smoothing replaces legacy defaults.
-pub use make_splprep as splprep;
-
 /// Estimates `P(h)=Σ_(j=0)^degree f^(j)(x) h^j/j!` by polynomial interpolation near x.
 ///
 /// ## Parameters and conventions
@@ -319,7 +330,7 @@ pub use make_splprep as splprep;
 /// # Examples
 ///
 /// ```
-/// let c=sci_interpolate::approximate_taylor_polynomial(|x|x*x,0.,2,1.,None)?;
+/// let c=sci_interpolate::polynomial::approximate_taylor_polynomial(|x|x*x,0.,2,1.,None)?;
 /// assert!((c[0]-1.).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -343,9 +354,20 @@ pub fn approximate_taylor_polynomial(
     }
     let n = order + 1;
     let nodes: Vec<_> = (0..n)
-        .map(|i| finite(x + scale * (std::f64::consts::PI * i as f64 / n as f64).cos()))
+        .map(
+            |i| match x + scale * (std::f64::consts::PI * i as f64 / n as f64).cos() {
+                value if value.is_finite() => Ok(value),
+                _ => Err(Error::NonFiniteEvaluation),
+            },
+        )
         .collect::<Result<_>>()?;
-    let centered: Vec<_> = nodes.iter().map(|t| finite(t - x)).collect::<Result<_>>()?;
+    let centered: Vec<_> = nodes
+        .iter()
+        .map(|t| match t - x {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
+        .collect::<Result<_>>()?;
     if centered
         .iter()
         .enumerate()
@@ -357,9 +379,12 @@ pub fn approximate_taylor_polynomial(
     }
     let values = nodes
         .into_iter()
-        .map(|t| finite(f(t)))
+        .map(|t| match f(t) {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
         .collect::<Result<Vec<_>>>()?;
-    let c = crate::lagrange(&centered, &values)?;
+    let c = crate::polynomial::lagrange(&centered, &values)?;
     Ok(c[c.len() - degree - 1..].to_vec())
 }
 
@@ -388,7 +413,7 @@ pub fn approximate_taylor_polynomial(
 /// # Examples
 ///
 /// ```
-/// let t=sci_interpolate::generate_knots(&[0.,1.,2.,3.], &[0.,1.,4.,9.],3,0.,None)?;
+/// let t=sci_interpolate::fitting::generate_knots(&[0.,1.,2.,3.], &[0.,1.,4.,9.],3,0.,None)?;
 /// assert_eq!(t.len(),1);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -424,11 +449,23 @@ pub fn generate_knots(
             .zip(y)
             .zip(&w)
             .map(|((x, y), w)| {
-                let r = finite(w * finite(backend::evaluate(&fit, *x)? - y)?)?;
-                finite(r * r)
+                let r = match w * match backend::evaluate(&fit, *x)? - y {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }? {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
+                match r * r {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }
             })
             .collect::<Result<_>>()?;
-        let residual = finite(residuals.iter().sum())?;
+        let residual = match residuals.iter().sum::<f64>() {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
         if residual <= smoothing * 1.001 {
             return Ok(sequence);
         }
@@ -484,7 +521,7 @@ pub fn generate_knots(
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::make_smoothing_spline(&[0.,1.,2.,3.,4.], &[0.,1.,2.,3.,4.],None,1.)?;
+/// let s=sci_interpolate::fitting::make_smoothing_spline(&[0.,1.,2.,3.,4.], &[0.,1.,2.,3.,4.],None,1.)?;
 /// assert_eq!(s.degree,3);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -514,7 +551,7 @@ pub fn make_smoothing_spline(
     for j in 0..n {
         let mut c = vec![0.0; n];
         c[j] = 1.0;
-        second.push(crate::splder(
+        second.push(crate::spline::splder(
             &Spline {
                 knots: t.clone(),
                 coefficients: c,
@@ -559,13 +596,13 @@ pub fn make_smoothing_spline(
             matrix[(n + j, i)] = d;
         }
     }
-    finite_slice(matrix.as_slice())?;
-    finite_slice(rhs.as_slice())?;
+    is_finite_slice(matrix.as_slice())?;
+    is_finite_slice(rhs.as_slice())?;
     let c = matrix
         .lu()
         .solve(&rhs)
         .ok_or(Error::NumericalFailure("singular natural smoothing system"))?;
-    finite_slice(c.as_slice())?;
+    is_finite_slice(c.as_slice())?;
     Ok(Spline {
         knots: t,
         coefficients: c.as_slice()[..n].to_vec(),
@@ -599,7 +636,7 @@ pub fn make_smoothing_spline(
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::bisplrep(&[0.,0.,1.,1.], &[0.,1.,0.,1.], &[0.,1.,1.,2.], &[0.,0.,1.,1.], &[0.,0.,1.,1.],1,1,None)?;
+/// let s=sci_interpolate::fitting::bisplrep(&[0.,0.,1.,1.], &[0.,1.,0.,1.], &[0.,1.,1.,2.], &[0.,0.,1.,1.], &[0.,0.,1.,1.],1,1,None)?;
 /// assert_eq!(s.coefficients.len(),4);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -634,9 +671,9 @@ pub fn bisplrep(
             "invalid surface fit size, degree or knots",
         ));
     }
-    finite_slice(x)?;
-    finite_slice(y)?;
-    finite_slice(z)?;
+    is_finite_slice(x)?;
+    is_finite_slice(y)?;
+    is_finite_slice(z)?;
     let nx = x_knots.len() - x_degree - 1;
     let ny = y_knots.len() - y_degree - 1;
     backend::bound(&[x.len(), nx, ny, nx, ny])?;
@@ -651,7 +688,7 @@ pub fn bisplrep(
         }
     }
     let w = weights.map_or_else(|| vec![1.0; x.len()], <[f64]>::to_vec);
-    finite_slice(&w)?;
+    is_finite_slice(&w)?;
     if w.iter().any(|v| *v <= 0.0) {
         return Err(Error::InvalidInput("weights must be positive"));
     }

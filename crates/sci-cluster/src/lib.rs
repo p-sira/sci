@@ -21,8 +21,6 @@
 use sci_core as error;
 use sci_core as linalg;
 pub use sci_core::{Error, Result};
-use sci_spatial as spatial;
-use sci_stats as stats;
 #[path = "mod.rs"]
 mod implementation;
 pub use implementation::*;

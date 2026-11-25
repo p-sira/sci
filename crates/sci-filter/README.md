@@ -2,11 +2,15 @@
 
 Functional Bayesian state estimation on shared row-major `Matrix` values.
 
+Kalman functions live under `sci_filter::kalman` and particle functions under
+`sci_filter::particle`. Shared `Gaussian`, `Update`, `SigmaPoints`, and
+`ParticleSet` types remain available from the crate root.
+
 Part of [Sci](https://github.com/p-sira/sci), a unified scientific computing library for Rust.
 
 Linear and extended Kalman steps and the scaled unscented filter delegate to
-private Smelly backends. Particle propagation and moments use kalman_filters;
-log-weight normalization and reproducible systematic resampling are native.
+private Smelly backends, including particle propagation and moments;
+weight normalization, effective sample size, and systematic resampling are native.
 Sample filtering and FIR/IIR design remain in `sci-signal`.
 
 Every call validates finite values, shapes, covariance matrices, and work
@@ -20,7 +24,7 @@ than converted to a plausible estimate.
 
 ```rust
 fn main() -> Result<(), sci_filter::Error> {
-    use sci_filter::{Gaussian, kalman_predict, kalman_update};
+    use sci_filter::{Gaussian, kalman::{kalman_predict, kalman_update}};
     let prior = Gaussian { mean: vec![0.], covariance: vec![vec![1.]] };
     let predicted = kalman_predict(&prior, &[vec![1.]], &[vec![0.1]])?;
     let updated = kalman_update(&predicted, &[2.], &[vec![1.]], &[vec![0.5]])?;
@@ -31,5 +35,4 @@ fn main() -> Result<(), sci_filter::Error> {
 
 ## Acknowledgments
 
-We thank `smelly`, `kalman_filters`, and
-`nalgebra` for their state-estimation algorithms.
+We thank `smelly` and `nalgebra` for their state-estimation algorithms.

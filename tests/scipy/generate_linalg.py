@@ -9,8 +9,8 @@ reconstruction, plus independent Rust structural/property tests. No Sci
 or nalgebra output is used. Run with uv or the project's pinned .venv.
 """
 import csv
-import json
 from pathlib import Path
+from case_catalog import read_cases
 
 import numpy as np
 import scipy
@@ -199,7 +199,7 @@ def evaluate(api, args):
         return [r]
     if api == "block_diag":
         return [la.block_diag(*x) if x else np.empty((0,0))]
-    if api in {"issymmetric", "ishermitian", "bandwidth"}:
+    if api in {"issymmetric", "bandwidth"}:
         x=np.asarray(x,dtype=float).reshape((0,0)) if not x else np.asarray(x,dtype=float)
         r=getattr(la,api)(x,*args[1:])
         return list(r) if isinstance(r,tuple) else [r]
@@ -216,7 +216,7 @@ def evaluate(api, args):
     return list(r) if isinstance(r,tuple) else [r]
 
 
-cases=json.loads((ROOT/"tests/scipy/linalg_cases.json").read_text())
+cases=read_cases(ROOT/"tests/scipy/linalg_cases.jsonl")
 with (ROOT/"tests/fixtures/linalg_inputs.csv").open("w",newline="") as inf, (ROOT/"tests/fixtures/linalg_expected.csv").open("w",newline="") as outf:
     iw,ew=csv.writer(inf,lineterminator="\n"),csv.writer(outf,lineterminator="\n")
     iw.writerow(["id","api","a","b","c","d","e"])

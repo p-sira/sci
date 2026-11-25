@@ -2,23 +2,26 @@
 
 use super::{betainc, gammainc, gammaincc, gammaln, ndtr};
 
-fn bisect(function: impl Fn(f64) -> f64, target: f64, mut low: f64, mut high: f64) -> f64 {
-    if !(0.0..=1.0).contains(&target) {
-        return f64::NAN;
-    }
-    let left = function(low) - target;
-    let right = function(high) - target;
-    if left == 0.0 {
-        return low;
-    }
-    if right == 0.0 {
-        return high;
-    }
-    if !left.is_finite()
-        || !right.is_finite()
-        || left.is_sign_positive() == right.is_sign_positive()
-    {
-        return f64::NAN;
+use crate::backend::utils::brent_root;
+
+/// Largest point of the logarithmic scan in [`positive_inverse`]: `1e-10·1.3^180`.
+const POSITIVE_SCAN_MAX: f64 = 3.2e10;
+
+/// Finds the root of `function(x) = target` in a bracket whose residuals at
+/// the endpoints are known to have opposite signs.
+///
+/// Brent's method converges superlinearly; bisection takes over if it meets
+/// a non-finite residual.
+fn refine_bracket(
+    function: impl Fn(f64) -> f64,
+    target: f64,
+    mut low: f64,
+    mut high: f64,
+    left: f64,
+    right: f64,
+) -> f64 {
+    if let Some(root) = brent_root(low, high, left, right, |x| function(x) - target) {
+        return root;
     }
     for _ in 0..256 {
         let middle = low + (high - low) * 0.5;
@@ -41,6 +44,134 @@ fn bisect(function: impl Fn(f64) -> f64, target: f64, mut low: f64, mut high: f6
     low + (high - low) * 0.5
 }
 
+fn bisect(function: impl Fn(f64) -> f64, target: f64, low: f64, high: f64) -> f64 {
+    if !(0.0..=1.0).contains(&target) {
+        return f64::NAN;
+    }
+    let left = function(low) - target;
+    let right = function(high) - target;
+    if left == 0.0 {
+        return low;
+    }
+    if right == 0.0 {
+        return high;
+    }
+    if !left.is_finite()
+        || !right.is_finite()
+        || left.is_sign_positive() == right.is_sign_positive()
+    {
+        return f64::NAN;
+    }
+    refine_bracket(function, target, low, high, left, right)
+}
+
+/// Root of a function that is monotone on `[low, high]`, bracketed by
+/// stepping from `start` toward the root with doubling steps.
+///
+/// Monotonicity makes any root in `[low, high]` the unique one, so this
+/// returns the same root as [`bisect`] on the whole interval while avoiding
+/// evaluations far from the root, which are expensive for Poisson mixtures
+/// with large noncentrality. Non-finite residuals, or no sign change before
+/// the end of the interval, fall back to [`bisect`].
+fn monotone_bisect(
+    function: impl Fn(f64) -> f64,
+    target: f64,
+    (low, high): (f64, f64),
+    start: f64,
+    step: f64,
+    increasing: bool,
+) -> f64 {
+    if !(0.0..=1.0).contains(&target) {
+        return f64::NAN;
+    }
+    let mut a = start;
+    let mut ra = function(a) - target;
+    if ra == 0.0 {
+        return a;
+    }
+    if ra.is_finite() {
+        // Residual below zero: an increasing function's root lies above.
+        let up = (ra < 0.0) == increasing;
+        let bound = if up { high } else { low };
+        let mut width = step;
+        loop {
+            let b = if up {
+                (a + width).min(bound)
+            } else {
+                (a - width).max(bound)
+            };
+            let rb = function(b) - target;
+            if !rb.is_finite() {
+                break;
+            }
+            if rb == 0.0 {
+                return b;
+            }
+            if rb.is_sign_positive() != ra.is_sign_positive() {
+                let (lo, hi, rl, rh) = if up { (a, b, ra, rb) } else { (b, a, rb, ra) };
+                return refine_bracket(function, target, lo, hi, rl, rh);
+            }
+            if b == bound {
+                break;
+            }
+            a = b;
+            ra = rb;
+            width *= 2.0;
+        }
+    }
+    bisect(function, target, low, high)
+}
+
+/// Inverts a function that is monotone in a positive parameter.
+///
+/// Monotonicity makes the root unique, so the result agrees with the first
+/// bracket of [`positive_inverse`]'s logarithmic scan, but the bracket is
+/// found by stepping outward from 1 by factors of 4 and then refined with
+/// Brent's method. Inputs that meet non-finite values or no sign change fall
+/// back to the scan.
+fn monotone_positive_inverse(
+    function: impl Fn(f64) -> f64,
+    probability: f64,
+    increasing: bool,
+) -> f64 {
+    if !(0.0..=1.0).contains(&probability) {
+        return f64::NAN;
+    }
+    let mut a = 1.0;
+    let mut ra = function(a) - probability;
+    if ra == 0.0 {
+        return a;
+    }
+    if ra.is_finite() {
+        // Residual below zero: an increasing function's root lies above.
+        let up = (ra < 0.0) == increasing;
+        loop {
+            let b = if up {
+                (a * 4.0).min(POSITIVE_SCAN_MAX)
+            } else {
+                (a * 0.25).max(1e-10)
+            };
+            let rb = function(b) - probability;
+            if !rb.is_finite() {
+                break;
+            }
+            if rb == 0.0 {
+                return b;
+            }
+            if rb.is_sign_positive() != ra.is_sign_positive() {
+                let (lo, hi, rl, rh) = if up { (a, b, ra, rb) } else { (b, a, rb, ra) };
+                return refine_bracket(function, probability, lo, hi, rl, rh);
+            }
+            if b == POSITIVE_SCAN_MAX || b == 1e-10 {
+                break;
+            }
+            a = b;
+            ra = rb;
+        }
+    }
+    positive_inverse(function, probability)
+}
+
 fn positive_inverse(function: impl Fn(f64) -> f64, probability: f64) -> f64 {
     if !(0.0..=1.0).contains(&probability) {
         return f64::NAN;
@@ -59,7 +190,7 @@ fn positive_inverse(function: impl Fn(f64) -> f64, probability: f64) -> f64 {
             && right.is_finite()
             && left.is_sign_positive() != right.is_sign_positive()
         {
-            return bisect(function, probability, low, high);
+            return refine_bracket(function, probability, low, high, left, right);
         }
         low = high;
         left = right;
@@ -67,7 +198,11 @@ fn positive_inverse(function: impl Fn(f64) -> f64, probability: f64) -> f64 {
     f64::NAN
 }
 
-fn poisson_mixture(lambda: f64, function: impl Fn(usize) -> f64) -> f64 {
+fn poisson_mixture(
+    lambda: f64,
+    positive_term_bound: Option<f64>,
+    mut function: impl FnMut(usize) -> f64,
+) -> f64 {
     if !lambda.is_finite() || !(0.0..=10_000.0).contains(&lambda) {
         return f64::NAN;
     }
@@ -84,6 +219,16 @@ fn poisson_mixture(lambda: f64, function: impl Fn(usize) -> f64) -> f64 {
         sum += weight * function(j);
         mass += weight;
         if weight < 1e-16 * mass {
+            // Positive CDF mixtures can be dominated by terms far below
+            // the Poisson mode. Bound the remaining lower-tail contribution
+            // by a geometric series: each successive weight ratio is at
+            // most j/lambda. Do not stop solely on total Poisson mass.
+            if let Some(bound) = positive_term_bound {
+                let ratio = j as f64 / lambda;
+                if weight * bound * ratio > (1.0 - ratio) * (1e-15 * sum) {
+                    continue;
+                }
+            }
             break;
         }
     }
@@ -145,23 +290,23 @@ pub(super) fn integrate(f: impl Fn(f64) -> f64, a: f64, b: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::btdtria(0.3,2.5,0.5);
+/// let value = sci_special::probability::btdtria(0.3,2.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy btdtria](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.btdtria.html).
 pub fn btdtria(p: f64, b: f64, x: f64) -> f64 {
-    positive_inverse(|a| betainc(a, b, x), p)
+    monotone_positive_inverse(|a| betainc(a, b, x), p, false)
 }
 
 /// Inverse I_x(a,b)=p with respect to shape b.
@@ -172,23 +317,23 @@ pub fn btdtria(p: f64, b: f64, x: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::btdtrib(2.5,0.3,0.5);
+/// let value = sci_special::probability::btdtrib(2.5,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy btdtrib](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.btdtrib.html).
 pub fn btdtrib(a: f64, p: f64, x: f64) -> f64 {
-    positive_inverse(|b| betainc(a, b, x), p)
+    monotone_positive_inverse(|b| betainc(a, b, x), p, true)
 }
 
 /// Continuous inverse binomial CDF with respect to count k.
@@ -199,26 +344,28 @@ pub fn btdtrib(a: f64, p: f64, x: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::bdtrik(0.3,5.0,0.5);
+/// let value = sci_special::probability::bdtrik(0.3,5.0,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy bdtrik](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bdtrik.html).
 pub fn bdtrik(y: f64, n: f64, p: f64) -> f64 {
     if !n.is_finite() || n <= 0.0 || !(0.0..1.0).contains(&p) {
         f64::NAN
     } else {
-        bisect(
+        // The CDF increases in k; start at the mean and step by about one
+        // standard deviation.
+        monotone_bisect(
             |k| {
                 if k <= -1.0 {
                     0.0
@@ -229,8 +376,10 @@ pub fn bdtrik(y: f64, n: f64, p: f64) -> f64 {
                 }
             },
             y,
-            -1.0,
-            n,
+            (-1.0, n),
+            (n * p).clamp(-1.0, n),
+            1.0 + (n * p * (1.0 - p)).sqrt(),
+            true,
         )
     }
 }
@@ -243,23 +392,23 @@ pub fn bdtrik(y: f64, n: f64, p: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::bdtrin(2.0,0.3,0.5);
+/// let value = sci_special::probability::bdtrin(2.0,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy bdtrin](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.bdtrin.html).
 pub fn bdtrin(k: f64, y: f64, p: f64) -> f64 {
-    positive_inverse(|d| betainc(d, k + 1.0, 1.0 - p), y) + k
+    monotone_positive_inverse(|d| betainc(d, k + 1.0, 1.0 - p), y, false) + k
 }
 
 /// Continuous inverse negative-binomial CDF with respect to failures k.
@@ -270,23 +419,23 @@ pub fn bdtrin(k: f64, y: f64, p: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::nbdtrik(0.3,5.0,0.5);
+/// let value = sci_special::probability::nbdtrik(0.3,5.0,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nbdtrik](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nbdtrik.html).
 pub fn nbdtrik(y: f64, n: f64, p: f64) -> f64 {
-    positive_inverse(|s| betainc(n, s, p), y) - 1.0
+    monotone_positive_inverse(|s| betainc(n, s, p), y, true) - 1.0
 }
 
 /// Continuous inverse negative-binomial CDF with respect to successes n.
@@ -297,23 +446,23 @@ pub fn nbdtrik(y: f64, n: f64, p: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::nbdtrin(2.0,0.3,0.5);
+/// let value = sci_special::probability::nbdtrin(2.0,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nbdtrin](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nbdtrin.html).
 pub fn nbdtrin(k: f64, y: f64, p: f64) -> f64 {
-    positive_inverse(|n| betainc(n, k + 1.0, p), y)
+    monotone_positive_inverse(|n| betainc(n, k + 1.0, p), y, false)
 }
 
 /// Continuous inverse Poisson CDF with respect to count k.
@@ -324,23 +473,23 @@ pub fn nbdtrin(k: f64, y: f64, p: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::pdtrik(0.3,5.0);
+/// let value = sci_special::probability::pdtrik(0.3,5.0);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy pdtrik](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.pdtrik.html).
 pub fn pdtrik(p: f64, m: f64) -> f64 {
-    positive_inverse(|s| gammaincc(s, m), p) - 1.0
+    monotone_positive_inverse(|s| gammaincc(s, m), p, true) - 1.0
 }
 
 /// Inverse Student t CDF with respect to degrees of freedom.
@@ -351,19 +500,19 @@ pub fn pdtrik(p: f64, m: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::stdtridf(0.6742760175759245,0.5);
+/// let value = sci_special::probability::stdtridf(0.6742760175759245,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy stdtridf](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.stdtridf.html).
 pub fn stdtridf(p: f64, t: f64) -> f64 {
@@ -378,19 +527,19 @@ pub fn stdtridf(p: f64, t: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::fdtridfd(3.0,0.30154736269507604,0.5);
+/// let value = sci_special::probability::fdtridfd(3.0,0.30154736269507604,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy fdtridfd](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.fdtridfd.html).
 pub fn fdtridfd(dfn: f64, p: f64, x: f64) -> f64 {
@@ -405,28 +554,32 @@ pub fn fdtridfd(dfn: f64, p: f64, x: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::chndtr(2.5,3.0,0.5);
+/// let value = sci_special::probability::chndtr(2.5,3.0,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chndtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chndtr.html).
 pub fn chndtr(x: f64, df: f64, nc: f64) -> f64 {
     if !df.is_finite() || df <= 0.0 || !(0.0..=20_000.0).contains(&nc) || x.is_nan() || x < 0.0 {
         f64::NAN
+    } else if x == 0.0 {
+        0.0
     } else if x == f64::INFINITY {
         1.0
     } else {
-        poisson_mixture(nc / 2.0, |j| gammainc(df / 2.0 + j as f64, x / 2.0))
+        poisson_mixture(nc / 2.0, Some(1.0), |j| {
+            gammainc(df / 2.0 + j as f64, x / 2.0)
+        })
     }
 }
 
@@ -438,23 +591,23 @@ pub fn chndtr(x: f64, df: f64, nc: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::chndtrix(0.3,3.0,0.5);
+/// let value = sci_special::probability::chndtrix(0.3,3.0,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chndtrix](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chndtrix.html).
 pub fn chndtrix(p: f64, df: f64, nc: f64) -> f64 {
-    positive_inverse(|x| chndtr(x, df, nc), p)
+    monotone_positive_inverse(|x| chndtr(x, df, nc), p, true)
 }
 
 /// Inverse noncentral chi-square CDF with respect to degrees of freedom.
@@ -465,23 +618,23 @@ pub fn chndtrix(p: f64, df: f64, nc: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::chndtridf(2.5,0.3,0.5);
+/// let value = sci_special::probability::chndtridf(2.5,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chndtridf](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chndtridf.html).
 pub fn chndtridf(x: f64, p: f64, nc: f64) -> f64 {
-    positive_inverse(|df| chndtr(x, df, nc), p)
+    monotone_positive_inverse(|df| chndtr(x, df, nc), p, false)
 }
 
 /// Inverse noncentral chi-square CDF with respect to noncentrality.
@@ -492,23 +645,23 @@ pub fn chndtridf(x: f64, p: f64, nc: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::chndtrinc(2.5,3.0,0.3);
+/// let value = sci_special::probability::chndtrinc(2.5,3.0,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy chndtrinc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.chndtrinc.html).
 pub fn chndtrinc(x: f64, df: f64, p: f64) -> f64 {
-    bisect(|nc| chndtr(x, df, nc), p, 0.0, 20_000.0)
+    monotone_bisect(|nc| chndtr(x, df, nc), p, (0.0, 20_000.0), 0.0, 1.0, false)
 }
 
 /// Noncentral F CDF as a Poisson mixture of regularized incomplete beta functions.
@@ -519,19 +672,19 @@ pub fn chndtrinc(x: f64, df: f64, p: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::ncfdtr(3.0,5.0,0.5,2.5);
+/// let value = sci_special::probability::ncfdtr(3.0,5.0,0.5,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ncfdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ncfdtr.html).
 pub fn ncfdtr(dfn: f64, dfd: f64, nc: f64, x: f64) -> f64 {
@@ -549,7 +702,12 @@ pub fn ncfdtr(dfn: f64, dfd: f64, nc: f64, x: f64) -> f64 {
         return 1.0;
     }
     let z = 1.0 / (1.0 + dfd / (dfn * x));
-    poisson_mixture(nc / 2.0, |j| betainc(dfn / 2.0 + j as f64, dfd / 2.0, z))
+    if z == 0.0 {
+        return 0.0;
+    }
+    poisson_mixture(nc / 2.0, Some(1.0), |j| {
+        betainc(dfn / 2.0 + j as f64, dfd / 2.0, z)
+    })
 }
 
 /// Inverse noncentral F CDF with respect to x.
@@ -560,23 +718,23 @@ pub fn ncfdtr(dfn: f64, dfd: f64, nc: f64, x: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::ncfdtri(3.0,5.0,0.5,0.3);
+/// let value = sci_special::probability::ncfdtri(3.0,5.0,0.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ncfdtri](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ncfdtri.html).
 pub fn ncfdtri(dfn: f64, dfd: f64, nc: f64, p: f64) -> f64 {
-    positive_inverse(|x| ncfdtr(dfn, dfd, nc, x), p)
+    monotone_positive_inverse(|x| ncfdtr(dfn, dfd, nc, x), p, true)
 }
 
 /// Inverse noncentral F CDF with respect to denominator degrees of freedom.
@@ -587,19 +745,19 @@ pub fn ncfdtri(dfn: f64, dfd: f64, nc: f64, p: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::ncfdtridfd(3.0,0.25637506749643246,0.5,0.5);
+/// let value = sci_special::probability::ncfdtridfd(3.0,0.25637506749643246,0.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ncfdtridfd](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ncfdtridfd.html).
 pub fn ncfdtridfd(dfn: f64, p: f64, nc: f64, x: f64) -> f64 {
@@ -614,19 +772,19 @@ pub fn ncfdtridfd(dfn: f64, p: f64, nc: f64, x: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::ncfdtridfn(0.25637506749643246,5.0,0.5,0.5);
+/// let value = sci_special::probability::ncfdtridfn(0.25637506749643246,5.0,0.5,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ncfdtridfn](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ncfdtridfn.html).
 pub fn ncfdtridfn(p: f64, dfd: f64, nc: f64, x: f64) -> f64 {
@@ -641,46 +799,123 @@ pub fn ncfdtridfn(p: f64, dfd: f64, nc: f64, x: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::ncfdtrinc(3.0,5.0,0.3,2.5);
+/// let value = sci_special::probability::ncfdtrinc(3.0,5.0,0.3,2.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy ncfdtrinc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.ncfdtrinc.html).
 pub fn ncfdtrinc(dfn: f64, dfd: f64, p: f64, x: f64) -> f64 {
-    bisect(|nc| ncfdtr(dfn, dfd, nc, x), p, 0.0, 20_000.0)
+    monotone_bisect(
+        |nc| ncfdtr(dfn, dfd, nc, x),
+        p,
+        (0.0, 20_000.0),
+        0.0,
+        1.0,
+        false,
+    )
+}
+
+// For t<0, integrate the positive conditional-normal probability against
+// the chi-square density, in u=ln(sqrt(V/df)). The log integrand is concave:
+// df*u - (df/2)*exp(2*u) + log(Phi(-nc-|t|*exp(u))) plus a constant.
+// Center and scale it at its mode so tiny tails do not underflow or suffer
+// from the absolute tolerance of the quadrature.
+fn nct_negative_tail(df: f64, nc: f64, t: f64) -> f64 {
+    let a = df / 2.0;
+    let log_t = (-t).ln();
+    let slope = |u: f64| {
+        let r = (log_t + u).exp();
+        let mills = (2.0 / std::f64::consts::PI).sqrt()
+            / super::erfcx((nc + r) * std::f64::consts::FRAC_1_SQRT_2);
+        -df * (2.0 * u).exp_m1() - r * mills
+    };
+    // The mode lies below zero; at the lower bound both r and exp(2u)
+    // are negligible even at the supported df/nc limits.
+    let mut lo = -log_t.max(0.0) - 20.0;
+    let mut hi = 0.0;
+    for _ in 0..60 {
+        let mid = (lo + hi) * 0.5;
+        if slope(mid) > 0.0 {
+            lo = mid;
+        } else {
+            hi = mid;
+        }
+    }
+    let mode = (lo + hi) * 0.5;
+    let log_r = log_t + mode;
+    let v2 = (2.0 * mode).exp();
+    let peak_cdf = super::log_ndtr(-nc - log_r.exp());
+    let peak = std::f64::consts::LN_2 + a * a.ln() - gammaln(a) + df * mode - a * v2 + peak_cdf;
+    let log_relative = |d: f64| {
+        let delta_v2 = if d.abs() < 0.5 {
+            v2 * (2.0 * d).exp_m1()
+        } else {
+            (2.0 * (mode + d)).exp() - v2
+        };
+        df * d - a * delta_v2 + super::log_ndtr(-nc - (log_r + d).exp()) - peak_cdf
+    };
+    let step = df.sqrt().recip();
+    // Concavity bounds the discarded tails by exponential envelopes. Stop
+    // when each endpoint is at least 40 log units below the peak.
+    let endpoint = |mut d: f64| {
+        for _ in 0..32 {
+            if log_relative(d) < -40.0 {
+                return d;
+            }
+            d *= 2.0;
+        }
+        f64::NAN
+    };
+    let left = endpoint(-step);
+    let right = endpoint(step);
+    if !left.is_finite() || !right.is_finite() {
+        return f64::NAN;
+    }
+    let integrand = |d| log_relative(d).exp();
+    let tol = 2e-12 * step;
+    let area = adaptive_simpson(&integrand, left, 0.0, tol, 24)
+        + adaptive_simpson(&integrand, 0.0, right, tol, 24);
+    (peak + area.ln()).exp()
 }
 
 /// Noncentral Student t CDF E`[Φ(t√(V/df)−nc)]`, V~chi-square(df).
 ///
 /// ## Parameters and domain
 ///
-/// Finite df in `[0.01,10000]`, abs(nc)≤100, and real t. Uses Poisson-weighted incomplete beta series. Cancellation can reduce relative accuracy in extreme tails.
+/// Finite df in `[0.01,10000]`, abs(nc)≤100, and real t. Uses a
+/// Poisson-weighted incomplete beta series; negative-t probabilities below
+/// `1e-6` use positive conditional-normal quadrature to avoid subtraction.
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// The tail quadrature uses 60 mode-bracketing iterations, at most 32
+/// endpoint expansions per side, and adaptive Simpson depth 24.
+/// Extreme-tail relative accuracy is limited by the underlying kernels and
+/// quadrature; no uniform error bound is implied.
+///
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::nctdtr(3.0,0.5,0.3);
+/// let value = sci_special::probability::nctdtr(3.0,0.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nctdtr](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nctdtr.html).
 pub fn nctdtr(df: f64, nc: f64, t: f64) -> f64 {
@@ -705,14 +940,69 @@ pub fn nctdtr(df: f64, nc: f64, t: f64) -> f64 {
         return super::stdtr(df, t);
     }
     if t < 0.0 {
-        return 1.0 - nctdtr(df, -nc, -t);
+        // When nc is positive, Phi(-nc) bounds this tail from above.
+        // Avoid a costly reflected mixture when the tail is already known
+        // to be small; underflow of that upper bound also implies zero.
+        let upper = ndtr(-nc);
+        if upper == 0.0 {
+            return 0.0;
+        }
+        if upper < 1e-6 {
+            return nct_negative_tail(df, nc, t);
+        }
+        let reflected = 1.0 - nctdtr(df, -nc, -t);
+        return if reflected < 1e-6 {
+            nct_negative_tail(df, nc, t)
+        } else {
+            reflected
+        };
     }
     let x = 1.0 / (1.0 + df / (t * t));
     let b = df / 2.0;
-    let series = poisson_mixture(nc * nc / 2.0, |j| {
+    let lambda = nc * nc / 2.0;
+    let center = lambda.floor() as usize;
+    // The mixture visits center, center-1, ... and then center+1, ... .
+    // R_j = Gamma(j+1)/Gamma(j+3/2) satisfies
+    // R_(j-1) = R_j*(j+1/2)/j and R_(j+1) = R_j*(j+1)/(j+3/2).
+    // Anchor both directions periodically to bound accumulated roundoff.
+    let gamma_ratio = |j: usize| {
         let j = j as f64;
-        let ratio = nc / std::f64::consts::SQRT_2 * (gammaln(j + 1.0) - gammaln(j + 1.5)).exp();
-        0.5 * (betainc(j + 0.5, b, x) + ratio * betainc(j + 1.0, b, x))
+        (gammaln(j + 1.0) - gammaln(j + 1.5)).exp()
+    };
+    let center_ratio = gamma_ratio(center);
+    let (mut lower_index, mut upper_index) = (center, center);
+    let (mut lower_ratio, mut upper_ratio) = (center_ratio, center_ratio);
+    // For nc>0 both beta terms are nonnegative. The gamma ratio decreases
+    // from 2/sqrt(pi), so 1+nc bounds each weighted-mixture integrand.
+    let series = poisson_mixture(lambda, (nc > 0.0).then_some(1.0 + nc), |j| {
+        let ratio = if j < center {
+            if j + 1 == lower_index && !(center - j).is_multiple_of(64) {
+                lower_ratio *= (j as f64 + 1.5) / (j as f64 + 1.0);
+            } else {
+                lower_ratio = gamma_ratio(j);
+            }
+            if !lower_ratio.is_finite() || lower_ratio <= 0.0 {
+                lower_ratio = gamma_ratio(j);
+            }
+            lower_index = j;
+            lower_ratio
+        } else if j > center {
+            if j == upper_index + 1 && !(j - center).is_multiple_of(64) {
+                upper_ratio *= j as f64 / (j as f64 + 0.5);
+            } else {
+                upper_ratio = gamma_ratio(j);
+            }
+            if !upper_ratio.is_finite() || upper_ratio <= 0.0 {
+                upper_ratio = gamma_ratio(j);
+            }
+            upper_index = j;
+            upper_ratio
+        } else {
+            center_ratio
+        };
+        let j = j as f64;
+        let signed_ratio = nc / std::f64::consts::SQRT_2 * ratio;
+        0.5 * (betainc(j + 0.5, b, x) + signed_ratio * betainc(j + 1.0, b, x))
     });
     (ndtr(-nc) + series).clamp(0.0, 1.0)
 }
@@ -725,23 +1015,23 @@ pub fn nctdtr(df: f64, nc: f64, t: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::nctdtrit(3.0,0.5,0.3);
+/// let value = sci_special::probability::nctdtrit(3.0,0.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nctdtrit](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nctdtrit.html).
 pub fn nctdtrit(df: f64, nc: f64, p: f64) -> f64 {
-    bisect(|t| nctdtr(df, nc, t), p, -1e8, 1e8)
+    monotone_bisect(|t| nctdtr(df, nc, t), p, (-1e8, 1e8), nc, 1.0, true)
 }
 
 /// Inverse noncentral Student t CDF with respect to noncentrality.
@@ -752,23 +1042,30 @@ pub fn nctdtrit(df: f64, nc: f64, p: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::nctdtrinc(3.0,0.3,0.5);
+/// let value = sci_special::probability::nctdtrinc(3.0,0.3,0.5);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nctdtrinc](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nctdtrinc.html).
 pub fn nctdtrinc(df: f64, p: f64, t: f64) -> f64 {
-    bisect(|nc| nctdtr(df, nc, t), p, -100.0, 100.0)
+    monotone_bisect(
+        |nc| nctdtr(df, nc, t),
+        p,
+        (-100.0, 100.0),
+        t.clamp(-100.0, 100.0),
+        1.0,
+        false,
+    )
 }
 
 /// Inverse noncentral Student t CDF with respect to degrees of freedom.
@@ -779,19 +1076,19 @@ pub fn nctdtrinc(df: f64, p: f64, t: f64) -> f64 {
 ///
 /// ## Numerical behavior
 ///
-/// Inversion uses bounded bracketing and bisection; failure to bracket or
+/// Inversion brackets the root within bounds and refines it with Brent's method; failure to bracket or
 /// converge returns NaN. Positive parameter searches cover `1e-10..1e10`.
 /// If an inverse is not unique, the lowest bracketed positive root is selected.
 /// Endpoint probabilities can be singular; use interior probabilities for inversion.
 ///
-/// # Examples
+/// ## Examples
 ///
 /// ```
-/// let value = sci_special::nctdtridf(0.4120716320853016,0.5,0.3);
+/// let value = sci_special::probability::nctdtridf(0.4120716320853016,0.5,0.3);
 /// assert!(value.is_finite());
 /// ```
 ///
-/// # References
+/// ## References
 ///
 /// - [SciPy nctdtridf](https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.nctdtridf.html).
 pub fn nctdtridf(p: f64, nc: f64, t: f64) -> f64 {

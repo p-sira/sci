@@ -38,7 +38,7 @@ fn exponential(a: &Mat<f64>) -> Result<Mat<f64>> {
     }
     Ok(result)
 }
-fn circular(a: &[Vec<f64>], sine: bool) -> Result<Matrix> {
+fn circular(a: &(impl super::MatrixInput + ?Sized), sine: bool) -> Result<Matrix> {
     let a = square(a)?;
     let steps = scaling(&a)?;
     let imaginary = a.map(|x| Complex64::new(0.0, x / 2.0_f64.powi(steps as i32)));
@@ -115,7 +115,7 @@ fn quotient(numerator: Matrix, denominator: Matrix) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// let e=sci_linalg::expm(&[vec![0.,1.],vec![0.,0.]])?;
+/// let e=sci_linalg::matrix_functions::expm(&[vec![0.,1.],vec![0.,0.]])?;
 /// let expected=[[1.,1.],[0.,1.]];
 /// assert!(e.iter().flatten().zip(expected.iter().flatten()).all(|(a,b)| (a-b).abs()<1e-14));
 /// # Ok::<(), sci_core::Error>(())
@@ -127,8 +127,6 @@ fn quotient(numerator: Matrix, denominator: Matrix) -> Result<Matrix> {
 ///
 /// [SciPy `expm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.expm.html).
 pub fn expm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     rows(&exponential(&square(a)?)?)
 }
 /// Computes the matrix cosine `cos(A)=Σk>=0 (-1)^k A^(2k)/(2k)!`.
@@ -156,7 +154,7 @@ pub fn expm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_linalg::cosm(&[vec![0.]])?[0][0]-1.).abs()<1e-14);
+/// assert!((sci_linalg::matrix_functions::cosm(&[vec![0.]])?[0][0]-1.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -166,8 +164,6 @@ pub fn expm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 ///
 /// [SciPy `cosm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cosm.html).
 pub fn cosm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     circular(a, false)
 }
 /// Computes the matrix sine `sin(A)=Σk>=0 (-1)^k A^(2k+1)/(2k+1)!`.
@@ -195,7 +191,7 @@ pub fn cosm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::sinm(&[vec![0.]])?,vec![vec![0.]]);
+/// assert_eq!(sci_linalg::matrix_functions::sinm(&[vec![0.]])?,vec![vec![0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -205,8 +201,6 @@ pub fn cosm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 ///
 /// [SciPy `sinm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.sinm.html).
 pub fn sinm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     circular(a, true)
 }
 /// Computes `cosh(A)=(exp(A)+exp(-A))/2`.
@@ -234,7 +228,7 @@ pub fn sinm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// assert!((sci_linalg::coshm(&[vec![0.]])?[0][0]-1.).abs()<1e-14);
+/// assert!((sci_linalg::matrix_functions::coshm(&[vec![0.]])?[0][0]-1.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -244,8 +238,6 @@ pub fn sinm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 ///
 /// [SciPy `coshm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.coshm.html).
 pub fn coshm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = square(a)?;
     rows(&hyperbolic(&a)?.1)
 }
@@ -274,7 +266,7 @@ pub fn coshm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::sinhm(&[vec![0.]])?,vec![vec![0.]]);
+/// assert_eq!(sci_linalg::matrix_functions::sinhm(&[vec![0.]])?,vec![vec![0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -284,8 +276,6 @@ pub fn coshm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 ///
 /// [SciPy `sinhm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.sinhm.html).
 pub fn sinhm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = square(a)?;
     rows(&hyperbolic(&a)?.0)
 }
@@ -314,7 +304,7 @@ pub fn sinhm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::tanm(&[vec![0.]])?,vec![vec![0.]]);
+/// assert_eq!(sci_linalg::matrix_functions::tanm(&[vec![0.]])?,vec![vec![0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -324,8 +314,6 @@ pub fn sinhm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 ///
 /// [SciPy `tanm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.tanm.html).
 pub fn tanm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     quotient(sinm(a)?, cosm(a)?)
 }
 /// Computes `tanh(A)=cosh(A)⁻¹ sinh(A)` wherever the denominator is invertible.
@@ -357,7 +345,7 @@ pub fn tanm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// assert_eq!(sci_linalg::tanhm(&[vec![0.]])?,vec![vec![0.]]);
+/// assert_eq!(sci_linalg::matrix_functions::tanhm(&[vec![0.]])?,vec![vec![0.]]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -367,8 +355,6 @@ pub fn tanm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 ///
 /// [SciPy `tanhm`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.tanhm.html).
 pub fn tanhm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = square(a)?;
     let steps = scaling(&a)?;
     let (sine, cosine) = hyperbolic_base(&a, steps);
@@ -415,7 +401,7 @@ pub fn tanhm(a: &(impl super::MatrixInput + ?Sized)) -> Result<Matrix> {
 /// # Examples
 ///
 /// ```
-/// let (exp,d)=sci_linalg::expm_frechet(&[vec![0.]],&[vec![2.]])?;
+/// let (exp,d)=sci_linalg::matrix_functions::expm_frechet(&[vec![0.]],&[vec![2.]])?;
 /// assert!((exp[0][0]-1.).abs()<1e-14 && (d[0][0]-2.).abs()<1e-14);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -429,10 +415,6 @@ pub fn expm_frechet(
     a: &(impl super::MatrixInput + ?Sized),
     e: &(impl super::MatrixInput + ?Sized),
 ) -> Result<(Matrix, Matrix)> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
-    let e_input = super::input::matrix_rows(e)?;
-    let e = e_input.as_ref();
     let a = square(a)?;
     let e = square(e)?;
     if a.shape() != e.shape() {
@@ -455,8 +437,8 @@ pub fn expm_frechet(
     });
     let exp = exponential(&block)?;
     Ok((
-        rows(&exp.as_ref().submatrix(0, 0, n, n).to_owned())?,
-        rows(&exp.as_ref().submatrix(0, n, n, n).to_owned())?,
+        rows(&exp.as_ref().submatrix(0, 0, n, n))?,
+        rows(&exp.as_ref().submatrix(0, n, n, n))?,
     ))
 }
 /// Computes the relative Frobenius condition number `κ=||Lexp(A)||F→F ||A||F / ||exp(A)||F`.
@@ -484,7 +466,7 @@ pub fn expm_frechet(
 /// # Examples
 ///
 /// ```
-/// assert!((sci_linalg::expm_cond(&[vec![2.]])?-2.).abs()<1e-12);
+/// assert!((sci_linalg::matrix_functions::expm_cond(&[vec![2.]])?-2.).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
 ///
@@ -494,8 +476,6 @@ pub fn expm_frechet(
 ///
 /// [SciPy `expm_cond`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.expm_cond.html).
 pub fn expm_cond(a: &(impl super::MatrixInput + ?Sized)) -> Result<f64> {
-    let a_input = super::input::matrix_rows(a)?;
-    let a = a_input.as_ref();
     let a = square(a)?;
     let n = a.nrows();
     if n > 8 {
@@ -527,5 +507,8 @@ pub fn expm_cond(a: &(impl super::MatrixInput + ?Sized)) -> Result<f64> {
             }
         }
     }
-    crate::error::finite((svdvals(&operator)?[0] / exp_norm) * norm)
+    match (svdvals(&operator)?[0] / exp_norm) * norm {
+        value if value.is_finite() => Ok(value),
+        _ => Err(Error::NonFiniteEvaluation),
+    }
 }

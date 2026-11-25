@@ -8,8 +8,21 @@ use sci::{
     Error,
     complex::Complex,
     signal::{
-        windows::{self, Window},
-        *,
+        Mode,
+        advanced_design::*,
+        convolution::*,
+        design::*,
+        filtering::*,
+        fir::*,
+        multidimensional::*,
+        peaks::*,
+        representations::*,
+        spectral::*,
+        splines::*,
+        systems::*,
+        utilities::*,
+        waveforms::*,
+        windows::{self, Window, get_window},
     },
 };
 
@@ -226,19 +239,10 @@ fn evaluate(name: &str, a: &[&str]) -> Vec<Vec<f64>> {
         "whittaker_henderson" => {
             return vec![whittaker_henderson(&v(0), f(1), n(2), &v(3)).unwrap()];
         }
-        "choose_conv_method" => {
-            return vec![vec![
-                if choose_conv_method(&v(0), &v(1), mode(a[2])).unwrap() == ConvolutionMethod::Fft {
-                    1.
-                } else {
-                    0.
-                },
-            ]];
-        }
         "oaconvolve" => return vec![oaconvolve(&v(0), &v(1), mode(a[2])).unwrap()],
         "closest_STFT_dual_window" => {
             return {
-                let (w, s) = closest_STFT_dual_window(&v(0), n(1), &v(2), b(3)).unwrap();
+                let (w, s) = closest_stft_dual_window(&v(0), n(1), &v(2), b(3)).unwrap();
                 vec![w, vec![s]]
             };
         }
@@ -400,8 +404,8 @@ fn evaluate(name: &str, a: &[&str]) -> Vec<Vec<f64>> {
         }
         "bode" => return pair(bode(&v(0), &v(1), &v(2)).unwrap()),
         "dbode" => return pair(dbode(&v(0), &v(1), &v(2)).unwrap()),
-        "freqresp" => complex_row(freqresp(&v(0), &v(1), &v(2)).unwrap()),
-        "dfreqresp" => complex_row(dfreqresp(&v(0), &v(1), &v(2)).unwrap()),
+        "freqresp" => complex_row(freqs(&v(0), &v(1), &v(2)).unwrap()),
+        "dfreqresp" => complex_row(freqz(&v(0), &v(1), &v(2)).unwrap()),
         "get_window" => get_window(&window(a[0]), n(1), b(2)).unwrap(),
         "convolve" => convolve(&v(0), &v(1), mode(a[2])).unwrap(),
         "correlate" => correlate(&v(0), &v(1), mode(a[2])).unwrap(),
@@ -464,7 +468,7 @@ fn evaluate(name: &str, a: &[&str]) -> Vec<Vec<f64>> {
         "freqz" => complex_row(freqz(&v(0), &v(1), &v(2)).unwrap()),
         "freqs" => complex_row(freqs(&v(0), &v(1), &v(2)).unwrap()),
         "freqz_sos" => complex_row(freqz_sos(&sos(a[0]), &v(1)).unwrap()),
-        "sosfreqz" => complex_row(sosfreqz(&sos(a[0]), &v(1)).unwrap()),
+        "sosfreqz" => complex_row(freqz_sos(&sos(a[0]), &v(1)).unwrap()),
         "group_delay" => group_delay(&v(0), &v(1), &v(2)).unwrap(),
         "iirnotch" => return pair(iirnotch(f(0), f(1), f(2)).unwrap()),
         "iirpeak" => return pair(iirpeak(f(0), f(1), f(2)).unwrap()),
@@ -532,9 +536,9 @@ fn evaluate(name: &str, a: &[&str]) -> Vec<Vec<f64>> {
             return pair(istft(&z, &v(1), n(2), n(3), f(4)).unwrap());
         }
         "check_cola" => vec![f64::from(check_cola(&v(0), n(1), f(2)).unwrap())],
-        "check_COLA" => vec![f64::from(check_COLA(&v(0), n(1), f(2)).unwrap())],
+        "check_COLA" => vec![f64::from(check_cola(&v(0), n(1), f(2)).unwrap())],
         "check_nola" => vec![f64::from(check_nola(&v(0), n(1), f(2)).unwrap())],
-        "check_NOLA" => vec![f64::from(check_NOLA(&v(0), n(1), f(2)).unwrap())],
+        "check_NOLA" => vec![f64::from(check_nola(&v(0), n(1), f(2)).unwrap())],
         "lombscargle" => lombscargle(&v(0), &v(1), &v(2), b(3), b(4)).unwrap(),
         "find_peaks" => find_peaks(&v(0))
             .unwrap()
@@ -723,7 +727,7 @@ fn transforms_spectra_and_smoothing_obey_independent_identities() {
     for (i, a) in tapers.iter().enumerate() {
         for (j, b) in tapers.iter().enumerate() {
             near(
-                sci::linalg::dot(a, b).unwrap(),
+                sci::linalg::basic::dot(a, b).unwrap(),
                 if i == j { 1. } else { 0. },
                 1e-12,
                 "DPSS orthonormality",
@@ -815,7 +819,7 @@ fn filter_design_round_trips_and_meets_frequency_constraints() {
         near(u, v, 1e-12, "denominator factoring");
     }
     let x = lfilter(&b, &a, &[1., 0., 0., 0.]).unwrap();
-    assert!(sci::stats::mean(&x).unwrap().is_finite());
+    assert!(sci::stats::descriptive::mean(&x).unwrap().is_finite());
 }
 
 #[test]
@@ -994,13 +998,22 @@ fn multidimensional_and_resampling_validation_and_interoperability() {
         near(*a, *b, 1e-14, "separable product");
     }
     assert!(
-        sci::linalg::matvec(&a, &[1.; 3])
+        sci::linalg::basic::matvec(&a, &[1.; 3])
             .unwrap()
             .iter()
             .all(|v| v.is_finite())
     );
     let ragged = [vec![1.], vec![]];
     for f in [convolve2d, correlate2d] {
+        assert_eq!(
+            f(
+                &[vec![f64::MAX]],
+                &[vec![2.]],
+                Mode::Full,
+                Boundary::Fill(0.)
+            ),
+            Err(Error::NonFiniteEvaluation)
+        );
         assert!(f(&ragged, &image, Mode::Full, Boundary::Fill(0.)).is_err());
         assert!(f(&image, &image, Mode::Same, Boundary::Fill(f64::NAN)).is_err());
         assert!(
@@ -1213,7 +1226,7 @@ fn spline_penalties_dual_windows_and_binary_sequences_obey_properties() {
     let win = [0.5, 1., 0.7, 0.3, 0.8, 1., 0.5, 0.2];
     for hop in [1, 3, 4, 8] {
         for scaled in [false, true] {
-            let (dual, _) = closest_STFT_dual_window(&win, hop, &[1.; 8], scaled).unwrap();
+            let (dual, _) = closest_stft_dual_window(&win, hop, &[1.; 8], scaled).unwrap();
             for r in 0..hop {
                 near(
                     (r..win.len()).step_by(hop).map(|i| win[i] * dual[i]).sum(),
@@ -1242,6 +1255,38 @@ fn spline_penalties_dual_windows_and_binary_sequences_obey_properties() {
                 near(*value, out[0], 1e-11, "spline mirror periodicity");
             }
         }
+    }
+}
+
+#[test]
+fn remez_preserves_linear_phase_and_scaling_conventions() {
+    // The 255-tap boundary is compared with SciPy in the CSV fixtures.
+    for n in [2, 3, 20, 35, 63] {
+        let bands = [0., 0.3, 0.32, 1.];
+        let h = remez(n, &bands, &[1., 0.], &[1., 10.], 2.)
+            .unwrap_or_else(|error| panic!("{n} taps: {error}"));
+        assert_eq!(h.len(), n);
+        for (&x, &y) in h.iter().zip(h.iter().rev()) {
+            near(x, y, 1e-13, "Remez type I/II symmetry");
+        }
+        let scaled = remez(n, &[0., 300., 320., 1000.], &[1., 0.], &[1., 10.], 2000.).unwrap();
+        let gain = remez(n, &bands, &[-3., 0.], &[7., 70.], 2.).unwrap();
+        for ((&x, y), z) in h.iter().zip(scaled).zip(gain) {
+            near(x, y, 1e-11, "Remez sample-rate units");
+            near(-3. * x, z, 1e-11, "Remez gain and common weight scaling");
+        }
+    }
+    for n in [0, 1, 256, usize::MAX] {
+        assert!(remez(n, &[0., 0.3, 0.5, 1.], &[1., 0.], &[1., 1.], 2.).is_err());
+    }
+    for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert!(remez(9, &[0., 0.3, 0.5, 1.], &[value, 0.], &[1., 1.], 2.).is_err());
+        assert!(remez(9, &[0., 0.3, 0.5, 1.], &[1., 0.], &[1., value], 2.).is_err());
+        assert!(remez(9, &[0., 0.3, 0.5, 1.], &[1., 0.], &[1., 1.], value).is_err());
+    }
+    // Type II symmetry forces zero gain at Nyquist.
+    for n in [2, 20] {
+        assert!(remez(n, &[0., 0.3, 0.5, 1.], &[0., 1.], &[1., 1.], 2.).is_err());
     }
 }
 
@@ -1419,9 +1464,8 @@ fn remaining_functions_reject_invalid_domains_and_shapes() {
     assert!(symiirorder1(&[1.; 8], 1., 0.99, 1e-6).is_err());
     assert!(symiirorder2(&[1.; 8], 1., 0.2, 1e-6).is_err());
     assert!(whittaker_henderson(&[1., 2., 3.], 1., 2, &[0.; 3]).is_err());
-    assert!(choose_conv_method(&[], &[1.], Mode::Full).is_err());
     assert!(oaconvolve(&[f64::INFINITY], &[1.], Mode::Full).is_err());
-    assert!(closest_STFT_dual_window(&[0.; 4], 2, &[1.; 4], true).is_err());
+    assert!(closest_stft_dual_window(&[0.; 4], 2, &[1.; 4], true).is_err());
     assert!(envelope(&[1.; 4], (0, 3), 4, false, true).is_err());
     assert!(max_len_seq(3, &[0; 3], 10, None).is_err());
     assert!(max_len_seq(3, &[1; 3], 10, Some(&[2, 2])).is_err());
@@ -1457,9 +1501,9 @@ fn cropped_convolutions_match_scipy_for_both_length_orderings() {
             _ => panic!("unknown mode"),
         };
         let function = if row[1] == "convolve" {
-            sci::signal::convolve
+            sci::signal::convolution::convolve
         } else {
-            sci::signal::correlate
+            sci::signal::convolution::correlate
         };
         assert_eq!(
             function(&x, &h, mode).unwrap(),

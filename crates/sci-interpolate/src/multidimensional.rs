@@ -1,5 +1,5 @@
 use crate::backend;
-use crate::error::{finite, finite_slice};
+use crate::error::is_finite_slice;
 use crate::{Error, Result, Spline, SurfaceSpline};
 
 /// Interpolation method for scalar regular grids.
@@ -42,12 +42,15 @@ pub enum ScatteredMethod {
 ///
 /// ## Numerical behavior
 ///
-/// Binary interval lookup and at most 2^dimension corners per query. Query × corner × dimension work is limited to 10,000,000. Extrapolation and extreme scales can overflow.
+/// Binary interval lookup and at most 2^dimension corners per query. Singleton
+/// axes are removed from corner enumeration, and lower-corner offsets and
+/// weights are reused. Query × corner × dimension work is limited to
+/// 10,000,000. Extrapolation and extreme scales can overflow.
 ///
 /// # Examples
 ///
 /// ```
-/// let v=sci_interpolate::interpn(&[vec![0.,1.]], &[0.,2.], &[vec![0.5]],sci_interpolate::GridMethod::Linear,true,None)?;
+/// let v=sci_interpolate::multidimensional::interpn(&[vec![0.,1.]], &[0.,2.], &[vec![0.5]],sci_interpolate::multidimensional::GridMethod::Linear,true,None)?;
 /// assert_eq!(v,vec![1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -80,7 +83,7 @@ pub fn interpn(
             .checked_mul(axis.len())
             .filter(|n| *n <= 1_000_000)
             .ok_or(Error::InvalidInput("grid size limit exceeded"))?;
-        finite_slice(axis)?;
+        is_finite_slice(axis)?;
         if axis.windows(2).any(|p| p[1] == p[0])
             || (axis.len() > 1
                 && axis
@@ -89,14 +92,17 @@ pub fn interpn(
         {
             return Err(Error::InvalidInput("grid axes must be strictly monotonic"));
         }
-        finite(axis[axis.len() - 1] - axis[0])?;
+        match axis[axis.len() - 1] - axis[0] {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        }?;
     }
     if values.len() != count || queries.iter().any(|q| q.len() != dim) {
         return Err(Error::DimensionMismatch);
     }
-    finite_slice(values)?;
+    is_finite_slice(values)?;
     for q in queries {
-        finite_slice(q)?;
+        is_finite_slice(q)?;
     }
     let mut strides = vec![1usize; dim];
     for j in (0..dim - 1).rev() {
@@ -119,6 +125,9 @@ pub fn interpn(
             }
             let mut indices = [0usize; 8];
             let mut fractions = [0.0; 8];
+            let mut complements = [1.0; 8];
+            let mut active_axes = [0usize; 8];
+            let mut active_len = 0;
             for j in 0..dim {
                 let a = &points[j];
                 if a.len() == 1 {
@@ -129,37 +138,42 @@ pub fn interpn(
                     .partition_point(|v| if ascending { *v <= q[j] } else { *v >= q[j] })
                     .saturating_sub(1)
                     .min(a.len() - 2);
-                let u = finite((q[j] - a[i]) / (a[i + 1] - a[i]))?;
+                let u = match (q[j] - a[i]) / (a[i + 1] - a[i]) {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }?;
                 if method == GridMethod::Nearest {
                     indices[j] = i + usize::from(if ascending { u > 0.5 } else { u >= 0.5 });
                 } else {
                     indices[j] = i;
                     fractions[j] = u;
+                    complements[j] = 1.0 - u;
+                    active_axes[active_len] = j;
+                    active_len += 1;
                 }
             }
+            let base_index = (0..dim).map(|j| indices[j] * strides[j]).sum::<usize>();
             if method == GridMethod::Nearest {
-                let index = (0..dim).map(|j| indices[j] * strides[j]).sum::<usize>();
-                return Ok(values[index]);
+                return Ok(values[base_index]);
             }
             let mut sum = 0.0;
-            for corner in 0..1 << dim {
+            for corner in 0..1 << active_len {
                 let mut weight = 1.0;
-                let mut index = 0;
-                for j in 0..dim {
-                    let upper = (corner >> j) & 1;
-                    if points[j].len() == 1 && upper == 1 {
-                        weight = 0.0;
-                        break;
-                    }
+                let mut index = base_index;
+                for (bit, &j) in active_axes[..active_len].iter().enumerate() {
+                    let upper = (corner >> bit) & 1;
                     weight *= if upper == 1 {
                         fractions[j]
                     } else {
-                        1.0 - fractions[j]
+                        complements[j]
                     };
-                    index += (indices[j] + upper) * strides[j];
+                    index += upper * strides[j];
                 }
                 if weight != 0.0 {
-                    sum = finite(sum + weight * values[index])?;
+                    sum = match sum + weight * values[index] {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    }?;
                 }
             }
             Ok(sum)
@@ -192,7 +206,7 @@ pub fn interpn(
 /// # Examples
 ///
 /// ```
-/// let v=sci_interpolate::griddata(&[vec![0.],vec![1.]], &[0.,2.], &[vec![0.5]],sci_interpolate::ScatteredMethod::Linear,f64::NAN,false)?;
+/// let v=sci_interpolate::multidimensional::griddata(&[vec![0.],vec![1.]], &[0.,2.], &[vec![0.5]],sci_interpolate::multidimensional::ScatteredMethod::Linear,f64::NAN,false)?;
 /// assert_eq!(v,vec![1.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -221,9 +235,9 @@ pub fn griddata(
         return Err(Error::DimensionMismatch);
     }
     backend::bound(&[points.len(), queries.len(), dim])?;
-    finite_slice(values)?;
+    is_finite_slice(values)?;
     for p in points.iter().chain(queries) {
-        finite_slice(p)?;
+        is_finite_slice(p)?;
     }
     if method == ScatteredMethod::Cubic && dim != 1 || method == ScatteredMethod::Linear && dim > 2
     {
@@ -243,19 +257,25 @@ pub fn griddata(
     let widths = lo
         .iter()
         .zip(&hi)
-        .map(|(a, b)| finite(b - a))
+        .map(|(a, b)| match b - a {
+            value if value.is_finite() => Ok(value),
+            _ => Err(Error::NonFiniteEvaluation),
+        })
         .collect::<Result<Vec<_>>>()?;
     let transform = |p: &Vec<f64>| -> Result<Vec<f64>> {
         (0..dim)
             .map(|j| {
-                finite(
-                    finite(p[j] - lo[j])?
-                        / if rescale && widths[j] != 0.0 {
-                            widths[j]
-                        } else {
-                            1.0
-                        },
-                )
+                match match p[j] - lo[j] {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }? / if rescale && widths[j] != 0.0 {
+                    widths[j]
+                } else {
+                    1.0
+                } {
+                    value if value.is_finite() => Ok(value),
+                    _ => Err(Error::NonFiniteEvaluation),
+                }
             })
             .collect()
     };
@@ -280,10 +300,15 @@ pub fn griddata(
                 let mut index = 0;
                 let mut distance = f64::INFINITY;
                 for (i, p) in p.iter().enumerate() {
-                    let d = p
-                        .iter()
-                        .zip(q)
-                        .try_fold(0.0_f64, |d, (a, b)| finite(d.hypot(finite(a - b)?)))?;
+                    let d = p.iter().zip(q).try_fold(0.0_f64, |d, (a, b)| {
+                        match d.hypot(match a - b {
+                            value if value.is_finite() => Ok(value),
+                            _ => Err(Error::NonFiniteEvaluation),
+                        }?) {
+                            value if value.is_finite() => Ok(value),
+                            _ => Err(Error::NonFiniteEvaluation),
+                        }
+                    })?;
                     if d < distance {
                         distance = d;
                         index = i;
@@ -303,7 +328,7 @@ pub fn griddata(
         order.sort_by(|a, b| p[*a][0].total_cmp(&p[*b][0]));
         let x: Vec<_> = order.iter().map(|i| p[*i][0]).collect();
         let y: Vec<_> = order.iter().map(|i| values[*i]).collect();
-        let s = crate::make_interp_spline(
+        let s = crate::fitting::make_interp_spline(
             &x,
             &y,
             if method == ScatteredMethod::Cubic {
@@ -368,9 +393,13 @@ pub fn griddata(
                 let u = 1.0 - v - w;
                 let tolerance = 64.0 * f64::EPSILON;
                 if u >= -tolerance && v >= -tolerance && w >= -tolerance {
-                    return finite(
-                        u * values[triangle[0]] + v * values[triangle[1]] + w * values[triangle[2]],
-                    );
+                    return match u * values[triangle[0]]
+                        + v * values[triangle[1]]
+                        + w * values[triangle[2]]
+                    {
+                        value if value.is_finite() => Ok(value),
+                        _ => Err(Error::NonFiniteEvaluation),
+                    };
                 }
             }
             Ok(fill_value)
@@ -398,13 +427,17 @@ pub fn griddata(
 ///
 /// ## Numerical behavior
 ///
-/// Reuses scalar derivative and local evaluation kernels. The product of query-axis lengths (each at least one for work accounting) and coefficient counts is bounded by 10,000,000.
+/// Reuses scalar derivative and local evaluation kernels. With zero derivative
+/// orders, caches local basis functions along both Cartesian axes instead of
+/// rebuilding them for each coefficient column and output row. The product of
+/// query-axis lengths (each at least one for work accounting) and coefficient
+/// counts is bounded by 10,000,000.
 ///
 /// # Examples
 ///
 /// ```
-/// let s=sci_interpolate::bisplrep(&[0.,0.,1.,1.], &[0.,1.,0.,1.], &[0.,1.,1.,2.], &[0.,0.,1.,1.], &[0.,0.,1.,1.],1,1,None)?;
-/// let v=sci_interpolate::bisplev(&[0.5],&[0.5],&s,0,0)?;
+/// let s=sci_interpolate::fitting::bisplrep(&[0.,0.,1.,1.], &[0.,1.,0.,1.], &[0.,1.,1.,2.], &[0.,0.,1.,1.], &[0.,0.,1.,1.],1,1,None)?;
+/// let v=sci_interpolate::multidimensional::bisplev(&[0.5],&[0.5],&s,0,0)?;
 /// assert!((v[0][0]-1.).abs()<1e-12);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -441,39 +474,82 @@ pub fn bisplev(
         return Err(Error::DimensionMismatch);
     }
     backend::bound(&[x.len().max(1), y.len().max(1), nx, ny])?;
-    finite_slice(x)?;
-    finite_slice(y)?;
-    finite_slice(&spline.coefficients)?;
+    is_finite_slice(x)?;
+    is_finite_slice(y)?;
+    is_finite_slice(&spline.coefficients)?;
     if x.windows(2).any(|p| p[1] < p[0]) || y.windows(2).any(|p| p[1] < p[0]) {
         return Err(Error::InvalidInput("surface queries must be nondecreasing"));
     }
-    let sx = Spline {
+    let mut sx = Spline {
         knots: spline.x_knots.clone(),
         coefficients: vec![0.0; nx],
         degree: kx,
     };
-    let sy = Spline {
+    let mut sy = Spline {
         knots: spline.y_knots.clone(),
         coefficients: vec![0.0; ny],
         degree: ky,
     };
     backend::validate(&sx)?;
     backend::validate(&sy)?;
+    // Bound the cache independently of the output work limit. A single long
+    // query axis can otherwise require millions of fixed-size basis arrays.
+    if dx == 0 && dy == 0 && y.len() <= 16_384 {
+        let xlo = spline.x_knots[kx];
+        let xhi = spline.x_knots[nx];
+        let ylo = spline.y_knots[ky];
+        let yhi = spline.y_knots[ny];
+        let yb: Vec<_> = y
+            .iter()
+            .map(|&value| backend::basis(&sy.knots, ky, value.clamp(ylo, yhi)))
+            .collect();
+        let mut along_y = vec![0.0; ny];
+        let mut result = Vec::with_capacity(x.len());
+        for &query in x {
+            let (start_x, basis_x) = backend::basis(&sx.knots, kx, query.clamp(xlo, xhi));
+            for (j, value) in along_y.iter_mut().enumerate() {
+                let mut sum = 0.0;
+                for (i, weight) in basis_x.iter().take(kx + 1).enumerate() {
+                    sum += *weight * spline.coefficients[(start_x + i) * ny + j];
+                }
+                if !sum.is_finite() {
+                    return Err(Error::NonFiniteEvaluation);
+                }
+                *value = sum;
+            }
+            let mut row = Vec::with_capacity(y.len());
+            for (start_y, basis_y) in &yb {
+                let mut sum = 0.0;
+                for (j, weight) in basis_y.iter().take(ky + 1).enumerate() {
+                    sum += *weight * along_y[*start_y + j];
+                }
+                if !sum.is_finite() {
+                    return Err(Error::NonFiniteEvaluation);
+                }
+                row.push(sum);
+            }
+            result.push(row);
+        }
+        return Ok(result);
+    }
     let mut along_x = Vec::with_capacity(ny);
     for j in 0..ny {
-        let s = Spline {
-            coefficients: (0..nx).map(|i| spline.coefficients[i * ny + j]).collect(),
-            ..sx.clone()
-        };
-        along_x.push(crate::splev(x, &s, dx, crate::SplineExtension::Clamp)?);
+        for (i, c) in sx.coefficients.iter_mut().enumerate() {
+            *c = spline.coefficients[i * ny + j];
+        }
+        along_x.push(crate::spline::splev(
+            x,
+            &sx,
+            dx,
+            crate::spline::SplineExtension::Clamp,
+        )?);
     }
     (0..x.len())
         .map(|i| {
-            let s = Spline {
-                coefficients: (0..ny).map(|j| along_x[j][i]).collect(),
-                ..sy.clone()
-            };
-            crate::splev(y, &s, dy, crate::SplineExtension::Clamp)
+            for (c, row) in sy.coefficients.iter_mut().zip(&along_x) {
+                *c = row[i];
+            }
+            crate::spline::splev(y, &sy, dy, crate::spline::SplineExtension::Clamp)
         })
         .collect()
 }

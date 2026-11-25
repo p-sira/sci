@@ -11,8 +11,8 @@ objective reductions amplifies their last-bit differences by 1/epsilon. These
 cases use steps >= 2^-20; this tolerance is not a derivative accuracy guarantee.
 """
 import csv
-import json
 from pathlib import Path
+from case_catalog import read_cases
 import numpy as np
 import scipy
 from scipy import optimize as o
@@ -27,7 +27,7 @@ def objective(kind):
 with (ROOT/'fixtures/optimize_inputs.csv').open('w',newline='') as fi,(ROOT/'fixtures/optimize_expected.csv').open('w',newline='') as fe:
     iw=csv.writer(fi,lineterminator='\n');ew=csv.writer(fe,lineterminator='\n')
     iw.writerow(['id','api','x','p','epsilon','function','bias']);ew.writerow(['id','rows','columns','values'])
-    for c in json.loads(Path(__file__).with_name('optimize_cases.json').read_text()):
+    for c in read_cases(Path(__file__).with_name('optimize_cases.jsonl')):
         x=np.array(c['x']);name=c['api'];eps=np.array(c.get('epsilon',[]));bias=c.get('bias',0.0)
         iw.writerow([c['id'],name,encode(x),encode(c.get('p',[])),encode(eps),c.get('function',''),bias])
         if name=='rosen_hess_prod':v=o.rosen_hess_prod(x,c['p'])

@@ -38,7 +38,7 @@ def writer(stack, name, fields):
 
 
 def big_endian(raw):
-    """Re-encode an uncompressed SciPy numeric MAT fixture in big-endian order."""
+    """Re-encode a SciPy numeric MAT fixture in big-endian order, including zlib."""
     def elements(data):
         out = bytearray()
         while data:
@@ -49,18 +49,21 @@ def big_endian(raw):
                 small = True
             else:
                 kind, count = struct.unpack_from('<II', data)
-                end = 8 + ((count + 7) & ~7)
+                end = 8 + (count if kind == 15 else ((count + 7) & ~7))
                 payload, data = data[8:8+count], data[end:]
                 small = False
             if kind == 14:
                 payload = elements(payload)
+            elif kind == 15:
+                payload = zlib.compress(elements(zlib.decompress(payload)))
             elif kind in (3, 4, 5, 6, 7, 9, 12, 13):
                 width = {3:2, 4:2, 5:4, 6:4, 7:4, 9:8, 12:8, 13:8}[kind]
                 payload = b''.join(payload[i:i+width][::-1] for i in range(0,len(payload),width))
             if small:
                 out += struct.pack('>I',(count<<16)|kind) + payload + bytes(4-count)
             else:
-                out += struct.pack('>II',kind,count) + payload + bytes((-count)%8)
+                out += struct.pack('>II',kind,len(payload)) + payload
+                if kind != 15:out += bytes((-len(payload))%8)
         return out
     return raw[:124] + b'\x01\x00MI' + elements(raw[128:])
 
@@ -118,7 +121,7 @@ if __name__ == '__main__':
                 # Replace SciPy's timestamp-bearing descriptive header for reproducibility.
                 raw=b'MATLAB 5.0 MAT-file, SciPy fixture'.ljust(116,b' ')+raw[116:]
                 variants=[('compressed' if compress else 'plain',raw)]
-                if not compress:variants.append(('big',big_endian(raw)))
+                variants.append(('big_compressed' if compress else 'big',big_endian(raw)))
                 for suffix, raw in variants:
                     case_id=f"{c['id']}_{suffix}"
                     loaded=sio.loadmat(io.BytesIO(raw))['x']
@@ -127,7 +130,7 @@ if __name__ == '__main__':
                     inputs.writerow([case_id,'matlab',raw.hex()])
                     mat.writerow([case_id,'x',encoded(info[1]),c['dtype'],encoded(loaded.real.ravel(order='F')),
                                   encoded(loaded.imag.ravel(order='F')) if 'imag' in c else '',info[2],int('imag' in c)])
-        # Specification-invalid inputs test rejection before backend parsing.
+        # Specification-invalid inputs test rejection before numeric decoding.
         b=io.BytesIO();sio.savemat(b,{'x':np.array([[1.0,2.0]])})
         header=b.getvalue()[:128]
         header=b'MATLAB 5.0 MAT-file, SciPy fixture'.ljust(116,b' ')+header[116:]

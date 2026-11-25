@@ -39,18 +39,18 @@ fn check_matrix(actual: &[Vec<f64>], expected: &str) {
         check(a, e);
     }
 }
-fn extension(i: &str) -> p::SplineExtension {
+fn extension(i: &str) -> p::spline::SplineExtension {
     match i {
-        "0" => p::SplineExtension::Extrapolate,
-        "1" => p::SplineExtension::Zero,
-        "2" => p::SplineExtension::Error,
-        "3" => p::SplineExtension::Clamp,
+        "0" => p::spline::SplineExtension::Extrapolate,
+        "1" => p::spline::SplineExtension::Zero,
+        "2" => p::spline::SplineExtension::Error,
+        "3" => p::spline::SplineExtension::Clamp,
         _ => panic!(),
     }
 }
 fn check_fit(s: &Spline, query: &[f64], expected: &[&str]) {
     check(
-        &p::splev(query, s, 0, p::SplineExtension::Extrapolate).unwrap(),
+        &p::spline::splev(query, s, 0, p::spline::SplineExtension::Extrapolate).unwrap(),
         expected[1],
     );
     check(&s.knots, expected[2]);
@@ -58,7 +58,7 @@ fn check_fit(s: &Spline, query: &[f64], expected: &[&str]) {
 }
 fn check_transform(s: &Spline, query: &[f64], expected: &[&str]) {
     check(
-        &p::splev(query, s, 0, p::SplineExtension::Extrapolate).unwrap(),
+        &p::spline::splev(query, s, 0, p::spline::SplineExtension::Extrapolate).unwrap(),
         expected[1],
     );
     check(&s.knots, expected[2]);
@@ -82,13 +82,17 @@ fn every_added_inventory_name_matches_scipy() {
         let a = &c[2..];
         let result = std::panic::catch_unwind(|| match c[1] {
             "make_interp_spline" => check_fit(
-                &p::make_interp_spline(&vector(a[0]), &vector(a[1]), a[2].parse().unwrap())
-                    .unwrap(),
+                &p::fitting::make_interp_spline(
+                    &vector(a[0]),
+                    &vector(a[1]),
+                    a[2].parse().unwrap(),
+                )
+                .unwrap(),
                 &vector(a[3]),
                 &e,
             ),
             "make_lsq_spline" => check_fit(
-                &p::make_lsq_spline(
+                &p::fitting::make_lsq_spline(
                     &vector(a[0]),
                     &vector(a[1]),
                     &vector(a[2]),
@@ -100,11 +104,7 @@ fn every_added_inventory_name_matches_scipy() {
                 &e,
             ),
             "make_splrep" | "splrep" => {
-                let f = if c[1] == "splrep" {
-                    p::splrep
-                } else {
-                    p::make_splrep
-                };
+                let f = p::fitting::make_splrep;
                 check_fit(
                     &f(
                         &vector(a[0]),
@@ -119,7 +119,7 @@ fn every_added_inventory_name_matches_scipy() {
                 );
             }
             "make_smoothing_spline" => check_fit(
-                &p::make_smoothing_spline(
+                &p::fitting::make_smoothing_spline(
                     &vector(a[0]),
                     &vector(a[1]),
                     optional(a[2]).as_deref(),
@@ -130,11 +130,7 @@ fn every_added_inventory_name_matches_scipy() {
                 &e,
             ),
             "make_splprep" | "splprep" => {
-                let f = if c[1] == "splprep" {
-                    p::splprep
-                } else {
-                    p::make_splprep
-                };
+                let f = p::fitting::make_splprep;
                 let s = f(
                     &matrix(a[0]),
                     optional(a[1]).as_deref(),
@@ -146,8 +142,13 @@ fn every_added_inventory_name_matches_scipy() {
                 let query = vector(a[5]);
                 let mut out = vec![Vec::new(); query.len()];
                 for component in &s.components {
-                    let v =
-                        p::splev(&query, component, 0, p::SplineExtension::Extrapolate).unwrap();
+                    let v = p::spline::splev(
+                        &query,
+                        component,
+                        0,
+                        p::spline::SplineExtension::Extrapolate,
+                    )
+                    .unwrap();
                     for (row, value) in out.iter_mut().zip(v) {
                         row.push(value);
                     }
@@ -170,7 +171,7 @@ fn every_added_inventory_name_matches_scipy() {
                     _ => panic!(),
                 };
                 check(
-                    &p::approximate_taylor_polynomial(
+                    &p::polynomial::approximate_taylor_polynomial(
                         f,
                         a[1].parse().unwrap(),
                         a[2].parse().unwrap(),
@@ -182,7 +183,7 @@ fn every_added_inventory_name_matches_scipy() {
                 );
             }
             "generate_knots" => check_matrix(
-                &p::generate_knots(
+                &p::fitting::generate_knots(
                     &vector(a[0]),
                     &vector(a[1]),
                     a[2].parse().unwrap(),
@@ -193,7 +194,7 @@ fn every_added_inventory_name_matches_scipy() {
                 e[1],
             ),
             "splev" => check(
-                &p::splev(
+                &p::spline::splev(
                     &vector(a[0]),
                     &spline(a[1]),
                     a[2].parse().unwrap(),
@@ -203,37 +204,42 @@ fn every_added_inventory_name_matches_scipy() {
                 e[1],
             ),
             "splder" => check_transform(
-                &p::splder(&spline(a[0]), a[1].parse().unwrap()).unwrap(),
+                &p::spline::splder(&spline(a[0]), a[1].parse().unwrap()).unwrap(),
                 &vector(a[2]),
                 &e,
             ),
             "splantider" => check_transform(
-                &p::splantider(&spline(a[0]), a[1].parse().unwrap()).unwrap(),
+                &p::spline::splantider(&spline(a[0]), a[1].parse().unwrap()).unwrap(),
                 &vector(a[2]),
                 &e,
             ),
-            "spalde" => check_matrix(&p::spalde(&vector(a[0]), &spline(a[1])).unwrap(), e[1]),
+            "spalde" => check_matrix(
+                &p::spline::spalde(&vector(a[0]), &spline(a[1])).unwrap(),
+                e[1],
+            ),
             "splint" => close(
-                p::splint(a[0].parse().unwrap(), a[1].parse().unwrap(), &spline(a[2])).unwrap(),
+                p::spline::splint(a[0].parse().unwrap(), a[1].parse().unwrap(), &spline(a[2]))
+                    .unwrap(),
                 e[1].parse().unwrap(),
                 2e-10,
                 2e-10,
             ),
             "insert" => check_transform(
-                &p::insert(a[0].parse().unwrap(), &spline(a[1]), a[2].parse().unwrap()).unwrap(),
+                &p::spline::insert(a[0].parse().unwrap(), &spline(a[1]), a[2].parse().unwrap())
+                    .unwrap(),
                 &vector(a[3]),
                 &e,
             ),
-            "sproot" => check(&p::sproot(&spline(a[0])).unwrap(), e[1]),
+            "sproot" => check(&p::spline::sproot(&spline(a[0])).unwrap(), e[1]),
             "interpn" => check(
-                &p::interpn(
+                &p::multidimensional::interpn(
                     &matrix(a[0]),
                     &vector(a[1]),
                     &matrix(a[2]),
                     if a[3] == "linear" {
-                        p::GridMethod::Linear
+                        p::multidimensional::GridMethod::Linear
                     } else {
-                        p::GridMethod::Nearest
+                        p::multidimensional::GridMethod::Nearest
                     },
                     a[4].parse().unwrap(),
                     (!a[5].is_empty()).then(|| a[5].parse().unwrap()),
@@ -242,14 +248,14 @@ fn every_added_inventory_name_matches_scipy() {
                 e[1],
             ),
             "griddata" => check(
-                &p::griddata(
+                &p::multidimensional::griddata(
                     &matrix(a[0]),
                     &vector(a[1]),
                     &matrix(a[2]),
                     match a[3] {
-                        "linear" => p::ScatteredMethod::Linear,
-                        "nearest" => p::ScatteredMethod::Nearest,
-                        "cubic" => p::ScatteredMethod::Cubic,
+                        "linear" => p::multidimensional::ScatteredMethod::Linear,
+                        "nearest" => p::multidimensional::ScatteredMethod::Nearest,
+                        "cubic" => p::multidimensional::ScatteredMethod::Cubic,
                         _ => panic!(),
                     },
                     a[4].parse().unwrap(),
@@ -259,7 +265,7 @@ fn every_added_inventory_name_matches_scipy() {
                 e[1],
             ),
             "bisplrep" => {
-                let s = p::bisplrep(
+                let s = p::fitting::bisplrep(
                     &vector(a[0]),
                     &vector(a[1]),
                     &vector(a[2]),
@@ -275,7 +281,7 @@ fn every_added_inventory_name_matches_scipy() {
                 check(&s.coefficients, e[3]);
             }
             "bisplev" => check_matrix(
-                &p::bisplev(
+                &p::multidimensional::bisplev(
                     &vector(a[0]),
                     &vector(a[1]),
                     &surface(a[2]),
@@ -299,11 +305,16 @@ fn every_added_inventory_name_matches_scipy() {
 fn spline_calculus_and_refinement_preserve_identities() {
     let boundary_x: Vec<_> = (0..128).map(|i| i as f64 / 127.0).collect();
     let boundary_y: Vec<_> = boundary_x.iter().map(|x| 2.0 * x + 1.0).collect();
-    let boundary_fit = p::make_interp_spline(&boundary_x, &boundary_y, 1).unwrap();
-    for (&x, value) in boundary_x
-        .iter()
-        .zip(p::splev(&boundary_x, &boundary_fit, 0, p::SplineExtension::Error).unwrap())
-    {
+    let boundary_fit = p::fitting::make_interp_spline(&boundary_x, &boundary_y, 1).unwrap();
+    for (&x, value) in boundary_x.iter().zip(
+        p::spline::splev(
+            &boundary_x,
+            &boundary_fit,
+            0,
+            p::spline::SplineExtension::Error,
+        )
+        .unwrap(),
+    ) {
         close(value, 2.0 * x + 1.0, 2e-10, 2e-10);
     }
     let maximal_degree = Spline {
@@ -311,66 +322,67 @@ fn spline_calculus_and_refinement_preserve_identities() {
         coefficients: vec![1.0; 33],
         degree: 32,
     };
-    for value in p::splev(
+    for value in p::spline::splev(
         &[0.0, 0.2, 0.5, 1.0],
         &maximal_degree,
         0,
-        p::SplineExtension::Error,
+        p::spline::SplineExtension::Error,
     )
     .unwrap()
     {
         close(value, 1.0, 2e-10, 2e-10);
     }
-    assert!(p::splantider(&maximal_degree, 1).is_err());
+    assert!(p::spline::splantider(&maximal_degree, 1).is_err());
     let x = [0., 0.3, 0.7, 1., 1.5, 2., 2.4, 3.];
     let y = x.map(|x| x * x * x - 2. * x + 1.);
-    let s = p::make_interp_spline(&x, &y, 3).unwrap();
+    let s = p::fitting::make_interp_spline(&x, &y, 3).unwrap();
     let query: Vec<_> = (0..=60).map(|i| i as f64 / 20.).collect();
-    let values = p::splev(&query, &s, 0, p::SplineExtension::Error).unwrap();
+    let values = p::spline::splev(&query, &s, 0, p::spline::SplineExtension::Error).unwrap();
     for (&q, v) in query.iter().zip(&values) {
         close(*v, q * q * q - 2. * q + 1., 2e-10, 2e-10);
     }
-    let d = p::splder(&s, 1).unwrap();
+    let d = p::spline::splder(&s, 1).unwrap();
     for (&q, v) in query
         .iter()
-        .zip(p::splev(&query, &d, 0, p::SplineExtension::Error).unwrap())
+        .zip(p::spline::splev(&query, &d, 0, p::spline::SplineExtension::Error).unwrap())
     {
         close(v, 3. * q * q - 2., 2e-10, 2e-10);
     }
-    let round = p::splder(&p::splantider(&s, 2).unwrap(), 2).unwrap();
+    let round = p::spline::splder(&p::spline::splantider(&s, 2).unwrap(), 2).unwrap();
     for (&v, r) in values
         .iter()
-        .zip(p::splev(&query, &round, 0, p::SplineExtension::Error).unwrap())
+        .zip(p::spline::splev(&query, &round, 0, p::spline::SplineExtension::Error).unwrap())
     {
         close(v, r, 2e-10, 2e-10);
     }
-    let refined = p::insert(0.8, &s, 2).unwrap();
+    let refined = p::spline::insert(0.8, &s, 2).unwrap();
     for (&v, r) in values
         .iter()
-        .zip(p::splev(&query, &refined, 0, p::SplineExtension::Error).unwrap())
+        .zip(p::spline::splev(&query, &refined, 0, p::spline::SplineExtension::Error).unwrap())
     {
         close(v, r, 2e-10, 2e-10);
     }
-    close(p::splint(0., 3., &s).unwrap(), 14.25, 2e-10, 2e-10);
-    close(p::splint(3., 0., &s).unwrap(), -14.25, 2e-10, 2e-10);
-    let roots = p::sproot(&s).unwrap();
+    close(p::spline::splint(0., 3., &s).unwrap(), 14.25, 2e-10, 2e-10);
+    close(p::spline::splint(3., 0., &s).unwrap(), -14.25, 2e-10, 2e-10);
+    let roots = p::spline::sproot(&s).unwrap();
     for r in roots {
         close(
-            p::splev(&[r], &s, 0, p::SplineExtension::Error).unwrap()[0],
+            p::spline::splev(&[r], &s, 0, p::spline::SplineExtension::Error).unwrap()[0],
             0.,
             2e-10,
             2e-10,
         );
     }
     let noisy = [0., 0.4, -0.1, 0.8, 0.2, 1., 0.7, 1.5];
-    let sequence = p::generate_knots(&x, &noisy, 3, 0.01, None).unwrap();
+    let sequence = p::fitting::generate_knots(&x, &noisy, 3, 0.01, None).unwrap();
     assert!(
         sequence
             .windows(2)
             .all(|pair| pair[1].len() > pair[0].len())
     );
-    let final_fit = p::make_lsq_spline(&x, &noisy, sequence.last().unwrap(), 3, None).unwrap();
-    let v = p::splev(&x, &final_fit, 0, p::SplineExtension::Error).unwrap();
+    let final_fit =
+        p::fitting::make_lsq_spline(&x, &noisy, sequence.last().unwrap(), 3, None).unwrap();
+    let v = p::spline::splev(&x, &final_fit, 0, p::spline::SplineExtension::Error).unwrap();
     assert!(
         v.iter()
             .zip(noisy)
@@ -378,10 +390,10 @@ fn spline_calculus_and_refinement_preserve_identities() {
             .sum::<f64>()
             <= 0.01001
     );
-    let smooth = p::make_smoothing_spline(&x, &noisy, None, 1.).unwrap();
+    let smooth = p::fitting::make_smoothing_spline(&x, &noisy, None, 1.).unwrap();
     for q in [x[0], x[x.len() - 1]] {
         close(
-            p::splev(&[q], &smooth, 2, p::SplineExtension::Error).unwrap()[0],
+            p::spline::splev(&[q], &smooth, 2, p::spline::SplineExtension::Error).unwrap()[0],
             0.,
             2e-10,
             2e-10,
@@ -390,62 +402,140 @@ fn spline_calculus_and_refinement_preserve_identities() {
 }
 
 #[test]
+fn interpolation_square_solver_matches_svd_for_degrees_and_nonuniform_nodes() {
+    for degree in 1..=5 {
+        for n in [degree + 1, 12, 100, 128] {
+            for stretched in [false, true] {
+                let x: Vec<f64> = (0..n)
+                    .map(|i| {
+                        let u = i as f64 / (n - 1) as f64;
+                        if stretched {
+                            3.0 * u.powf(1.5)
+                        } else {
+                            3.0 * u
+                        }
+                    })
+                    .collect();
+                let y: Vec<f64> = x
+                    .iter()
+                    .map(|&v| 1.0 + 0.25 * v - 0.1 * v * v + 0.03 * v.sin())
+                    .collect();
+                let spline = p::fitting::make_interp_spline(&x, &y, degree).unwrap();
+                let svd = p::fitting::make_lsq_spline(&x, &y, &spline.knots, degree, None).unwrap();
+                assert_eq!(spline.knots, svd.knots);
+                for (&actual, &expected) in spline.coefficients.iter().zip(&svd.coefficients) {
+                    close(actual, expected, 5e-9, 5e-9);
+                }
+                let evaluated =
+                    p::spline::splev(&x, &spline, 0, p::spline::SplineExtension::Error).unwrap();
+                for (&actual, &expected) in evaluated.iter().zip(&y) {
+                    close(actual, expected, 5e-10, 5e-10);
+                }
+            }
+        }
+    }
+
+    // Match the 100-point CodSpeed cubic interpolation workload exactly.
+    let x: Vec<_> = (0..100).map(|i| i as f64 * 0.2).collect();
+    let y: Vec<_> = x.iter().map(|v| v.sin()).collect();
+    let spline = p::fitting::make_interp_spline(&x, &y, 3).unwrap();
+    let svd = p::fitting::make_lsq_spline(&x, &y, &spline.knots, 3, None).unwrap();
+    for (&actual, &expected) in spline.coefficients.iter().zip(&svd.coefficients) {
+        close(actual, expected, 5e-10, 5e-10);
+    }
+}
+
+#[test]
+fn clustered_interpolation_retains_svd_rank_behavior() {
+    // Nearly coincident nodes can make the not-a-knot collocation system
+    // ill-conditioned even though the nodes are strictly increasing.
+    for delta in [1e-5, 1e-12] {
+        let x: [f64; 8] = [0.0, delta, 2.0 * delta, 0.7, 1.2, 1.7, 2.1, 2.6];
+        let y = x.map(|v| 1.0 + 0.25 * v + v.sin());
+        let knots = [vec![x[0]; 4], x[2..x.len() - 2].to_vec(), vec![x[7]; 4]].concat();
+        let svd = p::fitting::make_lsq_spline(&x, &y, &knots, 3, None);
+        let interpolated = p::fitting::make_interp_spline(&x, &y, 3);
+        match svd {
+            Ok(reference) => {
+                let result = interpolated.unwrap();
+                for (&actual, &expected) in result.coefficients.iter().zip(&reference.coefficients)
+                {
+                    close(actual, expected, 5e-9, 5e-9);
+                }
+            }
+            Err(_) => assert!(interpolated.is_err()),
+        }
+    }
+}
+
+#[test]
 fn invalid_shapes_domains_and_work_limits_are_errors() {
     let x = [0., 1., 2., 3., 4.];
     let y = [0., 1., 2., 3., 4.];
-    let s = p::make_interp_spline(&x, &y, 3).unwrap();
-    assert!(p::make_interp_spline(&x, &y, 0).is_err());
-    assert!(p::make_interp_spline(&[0., 0.], &[1., 2.], 1).is_err());
-    assert!(p::make_interp_spline(&x, &y[..4], 3).is_err());
-    assert!(p::make_interp_spline(&[0.; 129], &[0.; 129], 1).is_err());
-    assert!(p::make_lsq_spline(&x, &y, &[0., 0., 4., 4.], 1, Some(&[0.; 5])).is_err());
-    assert!(p::make_lsq_spline(&x, &y, &[0., 0., 4., 4.], 1, Some(&[1.; 4])).is_err());
-    assert!(p::make_lsq_spline(&x, &y, &[0., 0., 4., 4., 4.], 1, None).is_err());
-    assert!(p::make_splrep(&x, &y, 3, -1., None).is_err());
-    assert!(p::splrep(&x, &y, 2, 1., None).is_err());
-    assert!(p::splrep(&x, &y, 1, 1., None).is_err());
-    assert!(p::make_smoothing_spline(&x[..4], &y[..4], None, 1.).is_err());
-    assert!(p::make_smoothing_spline(&x, &y, None, -1.).is_err());
-    assert!(p::generate_knots(&x, &y, 3, -1., None).is_err());
-    assert!(p::generate_knots(&[0.; 65], &[0.; 65], 1, 1., None).is_err());
-    assert!(p::make_splprep(&[], None, 1, 0., None).is_err());
-    assert!(p::splprep(&[vec![0., 0.], vec![0., 0.]], None, 1, 0., None).is_err());
-    assert!(p::make_splprep(&[vec![0., 0.], vec![1.]], None, 1, 0., None).is_err());
-    assert!(p::make_splprep(&[vec![0., 0.], vec![1., 1.]], Some(&[0., 0.]), 1, 0., None).is_err());
-    assert!(p::splev(&[-1.], &s, 0, p::SplineExtension::Error).is_err());
-    assert!(p::spalde(&[-1.], &s).is_err());
-    assert!(p::splder(&s, 4).is_err());
-    assert!(p::splantider(&s, usize::MAX).is_err());
-    assert!(p::insert(0., &s, 1).is_err());
-    assert!(p::insert(1., &s, 0).is_err());
-    assert!(p::insert(1., &s, usize::MAX).is_err());
-    assert!(p::sproot(&p::splder(&s, 1).unwrap()).is_err());
+    let s = p::fitting::make_interp_spline(&x, &y, 3).unwrap();
+    assert!(p::fitting::make_interp_spline(&x, &y, 0).is_err());
+    assert!(p::fitting::make_interp_spline(&[0., 0.], &[1., 2.], 1).is_err());
+    assert!(p::fitting::make_interp_spline(&x, &y[..4], 3).is_err());
+    assert!(p::fitting::make_interp_spline(&[0.; 129], &[0.; 129], 1).is_err());
+    assert!(p::fitting::make_lsq_spline(&x, &y, &[0., 0., 4., 4.], 1, Some(&[0.; 5])).is_err());
+    assert!(p::fitting::make_lsq_spline(&x, &y, &[0., 0., 4., 4.], 1, Some(&[1.; 4])).is_err());
+    assert!(p::fitting::make_lsq_spline(&x, &y, &[0., 0., 4., 4., 4.], 1, None).is_err());
+    assert!(p::fitting::make_splrep(&x, &y, 3, -1., None).is_err());
+    assert!(p::fitting::make_splrep(&x, &y, 2, 1., None).is_err());
+    assert!(p::fitting::make_splrep(&x, &y, 1, 1., None).is_err());
+    assert!(p::fitting::make_smoothing_spline(&x[..4], &y[..4], None, 1.).is_err());
+    assert!(p::fitting::make_smoothing_spline(&x, &y, None, -1.).is_err());
+    assert!(p::fitting::generate_knots(&x, &y, 3, -1., None).is_err());
+    assert!(p::fitting::generate_knots(&[0.; 65], &[0.; 65], 1, 1., None).is_err());
+    assert!(p::fitting::make_splprep(&[], None, 1, 0., None).is_err());
+    assert!(p::fitting::make_splprep(&[vec![0., 0.], vec![0., 0.]], None, 1, 0., None).is_err());
+    assert!(p::fitting::make_splprep(&[vec![0., 0.], vec![1.]], None, 1, 0., None).is_err());
+    assert!(
+        p::fitting::make_splprep(&[vec![0., 0.], vec![1., 1.]], Some(&[0., 0.]), 1, 0., None)
+            .is_err()
+    );
+    assert!(p::spline::splev(&[-1.], &s, 0, p::spline::SplineExtension::Error).is_err());
+    assert!(p::spline::spalde(&[-1.], &s).is_err());
+    assert!(p::spline::splder(&s, 4).is_err());
+    assert!(p::spline::splantider(&s, usize::MAX).is_err());
+    assert!(p::spline::insert(0., &s, 1).is_err());
+    assert!(p::spline::insert(1., &s, 0).is_err());
+    assert!(p::spline::insert(1., &s, usize::MAX).is_err());
+    assert!(p::spline::sproot(&p::spline::splder(&s, 1).unwrap()).is_err());
     let bad = Spline {
         degree: usize::MAX,
         ..s.clone()
     };
-    assert!(p::splev(&[], &bad, 0, p::SplineExtension::Zero).is_err());
-    assert!(p::splder(&bad, 0).is_err());
-    assert!(p::splantider(&bad, 0).is_err());
-    assert!(p::spalde(&[], &bad).is_err());
-    assert!(p::splint(0., 1., &bad).is_err());
-    assert!(p::insert(1., &bad, 1).is_err());
-    assert!(p::sproot(&bad).is_err());
+    assert!(p::spline::splev(&[], &bad, 0, p::spline::SplineExtension::Zero).is_err());
+    assert!(p::spline::splder(&bad, 0).is_err());
+    assert!(p::spline::splantider(&bad, 0).is_err());
+    assert!(p::spline::spalde(&[], &bad).is_err());
+    assert!(p::spline::splint(0., 1., &bad).is_err());
+    assert!(p::spline::insert(1., &bad, 1).is_err());
+    assert!(p::spline::sproot(&bad).is_err());
     let empty = Spline {
         knots: vec![],
         coefficients: vec![],
         degree: 0,
     };
-    assert!(p::splev(&[], &empty, 0, p::SplineExtension::Clamp).is_err());
-    let steps = p::insert(1., &s, 4).unwrap();
-    assert!(p::splder(&steps, 1).is_err());
-    assert!(p::splev(&vec![0.; 1_000_000], &s, 0, p::SplineExtension::Clamp).is_err());
+    assert!(p::spline::splev(&[], &empty, 0, p::spline::SplineExtension::Clamp).is_err());
+    let steps = p::spline::insert(1., &s, 4).unwrap();
+    assert!(p::spline::splder(&steps, 1).is_err());
+    assert!(
+        p::spline::splev(
+            &vec![0.; 1_000_000],
+            &s,
+            0,
+            p::spline::SplineExtension::Clamp
+        )
+        .is_err()
+    );
     assert_eq!(
-        p::splev(&[], &s, 0, p::SplineExtension::Error).unwrap(),
+        p::spline::splev(&[], &s, 0, p::spline::SplineExtension::Error).unwrap(),
         vec![]
     );
     assert!(
-        p::approximate_taylor_polynomial(
+        p::polynomial::approximate_taylor_polynomial(
             |_| panic!("invalid controls must precede callbacks"),
             0.,
             32,
@@ -454,9 +544,9 @@ fn invalid_shapes_domains_and_work_limits_are_errors() {
         )
         .is_err()
     );
-    assert!(p::approximate_taylor_polynomial(|_| f64::NAN, 0., 2, 1., None).is_err());
+    assert!(p::polynomial::approximate_taylor_polynomial(|_| f64::NAN, 0., 2, 1., None).is_err());
     assert!(
-        p::approximate_taylor_polynomial(
+        p::polynomial::approximate_taylor_polynomial(
             |_| panic!("indistinguishable nodes must precede callbacks"),
             1e308,
             2,
@@ -466,70 +556,72 @@ fn invalid_shapes_domains_and_work_limits_are_errors() {
         .is_err()
     );
     for bad in [f64::NAN, f64::INFINITY] {
-        assert!(p::splev(&[bad], &s, 0, p::SplineExtension::Clamp).is_err());
-        assert!(p::spalde(&[bad], &s).is_err());
-        assert!(p::splint(bad, 1., &s).is_err());
-        assert!(p::insert(bad, &s, 1).is_err());
-        assert!(p::make_splrep(&x, &y, 3, bad, None).is_err());
-        assert!(p::make_smoothing_spline(&x, &y, None, bad).is_err());
-        assert!(p::generate_knots(&x, &y, 3, bad, None).is_err());
+        assert!(p::spline::splev(&[bad], &s, 0, p::spline::SplineExtension::Clamp).is_err());
+        assert!(p::spline::spalde(&[bad], &s).is_err());
+        assert!(p::spline::splint(bad, 1., &s).is_err());
+        assert!(p::spline::insert(bad, &s, 1).is_err());
+        assert!(p::fitting::make_splrep(&x, &y, 3, bad, None).is_err());
+        assert!(p::fitting::make_smoothing_spline(&x, &y, None, bad).is_err());
+        assert!(p::fitting::generate_knots(&x, &y, 3, bad, None).is_err());
     }
     assert!(
-        p::interpn(
+        p::multidimensional::interpn(
             &[vec![0., 0.]],
             &[1., 2.],
             &[],
-            p::GridMethod::Linear,
+            p::multidimensional::GridMethod::Linear,
             true,
             None
         )
         .is_err()
     );
     assert!(
-        p::interpn(
+        p::multidimensional::interpn(
             &[vec![0., 1.]],
             &[1.],
             &[],
-            p::GridMethod::Linear,
+            p::multidimensional::GridMethod::Linear,
             true,
             None
         )
         .is_err()
     );
     assert!(
-        p::interpn(
+        p::multidimensional::interpn(
             &[vec![0., 1.]],
             &[1., 2.],
             &[vec![2.]],
-            p::GridMethod::Linear,
+            p::multidimensional::GridMethod::Linear,
             true,
             None
         )
         .is_err()
     );
     assert!(
-        p::griddata(
+        p::multidimensional::griddata(
             &[vec![0., 0.], vec![1., 0.]],
             &[1., 2.],
             &[],
-            p::ScatteredMethod::Linear,
+            p::multidimensional::ScatteredMethod::Linear,
             f64::NAN,
             false
         )
         .is_err()
     );
     assert!(
-        p::griddata(
+        p::multidimensional::griddata(
             &[vec![0., 0.], vec![1., 1.]],
             &[1., 2.],
             &[],
-            p::ScatteredMethod::Cubic,
+            p::multidimensional::ScatteredMethod::Cubic,
             f64::NAN,
             false
         )
         .is_err()
     );
-    assert!(p::bisplrep(&x, &y, &y, &[0., 0., 4., 4.], &[0., 0., 4., 4.], 1, 1, None).is_err());
+    assert!(
+        p::fitting::bisplrep(&x, &y, &y, &[0., 0., 4., 4.], &[0., 0., 4., 4.], 1, 1, None).is_err()
+    );
     let surface = SurfaceSpline {
         x_knots: vec![0., 0., 1., 1.],
         y_knots: vec![0., 0., 1., 1.],
@@ -537,10 +629,10 @@ fn invalid_shapes_domains_and_work_limits_are_errors() {
         x_degree: 1,
         y_degree: 1,
     };
-    assert!(p::bisplev(&[1., 0.], &[0.], &surface, 0, 0).is_err());
-    assert!(p::bisplev(&[0.], &[0.], &surface, 2, 0).is_err());
+    assert!(p::multidimensional::bisplev(&[1., 0.], &[0.], &surface, 0, 0).is_err());
+    assert!(p::multidimensional::bisplev(&[0.], &[0.], &surface, 2, 0).is_err());
     assert!(
-        p::bisplev(
+        p::multidimensional::bisplev(
             &[],
             &[],
             &SurfaceSpline {
@@ -557,7 +649,7 @@ fn invalid_shapes_domains_and_work_limits_are_errors() {
         ..surface
     };
     assert_eq!(
-        p::bisplev(&[0.], &[0.], &invalid, 0, 0),
+        p::multidimensional::bisplev(&[0.], &[0.], &invalid, 0, 0),
         Err(Error::DimensionMismatch)
     );
 }

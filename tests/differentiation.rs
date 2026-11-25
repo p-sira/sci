@@ -118,6 +118,10 @@ fn rejects_nonfinite_evaluations_and_arithmetic() {
             Err(Error::NonFiniteEvaluation)
         );
         assert_eq!(
+            d::derivative(|x| if x < 0.0 { value } else { x }, 0.0, 1.0),
+            Err(Error::NonFiniteEvaluation)
+        );
+        assert_eq!(
             d::gradient(|_| value, &[0.0], 1.0),
             Err(Error::NonFiniteEvaluation)
         );
@@ -133,22 +137,27 @@ fn rejects_nonfinite_evaluations_and_arithmetic() {
             d::hessian(|_| value, &[0.0], 1.0),
             Err(Error::NonFiniteEvaluation)
         );
-        // Exercise the mixed stencil separately from center and axial values.
-        assert_eq!(
-            d::hessian(
-                |x| if x.iter().all(|v| *v != 0.0) {
-                    value
-                } else {
-                    0.0
-                },
-                &[0.0, 0.0],
-                1.0
-            ),
-            Err(Error::NonFiniteEvaluation)
-        );
+        // Each Hessian stencil sample can fail independently.
+        for x in [-1.0, 0.0, 1.0] {
+            for y in [-1.0, 0.0, 1.0] {
+                assert_eq!(
+                    d::hessian(
+                        |point| if point == [x, y].as_slice() {
+                            value
+                        } else {
+                            0.0
+                        },
+                        &[0.0, 0.0],
+                        1.0
+                    ),
+                    Err(Error::NonFiniteEvaluation),
+                    "nonfinite Hessian sample at ({x}, {y})"
+                );
+            }
+        }
     }
     assert_eq!(
-        d::derivative(|x| x.signum() * f64::MAX, 0.0, 0.5),
+        d::derivative(|x: f64| x.signum() * f64::MAX, 0.0, 0.5),
         Err(Error::NonFiniteEvaluation)
     );
     assert_eq!(
@@ -205,7 +214,7 @@ fn evaluation_counts_and_symmetric_matrix_interoperate() {
     assert_eq!(calls.replace(0), 9);
     assert_eq!(hessian, vec![vec![2.0, 3.0], vec![3.0, 4.0]]);
     assert_eq!(
-        linalg::matvec(&hessian, &[2.0, -1.0]).unwrap(),
+        linalg::basic::matvec(&hessian, &[2.0, -1.0]).unwrap(),
         vec![1.0, 2.0]
     );
     d::gradient(f, &point, 0.125).unwrap();
@@ -237,13 +246,13 @@ fn evaluation_counts_and_symmetric_matrix_interoperate() {
 
 #[test]
 fn second_order_convergence_and_extreme_scales() {
-    let error = |h| (d::hessian(|x| x[0].powi(4), &[1.0], h).unwrap()[0][0] - 12.0).abs();
+    let error = |h: f64| (d::hessian(|x| x[0].powi(4), &[1.0], h).unwrap()[0][0] - 12.0).abs();
     finite_close(error(0.125) / error(0.0625), 4.0, 1e-12, 0.0);
-    let error = |h| (d::derivative(|x| x.powi(3), 1.0, h).unwrap() - 3.0).abs();
+    let error = |h: f64| (d::derivative(|x| x.powi(3), 1.0, h).unwrap() - 3.0).abs();
     finite_close(error(0.125) / error(0.0625), 4.0, 1e-12, 0.0);
     assert_eq!(d::derivative(|x| x, 0.0, f64::MAX).unwrap(), 1.0);
     assert_eq!(
-        d::derivative(|x| x.signum() * f64::MAX, 0.0, 1.0).unwrap(),
+        d::derivative(|x: f64| x.signum() * f64::MAX, 0.0, 1.0).unwrap(),
         f64::MAX
     );
     assert_eq!(d::derivative(|x| x, 0.0, f64::from_bits(1)).unwrap(), 1.0);
@@ -275,7 +284,7 @@ fn rounded_coordinate_stencils_preserve_linear_and_quadratic_identities() {
         assert_eq!(d::hessian(|x| x[0], &[x], step).unwrap(), vec![vec![0.0]]);
     }
     assert_eq!(
-        d::hessian(|x| (x[0] - 1.0).powi(2), &[1.0], 1.2e-16).unwrap(),
+        d::hessian(|x: &[f64]| (x[0] - 1.0).powi(2), &[1.0], 1.2e-16).unwrap(),
         vec![vec![2.0]]
     );
     assert_eq!(

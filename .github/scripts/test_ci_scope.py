@@ -99,6 +99,7 @@ class ScopeTests(unittest.TestCase):
         self.assertIn("sci-linalg", scope["packages"])
         self.assertIn("linalg-ndarray", scope["features"])
 
+    @patch.dict("os.environ", {"GITHUB_ACTIONS": "false"})
     @patch("ci_scope.subprocess.run")
     def test_scoped_commands(self, run):
         scope = self.select("tests/interpolation.rs")
@@ -133,6 +134,25 @@ class ScopeTests(unittest.TestCase):
                 ],
             ],
         )
+
+    @patch.dict("os.environ", {"GITHUB_ACTIONS": "true"})
+    @patch("ci_scope.subprocess.Popen")
+    def test_failing_rust_test_emits_exact_github_annotations(self, popen):
+        process = popen.return_value.__enter__.return_value
+        process.stdout = iter(
+            [
+                "test lambertw_matches_scipy_on_multiple_sheets ... FAILED\n",
+                "thread 'lambertw_matches_scipy_on_multiple_sheets' panicked at tests/special_complex_lambert.rs:37:13:\n",
+                "line 2745 im: k=-1, z=(-0.367,0.00001), got=1, want=2\n",
+            ]
+        )
+        process.wait.return_value = 101
+        with patch("builtins.print") as output:
+            with self.assertRaises(subprocess.CalledProcessError):
+                ci_scope.run(self.select("tests/interpolation.rs"), "test")
+        messages = [call.args[0] for call in output.call_args_list if call.args]
+        self.assertTrue(any("Rust test failed::lambertw_matches" in x for x in messages))
+        self.assertTrue(any("Rust panic detail::line 2745 im: k=-1" in x for x in messages))
 
     @patch("ci_scope.subprocess.run")
     def test_full_and_inactive_commands(self, run):

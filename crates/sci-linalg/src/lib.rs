@@ -29,14 +29,16 @@
 //!
 //! ## Input conventions
 //!
-//! Shared rows are borrowed; library matrices are copied into shared rows once
-//! at the API boundary. Required real vector arguments also accept library
-//! vectors; optional vectors retain slice signatures. Typed BLAS/LAPACK function
-//! pointers retain shared slice/row signatures. Complex inputs to `cdf2rdf`
-//! retain shared complex vectors/rows. A `0 × n` input with `n > 0` is accepted
-//! by basic products, transpose, and matrix collections, but rejected by APIs
-//! that convert to shared rows, since those rows cannot retain its column count.
-//! Shared output rows have the same limitation. Library-to-library conversions
+//! Numerical calls adapt storage directly to faer without intermediate shared
+//! rows. Faer matrices/views, fixed arrays, and contiguous C/F-order ndarray
+//! storage can be borrowed; other layouts copy directly into backend storage.
+//! Scaling and destructive algorithms retain owned working copies. Required real
+//! vector arguments also accept library vectors; optional vectors retain slice
+//! signatures. Typed BLAS/LAPACK function pointers retain shared slice/row
+//! signatures. Complex inputs to `cdf2rdf` retain shared complex vectors/rows.
+//! Basic products, transpose, and matrix collections support empty axes; dense
+//! numerical algorithms require nonempty axes.
+//! Shared output rows cannot retain a column count for zero-row matrices. Other conversions
 //! preserve empty axes. Untyped empty matrix literals/collections may need a
 //! type annotation; generic function items used as pointers need a concrete
 //! signature. See [`MatrixInput`] and [`VectorInput`] for runnable examples.
@@ -59,10 +61,16 @@
 //! let jacobian = sci_differentiate::jacobian(
 //!     |x| vec![x[0] * x[1], x[0] + x[1]], &[2.0, 3.0], 1e-5,
 //! )?;
-//! let direction = linalg::matvec(&jacobian, &[1.0, 0.0])?;
+//! let direction = linalg::basic::matvec(&jacobian, &[1.0, 0.0])?;
 //! assert!((direction[0] - 3.0).abs() < 1e-8);
 //! # Ok::<(), sci_core::Error>(())
 //! ```
+//!
+//! Numerical routines are organized by mathematical family: [`basic`],
+//! [`decompositions`], [`solvers`], [`eigen`], [`matrix_functions`],
+//! [`structured`], [`subspaces`], and [`interpolative`]. For example,
+//! `sci_linalg::solvers::solve` solves a dense linear system, while
+//! `sci_linalg::decompositions::svd` computes a singular-value decomposition.
 //!
 //! ## Acknowledgments
 //!
@@ -73,7 +81,7 @@
 #![deny(missing_docs, rustdoc::broken_intra_doc_links)]
 
 use sci_core as error;
-pub use sci_core::{Error, Result};
+pub use sci_core::{Error, Matrix, Result};
 mod complex {
     pub use sci_complex::*;
     pub(crate) fn native(z: Complex) -> num_complex::Complex64 {
@@ -83,7 +91,9 @@ mod complex {
         Complex { re: z.re, im: z.im }
     }
 }
-use sci_special as special;
 #[path = "mod.rs"]
 mod implementation;
-pub use implementation::*;
+pub use implementation::{
+    MatrixInput, VectorInput, basic, decompositions, eigen, interpolative, matrix_functions,
+    solvers, structured, subspaces,
+};

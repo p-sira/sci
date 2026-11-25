@@ -3,7 +3,7 @@
 Inventory: SciPy 1.18.1, `scipy-func-list/scipy.cluster.md`. Public names are
 counted in their own namespace; aliases reuse their implementation.
 
-`cluster::vq` has all five inventory names with the existing deterministic,
+`cluster::vq` retains four inventory names, omitting the `py_vq` alias, with the existing deterministic,
 explicit-centroid adaptations documented in `NUMERICS_COVERAGE.md`.
 `cluster::hierarchy` has 27 of 30 functions with tested native signatures.
 
@@ -14,7 +14,7 @@ explicit-centroid adaptations documented in `NUMERICS_COVERAGE.md`.
 - Tree queries: `num_obs_linkage`, `is_valid_linkage`, `is_monotonic`,
   `leaves_list`, `to_tree`, `correspond`, `is_isomorphic`.
 - Statistics: `cophenet`, `inconsistent`, `is_valid_im`, `maxdists`,
-  `maxRstat` (alias of `max_rstat`), `maxinconsts`.
+  `max_rstat` (the `maxRstat` alias is removed), `maxinconsts`.
 - Conversion and partitions: `from_mlab_linkage`, `to_mlab_linkage`, `fcluster`,
   `fclusterdata`, `leaders`, `cut_tree`.
 
@@ -79,7 +79,7 @@ methods are not counted as numerical function coverage.
 ## Verification
 
 The pinned SciPy 1.18.1 / NumPy 2.5.4 generator reads input-only
-`tests/scipy/cluster_cases.json` and writes separate checked-in input and
+`tests/scipy/cluster_cases.jsonl` and writes separate checked-in input and
 expected CSVs. Rust tests exercise every supported public name, check output
 shapes and ordering, and compare f64 values with `3e-12` absolute plus `3e-12`
 relative tolerance. Integer outputs are exact; flat labels are checked up to

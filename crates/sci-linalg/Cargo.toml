@@ -1,6 +1,6 @@
 [package]
 name = "sci-linalg"
-version = "0.2.0"
+version = "0.3.0"
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
@@ -12,7 +12,7 @@ repository = "https://github.com/p-sira/sci"
 categories = ["algorithms", "mathematics", "science"]
 keywords = ["linear-algebra", "matrices", "numerics", "scientific-computing", "faer"]
 readme = false
-include = ["/src/**", "/LICENSE"]
+include = ["/src/**", "/LICENSE", "/LICENSES/**"]
 
 [features]
 default = ["faer"]
@@ -24,7 +24,6 @@ ndarray = ["dep:ndarray"]
 [dependencies]
 sci-core.workspace = true
 sci-complex.workspace = true
-sci-special.workspace = true
 dyn-stack.workspace = true
 faer.workspace = true
 nalgebra = { workspace = true, optional = true }

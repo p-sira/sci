@@ -4,7 +4,7 @@
 # ///
 """Generate integration, interpolation, and vector-quantization references.
 
-Inputs are in numerics_cases.json. CSV fields use semicolon-separated vectors
+Inputs are in numerics_cases.jsonl. CSV fields use semicolon-separated vectors
 and colon-separated matrix rows. Expected results come exclusively from SciPy.
 Extreme integration references normalize samples and spacing before SciPy
 evaluation, then restore units in extended precision. Cancellation references
@@ -17,9 +17,9 @@ their units afterward, to avoid overflow in SciPy's reference implementation.
 Run: uv run tests/scipy/generate_numerics.py, or use the pinned .venv.
 """
 import csv
-import json
 import warnings
 from pathlib import Path
+from case_catalog import read_cases
 import numpy as np
 import scipy
 from scipy import integrate, interpolate
@@ -33,7 +33,7 @@ def encode(v):
     if a.ndim == 0: return str(a.item())
     if a.ndim == 1: return ";".join(str(x) for x in a)
     return ":".join(encode(row) for row in a)
-cases = json.loads((root / "tests/scipy/numerics_cases.json").read_text())
+cases = read_cases(root / "tests/scipy/numerics_cases.jsonl")
 with (root / "tests/fixtures/numerics_inputs.csv").open("w",newline="") as inputs, (root / "tests/fixtures/numerics_expected.csv").open("w",newline="") as expected:
     iw = csv.writer(inputs,lineterminator="\n")
     ew = csv.writer(expected,lineterminator="\n")

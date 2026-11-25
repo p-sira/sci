@@ -57,7 +57,7 @@ fn select(plus: (f64, f64), minus: (f64, f64), alternative: Alternative) -> (f64
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{ks_1samp, Distribution, Alternative};
+/// use sci_stats::{goodness::ks_1samp, distributions::Distribution, inference::Alternative};
 /// assert!(ks_1samp(&[-1., 0., 1.], Distribution::Normal {mean:0.,std_dev:1.}, Alternative::TwoSided)?.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -93,13 +93,16 @@ pub fn ks_1samp(
     };
     let (statistic, location, sign) = select(plus, minus, choice);
     let pvalue = if matches!(alternative, Alternative::TwoSided) {
-        crate::special::kolmogorov(n.sqrt() * statistic)
+        crate::special::probability::kolmogorov(n.sqrt() * statistic)
     } else {
-        crate::special::smirnov(x.len() as i32, statistic)
+        crate::special::probability::smirnov(x.len() as i32, statistic)
     };
     Ok(KsResult {
         statistic,
-        pvalue: finite(pvalue)?,
+        pvalue: match pvalue {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?,
         location,
         sign,
     })
@@ -132,7 +135,7 @@ pub fn ks_1samp(
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{ks_2samp, Alternative};
+/// use sci_stats::{goodness::ks_2samp, inference::Alternative};
 /// assert_eq!(ks_2samp(&[1.,2.], &[1.,2.], Alternative::TwoSided)?.statistic, 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -174,55 +177,19 @@ pub fn ks_2samp(first: &[f64], second: &[f64], alternative: Alternative) -> Resu
     let m = b.len() as f64;
     let effective = n * m / (n + m);
     let pvalue = if matches!(alternative, Alternative::TwoSided) {
-        crate::special::kolmogorov(effective.sqrt() * statistic)
+        crate::special::probability::kolmogorov(effective.sqrt() * statistic)
     } else {
         (-2. * effective * statistic * statistic).exp()
     };
     Ok(KsResult {
         statistic,
-        pvalue: finite(pvalue)?,
+        pvalue: match pvalue {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?,
         location,
         sign,
     })
-}
-/// Two-sample Kolmogorov–Smirnov test; functional alias of ks_2samp.
-///
-/// ## Parameters
-///
-/// Supports SciPy's two-sample overload only. For a one-sample test use ks_1samp with a Distribution.
-///
-/// ## Domain
-///
-/// Nonempty finite samples, continuous-null assumption.
-///
-/// ## Returns
-///
-/// KS distance, asymptotic-limit p-value, location, and sign.
-///
-/// ## Errors
-///
-/// Returns an error for invalid domains, nonfinite inputs, incompatible shapes,
-/// or exceeded work limits, where applicable. Arithmetic overflow returns an
-/// evaluation error; documented NaN and infinity results are permitted.
-///
-/// ## Numerical behavior
-///
-/// Reuses ks_2samp, including its work bounds and finite-sample limitations.
-/// Inputs are limited to 1,048,576 observations. No Python runtime is used.
-///
-/// # Examples
-///
-/// ```
-/// use sci_stats::{kstest, Alternative};
-/// assert_eq!(kstest(&[1.,2.], &[1.,2.], Alternative::TwoSided)?.pvalue, 1.);
-/// # Ok::<(), sci_core::Error>(())
-/// ```
-///
-/// # References
-///
-/// [SciPy `kstest`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.kstest.html).
-pub fn kstest(first: &[f64], second: &[f64], alternative: Alternative) -> Result<KsResult> {
-    ks_2samp(first, second, alternative)
 }
 /// Probability-plot quantiles `F⁻¹(p_i)` paired with sorted observations, using Filliben plotting positions.
 ///
@@ -253,7 +220,7 @@ pub fn kstest(first: &[f64], second: &[f64], alternative: Alternative) -> Result
 /// # Examples
 ///
 /// ```
-/// use sci_stats::{probplot, Distribution};
+/// use sci_stats::{diagnostics::probplot, distributions::Distribution};
 /// assert_eq!(probplot(&[2.,1.], Distribution::Normal {mean:0.,std_dev:1.})?.ordered, vec![1.,2.]);
 /// # Ok::<(), sci_core::Error>(())
 /// ```

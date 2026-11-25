@@ -3,6 +3,7 @@
 mod data;
 use crate::{Error, Result};
 pub use data::*;
+use sci_core::Float;
 
 /// One entry in the CODATA physical-constant table.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -122,11 +123,56 @@ pub fn precision(key: &str) -> Result<f64> {
 /// [SciPy find](https://docs.scipy.org/doc/scipy/reference/generated/scipy.constants.find.html).
 pub fn find(substring: Option<&str>) -> Vec<&'static str> {
     let substring = substring.unwrap_or("").to_lowercase();
+    if substring.is_empty() {
+        return CURRENT_NAMES.to_vec();
+    }
+    let needle = substring.as_bytes();
+    let ascii_needle = substring.is_ascii();
     CURRENT_NAMES
         .iter()
         .copied()
-        .filter(|name| name.to_lowercase().contains(&substring))
+        .filter(|name| {
+            if ascii_needle && name.is_ascii() {
+                // CODATA keys are ASCII. Compare their bytes without
+                // allocating a lowercase String for every entry on each
+                // search. The Unicode fallback preserves generic semantics.
+                name.as_bytes()
+                    .windows(needle.len())
+                    .any(|part| part.eq_ignore_ascii_case(needle))
+            } else {
+                name.to_lowercase().contains(&substring)
+            }
+        })
         .collect()
+}
+
+#[cfg(test)]
+mod find_tests {
+    use super::{CURRENT_NAMES, find};
+
+    #[test]
+    fn ascii_search_matches_original_unicode_lowercase_reference() {
+        for query in [
+            None,
+            Some(""),
+            Some("ELECTRON"),
+            Some("vacUum"),
+            Some("mAgneTic"),
+            Some("m s^-1"),
+            Some("k"),
+            Some("K"), // Unicode lowercase maps the Kelvin sign to ASCII k.
+            Some("İ"), // Dot-above lowercase expansion must not match.
+            Some("xyz-unlisted-constant"),
+        ] {
+            let needle = query.unwrap_or("").to_lowercase();
+            let expected: Vec<_> = CURRENT_NAMES
+                .iter()
+                .copied()
+                .filter(|name| name.to_lowercase().contains(&needle))
+                .collect();
+            assert_eq!(find(query), expected, "query={query:?}");
+        }
+    }
 }
 
 /// Temperature scales accepted by [`convert_temperature`].
@@ -150,14 +196,14 @@ pub enum TemperatureScale {
 /// an enum instead of SciPy's string names and aliases.
 /// ## Domain
 ///
-/// All `f64` values are accepted, including negative absolute temperatures.
+/// All floating-point values are accepted, including negative absolute temperatures.
 /// NaN and infinities propagate, as in SciPy.
 /// ## Returns
 ///
 /// Converted scalar temperature.
 /// ## Numerical behavior
 ///
-/// Two affine `f64` transformations; identical scales return the input exactly.
+/// Two affine transformations in the selected type; identical scales return the input exactly.
 /// # Examples
 ///
 /// ```
@@ -167,21 +213,26 @@ pub enum TemperatureScale {
 /// # References
 ///
 /// [SciPy convert_temperature](https://docs.scipy.org/doc/scipy/reference/generated/scipy.constants.convert_temperature.html).
-pub fn convert_temperature(temperature: f64, from: TemperatureScale, to: TemperatureScale) -> f64 {
+#[numeric_literals::replace_float_literals(T::from(literal).unwrap())]
+pub fn convert_temperature<T: Float>(
+    temperature: T,
+    from: TemperatureScale,
+    to: TemperatureScale,
+) -> T {
     use TemperatureScale::*;
     if from == to {
         return temperature;
     }
     let kelvin = match from {
-        Celsius => temperature + zero_Celsius,
+        Celsius => temperature + T::from(zero_Celsius).unwrap(),
         Kelvin => temperature,
-        Fahrenheit => (temperature - 32.0) * (5.0 / 9.0) + zero_Celsius,
+        Fahrenheit => (temperature - 32.0) * (5.0 / 9.0) + T::from(zero_Celsius).unwrap(),
         Rankine => temperature * (5.0 / 9.0),
     };
     match to {
-        Celsius => kelvin - zero_Celsius,
+        Celsius => kelvin - T::from(zero_Celsius).unwrap(),
         Kelvin => kelvin,
-        Fahrenheit => (kelvin - zero_Celsius) * (9.0 / 5.0) + 32.0,
+        Fahrenheit => (kelvin - T::from(zero_Celsius).unwrap()) * (9.0 / 5.0) + 32.0,
         Rankine => kelvin * (9.0 / 5.0),
     }
 }
@@ -200,7 +251,7 @@ pub fn convert_temperature(temperature: f64, from: TemperatureScale, to: Tempera
 /// Frequency in hertz.
 /// ## Numerical behavior
 ///
-/// One `f64` division using the exact SI speed of light.
+/// One division in the selected type using the exact SI speed of light.
 /// # Examples
 ///
 /// ```
@@ -209,8 +260,8 @@ pub fn convert_temperature(temperature: f64, from: TemperatureScale, to: Tempera
 /// # References
 ///
 /// [SciPy lambda2nu](https://docs.scipy.org/doc/scipy/reference/generated/scipy.constants.lambda2nu.html).
-pub fn lambda2nu(wavelength: f64) -> f64 {
-    c / wavelength
+pub fn lambda2nu<T: Float>(wavelength: T) -> T {
+    T::from(c).unwrap() / wavelength
 }
 
 /// Converts frequency in hertz to wavelength in metres: `λ = c / ν`.
@@ -227,7 +278,7 @@ pub fn lambda2nu(wavelength: f64) -> f64 {
 /// Wavelength in metres.
 /// ## Numerical behavior
 ///
-/// One `f64` division using the exact SI speed of light.
+/// One division in the selected type using the exact SI speed of light.
 /// # Examples
 ///
 /// ```
@@ -236,6 +287,6 @@ pub fn lambda2nu(wavelength: f64) -> f64 {
 /// # References
 ///
 /// [SciPy nu2lambda](https://docs.scipy.org/doc/scipy/reference/generated/scipy.constants.nu2lambda.html).
-pub fn nu2lambda(frequency: f64) -> f64 {
-    c / frequency
+pub fn nu2lambda<T: Float>(frequency: T) -> T {
+    T::from(c).unwrap() / frequency
 }

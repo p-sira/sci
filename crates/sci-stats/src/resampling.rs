@@ -81,7 +81,7 @@ fn resample_work(length: usize, repetitions: usize) -> Result<()> {
 /// ## Examples
 ///
 /// ```
-/// use sci_stats::{permutation_test, mean, Alternative};
+/// use sci_stats::{resampling::permutation_test, descriptive::mean, inference::Alternative};
 /// let r = permutation_test(&[1.,2.], &[3.,4.], |x,y| Ok(mean(x)?-mean(y)?), Alternative::Less)?;
 /// assert_eq!(r.null_distribution.len(), 6);
 /// # Ok::<(), sci_core::Error>(())
@@ -107,7 +107,10 @@ where
             "exact permutation combined sample limit is 20",
         ));
     }
-    let observed = finite(statistic(x, y)?)?;
+    let observed = match statistic(x, y)? {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     let pooled = x.iter().chain(y).copied().collect::<Vec<_>>();
     let mut partition = (0..x.len()).collect::<Vec<_>>();
     let mut null = Vec::new();
@@ -125,7 +128,10 @@ where
                 second.push(v);
             }
         }
-        null.push(finite(statistic(&first, &second)?)?);
+        null.push(match statistic(&first, &second)? {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?);
         let Some(i) = (0..partition.len())
             .rev()
             .find(|&i| partition[i] < total - partition.len() + i)
@@ -180,7 +186,7 @@ where
 ///
 /// ```
 /// let draws: &[&[f64]] = &[&[0.,1.], &[1.,2.], &[2.,3.]];
-/// let r = sci_stats::monte_carlo_test(&[2.,3.], draws, sci_stats::mean, sci_stats::Alternative::Greater)?;
+/// let r = sci_stats::resampling::monte_carlo_test(&[2.,3.], draws, sci_stats::descriptive::mean, sci_stats::inference::Alternative::Greater)?;
 /// assert_eq!(r.pvalue, 0.5);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -205,10 +211,16 @@ where
         }
         sample(row, 1)?;
     }
-    let observed = finite(statistic(values)?)?;
+    let observed = match statistic(values)? {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     let null = null_samples
         .iter()
-        .map(|row| finite(statistic(row)?))
+        .map(|row| match statistic(row)? {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        })
         .collect::<Result<Vec<_>>>()?;
     Ok(ResamplingResult {
         statistic: observed,
@@ -279,7 +291,7 @@ pub struct BootstrapResult {
 ///
 /// ```
 /// let indices: &[&[usize]] = &[&[0,0,1], &[0,1,2], &[1,2,2]];
-/// let r = sci_stats::bootstrap(&[1.,2.,3.], indices, sci_stats::mean, 0.9, sci_stats::BootstrapMethod::Percentile)?;
+/// let r = sci_stats::resampling::bootstrap(&[1.,2.,3.], indices, sci_stats::descriptive::mean, 0.9, sci_stats::resampling::BootstrapMethod::Percentile)?;
 /// assert_eq!(r.statistic, 2.);
 /// assert_eq!(r.bootstrap_distribution.len(), 3);
 /// # Ok::<(), sci_core::Error>(())
@@ -313,22 +325,34 @@ where
             return Err(Error::InvalidInput("bootstrap index out of bounds"));
         }
     }
-    let observed = finite(statistic(values)?)?;
+    let observed = match statistic(values)? {
+        value if value.is_finite() => Ok(value),
+        _ => Err(crate::Error::NonFiniteEvaluation),
+    }?;
     let mut resample = vec![0.; values.len()];
     let mut distribution = Vec::with_capacity(indices.len());
     for row in indices {
         for (v, &i) in resample.iter_mut().zip(*row) {
             *v = values[i];
         }
-        distribution.push(finite(statistic(&resample)?)?);
+        distribution.push(match statistic(&resample)? {
+            value if value.is_finite() => Ok(value),
+            _ => Err(crate::Error::NonFiniteEvaluation),
+        }?);
     }
     let standard_error = std(&distribution, 1)?;
     let mut lower = quantile(&distribution, (1. - confidence) / 2.)?;
     let mut upper = quantile(&distribution, 0.5 + confidence / 2.)?;
     if method == BootstrapMethod::Basic {
         (lower, upper) = (
-            finite(observed + (observed - upper))?,
-            finite(observed + (observed - lower))?,
+            match observed + (observed - upper) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?,
+            match observed + (observed - lower) {
+                value if value.is_finite() => Ok(value),
+                _ => Err(crate::Error::NonFiniteEvaluation),
+            }?,
         );
     }
     Ok(BootstrapResult {
@@ -374,7 +398,7 @@ where
 /// ## Examples
 ///
 /// ```
-/// let r = sci_stats::bws_test(&[1.,2.], &[3.,4.], sci_stats::Alternative::TwoSided)?;
+/// let r = sci_stats::resampling::bws_test(&[1.,2.], &[3.,4.], sci_stats::inference::Alternative::TwoSided)?;
 /// assert!(r.statistic > 0.);
 /// # Ok::<(), sci_core::Error>(())
 /// ```
@@ -392,7 +416,14 @@ pub fn bws_test(x: &[f64], y: &[f64], alternative: Alternative) -> Result<Resamp
     let ranks = rankdata(&pooled, RankMethod::Average)?;
     let statistic = |a: &[f64], b: &[f64]| -> Result<f64> {
         let group = |ranks: &[f64], other: usize| -> Result<f64> {
-            let ordered = sorted(ranks)?;
+            // An exact BWS test permits at most twenty pooled observations.
+            // Sort the ranks on the stack for each partition: the original
+            // sorting order is unchanged, without two heap allocations per
+            // callback across as many as 184756 partitions.
+            let mut buffer = [0.; 20];
+            let ordered = &mut buffer[..ranks.len()];
+            ordered.copy_from_slice(ranks);
+            ordered.sort_by(f64::total_cmp);
             let n = ranks.len() as f64;
             let m = other as f64;
             Ok(ordered
@@ -429,4 +460,87 @@ pub fn bws_test(x: &[f64], y: &[f64], alternative: Alternative) -> Result<Resamp
             Alternative::Greater
         },
     )
+}
+
+#[cfg(test)]
+mod bws_stack_sort_tests {
+    use super::*;
+
+    fn heap_reference(x: &[f64], y: &[f64], alternative: Alternative) -> Result<ResamplingResult> {
+        let pooled = x.iter().chain(y).copied().collect::<Vec<_>>();
+        let ranks = rankdata(&pooled, RankMethod::Average)?;
+        let statistic = |a: &[f64], b: &[f64]| -> Result<f64> {
+            let group = |ranks: &[f64], other: usize| -> Result<f64> {
+                let ordered = sorted(ranks)?;
+                let n = ranks.len() as f64;
+                let m = other as f64;
+                Ok(ordered
+                    .iter()
+                    .enumerate()
+                    .map(|(i, &r)| {
+                        let position = (i + 1) as f64;
+                        let d = r - (m + n) / n * position;
+                        let numerator = if alternative == Alternative::TwoSided {
+                            d * d
+                        } else {
+                            d * d.abs()
+                        };
+                        let f = position / (n + 1.);
+                        numerator / (f * (1. - f) * m * (m + n))
+                    })
+                    .sum())
+            };
+            let bx = group(a, b.len())?;
+            let by = group(b, a.len())?;
+            Ok(if alternative == Alternative::TwoSided {
+                (bx + by) / 2.
+            } else {
+                (bx - by) / 2.
+            })
+        };
+        permutation_test(
+            &ranks[..x.len()],
+            &ranks[x.len()..],
+            statistic,
+            if alternative == Alternative::Less {
+                Alternative::Less
+            } else {
+                Alternative::Greater
+            },
+        )
+    }
+
+    #[test]
+    fn stack_sorted_bws_matches_original_heap_sort_bitwise() -> Result<()> {
+        let cases: &[(&[f64], &[f64])] = &[
+            (&[1., 2.], &[3., 4.]),
+            (&[0., -0., 1.], &[0., 2., 2., 3.]),
+            (&[2., 1., 3., 4., 5.], &[3., 7., 5., 9., 11.]),
+            (&[1., 1., 1., 1.], &[1., 1., 1., 1.]),
+        ];
+        for &(x, y) in cases {
+            for alternative in [
+                Alternative::Less,
+                Alternative::Greater,
+                Alternative::TwoSided,
+            ] {
+                let actual = bws_test(x, y, alternative)?;
+                let expected = heap_reference(x, y, alternative)?;
+                assert_eq!(actual.statistic.to_bits(), expected.statistic.to_bits());
+                assert_eq!(actual.pvalue.to_bits(), expected.pvalue.to_bits());
+                assert_eq!(
+                    actual.null_distribution.len(),
+                    expected.null_distribution.len()
+                );
+                for (a, b) in actual
+                    .null_distribution
+                    .iter()
+                    .zip(&expected.null_distribution)
+                {
+                    assert_eq!(a.to_bits(), b.to_bits());
+                }
+            }
+        }
+        Ok(())
+    }
 }

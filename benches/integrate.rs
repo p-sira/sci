@@ -4,7 +4,7 @@
 
 mod common;
 
-use common::{linspace, sine_signal};
+use common::{linspace, repeated, sine_signal};
 use divan::{Bencher, black_box};
 
 fn main() {
@@ -28,15 +28,24 @@ mod sampled {
     fn trapezoid(bencher: Bencher) {
         let y = sine_signal(N);
         let x = uneven_coordinates(N);
-        bencher
-            .bench(|| sci::integrate::trapezoid(black_box(&y), Some(black_box(&x)), DX).unwrap());
+        bencher.bench(|| {
+            sci::integrate::sampled::trapezoid(black_box(&y), Some(black_box(&x)), DX).unwrap()
+        });
+    }
+
+    /// Equally spaced data, including allocation of the spacing vector.
+    #[divan::bench]
+    fn trapezoid_uniform(bencher: Bencher) {
+        let y = sine_signal(N);
+        bencher.bench(|| sci::integrate::sampled::trapezoid(black_box(&y), None, DX).unwrap());
     }
 
     #[divan::bench]
     fn cumulative_trapezoid(bencher: Bencher) {
         let y = sine_signal(N);
         bencher.bench(|| {
-            sci::integrate::cumulative_trapezoid(black_box(&y), None, DX, Some(0.0)).unwrap()
+            sci::integrate::sampled::cumulative_trapezoid(black_box(&y), None, DX, Some(0.0))
+                .unwrap()
         });
     }
 
@@ -44,35 +53,59 @@ mod sampled {
     fn simpson(bencher: Bencher) {
         let y = sine_signal(N);
         let x = uneven_coordinates(N);
-        bencher.bench(|| sci::integrate::simpson(black_box(&y), Some(black_box(&x)), DX).unwrap());
+        bencher.bench(|| {
+            sci::integrate::sampled::simpson(black_box(&y), Some(black_box(&x)), DX).unwrap()
+        });
+    }
+
+    /// Composite Simpson integration with constant spacing.
+    #[divan::bench]
+    fn simpson_uniform(bencher: Bencher) {
+        let y = sine_signal(N);
+        bencher.bench(|| sci::integrate::sampled::simpson(black_box(&y), None, DX).unwrap());
     }
 
     #[divan::bench]
     fn cumulative_simpson(bencher: Bencher) {
         let y = sine_signal(N);
-        bencher
-            .bench(|| sci::integrate::cumulative_simpson(black_box(&y), None, DX, None).unwrap());
+        bencher.bench(|| {
+            sci::integrate::sampled::cumulative_simpson(black_box(&y), None, DX, None).unwrap()
+        });
     }
 
     #[divan::bench]
     fn romb(bencher: Bencher) {
         let y = sine_signal(N + 1);
-        bencher.bench(|| sci::integrate::romb(black_box(&y), DX).unwrap());
+        bencher.bench(|| sci::integrate::sampled::romb(black_box(&y), DX).unwrap());
     }
 }
 
 mod quadrature {
     use super::*;
 
-    /// 16-point Gauss–Legendre rule (includes computing the nodes and weights).
+    /// Repeated 16-point Gauss–Legendre integration, including rule construction.
     #[divan::bench]
     fn fixed_quad(bencher: Bencher) {
         bencher.bench(|| {
-            sci::integrate::fixed_quad(
-                |x| (-x * x).exp() * x.cos(),
+            sci::integrate::quadrature::fixed_quad(
+                |x: f64| (-x * x).exp() * x.cos(),
                 black_box(-3.0),
                 black_box(3.0),
                 16,
+            )
+            .unwrap()
+        });
+    }
+
+    /// Repeated high-order calls, including Legendre rule construction.
+    #[divan::bench]
+    fn fixed_quad_reused_high_order(bencher: Bencher) {
+        bencher.bench(|| {
+            sci::integrate::quadrature::fixed_quad(
+                |x: f64| x * x + 1.0,
+                black_box(-1.0),
+                black_box(1.0),
+                128,
             )
             .unwrap()
         });
@@ -82,6 +115,8 @@ mod quadrature {
     #[divan::bench]
     fn newton_cotes(bencher: Bencher) {
         let nodes: Vec<f64> = (0..=12).map(f64::from).collect();
-        bencher.bench(|| sci::integrate::newton_cotes(black_box(&nodes)).unwrap());
+        repeated(bencher, || {
+            sci::integrate::quadrature::newton_cotes(black_box(&nodes)).unwrap()
+        });
     }
 }

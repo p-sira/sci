@@ -1,6 +1,6 @@
 # Added SciPy numerical modules
 
-These modules provide 44 public inventory names in four namespaces.
+These modules provide 41 public inventory names in four namespaces.
 It does **not** establish complete public SciPy parity. Scope comes from
 [SCIPY_FUNCTIONS.md](SCIPY_FUNCTIONS.md), using the public namespaces, with
 compatibility paths and Python/Cython duplicates collapsed.
@@ -9,11 +9,12 @@ compatibility paths and Python/Cython duplicates collapsed.
 | --- | --- | ---: |
 | `scipy.constants` | `constants` | 7 / 7 |
 | `scipy.integrate` | `integrate` | 7 / 20 |
-| `scipy.interpolate` | `interpolate` | 25 / 25 |
-| `scipy.cluster.vq` | `cluster::vq` | 5 / 5 |
-| `scipy.cluster.hierarchy` | Absent | 0 / 30 |
+| `scipy.interpolate` | `interpolate` | 23 / 25 |
+| `scipy.cluster.vq` | `cluster::vq` | 4 / 5 |
+| `scipy.cluster.hierarchy` | `cluster::hierarchy` | 27 / 30 |
 
-These counts cover function names, including the deprecated `py_vq` alias.
+These counts omit redundant `py_vq`, `splrep`, and `splprep` aliases.
+Use `vq`, `make_splrep`, and `make_splprep` respectively.
 Classes, their methods, and NumPy vectorized overloads are not counted.
 There are no placeholder implementations.
 
@@ -146,7 +147,7 @@ See [CLUSTER_COVERAGE.md](CLUSTER_COVERAGE.md) for limits and the three remainin
 
 ## Verification
 
-`tests/scipy/constants_cases.json` and `numerics_cases.json` contain inputs only.
+`tests/scipy/constants_cases.jsonl` and `numerics_cases.jsonl` contain inputs only.
 Pinned generators use SciPy 1.18.1 and NumPy 2.5.4; the Rust tests ingest separate
 checked-in input and expected CSVs. There are 715 numerical cases, 19 constant
 cases, and comparisons for all 445 CODATA table entries. The constants generator
@@ -175,7 +176,7 @@ sample values before SciPy evaluation and restore units afterward, using the
 interpolants' homogeneity under constant value scaling. Rust property tests check
 scale invariance, signed-zero node reproduction, and errors for overflowing results.
 The additional spline/grid fixture suite brings interpolation coverage to
-25 exported/tested names and 167 reference cases, with compatibility aliases
+23 exported/tested names and 167 reference cases, with removed compatibility aliases
 collapsed. See the dedicated coverage report for signature adaptations.
 
 ```console
@@ -191,7 +192,7 @@ RUSTDOCFLAGS='-D warnings' cargo doc --no-deps
 ## Wider remaining scope
 
 Full public SciPy coverage remains incomplete. Entire namespaces still absent
-include `sparse` (including graph and sparse linear algebra), `ndimage`, `odr`,
+include `sparse` (including sparse linear algebra), `graph`, `ndimage`, `odr`,
 `io` and `datasets`. The ten distinct FFTPACK periodic operators live in `fft`;
 four lower-level kernel/cache names remain absent (see
 [FFT_COVERAGE.md](FFT_COVERAGE.md)). `optimize` has seven tested main-namespace names (see

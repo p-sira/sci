@@ -11,8 +11,8 @@ Absolute/relative tolerance is 2e-10, also used by the main statistics fixtures.
 """
 
 import csv
-import json
 from pathlib import Path
+from case_catalog import read_cases
 
 import numpy as np
 import scipy
@@ -22,7 +22,7 @@ if (np.__version__, scipy.__version__) != ("2.5.4", "1.18.1"):
     raise RuntimeError("Use NumPy 2.5.4 and SciPy 1.18.1")
 
 ROOT = Path(__file__).resolve().parent
-cases = json.loads((ROOT / "range_backend_cases.json").read_text())
+cases = read_cases(ROOT / "range_backend_cases.jsonl")
 with (
     (ROOT.parent / "fixtures/range_inputs.csv").open("w", newline="") as inputs,
     (ROOT.parent / "fixtures/range_expected.csv").open("w", newline="") as expected,
