@@ -20,6 +20,7 @@ fn mathieu_spectrum<const VECTOR: bool>(
     m: i32,
     q: f64,
     vector_margin: usize,
+    coefficient_capacity: usize,
 ) -> (f64, Vec<f64>) {
     // Characteristic values use a short truncation. Beyond row
     // j = m/2 + 4*sqrt(|q|), (2j)^2 exceeds the eigenvalue by more than 60|q|,
@@ -108,7 +109,15 @@ fn mathieu_spectrum<const VECTOR: bool>(
                     }
                 }
             }
-            mathieu_vector(kd, q, rank, eigenvalue, vector_size, diagonal_at)
+            mathieu_vector(
+                kd,
+                q,
+                rank,
+                eigenvalue,
+                vector_size,
+                coefficient_capacity,
+                diagonal_at,
+            )
         } else {
             (eigenvalue, Vec::new())
         }
@@ -515,11 +524,15 @@ fn mathieu_vector(
     rank: usize,
     eigenvalue: f64,
     size: usize,
+    coefficient_capacity: usize,
     diagonal_at: impl Fn(usize) -> f64,
 ) -> (f64, Vec<f64>) {
     let off_at = |j: usize| if kd == 1 && j == 0 { q * SQRT_2 } else { q };
+    // Reserve any padding requested by the caller without retaining the
+    // factorization workspace in the returned vector.
+    let mut coefficients = Vec::with_capacity(size.max(coefficient_capacity));
+    coefficients.resize(size, 0.0);
     if q == 0.0 {
-        let mut coefficients = vec![0.0; size];
         coefficients[rank] = if kd == 1 && rank == 0 {
             1.0 / SQRT_2
         } else {
@@ -528,23 +541,21 @@ fn mathieu_vector(
         return (eigenvalue, coefficients);
     }
     let shift = eigenvalue + 8.0 * f64::EPSILON * eigenvalue.abs().max(1.0);
-    // Reserve the returned coefficients and both factorization buffers in a
-    // single allocation. Only the active rows are initialized; the scratch
-    // portion is truncated before returning the result.
-    let mut result = vec![0.0; 3 * size];
-    let (coefficients, workspace) = result.split_at_mut(size);
-    let (pivots, factors) = workspace.split_at_mut(size);
-    pivots[0] = diagonal_at(0) - shift;
-    if pivots[0].abs() < 1e-300 {
-        pivots[0] = 1e-300;
+    // Build the shifted factorization once, without zero-filling scratch.
+    let mut rows = Vec::with_capacity(size);
+    let mut pivot = diagonal_at(0) - shift;
+    if pivot.abs() < 1e-300 {
+        pivot = 1e-300;
     }
+    rows.push((pivot, 0.0));
     for j in 1..size {
         let off = off_at(j - 1);
-        factors[j] = off / pivots[j - 1];
-        pivots[j] = diagonal_at(j) - shift - factors[j] * off;
-        if pivots[j].abs() < 1e-300 {
-            pivots[j] = 1e-300;
+        let factor = off / pivot;
+        pivot = diagonal_at(j) - shift - factor * off;
+        if pivot.abs() < 1e-300 {
+            pivot = 1e-300;
         }
+        rows.push((pivot, factor));
     }
     // A basis vector at the requested harmonic has an appreciable overlap
     // with its eigenmode. With a shift within roundoff of the eigenvalue,
@@ -553,11 +564,11 @@ fn mathieu_vector(
     coefficients[rank] = 1.0;
     for _ in 0..2 {
         for j in 1..size {
-            coefficients[j] -= factors[j] * coefficients[j - 1];
+            coefficients[j] -= rows[j].1 * coefficients[j - 1];
         }
-        coefficients[size - 1] /= pivots[size - 1];
+        coefficients[size - 1] /= rows[size - 1].0;
         for j in (0..size - 1).rev() {
-            coefficients[j] = (coefficients[j] - off_at(j) * coefficients[j + 1]) / pivots[j];
+            coefficients[j] = (coefficients[j] - off_at(j) * coefficients[j + 1]) / rows[j].0;
         }
         let norm = coefficients.iter().map(|x| x * x).sum::<f64>().sqrt();
         if !norm.is_finite() || norm == 0.0 {
@@ -574,16 +585,15 @@ fn mathieu_vector(
         1.0
     };
     coefficients.iter_mut().for_each(|x| *x *= phase);
-    result.truncate(size);
-    (eigenvalue, result)
+    (eigenvalue, coefficients)
 }
 /// Extra rows of the established coefficient-vector truncation.
 const COEFFICIENT_MARGIN: usize = 48;
 pub(super) fn cva2(kd: i32, m: i32, q: f64) -> f64 {
-    mathieu_spectrum::<false>(kd, m, q, 0).0
+    mathieu_spectrum::<false>(kd, m, q, 0, 0).0
 }
 pub(super) fn fcoef(kd: i32, m: i32, q: f64, _a: f64, out: &mut [f64]) {
-    let (_, coefficients) = mathieu_spectrum::<true>(kd, m, q, COEFFICIENT_MARGIN);
+    let (_, coefficients) = mathieu_spectrum::<true>(kd, m, q, COEFFICIENT_MARGIN, 0);
     out.fill(0.0);
     for (a, b) in out.iter_mut().zip(coefficients) {
         *a = b;
@@ -612,7 +622,7 @@ fn angular(m: u32, q: f64, x: f64, odd: bool) -> (f64, f64) {
     };
     // Coefficients more than 16 rows beyond the significant ones are below
     // 1e-28 (see `mathieu_spectrum`) and cannot affect either sum.
-    let (_, coefficients) = mathieu_spectrum::<true>(kd, m as i32, q, 16);
+    let (_, coefficients) = mathieu_spectrum::<true>(kd, m as i32, q, 16, 0);
     let x = x.to_radians();
     // cos(kx) and sin(kx) for k = first + 2j follow from one rotation by 2x
     // per term instead of a trigonometric evaluation per term. The
@@ -682,26 +692,30 @@ fn coefficient_count(m: u32, q: f64) -> usize {
     (qm + 0.5 * m as f64) as usize
 }
 pub(crate) fn mathieu_even_coef(m: u32, q: f64) -> Result<Vec<f64>, &'static str> {
+    let count = coefficient_count(m, q);
     let (_, mut out) = mathieu_spectrum::<true>(
         if m.is_multiple_of(2) { 1 } else { 2 },
         m as i32,
         q,
         COEFFICIENT_MARGIN,
+        count,
     );
-    out.resize(coefficient_count(m, q), 0.0);
+    out.resize(count, 0.0);
     Ok(out)
 }
 pub(crate) fn mathieu_odd_coef(m: u32, q: f64) -> Result<Vec<f64>, &'static str> {
     if m == 0 {
         return Err("odd Mathieu order must be positive");
     }
+    let count = coefficient_count(m, q);
     let (_, mut out) = mathieu_spectrum::<true>(
         if m.is_multiple_of(2) { 4 } else { 3 },
         m as i32,
         q,
         COEFFICIENT_MARGIN,
+        count,
     );
-    out.resize(coefficient_count(m, q), 0.0);
+    out.resize(count, 0.0);
     Ok(out)
 }
 
