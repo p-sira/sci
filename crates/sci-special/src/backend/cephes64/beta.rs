@@ -76,21 +76,31 @@ fn gamma_moderate_positive(mut x: f64) -> f64 {
         return scale;
     }
     let t = x - 2.0;
-    let p = 1.60119522476751861407e-4_f64
-        .mul_add(t, 1.19135147006586384913e-3)
-        .mul_add(t, 1.04213797561761569935e-2)
-        .mul_add(t, 4.76367800457137231464e-2)
-        .mul_add(t, 2.07448227648435975150e-1)
-        .mul_add(t, 4.94214826801497100753e-1)
-        .mul_add(t, 9.99999999999999996796e-1);
-    let q = (-2.31581873324120129819e-5_f64)
-        .mul_add(t, 5.39605580493303397842e-4)
-        .mul_add(t, -4.45641913851797240494e-3)
-        .mul_add(t, 1.18139785222060435552e-2)
-        .mul_add(t, 3.58236398605498653373e-2)
-        .mul_add(t, -2.34591795718243348568e-1)
-        .mul_add(t, 7.14304917030273074085e-2)
-        .mul_add(t, 1.00000000000000000320);
+    // Plain multiply-add Horner steps, as in Cephes `polevl`. `f64::mul_add`
+    // is not a single instruction unless the build enables the `fma` target
+    // feature; otherwise every step is an out-of-line runtime-dispatched call.
+    let p = ((((((1.60119522476751861407e-4 * t + 1.19135147006586384913e-3) * t
+        + 1.04213797561761569935e-2)
+        * t
+        + 4.76367800457137231464e-2)
+        * t
+        + 2.07448227648435975150e-1)
+        * t
+        + 4.94214826801497100753e-1)
+        * t)
+        + 9.99999999999999996796e-1;
+    let q = (((((((-2.31581873324120129819e-5 * t + 5.39605580493303397842e-4) * t
+        - 4.45641913851797240494e-3)
+        * t
+        + 1.18139785222060435552e-2)
+        * t
+        + 3.58236398605498653373e-2)
+        * t
+        - 2.34591795718243348568e-1)
+        * t
+        + 7.14304917030273074085e-2)
+        * t)
+        + 1.00000000000000000320;
     scale * (p / q)
 }
 
@@ -316,5 +326,30 @@ mod tests {
         assert_eq!(lbeta(-2.0, 2.0), -2.0_f64.ln());
         assert_eq!(lbeta(-2.0, 3.0), f64::INFINITY);
         assert_eq!(beta(-2.0, 3.0), f64::INFINITY);
+    }
+
+    #[test]
+    fn moderate_positive_fast_path_matches_reference() {
+        // Every pair has a, b >= 0.1 and a + b <= 32, so `lbeta` takes the
+        // `gamma_moderate_positive` path. References: 50-digit mpmath
+        // `log(beta(a, b))`.
+        for (a, b, reference) in [
+            (0.1, 0.1, 2.9813614810376273379),
+            (0.5, 2.5, 0.16390063283767393729),
+            (2.0, 3.0, -2.4849066497880003102),
+            (5.1, 10.1, -9.3701720816571133499),
+            (7.3, 9.9, -11.508697231614018221),
+            (12.5, 19.4, -21.446137338948058611),
+            (0.25, 31.5, 0.42850960729051762287),
+            (16.0, 16.0, -22.293680785633527499),
+        ] {
+            for (x, y) in [(a, b), (b, a)] {
+                let result = lbeta(x, y);
+                assert!(
+                    (result - reference).abs() <= 1e-14 * reference.abs().max(1.0),
+                    "lbeta({x},{y})={result}, reference={reference}"
+                );
+            }
+        }
     }
 }
