@@ -197,13 +197,15 @@ mod tests {
     fn tukey_zero_within_group_variance_retains_nan_and_infinite_tails() -> Result<()> {
         let groups: &[&[f64]] = &[&[0., 0.], &[0., 0.], &[1., 1.], &[1., 1.]];
         let observed = tukey_hsd(groups)?;
-        for i in 0..groups.len() {
-            assert!(observed.pvalue[i][i].is_nan());
-            for j in 0..groups.len() {
+        assert_eq!(observed.pvalue.len(), groups.len());
+        for (i, row) in observed.pvalue.iter().enumerate() {
+            assert_eq!(row.len(), groups.len());
+            assert!(row[i].is_nan());
+            for (j, &pvalue) in row.iter().enumerate() {
                 if i != j {
-                    assert_eq!(observed.pvalue[i][j].is_nan(), i / 2 == j / 2);
+                    assert_eq!(pvalue.is_nan(), i / 2 == j / 2);
                     if i / 2 != j / 2 {
-                        assert_eq!(observed.pvalue[i][j], 0.);
+                        assert_eq!(pvalue, 0.);
                     }
                 }
             }
