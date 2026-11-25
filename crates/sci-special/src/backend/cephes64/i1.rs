@@ -1,8 +1,8 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*
-* Cephes Math Library Release 2.8:  June, 2000
-* Copyright 1985, 1987, 2000 by Stephen L. Moshier
-*/
+ * Cephes Math Library Release 2.8:  June, 2000
+ * Copyright 1985, 1987, 2000 by Stephen L. Moshier
+ */
 
 #![allow(clippy::excessive_precision)]
 
@@ -12,10 +12,10 @@ use sci_core::Float;
 use crate::backend::cephes64::chbevl;
 
 /* Chebyshev coefficients for exp(-x) I1(x) / x
-* in the interval [0,8].
-*
-* lim(x->0){ exp(-x) I1(x) / x } = 1/2.
-*/
+ * in the interval [0,8].
+ *
+ * lim(x->0){ exp(-x) I1(x) / x } = 1/2.
+ */
 
 const A: [f64; 29] = [
     2.77791411276104639959E-18,
@@ -50,10 +50,10 @@ const A: [f64; 29] = [
 ];
 
 /* Chebyshev coefficients for exp(-x) sqrt(x) I1(x)
-* in the inverted interval [8,infinity].
-*
-* lim(x->inf){ exp(-x) sqrt(x) I1(x) } = 1/sqrt(2pi).
-*/
+ * in the inverted interval [8,infinity].
+ *
+ * lim(x->inf){ exp(-x) sqrt(x) I1(x) } = 1/sqrt(2pi).
+ */
 const B: [f64; 25] = [
     7.51729631084210481353E-18,
     4.41434832307170791151E-18,

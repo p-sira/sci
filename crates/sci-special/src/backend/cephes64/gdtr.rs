@@ -2,49 +2,49 @@
 use sci_core::Float;
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     gdtr.c
-*
-*     Gamma distribution function
-*
-*
-*
-* SYNOPSIS:
-*
-* double a, b, x, y, gdtr();
-*
-* y = gdtr( a, b, x );
-*
-*
-*
-* DESCRIPTION:
-*
-* Returns the integral from zero to x of the Gamma probability
-* density function:
-*
-*
-*                x
-*        b       -
-*       a       | |   b-1  -at
-* y =  -----    |    t    e    dt
-*       -     | |
-*      | (b)   -
-*               0
-*
-*  The incomplete Gamma integral is used, according to the
-* relation
-*
-* y = igam( b, ax ).
-*
-*
-* ACCURACY:
-*
-* See igam().
-*
-* ERROR MESSAGES:
-*
-*   message         condition      value returned
-* gdtr domain         x < 0            0.0
-*
-*/
+ *
+ *     Gamma distribution function
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double a, b, x, y, gdtr();
+ *
+ * y = gdtr( a, b, x );
+ *
+ *
+ *
+ * DESCRIPTION:
+ *
+ * Returns the integral from zero to x of the Gamma probability
+ * density function:
+ *
+ *
+ *                x
+ *        b       -
+ *       a       | |   b-1  -at
+ * y =  -----    |    t    e    dt
+ *       -     | |
+ *      | (b)   -
+ *               0
+ *
+ *  The incomplete Gamma integral is used, according to the
+ * relation
+ *
+ * y = igam( b, ax ).
+ *
+ *
+ * ACCURACY:
+ *
+ * See igam().
+ *
+ * ERROR MESSAGES:
+ *
+ *   message         condition      value returned
+ * gdtr domain         x < 0            0.0
+ *
+ */
 /*							gdtrc.c
  *
  *	Complemented Gamma distribution function
@@ -93,9 +93,9 @@ use sci_core::Float;
 /*                                                     gdtr()  */
 
 /*
-* Cephes Math Library Release 2.3:  March,1995
-* Copyright 1984, 1987, 1995 by Stephen L. Moshier
-*/
+ * Cephes Math Library Release 2.3:  March,1995
+ * Copyright 1984, 1987, 1995 by Stephen L. Moshier
+ */
 
 use crate::backend::cephes64::igam::{igam, igamc};
 use crate::backend::cephes64::igami::igamci;

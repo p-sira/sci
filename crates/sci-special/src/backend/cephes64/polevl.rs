@@ -75,18 +75,18 @@ pub fn polevl(x: f64, coef: &[f64], n: usize) -> f64 {
 
 /*                                                     p1evl() */
 /*                                          N
-* Evaluate polynomial when coefficient of x  is 1.0.
-* That is, C_{N} is assumed to be 1, and that coefficient
-* is not included in the input array coef.
-* coef must have length N and contain the polynomial coefficients
-* stored as
-*     coef[0] = C_{N-1}
-*     coef[1] = C_{N-2}
-*          ...
-*     coef[N-2] = C_1
-*     coef[N-1] = C_0
-* Otherwise same as polevl.
-*/
+ * Evaluate polynomial when coefficient of x  is 1.0.
+ * That is, C_{N} is assumed to be 1, and that coefficient
+ * is not included in the input array coef.
+ * coef must have length N and contain the polynomial coefficients
+ * stored as
+ *     coef[0] = C_{N-1}
+ *     coef[1] = C_{N-2}
+ *          ...
+ *     coef[N-2] = C_1
+ *     coef[N-1] = C_0
+ * Otherwise same as polevl.
+ */
 
 pub fn p1evl(x: f64, coef: &[f64], n: usize) -> f64 {
     let mut coef_iter = coef[..n.min(coef.len())].iter();

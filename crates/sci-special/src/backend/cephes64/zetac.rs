@@ -1,51 +1,51 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     zetac.c
-*
-*     Riemann zeta function
-*
-*
-*
-* SYNOPSIS:
-*
-* double x, y, zetac();
-*
-* y = zetac( x );
-*
-*
-*
-* DESCRIPTION:
-*
-*
-*
-*                inf.
-*                 -    -x
-*   zetac(x)  =   >   k   ,   x > 1,
-*                 -
-*                k=2
-*
-* is related to the Riemann zeta function by
-*
-*     Riemann zeta(x) = zetac(x) + 1.
-*
-* Extension of the function definition for x < 1 is implemented.
-* Zero is returned for x > log2(INFINITY).
-*
-* ACCURACY:
-*
-* Tabulated values have full machine accuracy.
-*
-*                      Relative error:
-* arithmetic   domain     # trials      peak         rms
-*    IEEE      1,50        10000       9.8e-16            1.3e-16
-*
-*
-*/
+ *
+ *     Riemann zeta function
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double x, y, zetac();
+ *
+ * y = zetac( x );
+ *
+ *
+ *
+ * DESCRIPTION:
+ *
+ *
+ *
+ *                inf.
+ *                 -    -x
+ *   zetac(x)  =   >   k   ,   x > 1,
+ *                 -
+ *                k=2
+ *
+ * is related to the Riemann zeta function by
+ *
+ *     Riemann zeta(x) = zetac(x) + 1.
+ *
+ * Extension of the function definition for x < 1 is implemented.
+ * Zero is returned for x > log2(INFINITY).
+ *
+ * ACCURACY:
+ *
+ * Tabulated values have full machine accuracy.
+ *
+ *                      Relative error:
+ * arithmetic   domain     # trials      peak         rms
+ *    IEEE      1,50        10000       9.8e-16            1.3e-16
+ *
+ *
+ */
 
 /*
-* Cephes Math Library Release 2.1:  January, 1989
-* Copyright 1984, 1987, 1989 by Stephen L. Moshier
-* Direct inquiries to 30 Frost Street, Cambridge, MA 02140
-*/
+ * Cephes Math Library Release 2.1:  January, 1989
+ * Copyright 1984, 1987, 1989 by Stephen L. Moshier
+ * Direct inquiries to 30 Frost Street, Cambridge, MA 02140
+ */
 
 #![allow(clippy::excessive_precision)]
 
@@ -53,8 +53,8 @@
 use sci_core::Float;
 
 /* Riemann zeta(x) - 1
-* for integer arguments between 0 and 30.
-*/
+ * for integer arguments between 0 and 30.
+ */
 const AZETAC: [f64; 31] = [
     -1.50000000000000000000E0,
     0.0, /* Not used; zetac(1.0) is infinity. */
@@ -212,8 +212,8 @@ pub fn riemann_zeta(x: f64) -> f64 {
 }
 
 /*
-* Compute zetac for positive arguments
-*/
+ * Compute zetac for positive arguments
+ */
 fn zetac_positive(x: f64) -> f64 {
     if x == 1.0 {
         return f64::INFINITY;
@@ -262,17 +262,17 @@ fn zetac_positive(x: f64) -> f64 {
 }
 
 /*
-* Compute zetac for small negative x. We can't use the reflection
-* formula because to double precision 1 - x = 1 and zetac(1) = inf.
-*/
+ * Compute zetac for small negative x. We can't use the reflection
+ * formula because to double precision 1 - x = 1 and zetac(1) = inf.
+ */
 fn zetac_smallneg(x: f64) -> f64 {
     polevl(x, &TAYLOR0, 9)
 }
 
 /*
-* Compute zetac using the reflection formula (see DLMF 25.4.2) plus
-* the Lanczos approximation for Gamma to avoid overflow.
-*/
+ * Compute zetac using the reflection formula (see DLMF 25.4.2) plus
+ * the Lanczos approximation for Gamma to avoid overflow.
+ */
 fn zeta_reflection(x: f64) -> f64 {
     //double base, large_term, small_term, hx, x_shift;
 

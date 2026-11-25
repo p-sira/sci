@@ -1,57 +1,57 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     ndtr.c
-*
-*     Normal distribution function
-*
-*
-*
-* SYNOPSIS:
-*
-* double x, y, ndtr();
-*
-* y = ndtr( x );
-*
-*
-*
-* DESCRIPTION:
-*
-* Returns the area under the Gaussian probability density
-* function, integrated from minus infinity to x:
-*
-*                            x
-*                             -
-*                   1        | |          2
-*    ndtr(x)  = ---------    |    exp( - t /2 ) dt
-*               sqrt(2pi)  | |
-*                           -
-*                          -inf.
-*
-*             =  ( 1 + erf(z) ) / 2
-*             =  erfc(z) / 2
-*
-* where z = x/sqrt(2). Computation is via the functions
-* erf and erfc.
-*
-*
-* ACCURACY:
-*
-*                      Relative error:
-* arithmetic   domain     # trials      peak         rms
-*    IEEE     -13,0        30000       3.4e-14     6.7e-15
-*
-*
-* ERROR MESSAGES:
-*
-*   message         condition         value returned
-* erfc underflow    x > 37.519379347       0.0
-*
-*/
+ *
+ *     Normal distribution function
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double x, y, ndtr();
+ *
+ * y = ndtr( x );
+ *
+ *
+ *
+ * DESCRIPTION:
+ *
+ * Returns the area under the Gaussian probability density
+ * function, integrated from minus infinity to x:
+ *
+ *                            x
+ *                             -
+ *                   1        | |          2
+ *    ndtr(x)  = ---------    |    exp( - t /2 ) dt
+ *               sqrt(2pi)  | |
+ *                           -
+ *                          -inf.
+ *
+ *             =  ( 1 + erf(z) ) / 2
+ *             =  erfc(z) / 2
+ *
+ * where z = x/sqrt(2). Computation is via the functions
+ * erf and erfc.
+ *
+ *
+ * ACCURACY:
+ *
+ *                      Relative error:
+ * arithmetic   domain     # trials      peak         rms
+ *    IEEE     -13,0        30000       3.4e-14     6.7e-15
+ *
+ *
+ * ERROR MESSAGES:
+ *
+ *   message         condition         value returned
+ * erfc underflow    x > 37.519379347       0.0
+ *
+ */
 
 /*
-* Cephes Math Library Release 2.2:  June, 1992
-* Copyright 1984, 1987, 1988, 1992 by Stephen L. Moshier
-* Direct inquiries to 30 Frost Street, Cambridge, MA 02140
-*/
+ * Cephes Math Library Release 2.2:  June, 1992
+ * Copyright 1984, 1987, 1988, 1992 by Stephen L. Moshier
+ * Direct inquiries to 30 Frost Street, Cambridge, MA 02140
+ */
 
 #![allow(clippy::excessive_precision)]
 

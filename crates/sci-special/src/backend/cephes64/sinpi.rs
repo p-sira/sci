@@ -2,11 +2,11 @@
 use sci_core::Float;
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*
-* Implement sin(pi * x) and cos(pi * x) for real x. Since the periods
-* of these functions are integral (and thus representable in double
-* precision), it's possible to compute them with greater accuracy
-* than sin(x) and cos(x).
-*/
+ * Implement sin(pi * x) and cos(pi * x) for real x. Since the periods
+ * of these functions are integral (and thus representable in double
+ * precision), it's possible to compute them with greater accuracy
+ * than sin(x) and cos(x).
+ */
 
 use crate::backend::cephes64::M_PI;
 

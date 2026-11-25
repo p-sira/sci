@@ -2,55 +2,55 @@
 use sci_core::Float;
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     chdtr.c
-*
-*     Chi-square distribution
-*
-*
-*
-* SYNOPSIS:
-*
-* double df, x, y, chdtr();
-*
-* y = chdtr( df, x );
-*
-*
-*
-* DESCRIPTION:
-*
-* Returns the area under the left hand tail (from 0 to x)
-* of the Chi square probability density function with
-* v degrees of freedom.
-*
-*
-*                                  inf.
-*                                    -
-*                        1          | |  v/2-1  -t/2
-*  P( x | v )   =   -----------     |   t      e     dt
-*                    v/2  -       | |
-*                   2    | (v/2)   -
-*                                   x
-*
-* where x is the Chi-square variable.
-*
-* The incomplete Gamma integral is used, according to the
-* formula
-*
-*     y = chdtr( v, x ) = igam( v/2.0, x/2.0 ).
-*
-*
-* The arguments must both be positive.
-*
-*
-*
-* ACCURACY:
-*
-* See igam().
-*
-* ERROR MESSAGES:
-*
-*   message         condition      value returned
-* chdtr domain   x < 0 or v < 1        0.0
-*/
+ *
+ *     Chi-square distribution
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double df, x, y, chdtr();
+ *
+ * y = chdtr( df, x );
+ *
+ *
+ *
+ * DESCRIPTION:
+ *
+ * Returns the area under the left hand tail (from 0 to x)
+ * of the Chi square probability density function with
+ * v degrees of freedom.
+ *
+ *
+ *                                  inf.
+ *                                    -
+ *                        1          | |  v/2-1  -t/2
+ *  P( x | v )   =   -----------     |   t      e     dt
+ *                    v/2  -       | |
+ *                   2    | (v/2)   -
+ *                                   x
+ *
+ * where x is the Chi-square variable.
+ *
+ * The incomplete Gamma integral is used, according to the
+ * formula
+ *
+ *     y = chdtr( v, x ) = igam( v/2.0, x/2.0 ).
+ *
+ *
+ * The arguments must both be positive.
+ *
+ *
+ *
+ * ACCURACY:
+ *
+ * See igam().
+ *
+ * ERROR MESSAGES:
+ *
+ *   message         condition      value returned
+ * chdtr domain   x < 0 or v < 1        0.0
+ */
 /*							chdtrc()
  *
  *	Complemented Chi-square distribution
@@ -145,10 +145,10 @@ use sci_core::Float;
 /*                                                             chdtr() */
 
 /*
-* Cephes Math Library Release 2.0:  April, 1987
-* Copyright 1984, 1987 by Stephen L. Moshier
-* Direct inquiries to 30 Frost Street, Cambridge, MA 02140
-*/
+ * Cephes Math Library Release 2.0:  April, 1987
+ * Copyright 1984, 1987 by Stephen L. Moshier
+ * Direct inquiries to 30 Frost Street, Cambridge, MA 02140
+ */
 
 use crate::backend::cephes64::igam::{igam, igamc};
 use crate::backend::cephes64::igami::igamci;

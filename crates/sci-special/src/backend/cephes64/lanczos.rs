@@ -1,35 +1,35 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*  (C) Copyright John Maddock 2006.
-*  Use, modification and distribution are subject to the
-*  Boost Software License, Version 1.0. (See accompanying file
-*  LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
-*/
+ *  Use, modification and distribution are subject to the
+ *  Boost Software License, Version 1.0. (See accompanying file
+ *  LICENSE_1_0.txt or copy at https://www.boost.org/LICENSE_1_0.txt)
+ */
 
 /* Both lanczos.h and lanczos.c were formed from Boost's lanczos.hpp
-*
-* Scipy changes:
-* - 06-22-2016: Removed all code not related to double precision and
-*   ported to c for use in Cephes. Note that the order of the
-*   coefficients is reversed to match the behavior of polevl.
-*/
+ *
+ * Scipy changes:
+ * - 06-22-2016: Removed all code not related to double precision and
+ *   ported to c for use in Cephes. Note that the order of the
+ *   coefficients is reversed to match the behavior of polevl.
+ */
 
 /*
-* Optimal values for G for each N are taken from
-* https://web.viu.ca/pughg/phdThesis/phdThesis.pdf,
-* as are the theoretical error bounds.
-*
-* Constants calculated using the method described by Godfrey
-* https://my.fit.edu/~gabdo/gamma.txt and elaborated by Toth at
-* https://www.rskey.org/gamma.htm using NTL::RR at 1000 bit precision.
-*/
+ * Optimal values for G for each N are taken from
+ * https://web.viu.ca/pughg/phdThesis/phdThesis.pdf,
+ * as are the theoretical error bounds.
+ *
+ * Constants calculated using the method described by Godfrey
+ * https://my.fit.edu/~gabdo/gamma.txt and elaborated by Toth at
+ * https://www.rskey.org/gamma.htm using NTL::RR at 1000 bit precision.
+ */
 
 /*
-* Lanczos Coefficients for N=13 G=6.024680040776729583740234375
-* Max experimental error (with arbitrary precision arithmetic) 1.196214e-17
-* Generated with compiler: Microsoft Visual C++ version 8.0 on Win32 at Mar 23 2006
-*
-* Use for double precision.
-*/
+ * Lanczos Coefficients for N=13 G=6.024680040776729583740234375
+ * Max experimental error (with arbitrary precision arithmetic) 1.196214e-17
+ * Generated with compiler: Microsoft Visual C++ version 8.0 on Win32 at Mar 23 2006
+ *
+ * Use for double precision.
+ */
 
 #![allow(clippy::excessive_precision)]
 

@@ -1,38 +1,38 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     j1.c
-*
-*     Bessel function of order one
-*
-*
-*
-* SYNOPSIS:
-*
-* double x, y, j1();
-*
-* y = j1( x );
-*
-*
-*
-* DESCRIPTION:
-*
-* Returns Bessel function of order one of the argument.
-*
-* The domain is divided into the intervals [0, 8] and
-* (8, infinity). In the first interval a 24 term Chebyshev
-* expansion is used. In the second, the asymptotic
-* trigonometric representation is employed using two
-* rational functions of degree 5/5.
-*
-*
-*
-* ACCURACY:
-*
-*                      Absolute error:
-* arithmetic   domain      # trials      peak         rms
-*    IEEE      0, 30       30000       2.6e-16     1.1e-16
-*
-*
-*/
+ *
+ *     Bessel function of order one
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double x, y, j1();
+ *
+ * y = j1( x );
+ *
+ *
+ *
+ * DESCRIPTION:
+ *
+ * Returns Bessel function of order one of the argument.
+ *
+ * The domain is divided into the intervals [0, 8] and
+ * (8, infinity). In the first interval a 24 term Chebyshev
+ * expansion is used. In the second, the asymptotic
+ * trigonometric representation is employed using two
+ * rational functions of degree 5/5.
+ *
+ *
+ *
+ * ACCURACY:
+ *
+ *                      Absolute error:
+ * arithmetic   domain      # trials      peak         rms
+ *    IEEE      0, 30       30000       2.6e-16     1.1e-16
+ *
+ *
+ */
 /*							y1.c
  *
  *	Bessel function of second kind of order one
@@ -71,9 +71,9 @@
  */
 
 /*
-* Cephes Math Library Release 2.8:  June, 2000
-* Copyright 1984, 1987, 1989, 2000 by Stephen L. Moshier
-*/
+ * Cephes Math Library Release 2.8:  June, 2000
+ * Copyright 1984, 1987, 1989, 2000 by Stephen L. Moshier
+ */
 
 #![allow(clippy::excessive_precision)]
 

@@ -1,43 +1,43 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     k0.c
-*
-*     Modified Bessel function, third kind, order zero
-*
-*
-*
-* SYNOPSIS:
-*
-* double x, y, k0();
-*
-* y = k0( x );
-*
-*
-*
-* DESCRIPTION:
-*
-* Returns modified Bessel function of the third kind
-* of order zero of the argument.
-*
-* The range is partitioned into the two intervals [0,8] and
-* (8, infinity).  Chebyshev polynomial expansions are employed
-* in each interval.
-*
-*
-*
-* ACCURACY:
-*
-* Tested at 2000 random points between 0 and 8.  Peak absolute
-* error (relative when K0 > 1) was 1.46e-14; rms, 4.26e-15.
-*                      Relative error:
-* arithmetic   domain     # trials      peak         rms
-*    IEEE      0, 30       30000       1.2e-15     1.6e-16
-*
-* ERROR MESSAGES:
-*
-*   message         condition      value returned
-*  K0 domain          x <= 0          INFINITY
-*
-*/
+ *
+ *     Modified Bessel function, third kind, order zero
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double x, y, k0();
+ *
+ * y = k0( x );
+ *
+ *
+ *
+ * DESCRIPTION:
+ *
+ * Returns modified Bessel function of the third kind
+ * of order zero of the argument.
+ *
+ * The range is partitioned into the two intervals [0,8] and
+ * (8, infinity).  Chebyshev polynomial expansions are employed
+ * in each interval.
+ *
+ *
+ *
+ * ACCURACY:
+ *
+ * Tested at 2000 random points between 0 and 8.  Peak absolute
+ * error (relative when K0 > 1) was 1.46e-14; rms, 4.26e-15.
+ *                      Relative error:
+ * arithmetic   domain     # trials      peak         rms
+ *    IEEE      0, 30       30000       1.2e-15     1.6e-16
+ *
+ * ERROR MESSAGES:
+ *
+ *   message         condition      value returned
+ *  K0 domain          x <= 0          INFINITY
+ *
+ */
 /*							k0e()
  *
  *	Modified Bessel function, third kind, order zero,
@@ -70,9 +70,9 @@
  */
 
 /*
-* Cephes Math Library Release 2.8:  June, 2000
-* Copyright 1984, 1987, 2000 by Stephen L. Moshier
-*/
+ * Cephes Math Library Release 2.8:  June, 2000
+ * Copyright 1984, 1987, 2000 by Stephen L. Moshier
+ */
 
 #![allow(clippy::excessive_precision)]
 
@@ -83,11 +83,11 @@ use crate::backend::cephes64::chbevl;
 use crate::backend::cephes64::i0;
 
 /* Chebyshev coefficients for K0(x) + log(x/2) I0(x)
-* in the interval [0,2].  The odd order coefficients are all
-* zero; only the even order coefficients are listed.
-*
-* lim(x->0){ K0(x) + log(x/2) I0(x) } = -EUL.
-*/
+ * in the interval [0,2].  The odd order coefficients are all
+ * zero; only the even order coefficients are listed.
+ *
+ * lim(x->0){ K0(x) + log(x/2) I0(x) } = -EUL.
+ */
 
 const A: [f64; 10] = [
     1.37446543561352307156E-16,
@@ -103,10 +103,10 @@ const A: [f64; 10] = [
 ];
 
 /* Chebyshev coefficients for exp(x) sqrt(x) K0(x)
-* in the inverted interval [2,infinity].
-*
-* lim(x->inf){ exp(x) sqrt(x) K0(x) } = sqrt(pi/2).
-*/
+ * in the inverted interval [2,infinity].
+ *
+ * lim(x->inf){ exp(x) sqrt(x) K0(x) } = sqrt(pi/2).
+ */
 const B: [f64; 25] = [
     5.30043377268626276149E-18,
     -1.64758043015242134646E-17,

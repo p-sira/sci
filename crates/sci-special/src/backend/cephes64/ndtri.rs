@@ -1,54 +1,54 @@
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     ndtri.c
-*
-*     Inverse of Normal distribution function
-*
-*
-*
-* SYNOPSIS:
-*
-* double x, y, ndtri();
-*
-* x = ndtri( y );
-*
-*
-*
-* DESCRIPTION:
-*
-* Returns the argument, x, for which the area under the
-* Gaussian probability density function (integrated from
-* minus infinity to x) is equal to y.
-*
-*
-* For small arguments 0 < y < exp(-2), the program computes
-* z = sqrt( -2.0 * log(y) );  then the approximation is
-* x = z - log(z)/z  - (1/z) P(1/z) / Q(1/z).
-* There are two rational functions P/Q, one for 0 < y < exp(-32)
-* and the other for y up to exp(-2).  For larger arguments,
-* w = y - 0.5, and  x/sqrt(2pi) = w + w**3 R(w**2)/S(w**2)).
-*
-*
-* ACCURACY:
-*
-*                      Relative error:
-* arithmetic   domain        # trials      peak         rms
-*    IEEE     0.125, 1        20000       7.2e-16     1.3e-16
-*    IEEE     3e-308, 0.135   50000       4.6e-16     9.8e-17
-*
-*
-* ERROR MESSAGES:
-*
-*   message         condition    value returned
-* ndtri domain       x < 0        NAN
-* ndtri domain       x > 1        NAN
-*
-*/
+ *
+ *     Inverse of Normal distribution function
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double x, y, ndtri();
+ *
+ * x = ndtri( y );
+ *
+ *
+ *
+ * DESCRIPTION:
+ *
+ * Returns the argument, x, for which the area under the
+ * Gaussian probability density function (integrated from
+ * minus infinity to x) is equal to y.
+ *
+ *
+ * For small arguments 0 < y < exp(-2), the program computes
+ * z = sqrt( -2.0 * log(y) );  then the approximation is
+ * x = z - log(z)/z  - (1/z) P(1/z) / Q(1/z).
+ * There are two rational functions P/Q, one for 0 < y < exp(-32)
+ * and the other for y up to exp(-2).  For larger arguments,
+ * w = y - 0.5, and  x/sqrt(2pi) = w + w**3 R(w**2)/S(w**2)).
+ *
+ *
+ * ACCURACY:
+ *
+ *                      Relative error:
+ * arithmetic   domain        # trials      peak         rms
+ *    IEEE     0.125, 1        20000       7.2e-16     1.3e-16
+ *    IEEE     3e-308, 0.135   50000       4.6e-16     9.8e-17
+ *
+ *
+ * ERROR MESSAGES:
+ *
+ *   message         condition    value returned
+ * ndtri domain       x < 0        NAN
+ * ndtri domain       x > 1        NAN
+ *
+ */
 
 /*
-* Cephes Math Library Release 2.1:  January, 1989
-* Copyright 1984, 1987, 1989 by Stephen L. Moshier
-* Direct inquiries to 30 Frost Street, Cambridge, MA 02140
-*/
+ * Cephes Math Library Release 2.1:  January, 1989
+ * Copyright 1984, 1987, 1989 by Stephen L. Moshier
+ * Direct inquiries to 30 Frost Street, Cambridge, MA 02140
+ */
 
 #![allow(clippy::excessive_precision)]
 
@@ -82,8 +82,8 @@ const Q0: [f64; 8] = [
 ];
 
 /* Approximation for interval z = sqrt(-2 log y ) between 2 and 8
-* i.e., y between exp(-2) = .135 and exp(-32) = 1.27e-14.
-*/
+ * i.e., y between exp(-2) = .135 and exp(-32) = 1.27e-14.
+ */
 const P1: [f64; 9] = [
     4.05544892305962419923E0,
     3.15251094599893866154E1,
@@ -109,8 +109,8 @@ const Q1: [f64; 8] = [
 ];
 
 /* Approximation for interval z = sqrt(-2 log y ) between 8 and 64
-* i.e., y between exp(-32) = 1.27e-14 and exp(-2048) = 3.67e-890.
-*/
+ * i.e., y between exp(-32) = 1.27e-14 and exp(-2048) = 3.67e-890.
+ */
 
 const P2: [f64; 9] = [
     3.23774891776946035970E0,

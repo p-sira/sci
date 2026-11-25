@@ -2,57 +2,57 @@
 use sci_core::Float;
 // Rust translation adapted from spec_math 0.1.6 (MIT); see LICENSES.
 /*                                                     yn.c
-*
-*     Bessel function of second kind of integer order
-*
-*
-*
-* SYNOPSIS:
-*
-* double x, y, yn();
-* int n;
-*
-* y = yn( n, x );
-*
-*
-*
-* DESCRIPTION:
-*
-* Returns Bessel function of order n, where n is a
-* (possibly negative) integer.
-*
-* The function is evaluated by forward recurrence on
-* n, starting with values computed by the routines
-* y0() and y1().
-*
-* If n = 0 or 1 the routine for y0 or y1 is called
-* directly.
-*
-*
-*
-* ACCURACY:
-*
-*
-*                      Absolute error, except relative
-*                      when y > 1:
-* arithmetic   domain     # trials      peak         rms
-*    IEEE      0, 30       30000       3.4e-15     4.3e-16
-*
-*
-* ERROR MESSAGES:
-*
-*   message         condition      value returned
-* yn singularity   x = 0              INFINITY
-* yn overflow                         INFINITY
-*
-* Spot checked against tables for x, n between 0 and 100.
-*
-*/
+ *
+ *     Bessel function of second kind of integer order
+ *
+ *
+ *
+ * SYNOPSIS:
+ *
+ * double x, y, yn();
+ * int n;
+ *
+ * y = yn( n, x );
+ *
+ *
+ *
+ * DESCRIPTION:
+ *
+ * Returns Bessel function of order n, where n is a
+ * (possibly negative) integer.
+ *
+ * The function is evaluated by forward recurrence on
+ * n, starting with values computed by the routines
+ * y0() and y1().
+ *
+ * If n = 0 or 1 the routine for y0 or y1 is called
+ * directly.
+ *
+ *
+ *
+ * ACCURACY:
+ *
+ *
+ *                      Absolute error, except relative
+ *                      when y > 1:
+ * arithmetic   domain     # trials      peak         rms
+ *    IEEE      0, 30       30000       3.4e-15     4.3e-16
+ *
+ *
+ * ERROR MESSAGES:
+ *
+ *   message         condition      value returned
+ * yn singularity   x = 0              INFINITY
+ * yn overflow                         INFINITY
+ *
+ * Spot checked against tables for x, n between 0 and 100.
+ *
+ */
 
 /*
-* Cephes Math Library Release 2.8:  June, 2000
-* Copyright 1984, 1987, 2000 by Stephen L. Moshier
-*/
+ * Cephes Math Library Release 2.8:  June, 2000
+ * Copyright 1984, 1987, 2000 by Stephen L. Moshier
+ */
 
 use crate::backend::cephes64::j0::y0;
 use crate::backend::cephes64::j1::y1;
