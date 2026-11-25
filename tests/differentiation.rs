@@ -118,6 +118,10 @@ fn rejects_nonfinite_evaluations_and_arithmetic() {
             Err(Error::NonFiniteEvaluation)
         );
         assert_eq!(
+            d::derivative(|x| if x < 0.0 { value } else { x }, 0.0, 1.0),
+            Err(Error::NonFiniteEvaluation)
+        );
+        assert_eq!(
             d::gradient(|_| value, &[0.0], 1.0),
             Err(Error::NonFiniteEvaluation)
         );
@@ -133,19 +137,24 @@ fn rejects_nonfinite_evaluations_and_arithmetic() {
             d::hessian(|_| value, &[0.0], 1.0),
             Err(Error::NonFiniteEvaluation)
         );
-        // Exercise the mixed stencil separately from center and axial values.
-        assert_eq!(
-            d::hessian(
-                |x| if x.iter().all(|v| *v != 0.0) {
-                    value
-                } else {
-                    0.0
-                },
-                &[0.0, 0.0],
-                1.0
-            ),
-            Err(Error::NonFiniteEvaluation)
-        );
+        // Each Hessian stencil sample can fail independently.
+        for x in [-1.0, 0.0, 1.0] {
+            for y in [-1.0, 0.0, 1.0] {
+                assert_eq!(
+                    d::hessian(
+                        |point| if point == [x, y].as_slice() {
+                            value
+                        } else {
+                            0.0
+                        },
+                        &[0.0, 0.0],
+                        1.0
+                    ),
+                    Err(Error::NonFiniteEvaluation),
+                    "nonfinite Hessian sample at ({x}, {y})"
+                );
+            }
+        }
     }
     assert_eq!(
         d::derivative(|x: f64| x.signum() * f64::MAX, 0.0, 0.5),

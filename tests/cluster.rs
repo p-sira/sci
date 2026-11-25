@@ -365,6 +365,71 @@ fn whiten_rejects_a_nonfinite_population_scale() {
     );
 }
 
+#[test]
+fn inconsistent_rejects_overflowing_link_mean() {
+    let z = vec![
+        vec![0.0, 1.0, f64::MAX, 2.0],
+        vec![2.0, 3.0, f64::MAX, 2.0],
+        vec![4.0, 5.0, f64::MAX, 4.0],
+    ];
+    assert!(h::is_valid_linkage(&z));
+    assert_eq!(
+        h::inconsistent(&z, 1).unwrap()[2],
+        vec![f64::MAX, 0.0, 1.0, 0.0]
+    );
+    // Three rounded MAX/3 contributions overflow when accumulated.
+    assert_eq!(h::inconsistent(&z, 2), Err(sci::Error::NonFiniteEvaluation));
+}
+
+#[test]
+fn kmeans2_rejects_overflowing_centroid_accumulation() {
+    use sci::cluster::vq;
+
+    let observations = vec![vec![f64::MAX]; 3];
+    let initial = [vec![f64::MAX]];
+    assert_eq!(vq::vq(&observations, &initial).unwrap().1, vec![0.0; 3]);
+    assert_eq!(
+        vq::kmeans2(&observations, &initial, 1),
+        Err(sci::Error::NonFiniteEvaluation)
+    );
+}
+
+#[test]
+fn kmeans_rejects_overflowing_initial_distortion() {
+    use sci::cluster::vq;
+
+    let observations = vec![vec![f64::MAX]; 3];
+    let initial = [vec![0.0]];
+    assert_eq!(
+        vq::vq(&observations, &initial).unwrap().1,
+        vec![f64::MAX; 3]
+    );
+    assert_eq!(
+        vq::kmeans(&observations, &initial, 0.0, 1),
+        Err(sci::Error::NonFiniteEvaluation)
+    );
+}
+
+#[test]
+fn kmeans_rejects_overflowing_final_distortion() {
+    use sci::cluster::vq;
+
+    // The initial distance mean is finite. Updating the centroid leaves
+    // every distance finite, but their pre-divided sum rounds to infinity.
+    let smaller = f64::from_bits(f64::MAX.to_bits() - 5);
+    let observations: Vec<_> = (0..9)
+        .flat_map(|_| [vec![f64::MAX], vec![-smaller]])
+        .collect();
+    let initial = [vec![0.0]];
+    let (centroids, _) = vq::kmeans2(&observations, &initial, 1).unwrap();
+    assert!(centroids[0][0].is_finite());
+    assert!(vq::vq(&observations, &centroids).is_ok());
+    assert_eq!(
+        vq::kmeans(&observations, &initial, 0.0, 1),
+        Err(sci::Error::NonFiniteEvaluation)
+    );
+}
+
 #[cfg(feature = "spatial")]
 #[test]
 fn hierarchy_euclidean_matches_spatial_condensed_order_and_errors() {

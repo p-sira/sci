@@ -104,6 +104,7 @@ fn domains_and_signed_zero_conventions() {
         c::divide(Complex { re: 1.0, im: 2.0 }, z),
         c::reciprocal(z),
         c::powc(z, Complex { re: -1.0, im: 0.0 }),
+        c::powc(z, Complex { re: 2.0, im: 1.0 }),
     ] {
         assert!(result.re.is_nan() && result.im.is_nan());
     }

@@ -182,3 +182,46 @@ fn inverse_real_fft_native_f32_round_trip_and_validation() {
     );
     assert!(fft::real::rfftn(&[f64::MAX; 2], &[2], &[0]).is_err());
 }
+
+#[test]
+fn large_strided_real_fft_matches_impulse_spectra() {
+    // A length above the workspace cache limit, with two independent lanes.
+    let n = 67_500;
+    let impulses = [(3, 1.25_f64), (7, -0.75)];
+    let mut input = vec![0.0; n * 2];
+    for (lane, (j, amplitude)) in impulses.into_iter().enumerate() {
+        input[2 * j + lane] = amplitude;
+    }
+    let (actual, reduced) = fft::real::rfftn(&input, &[n, 2], &[0]).unwrap();
+    assert_eq!(reduced, [n / 2 + 1, 2]);
+    assert_eq!(actual.len(), reduced.iter().product());
+    let (pairs, remainder) = actual.as_chunks::<2>();
+    assert!(remainder.is_empty());
+    for (k, bins) in pairs.iter().enumerate() {
+        for (bin, (j, amplitude)) in bins.iter().zip(impulses) {
+            let (s, c) = (-TAU * (j * k) as f64 / n as f64).sin_cos();
+            close(bin.re, amplitude * c, "impulse spectrum real");
+            close(bin.im, amplitude * s, "impulse spectrum imaginary");
+        }
+    }
+}
+
+#[test]
+fn inverse_real_fft_rejects_overflow_and_recovers_workspace() {
+    let m = f64::MAX;
+    // At sample 1 the Hermitian inverse equals (1 + sqrt(2)) * m / 2,
+    // whose exact value exceeds the finite range.
+    let bins = [
+        Complex { re: m, im: 0.0 },
+        Complex { re: m, im: -m },
+        Complex { re: 0.0, im: -m },
+        Complex { re: -m, im: -m },
+        Complex { re: -m, im: 0.0 },
+    ];
+    assert!(matches!(
+        fft::real::irfft(&bins, Some(8)),
+        Err(sci::Error::NonFiniteEvaluation)
+    ));
+    let dc = [Complex { re: 8.0, im: 0.0 }];
+    assert_eq!(fft::real::irfft(&dc, Some(8)).unwrap(), vec![1.0; 8]);
+}

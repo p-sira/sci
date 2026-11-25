@@ -420,3 +420,98 @@ fn fftlog_dc_coefficients_obey_gamma_recurrence() {
     assert!(f::hankel::fht(&[1.0], 0.1, 0.0, 0.0, 1e300).is_err());
     assert!(f::hankel::fhtoffset(f64::from_bits(1), 0.0, 0.0, 0.0).is_err());
 }
+
+#[test]
+fn fftlog_rejects_overflow_at_each_scaling_stage() {
+    use sci::Error;
+    use sci::fft::hankel::{fht, fhtoffset, ifht};
+
+    let max = f64::MAX;
+    // Finite order and bias can overflow either gamma argument before division.
+    for bias in [max, -max] {
+        assert_eq!(
+            fhtoffset(1.0, max, 0.0, bias),
+            Err(Error::NonFiniteEvaluation)
+        );
+    }
+    // An unrepresentable grid exponent or biased sample must be rejected.
+    assert_eq!(
+        fht(&[1.0; 4], max, 0.0, 0.0, 1.0),
+        Err(Error::NonFiniteEvaluation)
+    );
+    assert_eq!(
+        fht(&[max, 1.0], 1.0, 2.0, 0.0, 1.0),
+        Err(Error::NonFiniteEvaluation)
+    );
+    // The DC coefficient overflows even though the gamma ratio is finite.
+    assert_eq!(
+        fht(&[1.0], 0.1, 1000.0, 0.0, 110.0),
+        Err(Error::NonFiniteEvaluation)
+    );
+    // Nonzero Fourier modes can overflow their frequency, phase, or coefficient.
+    assert_eq!(
+        fht(&[1.0, 2.0], f64::from_bits(1), 0.0, 0.0, 0.0),
+        Err(Error::NonFiniteEvaluation)
+    );
+    assert_eq!(
+        fht(&[1.0, 2.0], 0.1, 0.0, max, 0.0),
+        Err(Error::NonFiniteEvaluation)
+    );
+    assert_eq!(
+        fht(&[1.0, 2.0], 0.001, 100.0, 0.0, 100.0),
+        Err(Error::NonFiniteEvaluation)
+    );
+    // Overflow of the Fourier sum cannot silently propagate into the result.
+    assert_eq!(
+        fht(&[max, max], 0.1, 0.0, 0.0, 0.0),
+        Err(Error::NonFiniteEvaluation)
+    );
+    assert_eq!(
+        ifht(&[max, max], 0.1, 0.0, 0.0, 0.0),
+        Err(Error::NonFiniteEvaluation)
+    );
+    // Complex log-gamma, the offset phase and the final offset can overflow.
+    assert_eq!(
+        fhtoffset(1.0, max, 0.0, 0.0),
+        Err(Error::NonFiniteEvaluation)
+    );
+    assert_eq!(
+        fhtoffset(0.5, 0.0, max, 0.0),
+        Err(Error::NonFiniteEvaluation)
+    );
+    assert_eq!(
+        fhtoffset(1e308, 0.0, max, 0.0),
+        Err(Error::NonFiniteEvaluation)
+    );
+    // The bounded gamma-ratio fallback must reject a nonfinite final product.
+    assert_eq!(
+        fht(&[1.0], 0.1, 219.0, 0.0, 200.0),
+        Err(Error::NonFiniteEvaluation)
+    );
+}
+
+#[test]
+fn fftlog_gamma_poles_and_half_integer_reflection() {
+    use sci::Error;
+    use sci::fft::hankel::{fht, fhtoffset, ifht};
+
+    // At mu=-1/2, bias=-1/2, x+=0 and x-=1/2: numerator gamma has a pole.
+    assert_eq!(
+        fht(&[1.0], 0.1, -0.5, 0.0, -0.5),
+        Err(Error::NumericalFailure("gamma pole in FFTLog coefficients"))
+    );
+    // At order -2, both gamma arguments are -1/2. Reflection at an exact
+    // half-integer must retain the phase and permit a well-conditioned inverse.
+    let dln = 0.5;
+    let offset = fhtoffset(dln, -2.0, 0.0, 0.0).unwrap();
+    assert!(offset.abs() <= dln / 2.0);
+    let input = [1.0, -2.0, 3.0, 0.5, -0.25];
+    let output = fht(&input, dln, -2.0, offset, 0.0).unwrap();
+    for (actual, expected) in ifht(&output, dln, -2.0, offset, 0.0)
+        .unwrap()
+        .into_iter()
+        .zip(input)
+    {
+        finite_close(actual, expected, 2e-12, 2e-12);
+    }
+}
