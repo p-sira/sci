@@ -198,7 +198,11 @@ fn positive_inverse(function: impl Fn(f64) -> f64, probability: f64) -> f64 {
     f64::NAN
 }
 
-fn poisson_mixture(lambda: f64, mut function: impl FnMut(usize) -> f64) -> f64 {
+fn poisson_mixture(
+    lambda: f64,
+    positive_term_bound: Option<f64>,
+    mut function: impl FnMut(usize) -> f64,
+) -> f64 {
     if !lambda.is_finite() || !(0.0..=10_000.0).contains(&lambda) {
         return f64::NAN;
     }
@@ -215,6 +219,16 @@ fn poisson_mixture(lambda: f64, mut function: impl FnMut(usize) -> f64) -> f64 {
         sum += weight * function(j);
         mass += weight;
         if weight < 1e-16 * mass {
+            // Positive CDF mixtures can be dominated by terms far below
+            // the Poisson mode. Bound the remaining lower-tail contribution
+            // by a geometric series: each successive weight ratio is at
+            // most j/lambda. Do not stop solely on total Poisson mass.
+            if let Some(bound) = positive_term_bound {
+                let ratio = j as f64 / lambda;
+                if weight * bound * ratio > (1.0 - ratio) * (1e-15 * sum) {
+                    continue;
+                }
+            }
             break;
         }
     }
@@ -558,10 +572,14 @@ pub fn fdtridfd(dfn: f64, p: f64, x: f64) -> f64 {
 pub fn chndtr(x: f64, df: f64, nc: f64) -> f64 {
     if !df.is_finite() || df <= 0.0 || !(0.0..=20_000.0).contains(&nc) || x.is_nan() || x < 0.0 {
         f64::NAN
+    } else if x == 0.0 {
+        0.0
     } else if x == f64::INFINITY {
         1.0
     } else {
-        poisson_mixture(nc / 2.0, |j| gammainc(df / 2.0 + j as f64, x / 2.0))
+        poisson_mixture(nc / 2.0, Some(1.0), |j| {
+            gammainc(df / 2.0 + j as f64, x / 2.0)
+        })
     }
 }
 
@@ -684,7 +702,12 @@ pub fn ncfdtr(dfn: f64, dfd: f64, nc: f64, x: f64) -> f64 {
         return 1.0;
     }
     let z = 1.0 / (1.0 + dfd / (dfn * x));
-    poisson_mixture(nc / 2.0, |j| betainc(dfn / 2.0 + j as f64, dfd / 2.0, z))
+    if z == 0.0 {
+        return 0.0;
+    }
+    poisson_mixture(nc / 2.0, Some(1.0), |j| {
+        betainc(dfn / 2.0 + j as f64, dfd / 2.0, z)
+    })
 }
 
 /// Inverse noncentral F CDF with respect to x.
@@ -949,7 +972,9 @@ pub fn nctdtr(df: f64, nc: f64, t: f64) -> f64 {
     let center_ratio = gamma_ratio(center);
     let (mut lower_index, mut upper_index) = (center, center);
     let (mut lower_ratio, mut upper_ratio) = (center_ratio, center_ratio);
-    let series = poisson_mixture(lambda, |j| {
+    // For nc>0 both beta terms are nonnegative. The gamma ratio decreases
+    // from 2/sqrt(pi), so 1+nc bounds each weighted-mixture integrand.
+    let series = poisson_mixture(lambda, (nc > 0.0).then_some(1.0 + nc), |j| {
         let ratio = if j < center {
             if j + 1 == lower_index && !(center - j).is_multiple_of(64) {
                 lower_ratio *= (j as f64 + 1.5) / (j as f64 + 1.0);

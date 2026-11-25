@@ -1577,6 +1577,39 @@ mod noncentral_benches {
     use super::*;
 
     #[divan::bench]
+    fn chndtr_small_tail(bencher: Bencher) {
+        bencher.bench(|| {
+            special::probability::chndtr(black_box(2.0), black_box(5.0), black_box(400.0))
+        });
+    }
+
+    #[divan::bench]
+    fn ncfdtr_small_tail(bencher: Bencher) {
+        bencher.bench(|| {
+            special::probability::ncfdtr(
+                black_box(5.0),
+                black_box(30.0),
+                black_box(400.0),
+                black_box(0.5),
+            )
+        });
+    }
+
+    #[divan::bench]
+    fn nctdtr_small_positive_tail(bencher: Bencher) {
+        bencher.bench(|| {
+            special::probability::nctdtr(black_box(30.0), black_box(20.0), black_box(2.0))
+        });
+    }
+
+    #[divan::bench]
+    fn nctdtr_small_negative_tail(bencher: Bencher) {
+        bencher.bench(|| {
+            special::probability::nctdtr(black_box(30.0), black_box(5.0), black_box(-2.0))
+        });
+    }
+
+    #[divan::bench]
     fn chndtr(bencher: Bencher) {
         let x = positive_values(16, 7);
         bencher.bench(|| sum1(black_box(&x), |x| special::probability::chndtr(x, 3.0, 0.5)));
